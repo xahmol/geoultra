@@ -75,18 +75,18 @@ PosSprite
 EnablSprite
 DisablSprite
 CallRoutine
-CalcBlksFree
-ChkDkGEOS
-NewDisk
-GetBlock
-PutBlock
-SetGEOSDisk
+CalcBlksFree = ($9020)
+ChkDkGEOS = ($902C)
+NewDisk = ($900C)
+GetBlock = ($9016)
+PutBlock = ($9018)
+SetGEOSDisk = ($902E)
 SaveFile
 SetGDirEntry
 BldGDirEntry
-GetFreeDirBlk
+GetFreeDirBlk = ($901E)
 WriteFile
-BlkAlloc
+BlkAlloc = ($902A)
 ReadFile
 SmallPutChar
 FollowChain
@@ -94,32 +94,32 @@ GetFile
 FindFile
 CRC
 LdFile
-EnterTurbo
+EnterTurbo = ($9008)
 LdDeskAcc
-ReadBlock
+ReadBlock = ($900E)
 LdApplic
-WriteBlock
-VerWriteBlock
+WriteBlock = ($9010)
+VerWriteBlock = ($9012)
 FreeFile
 GetFHdrInfo
 EnterDeskTop
 StartAppl
-ExitTurbo
-PurgeTurbo
+ExitTurbo = ($9004)
+PurgeTurbo = ($9006)
 DeleteFile
 FindFTypes
 RstrAppl
 ToBASIC
 FastDelFile
-GetDirHead
-PutDirHead
-NxtBlkAlloc
+GetDirHead = ($901A)
+PutDirHead = ($901C)
+NxtBlkAlloc = ($9028)
 ImprintRectangle
 i_ImprintRectangle
 DoDlgBox
 RenameFile
-InitForIO
-DoneWithIO
+InitForIO = ($9000)
+DoneWithIO = ($9002)
 DShiftRight
 CopyString
 CopyFString
@@ -136,21 +136,21 @@ InsertRecord
 AppendRecord
 ReadRecord
 WriteRecord
-SetNextFree
+SetNextFree = ($9024)
 UpdateRecordFile
 GetPtrCurDkNm
 PromptOn
 PromptOff
-OpenDisk
+OpenDisk = ($9014)
 DoInlineReturn
 GetNextChar
 BitmapClip
-FindBAMBit
+FindBAMBit = ($9026)
 SetDevice
 IsMseInRegion
 ReadByte
-FreeBlock
-ChangeDiskDevice
+FreeBlock = ($9022)
+ChangeDiskDevice = ($900A)
 RstrFrmDialogue
 Panic
 BitOtherClip

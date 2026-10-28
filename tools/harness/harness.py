@@ -13,7 +13,8 @@ when every item in its `compare` list is equal on both systems.
 
 Case files define CASES, a list of dicts:
   name     text
-  routine  jump table name (src/kernal/jumptab.txt)
+  routine  jump table name (src/kernal/jumptab.txt) or disk driver entry
+           (DRIVER_ENTRIES, e.g. Get1stDirEntry)
   a, x, y  register values (optional)
   r        {"r3": 10, "r11L": 50, ...} pseudo-register inputs
   pattern  8 bytes for curPattern (optional; curPattern points to them)
@@ -45,6 +46,7 @@ routine, lda/sta of the r-register inputs, lda/ldx/ldy, jsr routine.
 import argparse
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -62,11 +64,18 @@ VICE = os.environ.get("VICE_HARNESS") or next(
 ORACLE_DISK = os.environ.get(
     "GEOS_ORACLE", os.path.expanduser("~/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64"))
 
+# GEOS 2.0 runs from a copy of the oracle disk (tests write to it); GeoUltra
+# gets the same disk as drive A through an REU image with a mount table
+# (src/drivers/reudrv.s): REU bank 1 holds the table, the image starts at
+# DRIVE_BANK. VICE does not write the REU image back.
+ORACLE_COPY = os.path.join(OUT, "oracle.d64")
+REU_IMAGE = os.path.join(OUT, "reu.bin")
+DRIVE_BANK = 31
 SYSTEMS = {
     "geos": ["-drive8truedrive", "+autostart-delay-random", "-autostart-delay", "3",
-             "-reu", "-reusize", "512", "-autostart", ORACLE_DISK],
+             "-reu", "-reusize", "512", "-autostart", ORACLE_COPY],
     "geoultra": ["-cartcrt", os.path.join(ROOT, "build", "geoultra64.crt"),
-                 "-reu", "-reusize", "16384"],
+                 "-reu", "-reusize", "16384", "-reuimage", REU_IMAGE, "+reuimagerw"],
 }
 PORTS = {"geos": 6502, "geoultra": 6503}
 
@@ -134,11 +143,33 @@ def find_sysicon_table(v):
     raise SystemExit("geos: system icon table not found")
 
 
+# Disk driver entries applications call directly
+DRIVER_ENTRIES = {"Get1stDirEntry": 0x9030, "GetNxtDirEntry": 0x9033, "GetBorder": 0x9036,
+                  "ReadBuff": 0x903C, "WriteBuff": 0x903F, "ReadLink": 0x904B}
+
+
 def jumptab():
-    names = [l.split("#")[0].strip()
+    names = [l.split("#")[0].split("=")[0].strip()
              for l in open(os.path.join(ROOT, "src", "kernal", "jumptab.txt"))]
     names = [n for n in names if n]
-    return dict((n, 0xC100 + 3 * i) for i, n in enumerate(names))
+    table = dict((n, 0xC100 + 3 * i) for i, n in enumerate(names))
+    table.update(DRIVER_ENTRIES)
+    return table
+
+
+def prepare_disks():
+    """The oracle disk copy (fresh each run) and GeoUltra's REU image."""
+    shutil.copyfile(ORACLE_DISK, ORACLE_COPY)
+    if (os.path.exists(REU_IMAGE) and os.path.getmtime(REU_IMAGE) > os.path.getmtime(ORACLE_DISK)
+            and os.path.getmtime(REU_IMAGE) > os.path.getmtime(__file__)):
+        return
+    d64 = open(ORACLE_DISK, "rb").read()[:683 * 256]
+    reu = bytearray(16 << 20)
+    table = 0x010100
+    reu[table:table + 5] = b"GUMT\x01"
+    reu[table + 0x20:table + 0x24] = bytes([1, DRIVE_BANK, 0, 0])     # drive A: 1541
+    reu[DRIVE_BANK << 16:(DRIVE_BANK << 16) + len(d64)] = d64
+    open(REU_IMAGE, "wb").write(reu)
 
 
 def rreg(name):
@@ -163,7 +194,8 @@ class System:
         self.vice = Vice(port=PORTS[name])
         crt = os.path.join(ROOT, "build", "geoultra64.crt")
         stale = (name == "geoultra" and os.path.exists(self.snapshot)
-                 and os.path.getmtime(crt) > os.path.getmtime(self.snapshot))
+                 and max(os.path.getmtime(crt), os.path.getmtime(REU_IMAGE))
+                 > os.path.getmtime(self.snapshot))
         if rebuild or stale or not os.path.exists(self.snapshot):
             self.make_snapshot()
 
@@ -188,6 +220,8 @@ class System:
         print("%s: snapshot at MainLoop $%04X" % (self.name, main))
 
     def run(self, case, table):
+        if os.environ.get("HARNESS_TRACE"):
+            print("%s: %s" % (self.name, case["name"]), flush=True)
         v = self.vice
         v.undump(self.snapshot)
         v.events.clear()                        # no stale events of a previous case
@@ -363,6 +397,7 @@ def main():
     ap.add_argument("casefiles", nargs="+")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
+    prepare_disks()
     cases = load_cases(args.casefiles)
     if args.show:
         cases = [c for c in cases if args.show in c["name"]]

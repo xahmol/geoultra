@@ -10,6 +10,7 @@ to date as the code grows.
 | --- | --- |
 | `src/inc/` | `geos.inc` (GEOS 2.0 interface: zero page, variables, constants), `hw.inc` (VIC-II, CIA, SID, REU, Megabyter) |
 | `src/kernal/` | the kernal, one file per area (info block, init, IRQ, MainLoop, graphics, ...); `jumptab.txt` lists the 157 GEOS 64 2.0 jump table entries in address order |
+| `src/drivers/` | disk drivers at `$9000` (`reudrv.s`: REU image drives), linked with the kernal into `build/reudrv64.bin` |
 | `src/input/` | input drivers (`mouse1351.s` is the one in the ROM) |
 | `src/boot/` | cartridge bank 0: start-up and system loader |
 | `tools/` | `genjumptab.py` (jump table with traps), `mkimage.py` (system image and its load table), `mkcrt.py` (Megabyter `.crt`) |
@@ -62,7 +63,8 @@ section 2). GeoUltra's own use of the system areas:
 
 | Range | GeoUltra |
 | --- | --- |
-| `$9000-$9D7F` | disk driver jump table and REU block driver (small), then the **overlay slot**: rarely used kernal code fetched from the REU on demand |
+| `$9000-$9C7F` | disk driver: vectors `$9000-$902F`, jump table `$9030-$904D`, REU image driver (now to about `$957A`), then the **overlay slot**: rarely used kernal code fetched from the REU on demand |
+| `$9C80-$9D7F` | `dir3Head` (third BAM block of a 1581 image, as GEOS 2.0) |
 | `$C000-$C0FF` | information block (`BootGEOS`, `bootName`, `version` = `$20`, `c128Flag`, `GU` signature, extension table pointer) |
 | `$C100-$C2D6` | GEOS 2.0 jump table, 157 entries |
 | `$C2D7-$CFFF` | kernal tables (RODATA) and variables (DATA) |
@@ -164,6 +166,39 @@ MainLoop enables interrupts on every pass, as GEOS 2.0: routines such as
 - Unimplemented jump table entries end in a trap: border colour cycling,
   the entry number at `$C0F0` (readable through the monitor or REST).
 
+## Disk driver
+
+`src/drivers/reudrv.s` serves drives A-D, each a whole disk image in the
+REU (DESIGN.md, "Drives A-D"). The kernal's jump table reaches the disk
+routines through the vectors at `$9000` (`jumptab.txt`: `Name = ($9016)`);
+applications call `$9030-$904D` directly.
+
+- **Blocks:** `Locate` turns track/sector into a block number for the
+  drive type (1541 speed zones, 1571 second side after block 683, 1581
+  40 per track, native 256 per track) and an REU address: the drive's
+  first bank (`ramBase`) plus the block number as bank and page. One block
+  is one 256-byte DMA; the CPU port is `$35` only around the DMA.
+- **Errors as GEOS 2.0:** track 0 or beyond the disk `INV_TRACK` (2), a
+  sector beyond the track `$20` (what the 1541 turbo reports); GEOS 2.0
+  then fills the buffer with the drive's stale buffer, GeoUltra leaves it
+  alone.
+- **Writes** set the block's bit in the drive's dirty map and, on the
+  first write, the changed flag in the mount table (both in REU bank 1),
+  for the later write-back to the Ultimate file. A read-only drive returns
+  `WR_PR_ON`.
+- **Mount table** (REU `$01:0100`): `"GUMT"`, version; per drive at
+  `$01:0120 + 32 * slot` type (1-4), first bank, tracks (native), flags.
+  Dirty maps at `$01:2000 + $2000 * slot`. `DiskInit` (cold start) sets
+  `driveType` (`$80 | type`, as GEOS RAM drives), `ramBase` and `NUMDRV`
+  from it, makes drive A (8) current and opens it.
+- **InitForIO / DoneWithIO** live in the driver: they bank the C64 Kernal
+  ROM in over `$E000` (for serial printer drivers), so they and anything
+  running between them must not lie at `$E000-$FFFF`. They also set the
+  clock register `$D030` to 1 MHz for the transfer (C128, U64 turbo).
+- Not yet: BAM allocation (`BlkAlloc`, `FreeBlock`, `SetNextFree`,
+  `GetFreeDirBlk`, `SetGEOSDisk`, ...; they trap in the driver), native
+  BAM and subdirectories, 40-track D64s.
+
 ## Conformance harness
 
 `make conformance` (`tools/harness/harness.py`, VICE binary monitor client
@@ -199,8 +234,15 @@ automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
   one-shot routine that clears it, sets `keyData` and calls `keyVector`,
   so the key arrives exactly as from MainLoop on both systems. `poke`
   writes memory after the clean-up (which clears the vectors).
+- **Disks:** GEOS 2.0 runs from a fresh copy of the oracle disk
+  (`build/harness/oracle.d64`, so write tests never touch the user's
+  disk); GeoUltra gets the same disk as drive A through a 16 MB REU image
+  (`-reuimage build/harness/reu.bin`, not written back) holding a mount
+  table and the image at bank 31. VICE snapshots restore GeoUltra's REU
+  per case but not GEOS 2.0's disk, so write cases must be repeatable.
 - `--show NAME --area x0,y0,x1,y1 [--systems geos]` prints both screens
-  as ASCII art.
+  as ASCII art; `HARNESS_TRACE=1` prints each case before it runs (to find
+  one that hangs).
 
 ## Attribution
 

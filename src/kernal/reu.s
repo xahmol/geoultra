@@ -15,7 +15,6 @@
         .import DoInlineReturn
 
 LEGACY_BASE     = 248           ; physical bank of the applications' bank 0
-DEV_NOT_FOUND   = $0D
 returnAddress   = $3D
 
         .segment "DATA"

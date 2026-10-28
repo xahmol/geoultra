@@ -6,7 +6,7 @@
         .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DefFaultVector
         .import Rectangle, FrameRectangle, SetPattern
         .import pointerPic, UseSystemFont, PutString, RecoverRectangle
-        .import StringWidth, sysFlgCopy
+        .import StringWidth, sysFlgCopy, DiskInit
         .export ColdStart
 
 DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
@@ -168,6 +168,7 @@ ColdStart:
         sta rightMargin+1
         jsr UseSystemFont
         jsr DrawBanner
+        jsr DiskInit            ; drives from the REU mount table
         cli
         jmp MainLoop
 

@@ -253,3 +253,67 @@ SYSDBI_HEIGHT   = 16
 ; REU
 ramExpSize      = $88C3
 sysRAMFlg       = $88C4
+
+; Disk
+diskBlkBuf      = $8000
+fileHeader      = $8100
+curDirHead      = $8200
+fileTrScTab     = $8300
+dirEntryBuf     = $8400
+DrACurDkNm      = $841E
+DrBCurDkNm      = $8430
+DrCCurDkNm      = $88DC
+DrDCurDkNm      = $88EE
+curDrive        = $8489
+diskOpenFlg     = $848A
+isGEOS          = $848B
+interleave      = $848C
+NUMDRV          = $848D
+driveType       = $848E
+turboFlags      = $8492
+curType         = $88C6
+ramBase         = $88C7
+dir2Head        = $8900
+curDevice       = $BA
+DRV_1541        = 1
+DRV_1571        = 2
+DRV_1581        = 3
+DRV_NATIVE      = 4
+DRV_RAM         = $80
+NO_BLOCKS       = 1
+INV_TRACK       = 2
+DEV_NOT_FOUND   = 13
+OFF_DISK_NAME   = 144
+OFF_OP_TR_SC    = 171
+OFF_GS_ID       = 173
+OFF_GS_DTYPE    = 189
+
+; Disk driver ($9000): vectors (the kernal jumps through them), then a
+; jump table applications call directly.
+_InitForIO      = $9000
+_DoneWithIO     = $9002
+_ExitTurbo      = $9004
+_PurgeTurbo     = $9006
+_EnterTurbo     = $9008
+_ChangeDiskDevice = $900A
+_NewDisk        = $900C
+_ReadBlock      = $900E
+_WriteBlock     = $9010
+_VerWriteBlock  = $9012
+_OpenDisk       = $9014
+_GetBlock       = $9016
+_PutBlock       = $9018
+_GetDirHead     = $901A
+_PutDirHead     = $901C
+_GetFreeDirBlk  = $901E
+_CalcBlksFree   = $9020
+_FreeBlock      = $9022
+_SetNextFree    = $9024
+_FindBAMBit     = $9026
+_NxtBlkAlloc    = $9028
+_BlkAlloc       = $902A
+_ChkDkGEOS      = $902C
+_SetGEOSDisk    = $902E
+Get1stDirEntry  = $9030
+GetNxtDirEntry  = $9033
+ReadLink        = $904B
