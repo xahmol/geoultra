@@ -48,8 +48,8 @@ overlaps GEOS 128's RAM. U2/U2+ only. Not in VICE (VICE has generic
 16/32 KB function ROMs): VICE tests use a generic 32 KB ROM plus an REU image.
 
 **Boot.** The cartridge is a boot ROM, not a runtime ROM: at cold boot it
-copies its whole content into the REU (planned: REU DMA straight from the
-ROM window, about 1 MB/s), switches itself off and starts the kernal from
+copies its whole content into the REU (REU DMA straight from the ROM
+window, verified on the U64 and in VICE 3.10), switches itself off and starts the kernal from
 the REU. After a reset it restarts, finds a valid signature in REU bank 1
 and restores the running system and the not yet written back drives from
 the REU (warm boot in under a second); only a power cut loses unsaved data.
@@ -122,9 +122,8 @@ Fixed system part: 31 banks; 225 banks (about 14 MB) remain for drives.
 - Mount: one UCI `LOAD_REU` of the image file to the drive's bank range;
   the mount table holds path, type, REU base, size and dirty state.
 - Dirty map: one bit per block in bank 1 (a 16 MB native drive needs 8 KB).
-- Write-back of changed runs only: seek in the file, then `SAVE_REU` that
-  range (whether `SAVE_REU` writes at the file pointer is still to be
-  verified on the hardware).
+- Write-back of changed runs only: open the image with attribute `$03`,
+  seek, then `SAVE_REU` that range (verified on the U64, see below).
 
 ## Native RAM drive and DNP
 
@@ -159,12 +158,40 @@ UCI).
 | 4 | C64 with an Ultimate II+: same `.crt`, without turbo and palette; test UCI unlock and REU on the U2+ |
 | 5 | GEOS 128 cartridge on a C128 with an Ultimate II+, 40/80 columns |
 
-## To verify on hardware
+## Verified on hardware
 
-1. REU DMA reads the cartridge ROM window (C64 Megabyter; C128 function ROM).
-2. The REU keeps its content across a reset.
-3. `SAVE_REU` after a seek writes at the file position.
-4. Maximum C128 cartridge size on a U2+; purpose of `$DF7E`.
+Smoke tests in `tests/smoke/` (`make smoke-vice`, `make smoke-u64`), run
+2026-10-28 on the Ultimate 64-II (firmware 3.15a) and in VICE 3.10:
+
+| Check | Result |
+| --- | --- |
+| REU DMA reads the Megabyter ROM window (banks 1-7 stashed from `$8000`, compared with the CPU's view) | Pass on the U64 at 1 MHz and at 64 MHz (manual turbo), and in VICE 3.10 |
+| The REU keeps its content across a reset | Pass: signature and boot counter survive `machine:reset`, and also starting another cartridge with `run_crt` |
+| The Megabyter cartridge autostarts again after a reset | Pass (the basis of reset recovery) |
+| `SAVE_REU` after a seek writes at the file position | Pass: 256 bytes written in place at `$1000` in a 64 KB file opened with attribute `$03` (read/write, existing), size unchanged |
+| `LOAD_REU` after a seek reads from the file position | Pass (the basis of the later track-cache mode) |
+
+Still to check: on the C128, REU DMA from the external function ROM
+(DMA reaches bank 0 RAM only, UCILIB manual) and the maximum C128
+cartridge size on a U2+, plus the purpose of `$DF7E`.
+
+## Resident ROM
+
+Keeping part of the cartridge mapped as resident ROM does not fit the
+GEOS memory map, so the cartridge stays a boot and overlay store:
+
+- `$8000-$9FFF` (the Megabyter window) holds the GEOS variables
+  (`$8000-$88FF`) and the disk driver (`$9000`); while the ROM is mapped
+  the CPU reads ROM there. `$A000-$BFFF` (a 16 KB window) is the screen
+  bitmap, which GEOS reads back (XOR drawing, `RecoverRectangle`); the
+  VIC-II would still show RAM, but the CPU would read ROM. Ultimax mode
+  removes most of the RAM.
+- Banking the ROM in briefly (interrupts off) for self-contained routines
+  that never touch `$8000-$9FFF` is possible, but gains nothing: cartridge
+  ROM runs at bus speed under turbo (1.5x against 55x for RAM, measured in
+  u64-bbcbasic), and the whole ROM is in the REU already, at DMA speed.
+- C128: the MMU maps the external function ROM only on request, so
+  occasional ROM calls are possible there; decided in phase 5.
 
 ## Still open
 

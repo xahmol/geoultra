@@ -53,7 +53,18 @@ contract"):
 - Turbo must not change jiffy-based timing (process timers, double-click).
 - Clean-room: no Berkeley assets either (BSW font, standard icons, deskTop).
 
-## Planned build and test (nothing exists yet)
+## Build and test
+
+Only the hardware smoke tests exist so far (`tests/smoke/`, results in
+DESIGN.md "Verified on hardware"): `make smoke` builds the Megabyter test
+cartridge (ca65/ld65, packed by `tools/mkcrt.py`) and an Oscar64 UCI test,
+`make smoke-vice` runs the cartridge in VICE 3.10, `make smoke-u64` runs
+both on the U64 from `.env` (`ULTIP1`), `make smoke-u64-restore` switches
+the REU and Command Interface off again. Oscar64 test code that hands
+buffers to REU DMA must use `volatile` buffers and `__noinline` REU
+wrappers (docs/OSCAR64_MANUAL.md), or stores get dropped.
+
+Planned:
 
 From FEASIBILITY.md, "Build chain" and "Testing": `make` builds the kernal,
 drivers, desktop and cartridge images with ca65/ld65 (one linker config per
