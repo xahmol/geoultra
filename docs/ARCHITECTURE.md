@@ -229,6 +229,16 @@ verify; one pass is enough for an REU image. The jump table addresses
 the file code calls are in `src/inc/kcalls.inc`, apart from `geos.inc`,
 because the disk driver's own routines carry those names.
 
+VLIR (`src/kernal/vlir.s`, `IOCODE`): while a file is open its index
+block is in `fileHeader`; the index block, the directory block and the
+entry's offset are kernal variables (in `DATA`, so a task snapshot keeps
+them). The BAM is read once before the first change (`fileWritten`);
+`UpdateRecordFile`/`CloseRecordFile` write index, entry (date, size) and
+BAM. As GEOS 2.0: `usedRecords` counts index entries up to the first
+0/0 pair, `PointRecord` returns the record's first track in Y, an
+emptied record is 0/$FF, `fileSize` is adjusted by the low byte of the
+block count only.
+
 ## Conformance harness
 
 `make conformance` (`tools/harness/harness.py`, VICE binary monitor client

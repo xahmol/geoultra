@@ -13,7 +13,7 @@
         .include "kcalls.inc"
 
         .export WriteFile, SaveFile, SetGDirEntry, BldGDirEntry, FreeFile
-        .export DeleteFile, FastDelFile, RenameFile
+        .export DeleteFile, FastDelFile, RenameFile, FreeChain, CopyDate
         .import FindFile
 
 OFF_FNAME       = 3
@@ -183,14 +183,20 @@ SetGDirEntry:
         sta (r5),y
         dey
         bpl @copy
-        ldy #23                 ; date and time: year, month, day, hour, minute
+        jsr CopyDate
+        jmp WriteBuff
+@end:   rts
+
+; CopyDate: date and time (year, month, day, hour, minute) into the
+; directory entry at r5.
+CopyDate:
+        ldy #23
 @date:  lda year - 23,y
         sta (r5),y
         iny
         cpy #28
         bne @date
-        jmp WriteBuff
-@end:   rts
+        rts
 
 ; BldGDirEntry: r9 = file header, r6 = its blocks (header, VLIR index,
 ; data), r2 = size in blocks. Builds the entry in dirEntryBuf (no date);
