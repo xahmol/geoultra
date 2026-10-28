@@ -3,7 +3,7 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .import IrqEntry, InterruptMain, MainLoop
+        .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DemoInit
         .import Rectangle, FrameRectangle, SetPattern
         .import pointerPic
         .export ColdStart
@@ -99,6 +99,10 @@ ColdStart:
         sta intTopVector
         lda #>InterruptMain
         sta intTopVector+1
+        lda #<DefMouseVector
+        sta mouseVector
+        lda #>DefMouseVector
+        sta mouseVector+1
 
         lda #ST_WR_FORE | ST_WR_BACK
         sta dispBufferOn
@@ -116,6 +120,7 @@ ColdStart:
         sta r4H
         jsr Rectangle
         jsr DrawBanner
+        jsr DemoInit
 
         lda #IRQ_LINE           ; raster IRQ once per frame
         sta vicRaster

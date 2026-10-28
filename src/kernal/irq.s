@@ -3,7 +3,8 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .export IrqEntry, NmiEntry, InterruptMain, MainLoop
+        .export IrqEntry, NmiEntry, InterruptMain, MainLoop, DefMouseVector
+        .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
 
         .segment "DATA"
 
@@ -57,13 +58,16 @@ CallBot:
         jmp (intBotVector)
 
 ; Jump table InterruptMain: the kernal's own per-frame work. Runs with
-; I/O banked in.
+; I/O banked in. The input driver reads the pots first, while port 1 is
+; still selected from the previous frame; the keyboard scan selects it
+; again at its end.
 InterruptMain:
         bit mouseOn
-        bpl @done
+        bpl @keys
         jsr UpdateMouse
         jsr PosPointer
-@done:  rts
+@keys:  jsr KeyScan
+        jmp ProcessTimers
 
 ; Position sprite 0 (the pointer) at mouseXPos/mouseYPos.
 PosPointer:
@@ -85,13 +89,70 @@ PosPointer:
         sta vicSpr0Y
         rts
 
-; Jump table MainLoop: calls appMain on every pass.
+; Jump table MainLoop: appMain, then input events, then processes.
 MainLoop:
         lda appMain
         ora appMain+1
-        beq MainLoop
+        beq @input
         jsr CallApp
+@input: jsr HandleInput
+        jsr RunProcesses
         jmp MainLoop
 
 CallApp:
         jmp (appMain)
+
+; Dispatch the events the interrupt level flagged in pressFlag.
+HandleInput:
+        lda pressFlag
+        and #INPUT_BIT
+        beq @mouse
+        lda #<~INPUT_BIT
+        jsr ClearPress
+        lda inputVector
+        ora inputVector+1
+        beq @mouse
+        jsr CallInput
+@mouse: lda pressFlag
+        and #MOUSE_BIT
+        beq @key
+        lda #<~MOUSE_BIT
+        jsr ClearPress
+        lda mouseVector
+        ora mouseVector+1
+        beq @key
+        jsr CallMouse
+@key:   lda pressFlag
+        and #KEYPRESS_BIT
+        beq @end
+        jsr GetNextChar
+        beq @end
+        sta keyData
+        lda keyVector
+        ora keyVector+1
+        beq @end
+        jmp (keyVector)
+@end:   rts
+
+; pressFlag &= A, safe against the IRQ setting other bits meanwhile.
+ClearPress:
+        php
+        sei
+        and pressFlag
+        sta pressFlag
+        plp
+        rts
+
+CallInput:
+        jmp (inputVector)
+CallMouse:
+        jmp (mouseVector)
+
+; Default mouseVector: menus and icons come later; a press or release
+; elsewhere goes to otherPressVec.
+DefMouseVector:
+        lda otherPressVec
+        ora otherPressVec+1
+        beq @end
+        jmp (otherPressVec)
+@end:   rts

@@ -124,7 +124,11 @@ DrvUpdate:
         lda pressFlag
         ora #INPUT_BIT
         sta pressFlag
-@fire:  lda cia1PortB                   ; left button = fire line, bit 4
+@fire:  lda #$FF                        ; no keyboard column driven, or
+        sta cia1PortA                   ; space (column 7, row 4) would
+        lda cia1PortB                   ; read as the button (bit 4)
+        ldx #PORT1_POTS
+        stx cia1PortA
         and #$10
         beq @same
         lda #$80

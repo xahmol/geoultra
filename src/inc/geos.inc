@@ -111,3 +111,30 @@ MENUON_BIT      = $40
 ICONSON_BIT     = $20
 SC_PIX_WIDTH    = 320
 SC_PIX_HEIGHT   = 200
+
+; Processes
+MAX_PROCESSES   = 20
+
+; Key codes (keyData)
+KEY_F1          = 1
+KEY_F2          = 2
+KEY_F3          = 3
+KEY_F4          = 4
+KEY_F5          = 5
+KEY_F6          = 6
+KEY_LEFT        = 8
+CR              = 13
+KEY_F7          = 14
+KEY_F8          = 15
+KEY_UP          = 16
+KEY_DOWN        = 17
+KEY_HOME        = 18
+KEY_CLEAR       = 19
+KEY_LARROW      = 20
+KEY_UPARROW     = 21
+KEY_STOP        = 22
+KEY_RUN         = 23
+KEY_INSERT      = 28
+KEY_DELETE      = 29
+KEY_RIGHT       = 30
+SHORTCUT        = $80
