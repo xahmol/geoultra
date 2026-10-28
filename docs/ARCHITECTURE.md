@@ -59,8 +59,8 @@ section 2). GeoUltra's own use of the system areas:
 | `$9000-$9D7F` | disk driver jump table and REU block driver (small), then the **overlay slot**: rarely used kernal code fetched from the REU on demand |
 | `$C000-$C0FF` | information block (`BootGEOS`, `bootName`, `version` = `$20`, `c128Flag`, `GU` signature, extension table pointer) |
 | `$C100-$C2D6` | GEOS 2.0 jump table, 157 entries |
-| `$C2D7-$CFFF` | kernal code |
-| `$D000-$DFFF` | RAM under I/O: kernal data and code that runs with `$01 = $30` |
+| `$C2D7-$CFFF` | kernal tables (RODATA) and variables (DATA) |
+| `$D000-$DFFF` | RAM under I/O: the system font and other data only read with `$01 = $30` |
 | `$E000-$FE7F` | kernal code |
 | `$FE80-$FFF9` | input driver (`MOUSE_BASE`) |
 | `$FFFA-$FFFF` | NMI, reset and IRQ vectors in RAM |
@@ -68,6 +68,23 @@ section 2). GeoUltra's own use of the system areas:
 VIC-II: bank 2 (`$8000-$BFFF`), colour matrix `$8C00`, bitmap `$A000`
 (`$D018 = $38`), sprite pictures from `$8A00` (sprite pointer `$28` for
 sprite 0, the mouse pointer).
+
+## System font
+
+`tools/fonts/system9.py` is GeoUltra's own 9-point design in a readable
+source form; `tools/mkfont.py` builds the GEOS font structure (header,
+index table, bitstream) into the kernal's IODATA segment. Its metrics
+(advance widths, height 9, baseline offset 6, set width 60, spacing column
+on the left) were measured on GEOS 2.0 with the harness so that layouts
+of existing applications stay the same. Text routines read the font with
+`$01 = $30`.
+
+Text behaviour of GEOS 2.0 found with the harness (and copied):
+characters overwrite their whole cell; the underline row holds only the
+line, over the cell minus its last column (the whole cell when bold),
+then reverse applies; LF moves down `curHeight + 1`, UPLINE up
+`curHeight`; a character whose top would be above line 0 is not drawn;
+with outline `GetRealSize` reports the baseline 2 lower.
 
 ## Run-time conventions
 

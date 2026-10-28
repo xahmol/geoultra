@@ -25,6 +25,8 @@ CA65    = ca65
 LD65    = ld65
 OSCAR64 = /home/xahmol/oscar64/bin/oscar64
 VICE    = $(HOME)/.local/opt/vice-3.10/bin/x64sc
+# Headless VICE 3.10 (no window, no sound) for unattended runs
+VICEHL  = $(HOME)/.local/opt/vice-3.10-headless/bin/x64sc
 PYTHON  = python3
 
 UCILIB  = lib/ultimate-uci-oscar64/include
@@ -44,7 +46,7 @@ KSRCS    = $(wildcard src/kernal/*.s)
 INPSRCS  = src/input/mouse1351.s
 INCS     = $(wildcard src/inc/*.inc)
 KOBJS    = $(patsubst src/kernal/%.s,$(KOBJ)/%.o,$(KSRCS)) \
-           $(KOBJ)/mouse1351.o $(KOBJ)/jumptab.o
+           $(KOBJ)/mouse1351.o $(KOBJ)/jumptab.o $(KOBJ)/sysfont.o
 VICEOPTS = -default +sound -cartcrt build/geoultra64.crt -reu -reusize 16384 \
            -mouse -controlport1device 3
 
@@ -59,6 +61,14 @@ $(KOBJ)/%.o: src/kernal/%.s $(INCS)
 $(KOBJ)/mouse1351.o: src/input/mouse1351.s $(INCS)
 	@mkdir -p $(KOBJ)
 	$(CA65) -I src/inc -o $@ $<
+
+$(GEN)/sysfont.s: tools/fonts/system9.py tools/mkfont.py
+	@mkdir -p $(GEN)
+	$(PYTHON) tools/mkfont.py $< $@ SystemFont
+
+$(KOBJ)/sysfont.o: $(GEN)/sysfont.s
+	@mkdir -p $(KOBJ)
+	$(CA65) -o $@ $<
 
 $(KOBJ)/jumptab.o: $(GEN)/jumptab.s
 	@mkdir -p $(KOBJ)
@@ -85,7 +95,7 @@ vice: build/geoultra64.crt
 	$(VICE) $(VICEOPTS) -moncommands build/kernal64.lbl
 
 vice-shot: build/geoultra64.crt
-	$(VICE) $(VICEOPTS) -warp -limitcycles 6000000 -exitscreenshot build/vice.png; true
+	$(VICEHL) $(VICEOPTS) -sounddev dummy -warp -limitcycles 6000000 -exitscreenshot build/vice.png; true
 
 conformance: build/geoultra64.crt
 	$(PYTHON) tools/harness/harness.py $(if $(CONF_REBUILD),--rebuild) tests/conformance/*.py
@@ -111,7 +121,7 @@ $(SMOKE)/guseek.prg: tests/smoke/guseek.c $(UCILIB)/ultimate_common_lib.c \
 	$(OSCAR64) -i=$(UCILIB) -tm=c64 -tf=prg -O2 -dNOFLOAT -n -o=$@ $<
 
 smoke-vice: $(SMOKE)/gusmoke.crt
-	$(VICE) -default -warp +sound -cartcrt $< -reu -reusize 16384 \
+	$(VICEHL) -default -sounddev dummy -warp +sound -cartcrt $< -reu -reusize 16384 \
 		-limitcycles 4000000 -exitscreenshot $(SMOKE)/vice.png; true
 
 check-deploy:

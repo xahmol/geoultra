@@ -100,8 +100,12 @@ the REU RAM-drive layer and the kernal can be tested in VICE (with a VICE REU).
 ## Test environment (from the GeoUTools work)
 
 - VICE 3.10 in `~/.local/opt/vice-3.10/bin` (`x64sc`, `x128`; built from
-  `~/vice-3.10`, needed for the Megabyter cartridge); VICE 3.8 stays in
-  `/usr/local/bin`: unattended GEOS boots with an AUTO_EXEC test program and `-limitcycles N -exitscreenshot` (`-exitscreenshotvicii` for
+  `~/vice-3.10`, needed for the Megabyter cartridge) for interactive use,
+  and a headless build (no window, no sound) in
+  `~/.local/opt/vice-3.10-headless/bin` (from `~/vice-3.10-headless`,
+  `--enable-headlessui`) for every unattended run: the harness, `vice-shot`,
+  `smoke-vice`. The user does not want VICE windows and sound popping up
+  during automated runs. VICE 3.8 stays in `/usr/local/bin`: unattended GEOS boots with an AUTO_EXEC test program and `-limitcycles N -exitscreenshot` (`-exitscreenshotvicii` for
   the 40-column screen in x128, `-40col`/`-80col`).
 - Ultimate 64-II at 192.168.1.148 (firmware 3.15a) through the c64bridge
   MCP server; screenshots with GeoUTools' `tests/e2e/shot.py` (VIC stream).

@@ -55,6 +55,13 @@ r15H    = $21
 
 ; Kernal zero page variables
 curPattern      = $22   ; word: pointer to the 8-byte fill pattern
+string          = $24   ; word
+baselineOffset  = $26
+curSetWidth     = $27   ; word
+curHeight       = $29
+curIndexTable   = $2A   ; word
+cardDataPntr    = $2C   ; word
+currentMode     = $2E
 dispBufferOn    = $2F
 mouseOn         = $30
 msePicPtr       = $31   ; word
@@ -75,6 +82,7 @@ keyVector       = $84A3
 inputVector     = $84A5
 mouseFaultVec   = $84A7
 otherPressVec   = $84A9
+StringFaultVec  = $84AB
 faultData       = $84B6
 mouseTop        = $84B8
 mouseBottom     = $84B9
@@ -138,3 +146,38 @@ KEY_INSERT      = 28
 KEY_DELETE      = 29
 KEY_RIGHT       = 30
 SHORTCUT        = $80
+
+; currentMode (text styles)
+SET_UNDERLINE   = $80
+SET_BOLD        = $40
+SET_REVERSE     = $20
+SET_ITALIC      = $10
+SET_OUTLINE     = $08
+SET_SUPERSCRIPT = $04
+SET_SUBSCRIPT   = $02
+SET_PLAINTEXT   = $00
+
+; Text escape codes (PutChar / PutString)
+BACKSPACE       = 8
+FORWARDSPACE    = 9
+LF              = 10
+HOME            = 11
+UPLINE          = 12
+ULINEON         = 14
+ULINEOFF        = 15
+ESC_GRAPHICS    = 16
+ESC_RULER       = 17
+REVON           = 18
+REVOFF          = 19
+GOTOX           = 20
+GOTOY           = 21
+GOTOXY          = 22
+NEWCARDSET      = 23
+BOLDON          = 24
+ITALICON        = 25
+OUTLINEON       = 26
+PLAINTEXT       = 27
+
+; PutDecimal format
+SET_LEFTJUST    = $80
+SET_SUPRESS     = $40

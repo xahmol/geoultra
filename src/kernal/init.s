@@ -5,7 +5,7 @@
 
         .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DemoInit
         .import Rectangle, FrameRectangle, SetPattern
-        .import pointerPic
+        .import pointerPic, UseSystemFont, PutString
         .export ColdStart
 
 DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
@@ -130,10 +130,36 @@ ColdStart:
         lda #$01
         sta vicIrqMask
         sta vicIrq
-        lda #RAM_ALL
+        lda #RAM_ALL            ; from here on the font under I/O is visible
         sta CPU_PORT
+        lda #0                  ; text: whole screen, plain style
+        sta windowTop
+        sta leftMargin
+        sta leftMargin+1
+        sta currentMode
+        lda #SC_PIX_HEIGHT - 1
+        sta windowBottom
+        lda #<(SC_PIX_WIDTH - 1)
+        sta rightMargin
+        lda #>(SC_PIX_WIDTH - 1)
+        sta rightMargin+1
+        jsr UseSystemFont
+        lda #<bannerText
+        sta r0L
+        lda #>bannerText
+        sta r0H
+        lda #<96
+        sta r11L
+        lda #>96
+        sta r11H
+        lda #96
+        sta r1H
+        jsr PutString
         cli
         jmp MainLoop
+
+bannerText:
+        .byte "GeoUltra ", BOLDON, "kernal", PLAINTEXT, " - ", ULINEON, "own font", ULINEOFF, ", 1.0", 0
 
 ; Milestone screen: a white framed box in the middle of the desktop.
 DrawBanner:
