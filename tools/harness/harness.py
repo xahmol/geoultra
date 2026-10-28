@@ -26,6 +26,8 @@ Case files define CASES, a list of dicts:
            set (A is then overwritten), e.g. "C", "NC", "" (both clear)
   noreturn the routine does not return before the events (DoDlgBox): the
            events start after a short wait instead of at its return
+  poke     {address: bytes} written by the trampoline after the clean-up
+           of event cases (e.g. keyVector, which the clean-up clears)
   mem      {address: bytes} extra memory writes
   pre      routines called (in order) before the r-register inputs are set
            and the routine runs, e.g. ["UseSystemFont"]
@@ -75,6 +77,7 @@ TRAMPOLINE = 0x0340
 # back to the kernal's RecoverRectangle, its processes replaced by one
 # frozen dummy.
 CLEAN_AT = 0x4F00
+KEY_STUB = 0x4FA0
 CLEAN_CODE = [0xA9, 0x00]                                    # lda #0
 for a in (0x849B, 0x849C, 0x849F, 0x84A0, 0x84A3, 0x84A4, 0x84A5, 0x84A6,
           0x84A9, 0x84AA, 0x84AB, 0x84AC, 0x84AD, 0x84AE):
@@ -210,6 +213,9 @@ class System:
             v.mem_set(0x4F7F, bytes([0x60]))
             v.mem_set(0x4F80, bytes(CLEAN_TABLE))
             code += [0x20, CLEAN_AT & 0xFF, CLEAN_AT >> 8]
+        for a, data in case.get("poke", {}).items():
+            for i, byte in enumerate(data):
+                code += [0xA9, byte, 0x8D, (a + i) & 0xFF, (a + i) >> 8]
         for pre in case.get("pre", []):
             a = table[pre]
             code += [0x20, a & 0xFF, a >> 8]
@@ -248,6 +254,9 @@ class System:
         else:
             v.wait_event(RESP_CHECKPOINT, timeout=30)
         for ev in case.get("events", []):
+            if "key" in ev:
+                self.key_event(ev)
+                continue
             v.resume()
             time.sleep(0.1)
             v.ping()                            # stop
@@ -282,6 +291,24 @@ class System:
                 a, size = rreg(item)
                 out[item] = v.mem_get(a, a + size - 1)
         return out
+
+    def key_event(self, ev):
+        """Deliver one key through keyVector from MainLoop: appMain is set
+        to a one-shot routine that clears appMain, sets keyData and calls
+        keyVector (both systems call appMain on every pass)."""
+        v = self.vice
+        v.ping()                                    # stopped
+        stub = KEY_STUB
+        code = [0xA9, 0x00, 0x8D, 0x9B, 0x84, 0x8D, 0x9C, 0x84,   # appMain = 0
+                0xAD, 0xA3, 0x84, 0x0D, 0xA4, 0x84, 0xF0, 0x08,   # keyVector set?
+                0xA9, ev["key"], 0x8D, 0x04, 0x85,               # keyData = key
+                0x6C, 0xA3, 0x84,                                # jmp (keyVector)
+                0x60]                                            # rts
+        v.mem_set(stub, bytes(code))
+        v.mem_set(0x849B, bytes([stub & 0xFF, stub >> 8]))
+        v.resume()
+        time.sleep(ev.get("wait", 0.2))
+        v.ping()
 
     def close(self):
         self.vice.quit()

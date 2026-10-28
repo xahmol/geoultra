@@ -7,8 +7,7 @@
 ; only. Own code and data layout; the system icons are GeoUltra's own
 ; (tools/mkicons.py). Checked with tests/conformance/dialog.py.
 ;
-; Not yet: DBGETSTRING (needs GetString) and DBGETFILES (the file
-; system); their parameters are skipped.
+; Not yet: DBGETFILES (the file system); its parameters are skipped.
 
         .include "geos.inc"
         .include "hw.inc"
@@ -16,7 +15,7 @@
         .export DoDlgBox, RstrFrmDialogue
         .import DoIcons, StartMouseMode, UseSystemFont, PutString
         .import SetPattern, Rectangle, FrameRectangle, RecoverRectangle
-        .import InterruptMain, MainLoop, GraphicsString
+        .import InterruptMain, MainLoop, GraphicsString, GetString
         .import SysIconOK, SysIconCANCEL, SysIconYES, SysIconNO
         .import SysIconOPEN, SysIconDISK
         .import __KSTATE_RUN__, __KSTATE_SIZE__
@@ -420,10 +419,32 @@ TextPos:
         iny
         rts
 
-; DBGETSTRING: .byte x, y, register, maxChars (GetString: not yet).
+; DBGETSTRING: .byte x, y (top of the characters), register holding the
+; buffer pointer, maxChars. RETURN ends the dialog with DBGETSTRING.
 DbGetString:
-        lda #4
-        bne Skip
+        jsr TextPos
+        lda (DBoxDesc),y
+        tax
+        lda $00,x
+        sta r0L
+        lda $01,x
+        sta r0H
+        iny
+        lda (DBoxDesc),y
+        sta r2L
+        iny
+        sty dbIndex
+        lda #<DbStringDone
+        sta keyVector
+        lda #>DbStringDone
+        sta keyVector+1
+        lda #0
+        sta r1L
+        jmp GetString
+DbStringDone:
+        lda #DBGETSTRING
+        sta sysDBData
+        jmp RstrFrmDialogue
 
 ; DBGRPHSTR: .word graphics string, drawn now.
 DbGrphStr:

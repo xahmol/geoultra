@@ -8,7 +8,7 @@
 
         .export LoadCharSet, UseSystemFont, GetCharWidth, GetRealSize
         .export PutChar, SmallPutChar, PutString, i_PutString, PutDecimal
-        .export StringWidth
+        .export StringWidth, DeleteChar
         .import SystemFont, GetScanLine, GraphicsString
 
         .segment "DATA"
@@ -213,6 +213,10 @@ DrawChar:
         iny
         lda (curIndexTable),y
         sta r9H
+
+; Draw the cell (glyphWidth bits of the glyph at r9, cellWidth columns)
+; row by row in currentMode.
+DrawCell:
         lda r1H                 ; top above the screen: nothing is drawn
         cmp baselineOffset
         bcs @top
@@ -411,7 +415,10 @@ DrawRow:
 ; Escape codes below 32. Multi-byte codes read their parameters through
 ; r0 (PutString keeps r0 on the current byte).
 Escape:
-        cmp #CR
+        cmp #BACKSPACE
+        bne @notBs
+        jmp EraseLast
+@notBs: cmp #CR
         beq @cr
         cmp #LF
         beq @lf
@@ -664,3 +671,39 @@ StringWidth:
         sta swIndex
         jmp @loop
 @done:  rts
+
+; DeleteChar (GeoUltra, for GetString): A = the character before r11 in
+; currentMode; moves r11 back by its width and clears its cell.
+DeleteChar:
+        ldx currentMode
+        jsr GetRealSize
+        sty lastWidth
+
+; BACKSPACE: move r11 back by the last character's width and clear that
+; cell (in the font's height, per dispBufferOn and the window).
+EraseLast:
+        lda r11L
+        sec
+        sbc lastWidth
+        sta r11L
+        bcs @x
+        dec r11H
+@x:     lda r11L
+        pha
+        lda r11H
+        pha
+        lda currentMode
+        pha
+        lda #SET_PLAINTEXT      ; an empty plain cell of lastWidth columns
+        sta currentMode
+        sta glyphWidth
+        lda lastWidth
+        sta cellWidth
+        jsr DrawCell
+        pla
+        sta currentMode
+        pla
+        sta r11H
+        pla
+        sta r11L
+        rts

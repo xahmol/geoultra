@@ -126,7 +126,17 @@ the collected icons and runs MainLoop; `RstrFrmDialogue` restores the
 state, recovers the area and returns from `DoDlgBox` with r0L =
 `sysDBData`. The system icons OK..DISK are GeoUltra's own
 (`tools/mkicons.py`, 48 x 16, label centred by measured width). Not yet:
-`DBGETSTRING` (needs `GetString`) and `DBGETFILES` (the file system).
+`DBGETFILES` (the file system).
+
+## Text input
+
+As GEOS 2.0 (`src/kernal/getstring.s`): `GetString` prints the default
+text, installs its own key handler (the caller's `keyVector` becomes the
+routine called after RETURN with X = length) and a margin fault routine,
+and turns on the text prompt: sprite 1, a one-pixel line of font height
++ 1 rows, blinking every 60 frames via `alphaFlag` at interrupt level.
+DEL, backspace, INSERT and cursor right delete (the cell is cleared by
+`PutChar`'s BACKSPACE); control keys and shortcuts are ignored.
 
 ## Drawing details found with the harness
 
@@ -185,6 +195,10 @@ automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
 - **Behaviour reference:** where HG2G is not precise enough (menus), the
   reassembled kernal (mist64/geos) is read for behaviour only; such code
   carries a credit comment, and the harness checks the result.
+- **Key events** (`{"key": code}`): the harness sets `appMain` to a
+  one-shot routine that clears it, sets `keyData` and calls `keyVector`,
+  so the key arrives exactly as from MainLoop on both systems. `poke`
+  writes memory after the clean-up (which clears the vectors).
 - `--show NAME --area x0,y0,x1,y1 [--systems geos]` prints both screens
   as ASCII art.
 

@@ -5,7 +5,7 @@
 
         .export IrqEntry, NmiEntry, InterruptMain, MainLoop, frameCount
         .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
-        .import MenuTick, CheckMousePos, IconTick
+        .import MenuTick, CheckMousePos, IconTick, PromptTick
 
         .segment "DATA"
 
@@ -75,6 +75,7 @@ InterruptMain:
         jsr CheckMousePos
         jsr PosPointer
 @keys:  jsr KeyScan
+        jsr PromptTick
         jmp ProcessTimers
 
 ; Position sprite 0 (the pointer) at mouseXPos/mouseYPos.
