@@ -42,7 +42,7 @@ dir3Head        = $9C80         ; third BAM block (1581), end of the driver
 ; $9000: vectors the kernal's jump table entries go through
         .word InitForIO, DoneWithIO, NoTurbo, NoTurbo, NoTurbo
         .word ChangeDiskDevice, NewDisk, ReadBlock, WriteBlock, VerWriteBlock
-        .word OpenDisk, ReadBlock, WriteBlock, GetDirHead, PutDirHead
+        .word OpenDisk, ReadBlock, WriteBlock, DrvGetDirHead, DrvPutDirHead
         .word GetFreeDirBlk, CalcBlksFree, FreeBlock, SetNextFree
         .word FindBAMBit, NxtBlkAlloc, BlkAlloc, ChkDkGEOS, SetGEOSDisk
 
@@ -51,8 +51,8 @@ dir3Head        = $9C80         ; third BAM block (1581), end of the driver
         jmp NextDirEntry
         jmp GetBorder
         jmp AddDirBlock
-        jmp ReadBuff
-        jmp WriteBuff
+        jmp DrvReadBuff
+        jmp DrvWriteBuff
         jsr Trap                ; SendTSBytes (serial drives only)
         jsr Trap                ; CheckErrors (serial drives only)
         jmp AllocateBlock
@@ -210,10 +210,10 @@ VerWriteBlock:
         ldx #WR_VER_ERR
         bne BlkEnd
 
-ReadBuff:
+DrvReadBuff:
         jsr BufPtr
         jmp ReadBlock
-WriteBuff:
+DrvWriteBuff:
         jsr BufPtr
         jmp WriteBlock
 BufPtr: lda #<diskBlkBuf
@@ -454,11 +454,11 @@ Stash:  ldy #REU_STASH
 ; GetDirHead / PutDirHead: the directory header to curDirHead and, per
 ; type, the further BAM blocks (dir2Head, dir3Head). Returns X = error,
 ; r4 = curDirHead. Destroys A, Y, r1.
-GetDirHead:
+DrvGetDirHead:
         lda #<ReadBlock
         ldy #>ReadBlock
         bne DirHead
-PutDirHead:
+DrvPutDirHead:
         lda #<WriteBlock
         ldy #>WriteBlock
 DirHead:
@@ -514,7 +514,7 @@ tNative:
 ; OpenDisk: header in, isGEOS set, disk name to DrXCurDkNm. Returns X =
 ; error, r5 = the name. Destroys A, Y, r0-r4.
 OpenDisk:
-        jsr GetDirHead
+        jsr DrvGetDirHead
         txa
         bne @end
         lda #<curDirHead
@@ -860,7 +860,7 @@ GetFreeDirBlk:
         sta r1L
         lda #1
         sta r1H
-@read:  jsr ReadBuff
+@read:  jsr DrvReadBuff
 @got:   txa
         bne @end
         dec r6L
@@ -920,7 +920,7 @@ AddDirBlock:
         sta diskBlkBuf
         lda r3H
         sta diskBlkBuf+1
-        jsr WriteBuff
+        jsr DrvWriteBuff
         txa
         bne @end
         lda r3L
@@ -943,13 +943,13 @@ ClearAndWrite:
         bne @clear
         dey
         sty diskBlkBuf+1
-        jmp WriteBuff
+        jmp DrvWriteBuff
 
 ; SetGEOSDisk: make the disk a GEOS disk: a border block (from track 19,
 ; else from track 1) and the signature in the header. X = 0 or
 ; INSUFF_SPACE. Destroys A, Y, r0L, r1, r4, r5.
 SetGEOSDisk:
-        jsr GetDirHead
+        jsr DrvGetDirHead
         txa
         bne @end
         lda #<curDirHead
@@ -990,7 +990,7 @@ SetGEOSDisk:
         sta curDirHead + OFF_GS_ID,y
         dey
         bpl @sig
-        jmp PutDirHead
+        jmp DrvPutDirHead
 @end:   rts
 
 ; --- Directory entries ---------------------------------------------------
@@ -1015,7 +1015,7 @@ FirstDirEntry:
 @read:  lda #0
         sta borderFlag
 EntryBlock:
-        jsr ReadBuff
+        jsr DrvReadBuff
         lda #<(diskBlkBuf + FRST_FILE_ENTRY)
         sta r5L
         lda #>(diskBlkBuf + FRST_FILE_ENTRY)
@@ -1064,7 +1064,7 @@ NextDirEntry:
 ; GetBorder: r1 = the GEOS border block; Y = $FF on a non-GEOS disk.
 ; Returns X = error. Destroys A, r4, r5.
 GetBorder:
-        jsr GetDirHead
+        jsr DrvGetDirHead
         txa
         bne @end
         lda #<curDirHead

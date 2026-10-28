@@ -317,3 +317,17 @@ _SetGEOSDisk    = $902E
 Get1stDirEntry  = $9030
 GetNxtDirEntry  = $9033
 ReadLink        = $904B
+
+; Disk routines the kernal calls (jump table entries through the driver)
+GetBlock        = $C1E4
+PutBlock        = $C1E7
+GetDirHead      = $C247
+PutDirHead      = $C24A
+ReadBuff        = $903C
+WriteBuff       = $903F
+FILE_NOT_FOUND  = 5
+BFR_OVERFLOW    = 11
+OFF_GHDR_PTR    = 19
+OFF_GFILE_TYPE  = 22
+O_GHST_ADDR     = $47
+O_GHFNAME       = $4D

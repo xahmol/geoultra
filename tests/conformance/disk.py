@@ -58,7 +58,7 @@ CASES = [
     dict(name="ReadLink 18/2", routine="ReadLink", r=blk(18, 2), mem={BUF: [0] * 256},
          pre=["EnterTurbo", "InitForIO"], after=[0x20, 0x5F, 0xC2],
          compare=["X", "mem:$4000-$4001"]),
-    dict(name="PutBlock and GetBlock back", routine="PutBlock", r=blk(35, 15),
+    dict(name="PutBlock and GetBlock back", writes=True, routine="PutBlock", r=blk(35, 15),
          mem={BUF: [(i * 7 + 3) & 0xFF for i in range(256)], BUF2: [0] * 256},
          after=[0x8E, RES & 0xFF, RES >> 8,                       # stx RES
                 0xA9, BUF2 & 0xFF, 0x85, 0x0A, 0xA9, BUF2 >> 8, 0x85, 0x0B,
@@ -118,11 +118,11 @@ CASES += [
         ["X", "r2", "r3", HEAD, "mem:$4000-$403F"], mem={BUF: [0xEE] * 64}),
     bam("BlkAlloc more than the disk", "BlkAlloc", {"r2": 0x7F00, "r6": BUF},
         ["X", HEAD]),
-    # These write to the disk, which GEOS 2.0 keeps for the rest of the run
-    # (GeoUltra's REU is restored per case): last, and only one that adds
-    # directory blocks (the oracle disk's directory pages are all full).
-    dict(name="GetFreeDirBlk adds a block", routine="GetFreeDirBlk", pre=["GetDirHead"],
+    # These write to the disk (writes=True: run after all other cases);
+    # only one adds directory blocks (the oracle disk's directory pages are
+    # all full), in this order.
+    dict(name="GetFreeDirBlk adds a block", writes=True, routine="GetFreeDirBlk", pre=["GetDirHead"],
          r={"r10L": 4}, compare=["X", "Y", "r1", "r10L", "mem:$8000-$80FF", HEAD]),
-    dict(name="SetGEOSDisk", routine="SetGEOSDisk",
+    dict(name="SetGEOSDisk", writes=True, routine="SetGEOSDisk",
          compare=["X", "r1", "mem:$8000-$80FF", HEAD]),
 ]

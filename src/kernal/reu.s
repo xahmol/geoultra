@@ -3,23 +3,26 @@
 ; with tests/conformance/misc.py.
 ;
 ; Applications see ramExpSize banks (the legacy view, docs/DESIGN.md);
-; their bank n is physical REU bank LEGACY_BASE + n, so they can never
-; reach the system banks, drives or task slots. Their bank 0 is also
-; MoveData's DMA scratch area, as in GEOS 2.0.
+; their bank n is physical REU bank legacyBase + n, the current task's own
+; area, so they never reach the system banks, drives, task slots or other
+; tasks' data. Their bank 0 is also MoveData's DMA scratch area, as in
+; GEOS 2.0.
 
         .include "geos.inc"
         .include "hw.inc"
 
         .export DoRAMOp, StashRAM, FetchRAM, SwapRAM, VerifyRAM
-        .export MoveData, i_MoveData
+        .export MoveData, i_MoveData, legacyBase
         .import DoInlineReturn
 
-LEGACY_BASE     = 248           ; physical bank of the applications' bank 0
+LEGACY_FIRST    = 192           ; task 0's area; task n at 192 + 8n
 returnAddress   = $3D
 
         .segment "DATA"
 
 port:   .byte 0
+legacyBase:                     ; the current task's legacy REU area
+        .byte LEGACY_FIRST
 mdCount:.res 2
 
         .segment "CODE"
@@ -62,7 +65,7 @@ DoRAMOp:
         sta reuAddr+1
         lda r3L
         clc
-        adc #LEGACY_BASE
+        adc legacyBase
         sta reuAddr+2
         lda r2L
         sta reuLen

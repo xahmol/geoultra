@@ -25,11 +25,13 @@ background analysis.
 | Home folder | `GEOULTRA` folder for settings, mount list, backups and task state, searched on `/Usb0`, `/Usb1`, `/SD` in that order (first found wins; created on the first device present) |
 | Mount dialogue | A file browser on the Ultimate file system (UCI directory commands) mounts an image into drive A-D, unmounts (with write-back) and creates new images. Reachable from the new desktop, from inside any application as a desk accessory (`geoMount`, so every application's GEOS menu offers it) and by a hot key checked in the IRQ like the task switcher. A mount on the drive an application is using behaves like a disk change on real GEOS: the application sees the new disk at its next `OpenDisk`. Formats: D64 (35 and 40 tracks), D71, D81, DNP; G64 (GCR) is decoded to blocks at mount time (read-only first; writing back would need re-encoding) |
 | Directories | Native (DNP) drives: subdirectories; 1581 images: partitions (CBM DOS "sub-directories"), entered, created and deleted as folders. Each drive has a current directory; `OpenDisk`, `GetDirHead`, the BAM and directory routines work on it, so existing applications see that directory as a whole disk (the MegaPatch3/GDOS64 model, own code). Changing directory: the new desktop, the file dialogs and new applications through the extended jump table |
-| Desktop | New, own design, Workbench style: drive icons (A-D, plus printer, trash and the Ultimate file system) on the desktop background; double-click opens a drive or folder in its own movable window; several windows at once, files dragged between them. Views per window: icons (from the GEOS file headers), small icons, list with details (name, type, size, date; sortable). Stays a normal GEOS application towards the kernal (`EnterDeskTop` starts it) |
+| Desktop | New, own design, Workbench style: drive icons (all four drives A-D always, plus printer, trash and the Ultimate file system) on the desktop background, every drive usable at once (no drive swapping as in GEOS 2.0's deskTop); double-click opens a drive or folder in its own movable window; several windows at once, files dragged between them. Views per window: icons (from the GEOS file headers), small icons, list with details (name, type, size, date; sortable). Stays a normal GEOS application towards the kernal (`EnterDeskTop` starts it) |
+| Printing | Native support for the Ultimate's virtual printer (the IEC printer emulation, device 4, rendered to PNG on the Ultimate file system): an own GeoUltra driver in Epson FX-80 mode, default when the virtual printer is enabled; the print spooler in the REU feeds every driver. Print to file in a print folder in GEOULTRA: PDF with one 1-bit page image per page (own PDF writer in the driver), and PostScript capture (the stream of LaserWriter-type drivers, so geoWrite/geoPublish text keeps outline fonts) as `.ps`. Network push of finished jobs (firmware 3.15 network commands): HTTP upload to a GeoUltra receiver script on the PC (Python, in this repo) by default, which stores the jobs and runs `ps2pdf` on PostScript ones (real-text PDFs), or FTP upload to any server as the alternative; address, port and method in the settings. Real text directly in a C64-made PDF is not planned (the driver only sees pixel bands; PostScript to PDF needs an interpreter) |
 | Boot mounts | Restore the last session from the mount list (with its write-back state), plus the read-only system drive |
 | System font | New 9-point design with the BSW metrics (height, baseline, similar widths), so old applications' dialogs and menus lay out correctly |
 | Input driver | 1351 mouse in port 1 in the ROM (also what the U64's USB mouse emulation presents); other drivers load as files |
-| Task switcher | Hot key checked in the IRQ (for example C= + RUN/STOP) opens a task list; also a desktop menu entry |
+| Task switcher | Hot key checked in the IRQ (for example C= + RUN/STOP) opens a task list; also a desktop menu entry. A switch saves the whole 64 KB of the task to its REU bank (about 65 ms each way at 1 MHz) plus its VIC, SID and CIA registers, and only at the top of MainLoop (the IRQ just sets a flag), never inside a disk call. Before leaving a task with a changed open file (`fileWritten`), the file is committed as `UpdateRecordFile` does and stays locked for the other tasks (open, delete, rename fail with a clear message) until its task closes it; on return the task's current drive's BAM is read again. Each task has its own legacy REU area. Same approach as MegaPatch3's TaskManager (behaviour idea only) |
+| Settings | `GeoUltra Settings`: an application with index-card pages (GDOS64 style), also a desk accessory and a desktop menu entry. Pages: drives (mount list, write-back, backups), memory (legacy REU size, task slots), Ultimate (turbo, REU, clock/NTP), input, printing (virtual printer, print to file, network push), desktop (colours, palette, view defaults), system (serial number, hot keys, boot options). One readable INI-style file in GEOULTRA (`[section]`, `key=value`), editable on a PC too; applied at boot and when saved |
 | Real IEC drives | End state: own turbo disk drivers per drive type (1541, 1581, 1571, then CMD FD/HD), clean-room, turbo off around every transfer. Route: first an import/export tool in the desktop (whole disk to an REU image drive and back, any CBM-DOS drive, phase 3); then a slow universal IEC driver (standard serial protocol, also the base for drive detection and turbo code upload, and the fallback for SD2IEC, Pi1541 and drives without a turbo driver); then the turbo drivers, one drive type at a time (phase 6). Drivers live in the `$9000` area (the C64 Kernal ROM hides `$E000` while it is mapped) and may use zero page `$90-$9F` |
 | Boot splash | Shown by the boot ROM during a cold boot only (skipped on reset recovery), no artificial delay: light-blue "U" logo with dithered shadow, desktop window with pointer, folder/floppy/printer icons, "GeoUltra", tagline "Graphical desktop for the Ultimate", and a narrow black band (cell rows 22-24) with a compact redraw of the idreamtin8bits (idi8b) logo on the left (64 x 20, every bar of the original as a 1-pixel bar, each letter in its own colour cells) and the version line and boot status line stacked to its right (light red for errors such as no REU or no Command Interface). Generated by `tools/splash/mksplash.py` (320 x 200 hires bitmap and colour matrix) |
 | Colours | The desktop's dark grey on light grey stays the base; subtle colour accents in the idi8b logo colours (light blue, purple, light red; light green and cyan only on dark backgrounds), also in the desktop itself |
@@ -113,14 +115,15 @@ CPU Speed=64
 | 1 | System: bank allocation table, mount table, dirty bitmaps, config, boot signature |
 | 2-17 | ROM mirror (1 MB): kernal, all disk drivers resident, desktop, and a read-only system drive with tools, fonts and drivers as GEOS files |
 | 18 | Desk accessory swap |
-| 19-26 | Task slots, one bank each: `$0400-$7FFF`, `$8000-$88FF`, zero page, screen and colour (count configurable) |
+| 19-26 | Task slots, one bank each: the whole 64 KB RAM of a suspended task (its chip registers in bank 1); count configurable |
 | 27-28 | Print spooler |
 | 29-30 | Clipboard (text scrap, photo scrap) |
-| 31-247 | Drives, handed out in 64 KB units through the allocation table |
-| 248-255 | Applications' legacy REU (their banks 0-7 as `ramExpSize` = 8 shows them; bank 0 is also MoveData's DMA scratch). `DoRAMOp` translates their bank n to physical bank 248 + n, so applications never reach system banks, drives or task slots |
+| 31-191 | Drives, handed out in 64 KB units through the allocation table |
+| 192-255 | Applications' legacy REU, one area of 8 banks per task slot (task n: banks 192 + 8n to 199 + 8n; their banks 0-7 as `ramExpSize` = 8 shows them; bank 0 is also MoveData's DMA scratch). `DoRAMOp` translates bank n to the current task's area, so applications never reach system banks, drives, task slots or each other's data |
 
-Fixed system part: 31 banks at the bottom and 8 at the top; 217 banks
-(about 13.6 MB) remain for drives.
+Fixed system part: 31 banks at the bottom and 64 at the top; 161 banks
+(about 10 MB) remain for drives. Fewer task slots or a smaller legacy size
+per task (settings) give the rest back to the drives.
 
 ## Drives A-D
 
@@ -140,7 +143,8 @@ CMD native format: up to 255 tracks of 256 blocks; one track is exactly
 64 KB, so track n = REU bank `base + n - 1` and the drive in the REU is
 byte for byte a `.dnp` file. Import = one `LOAD_REU` (track count = file
 size / 65536), export = one `SAVE_REU`, new = format N tracks in the REU.
-Largest drive: 217 tracks (about 13.6 MB) with nothing else mounted; a full
+Largest drive: 161 tracks (about 10 MB) with nothing else mounted and the
+default task settings; a full
 255-track DNP needs the later track-cache mode. BAM, allocation and
 directory handling are disk driver routines in GEOS 2.0, so native support
 lives in the driver; subdirectories and 1581 partitions follow the
@@ -164,7 +168,7 @@ UCI).
 | --- | --- |
 | 1 | Boot ROM with `.cfg` start-up check, REU manager, REU drive driver, core kernal (memory, math, graphics, processes/IRQ, input driver), turbo control, conformance harness against GEOS 2.0 in VICE |
 | 2 | Text and fonts, menus, icons, dialogs, file system up to VLIR: geoWrite and geoPaint run |
-| 3 | Desktop and tools, swapping (tasks, spooler, clipboard), clock, palette |
+| 3 | Desktop and tools (settings, mount dialogue), swapping (tasks, spooler, clipboard), printing (virtual printer, PDF, PostScript, network push and the PC receiver), clock, palette |
 | 4 | C64 with an Ultimate II+: same `.crt`, without turbo and palette; test UCI unlock and REU on the U2+ |
 | 5 | GEOS 128 cartridge on a C128 with an Ultimate II+, 40/80 columns |
 | 6 | Real IEC drives: slow universal driver, then turbo drivers (1541, 1581, 1571, CMD FD/HD) |

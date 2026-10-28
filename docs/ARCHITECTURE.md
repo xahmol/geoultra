@@ -207,6 +207,18 @@ applications call `$9030-$904D` directly.
   `Trap`), native subdirectories and 1581 partitions (DESIGN.md,
   "Directories"), 40-track D64s.
 
+## Files
+
+`src/kernal/files.s` (in `IOCODE`, `$01 = $30`) reads files through the
+jump table's `GetBlock`, which does its own turbo and I/O set-up per
+block: kernal code at `$D000-$FFFF` cannot run between `InitForIO` and
+`DoneWithIO`, because the C64 Kernal ROM is mapped then. GEOS 2.0 wraps a
+whole `ReadFile` in one `InitForIO`; the result is the same, only real
+IEC drivers (phase 6) will pay a little per block. Reading: `FindFile`,
+`ReadFile` (track/sector table in `fileTrScTab` from offset 2, buffer
+overflow leaves the block in `diskBlkBuf`), `ReadByte`, `FollowChain`,
+`GetFHdrInfo`, `FindFTypes` (permanent-name filter through the header).
+
 ## Conformance harness
 
 `make conformance` (`tools/harness/harness.py`, VICE binary monitor client

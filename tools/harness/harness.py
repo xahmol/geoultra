@@ -36,6 +36,8 @@ Case files define CASES, a list of dicts:
            events, in order: {"x": .., "y": .., "button": "press" |
            "release" | None, "wait": seconds (default 0.4)}; a press or
            release sets mouseData and MOUSE_BIT, a move sets INPUT_BIT
+  writes   True when the case writes to the disk: such cases run after
+           all others (GEOS 2.0's disk copy keeps the changes)
   compare  list of: "fore", "back" (screen buffers), "A", "X", "Y",
            r-register names (r0..r15, r0L..r15H), "mem:$ADDR-$ADDR",
            "io:$ADDR-$ADDR" (I/O, e.g. VIC-II registers)
@@ -383,7 +385,9 @@ def load_cases(paths):
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         cases += mod.CASES
-    return cases
+    # Cases that write to the disk run last: GEOS 2.0's disk copy keeps
+    # their changes for the rest of the run (GeoUltra's REU is restored).
+    return sorted(cases, key=lambda c: bool(c.get("writes")))
 
 
 def main():
