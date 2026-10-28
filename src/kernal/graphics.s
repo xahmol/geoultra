@@ -1,7 +1,7 @@
 ; Graphics primitives: GetScanLine, SetPattern, HorizontalLine,
 ; InvertLine, RecoverLine, VerticalLine, Rectangle, FrameRectangle,
-; InvertRectangle, RecoverRectangle, ImprintRectangle and the inline
-; i_ variants. Written from the HG2G2022 descriptions (parameters, Uses,
+; InvertRectangle, RecoverRectangle, ImprintRectangle, BitmapUp and the
+; inline i_ variants. Written from the HG2G2022 descriptions (parameters, Uses,
 ; Destroys); checked against GEOS 2.0 with the conformance harness.
 
         .include "geos.inc"
@@ -10,7 +10,7 @@
         .export Rectangle, FrameRectangle
         .export InvertLine, RecoverLine, InvertRectangle, RecoverRectangle
         .export ImprintRectangle, i_Rectangle, i_FrameRectangle
-        .export i_RecoverRectangle, i_ImprintRectangle
+        .export i_RecoverRectangle, i_ImprintRectangle, BitmapUp, i_BitmapUp
         .import patterns
 
         .segment "DATA"
@@ -434,8 +434,13 @@ i_FrameRectangle:
         jmp InlineReturn
 
 ; Read the six rectangle bytes after the caller's jsr into r2-r4.
-; inlinePtr = address of the last byte of that jsr.
 InlineRect:
+        ldx #r2
+        bne InlineArgs
+
+; Read the six bytes after the caller's jsr into zero page from X on.
+; inlinePtr (and r5) = address of the last byte of that jsr.
+InlineArgs:
         pla                     ; our own return address
         sta inlineSelf
         pla
@@ -448,7 +453,8 @@ InlineRect:
         sta r5H
         ldy #1
 @copy:  lda (r5),y
-        sta r2-1,y
+        sta $00,x
+        inx
         iny
         cpy #7
         bne @copy
@@ -478,3 +484,160 @@ InlineReturn:
 inlineSelf:     .res 2
 inlinePtr:      .res 2
 inlineLen:      .res 1
+
+; BitmapUp: r0 = compacted bitmap, r1L = x in cards, r1H = y, r2L =
+; width in cards, r2H = height in lines; drawn per dispBufferOn.
+; Destroys A, X, Y, r0-r9L.
+;
+; Compaction (HG2G2022, "GEOS Compacted Bitmap Format"): COUNT 1-127
+; repeats the next byte COUNT times, 129-219 copies the next COUNT-128
+; bytes, 221-255 repeats the next COUNT-220 bytes of packets BIGCOUNT
+; times (the byte after COUNT). The data is one stream over all lines.
+BitmapUp:
+        lda #0
+        sta bmCount
+        sta bmBig
+@line:  ldx r1H
+        jsr GetScanLine
+        lda r1L                 ; r7/r8 = r5/r6 + x * 8
+        sta r7L
+        lda #0
+        asl r7L
+        rol
+        asl r7L
+        rol
+        asl r7L
+        rol
+        sta r7H
+        clc
+        lda r5L
+        adc r7L
+        sta r8L
+        lda r5H
+        adc r7H
+        sta r8H
+        clc
+        lda r6L
+        adc r7L
+        sta r7L
+        lda r6H
+        adc r7H
+        sta r7H
+        lda r2L
+        sta r9L
+@byte:  jsr BitmapByte
+        ldy #0
+        sta (r8),y
+        sta (r7),y
+        clc
+        lda r8L
+        adc #8
+        sta r8L
+        bcc @b
+        inc r8H
+@b:     clc
+        lda r7L
+        adc #8
+        sta r7L
+        bcc @next
+        inc r7H
+@next:  dec r9L
+        bne @byte
+        inc r1H
+        dec r2H
+        bne @line
+        rts
+
+; Next byte of the compacted stream at r0.
+BitmapByte:
+        lda bmCount             ; inside a repeat or unique packet
+        beq @packet
+        dec bmCount
+        lda bmRepeat
+        bmi @unique
+        lda bmValue
+        rts
+@unique:
+        jmp StreamByte
+@packet:
+        lda bmBig               ; end of a bigcount group: again or done
+        beq @header
+        lda r0L
+        cmp bmBigEnd
+        bne @header
+        lda r0H
+        cmp bmBigEnd+1
+        bne @header
+        dec bmBigLeft
+        beq @bigDone
+        lda bmBigStart
+        sta r0L
+        lda bmBigStart+1
+        sta r0H
+        jmp @header
+@bigDone:
+        lda #0
+        sta bmBig
+@header:
+        jsr StreamByte
+        cmp #128
+        bcc @repeat
+        cmp #220
+        bcc @uniq
+        sec                     ; bigcount: COUNT-220 bytes, BIGCOUNT times
+        sbc #220
+        pha
+        jsr StreamByte
+        sta bmBigLeft
+        pla
+        clc
+        adc r0L
+        sta bmBigEnd
+        lda r0H
+        adc #0
+        sta bmBigEnd+1
+        lda r0L
+        sta bmBigStart
+        lda r0H
+        sta bmBigStart+1
+        lda #1
+        sta bmBig
+        jmp @packet
+@repeat:
+        sta bmCount
+        jsr StreamByte
+        sta bmValue
+        lda #0
+        sta bmRepeat
+        jmp BitmapByte
+@uniq:  sec
+        sbc #128
+        sta bmCount
+        lda #$80
+        sta bmRepeat
+        jmp BitmapByte
+
+; A = (r0), r0 += 1
+StreamByte:
+        ldy #0
+        lda (r0),y
+        inc r0L
+        bne @end
+        inc r0H
+@end:   rts
+
+; i_BitmapUp: .word data, .byte x, y, width, height follow the jsr.
+i_BitmapUp:
+        ldx #r0
+        jsr InlineArgs
+        jsr BitmapUp
+        jmp InlineReturn
+
+        .segment "DATA"
+bmCount:        .res 1          ; bytes left in the current packet
+bmRepeat:       .res 1          ; 0 repeat, $80 unique
+bmValue:        .res 1
+bmBig:          .res 1          ; inside a bigcount group
+bmBigLeft:      .res 1
+bmBigStart:     .res 2
+bmBigEnd:       .res 2

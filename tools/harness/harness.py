@@ -29,7 +29,8 @@ Case files define CASES, a list of dicts:
            "release" | None, "wait": seconds (default 0.4)}; a press or
            release sets mouseData and MOUSE_BIT, a move sets INPUT_BIT
   compare  list of: "fore", "back" (screen buffers), "A", "X", "Y",
-           r-register names (r0..r15, r0L..r15H), "mem:$ADDR-$ADDR"
+           r-register names (r0..r15, r0L..r15H), "mem:$ADDR-$ADDR",
+           "io:$ADDR-$ADDR" (I/O, e.g. VIC-II registers)
 
 The trampoline at $0340 is generated per case: sei, jsr to each `pre`
 routine, lda/sta of the r-register inputs, lda/ldx/ldy, jsr routine.
@@ -213,6 +214,8 @@ class System:
                 v.mem_set(0x8505, bytes([0x00 if ev["button"] == "press" else 0x80]))
                 flag |= 0x20
             v.mem_set(0x39, bytes([flag]))
+            for a, data in ev.get("mem", {}).items():
+                v.mem_set(a, bytes(data))
             v.resume()
             time.sleep(ev.get("wait", 0.4))
             v.ping()
@@ -225,9 +228,11 @@ class System:
                 out[item] = v.mem_get(*BACK)
             elif item in ("A", "X", "Y"):
                 out[item] = cpu[item]
-            elif item.startswith("mem:"):
-                lo, hi = item[4:].replace("$", "").split("-")
-                out[item] = v.mem_get(int(lo, 16), int(hi, 16))
+            elif item.startswith(("mem:", "io:")):
+                bank, rng = item.split(":")
+                lo, hi = rng.replace("$", "").split("-")
+                out[item] = v.mem_get(int(lo, 16), int(hi, 16),
+                                      bank="io" if bank == "io" else "ram")
             else:
                 a, size = rreg(item)
                 out[item] = v.mem_get(a, a + size - 1)

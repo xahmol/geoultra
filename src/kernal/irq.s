@@ -5,7 +5,7 @@
 
         .export IrqEntry, NmiEntry, InterruptMain, MainLoop, frameCount
         .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
-        .import MenuTick, CheckMousePos
+        .import MenuTick, CheckMousePos, IconTick
 
         .segment "DATA"
 
@@ -65,6 +65,10 @@ CallBot:
 ; again at its end.
 InterruptMain:
         inc frameCount
+        lda dblClickCount       ; double-click window
+        beq @dbl
+        dec dblClickCount
+@dbl:
         bit mouseOn
         bpl @keys
         jsr UpdateMouse
@@ -101,6 +105,7 @@ MainLoop:
         jsr CallApp
 @input: jsr HandleInput
         jsr MenuTick
+        jsr IconTick
         jsr RunProcesses
         jmp MainLoop
 

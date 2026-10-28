@@ -201,3 +201,22 @@ M_HEIGHT        = 14
 SELECTION_DELAY = 10
 TRUE            = $FF
 FALSE           = $00
+
+; Icons
+IconDescVec     = $3F     ; word: active icon table (kernal internal)
+dblClickCount   = $8515
+MAX_ICONS       = 31
+CLICK_COUNT     = 30
+ST_NOTHING      = $00     ; iconSelFlag
+ST_FLASH        = $80
+ST_INVERT       = $40
+OFF_NM_ICNS     = 0
+OFF_IC_XMOUSE   = 1
+OFF_IC_YMOUSE   = 3
+OFF_I_PIC       = 0       ; icon entry, 8 bytes, from offset 4
+OFF_I_X         = 2
+OFF_I_Y         = 3
+OFF_I_WIDTH     = 4
+OFF_I_HEIGHT    = 5
+OFF_I_EVENT     = 6
+OFF_I_NEXT      = 8

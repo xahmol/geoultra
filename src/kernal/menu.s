@@ -21,7 +21,7 @@
         .export DefFaultVector, DefMouseVector
         .import Rectangle, FrameRectangle, InvertRectangle
         .import HorizontalLine, VerticalLine, SetPattern
-        .import UseSystemFont, PutString, frameCount
+        .import UseSystemFont, PutString, frameCount, IconPress
 
 OFF_M_ATTRIBUTE = 6
 NO_ITEM         = 0
@@ -275,8 +275,9 @@ DefFaultVector:
 @prev:  jmp DoPreviousMenu
 @end:   rts
 
-; Default mouseVector: a press on the current menu selects; other
-; presses (icons come later) and all releases go to otherPressVec.
+; Default mouseVector: a press on the current menu selects, else a press
+; on an icon (icons on); other presses and all releases go to
+; otherPressVec.
 DefMouseVector:
         lda mouseData
         bmi @other
@@ -284,11 +285,17 @@ DefMouseVector:
         and #MOUSEON_BIT
         beq @other
         bit mouseOn
-        bvc @other
+        bvc @icons
         jsr CopyMenuRect
         jsr IsMseInRegion
-        beq @other
+        beq @icons
         jmp MenuPress
+@icons: lda mouseOn
+        and #ICONSON_BIT
+        beq @other
+        jsr IconPress
+        bcc @other
+        rts
 @other: lda otherPressVec
         ora otherPressVec+1
         beq @none

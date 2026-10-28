@@ -102,6 +102,18 @@ and redraws the parent. The interrupt level clamps the pointer to the
 mouse limits and sets `faultData` (the 1351 driver does not clamp);
 MainLoop calls `mouseFaultVec` while `faultData` is set and clears it.
 
+## Icons
+
+As GEOS 2.0 (`src/kernal/icon.s`): `DoIcons` draws the enabled icons with
+`BitmapUp`, turns icons on (menus off when the mouse was off) and calls
+`StartMouseMode` with the table's pointer position. A press that the
+current menu does not take goes to the icons: hit test by cards; per
+`iconSelFlag` the icon flashes asynchronously (presses are ignored
+meanwhile) or stays inverted; the routine gets r0L = icon and r0H =
+TRUE on a double click (`dblClickCount` still running, counted down per
+frame). `BitmapUp` has its own decoder for the compacted format
+(repeat, unique, bigcount; one stream over all lines).
+
 ## Run-time conventions
 
 - `$01 = $30` (all RAM) outside the kernal's I/O sections, as in GEOS 2.0;

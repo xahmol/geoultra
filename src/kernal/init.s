@@ -79,6 +79,13 @@ ColdStart:
         sta vicSpr0Color
         lda #0
         sta vicSprMulti
+        ldx #7                  ; sprite n picture at SPRITE_PICS + n * 64
+@sprp:  txa
+        clc
+        adc #(SPRITE_PICS - $8000) / 64
+        sta COLOR_MATRIX + $3F8,x
+        dex
+        bpl @sprp
         lda #$01
         sta vicSprEnable
 
@@ -114,6 +121,8 @@ ColdStart:
         sta RecoverVector+1
         lda #SELECTION_DELAY
         sta selectionFlash
+        lda #ST_FLASH
+        sta iconSelFlag
 
         lda #ST_WR_FORE | ST_WR_BACK
         sta dispBufferOn
