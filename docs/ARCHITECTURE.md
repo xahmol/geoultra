@@ -239,6 +239,36 @@ BAM. As GEOS 2.0: `usedRecords` counts index entries up to the first
 emptied record is 0/$FF, `fileSize` is adjusted by the low byte of the
 block count only.
 
+## Loading and starting
+
+`src/kernal/load.s`: `GetFile` starts applications and auto-exec files
+(`LdApplic`), runs desk accessories (`LdDeskAcc`) and loads other files
+(`LdFile`, record 0 of a VLIR file). `StartAppl` resets the stack, runs
+`InitMachine` (VIC, CIAs, keyboard, hardware vectors, then the dialog
+environment with `mouseOn` = 0, `BRKVector` = Panic, `msePicPtr` =
+`mousePicData`, as GEOS 2.0) and calls the application from MainLoop
+(`MainLoopCall`).
+
+- **Desk accessories** swap through REU bank 18 instead of GEOS 2.0's
+  swap file: the memory the accessory loads over and the saved kernal
+  state (`dlgBoxRamBuf` after `SaveState`) go to the same addresses in
+  that bank; `RstrAppl` fetches both back, restores the stack and returns
+  to `GetFile`'s caller.
+- **EnterDeskTop** loads `DESK TOP` (version 1.5 or higher, as GEOS 2.0)
+  from the current drive, then the others; until GeoUltra's own desktop
+  exists this starts the user's GEOS 2.0 deskTop, which runs on the
+  GeoUltra kernal in VICE.
+- **Colours after the matrix:** the deskTop and the pad colour manager
+  read colours from `$8FE8-$8FF0`; cold start and `FirstInit` set GEOS
+  2.0's values there ($BB x 8, $BF).
+- **BRK:** the IRQ entry saves A and X, then tests the B flag; a BRK
+  leaves through `BRKVector` with X intact and the BRK address + 2 on the
+  stack (as GEOS 2.0). (A first version read the stack with `tsx` before
+  saving X and corrupted every interrupted routine's X.)
+- **Sleep:** up to 20 sleepers, counted down per frame, continued from
+  MainLoop after their `jsr Sleep`.
+- Space: `KCODE` in `$CCxx-$CFxx` for code that fits nowhere else.
+
 ## Conformance harness
 
 `make conformance` (`tools/harness/harness.py`, VICE binary monitor client

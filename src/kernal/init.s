@@ -6,7 +6,7 @@
         .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DefFaultVector
         .import Rectangle, FrameRectangle, SetPattern
         .import pointerPic, UseSystemFont, PutString, RecoverRectangle
-        .import StringWidth, sysFlgCopy, DiskInit
+        .import StringWidth, sysFlgCopy, DiskInit, ExtraColours
         .export ColdStart
 
 DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
@@ -67,6 +67,7 @@ ColdStart:
         sta COLOR_MATRIX+$2E8,x
         inx
         bne @col
+        jsr ExtraColours
 
         ldx #63                 ; mouse pointer: sprite 0 from $8A00
 @spr:   lda pointerPic,x

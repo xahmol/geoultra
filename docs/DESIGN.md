@@ -188,6 +188,7 @@ Smoke tests in `tests/smoke/` (`make smoke-vice`, `make smoke-u64`), run
 | GeoUltra cartridge boots its own kernal to the GEOS screen (phase 1 milestone) | Pass on the U64 and in VICE 3.10 |
 | 1351 input driver with the U64's USB mouse emulation (Mouse Mode "Mouse", port 1) | Pass: smooth movement, clamped exactly to 0-319 / 0-199, button presses in `mouseData`, `MOUSE_BIT`/`INPUT_BIT` set |
 | 1351 input driver with a real Commodore 1351 in port 1 | Pass: smooth movement, clamped to 0-319 / 0-199, button presses, no drift while the mouse lies still (15 s of identical samples) |
+| GEOS 2.0's own deskTop loaded and started by GeoUltra's `EnterDeskTop` from an REU image drive (VICE 3.10) | Pass: menus, disk, printer and trash icons, the notepad with all files, icons and names drawn as on GEOS 2.0 (no clock yet; one title bar pattern differs) |
 | Keyboard driver (matrix scan, repeat, queue, GEOS key codes) | Pass on the U64: letters, Shift, `C=` shortcuts (`$80` + key), F1/F7/F2, cursor keys, RETURN, DEL; repeat after holding; space with the 1351 in port 1 arrives as a key, not as a click |
 | Processes and MainLoop dispatch | Pass in VICE (blinking process, injected mouse press reaches `otherPressVec`) |
 
@@ -221,3 +222,8 @@ GEOS memory map, so the cartridge stays a boot and overlay store:
   still to find out.
 
 - Address of the extended jump table.
+- System fill patterns: GeoUltra's own designs differ in character from
+  GEOS 2.0's at some numbers (the deskTop's window title bar asks for a
+  pattern that is horizontal lines in GEOS 2.0 and bricks in GeoUltra).
+  Option: keep own pixel designs but the same kind of pattern (lines,
+  dots, bricks, ...) at each number, so applications look as intended.

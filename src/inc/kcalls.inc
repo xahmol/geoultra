@@ -10,3 +10,4 @@ WriteBuff       = $903F
 BlkAlloc        = $C1FC
 FreeBlock       = $C2B9
 GetFreeDirBlk   = $C1F6
+OpenDisk        = $C2A1

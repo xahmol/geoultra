@@ -12,7 +12,7 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .export DoDlgBox, RstrFrmDialogue
+        .export DoDlgBox, RstrFrmDialogue, SaveState, RestoreState, InitGEOEnv
         .import DoIcons, StartMouseMode, UseSystemFont, PutString
         .import SetPattern, Rectangle, FrameRectangle, RecoverRectangle
         .import InterruptMain, MainLoop, GraphicsString, GetString

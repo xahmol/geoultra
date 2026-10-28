@@ -12,7 +12,7 @@
         .include "hw.inc"
 
         .export DoRAMOp, StashRAM, FetchRAM, SwapRAM, VerifyRAM
-        .export MoveData, i_MoveData, legacyBase
+        .export MoveData, i_MoveData, legacyBase, SysRAMOp
         .import DoInlineReturn
 
 LEGACY_FIRST    = 192           ; task 0's area; task n at 192 + 8n
@@ -21,6 +21,7 @@ returnAddress   = $3D
         .segment "DATA"
 
 port:   .byte 0
+bank:   .byte 0
 legacyBase:                     ; the current task's legacy REU area
         .byte LEGACY_FIRST
 mdCount:.res 2
@@ -49,7 +50,16 @@ DoRAMOp:
         ldx #DEV_NOT_FOUND
         lda #0
         rts
-@bank:  php
+@bank:  clc
+        adc legacyBase
+        jmp Xfer
+
+; SysRAMOp: as DoRAMOp, but r3L is a physical REU bank (the kernal's own
+; banks: desk accessory swap, tasks, spooler).
+SysRAMOp:
+        lda r3L
+Xfer:   sta bank
+        php
         sei
         lda CPU_PORT
         sta port
@@ -63,9 +73,7 @@ DoRAMOp:
         sta reuAddr
         lda r1H
         sta reuAddr+1
-        lda r3L
-        clc
-        adc legacyBase
+        lda bank
         sta reuAddr+2
         lda r2L
         sta reuLen

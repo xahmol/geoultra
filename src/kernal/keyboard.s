@@ -5,7 +5,7 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .export KeyScan, GetNextChar
+        .export KeyScan, GetNextChar, KeyReset
 
 QUEUE_SIZE      = 16
 REPEAT_DELAY    = 25            ; frames before a held key repeats
@@ -203,4 +203,17 @@ GetNextChar:
         sta pressFlag
         plp
         lda #0
+        rts
+
+        .segment "CODE"
+
+; KeyReset: empty queue, no key held (warm start).
+KeyReset:
+        lda #0
+        sta qHead
+        sta qTail
+        sta repeatCount
+        lda #$FF
+        sta lastKey
+        sta pressed
         rts

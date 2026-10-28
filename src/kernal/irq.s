@@ -4,7 +4,9 @@
         .include "hw.inc"
 
         .export IrqEntry, NmiEntry, InterruptMain, MainLoop, frameCount
+        .export MainLoopCall
         .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
+        .import SleepTick, WakeSleepers, CallRoutine
         .import MenuTick, CheckMousePos, IconTick, PromptTick, GetRandom
 
         .segment "DATA"
@@ -21,7 +23,16 @@ IrqEntry:
         pha
         txa
         pha
-        tya
+        tsx                     ; BRK: the B flag in the pushed status
+        lda $0103,x
+        and #$10
+        beq @irq
+        pla                     ; as GEOS 2.0: X back, A and the status
+        tax                     ; dropped, BRKVector finds the BRK
+        pla                     ; address + 2
+        pla
+        jmp (BRKVector)
+@irq:   tya
         pha
         lda CPU_PORT
         sta irqSavePort
@@ -77,6 +88,7 @@ InterruptMain:
 @keys:  jsr KeyScan
         jsr PromptTick
         jsr ProcessTimers
+        jsr SleepTick
         jmp GetRandom
 
 ; Position sprite 0 (the pointer) at mouseXPos/mouseYPos.
@@ -102,6 +114,9 @@ PosPointer:
 ; Jump table MainLoop: appMain, then input events, then processes. Like
 ; GEOS 2.0 it enables interrupts on every pass (a routine may have been
 ; entered with them off, e.g. DoDlgBox).
+; MainLoopCall: A/X = a routine to call first (an application's start).
+MainLoopCall:
+        jsr CallRoutine
 MainLoop:
         cli
         lda appMain
@@ -112,6 +127,7 @@ MainLoop:
         jsr MenuTick
         jsr IconTick
         jsr RunProcesses
+        jsr WakeSleepers
         jmp MainLoop
 
 CallApp:
