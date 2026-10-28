@@ -132,6 +132,19 @@ state, recovers the area and returns from `DoDlgBox` with r0L =
 (`tools/mkicons.py`, 48 x 16, label centred by measured width). Not yet:
 `DBGETFILES` (the file system).
 
+## File list in dialogs (DBGETFILES)
+
+The box (124 x 88 pixels at the command's offset), five rows of 14 with
+the names in bold, up to 15 files from `FindFTypes` (names in
+`fileTrScTab`), the arrow icon from six files on, the name already in the
+caller's buffer selected and the selection kept in view when scrolling,
+as GEOS 2.0. The selected name is always copied to the buffer (r5). The
+arrow picture is GeoUltra's own; `AddIcon` is split so the arrow icon can
+be placed at a computed position (`IconAt`). The row click and arrow
+routines live in `KEXT`. Conformance cases compare the list with GEOS
+2.0 pixel for pixel (the oracle disk has at most three files of a type,
+so the arrows are checked with `apprun.py`-style runs only).
+
 ## Text input
 
 As GEOS 2.0 (`src/kernal/getstring.s`): `GetString` prints the default

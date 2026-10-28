@@ -183,8 +183,9 @@ UCI).
 - 2026-10-29: geoWrite 1.1 and geoPaint 1.1 (GEOS 1.2 applications disk)
   start from REU drive B (`tools/harness/apprun.py`): geoWrite creates a
   document and takes typed text, geoPaint creates a picture and draws
-  pencil strokes. Not yet: opening an existing document (the file list
-  dialog command DBGETFILES is the one dialog command still missing).
+  pencil strokes; geoWrite's "Open" lists its documents with DBGETFILES
+  and opens the selected one. The file list scrolls with GeoUltra's own
+  arrow icon (six desk accessories on drive B).
 - 2026-10-29: `ToBASIC` gives the same BASIC screen as GEOS 2.0 (`PRINT
   7*6`), `SYS49152` (`BootGEOS`) reboots GeoUltra with drive A mounted.
 

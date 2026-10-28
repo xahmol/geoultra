@@ -7,7 +7,11 @@
 ; only. Own code and data layout; the system icons are GeoUltra's own
 ; (tools/mkicons.py). Checked with tests/conformance/dialog.py.
 ;
-; Not yet: DBGETFILES (the file system); its parameters are skipped.
+; DBGETFILES: the file list box; its layout (124 x 88 pixels, five rows
+; of 14, up to 15 files, the arrows from six files on, a name already in
+; the buffer selected) and the selection rules follow GEOS 2.0, mist64/geos
+; kernal/dlgbox/dlgbox1h.s and dlgbox1j.s, read as behaviour reference
+; only; own code and own arrow icon.
 
         .include "geos.inc"
         .include "hw.inc"
@@ -18,6 +22,8 @@
         .import InterruptMain, MainLoop, GraphicsString, GetString
         .import SysIconOK, SysIconCANCEL, SysIconYES, SysIconNO
         .import SysIconOPEN, SysIconDISK
+        .import FindFTypes, IsMseInRegion, InvertRectangle, HorizontalLine
+        .import CopyString, CmpString
         .import __KSTATE_RUN__, __KSTATE_SIZE__
 
 ; dlgBoxRamBuf: zero page $22-$38, globals $849B-$84C0, the active icon
@@ -44,6 +50,12 @@ dbIndex:        .res 1
 dbPort:         .res 1
 dbIconCmd:      .res MAX_DB_ICONS
 dbIconTab:      .res 4 + MAX_DB_ICONS * OFF_I_NEXT
+gfLeft:         .word 0         ; DBGETFILES: the box's left edge
+gfTop:          .byte 0         ; and top
+gfName:         .word 0         ; the caller's name buffer (r5)
+gfFound:        .byte 0         ; files in the list
+gfFirst:        .byte 0         ; file in the first row
+gfSel:          .byte 0         ; selected file
 
         .segment "RODATA"
 
@@ -314,12 +326,31 @@ DbUsrIcon:
 AddIcon:
         lda #0
         jsr DlgRect
-        ldx dbIconTab
+        lda r3H                 ; x card = left / 8 + offset
+        lsr
+        lda r3L
+        ror
+        lsr
+        lsr
+        ldy dbIndex
+        clc
+        adc (DBoxDesc),y
+        sta r8L
+        iny
+        lda r2L
+        clc
+        adc (DBoxDesc),y
+        sta r8H
+        inc dbIndex
+        inc dbIndex
+
+; IconAt: as AddIcon at x card r8L, y r8H.
+IconAt: ldx dbIconTab
         cpx #MAX_DB_ICONS
         bcs @skip
         lda dbCmd               ; remember what the icon is
         sta dbIconCmd,x
-        txa                     ; Y = entry offset
+        txa                     ; X = entry offset
         asl
         asl
         asl
@@ -330,20 +361,9 @@ AddIcon:
         sta dbIconTab+OFF_I_PIC,x
         lda r5H
         sta dbIconTab+OFF_I_PIC+1,x
-        lda r3H                 ; x card = left / 8 + offset
-        lsr
-        lda r3L
-        ror
-        lsr
-        lsr
-        ldy dbIndex
-        clc
-        adc (DBoxDesc),y
+        lda r8L
         sta dbIconTab+OFF_I_X,x
-        iny
-        lda r2L
-        clc
-        adc (DBoxDesc),y
+        lda r8H
         sta dbIconTab+OFF_I_Y,x
         lda r6L
         sta dbIconTab+OFF_I_WIDTH,x
@@ -354,9 +374,7 @@ AddIcon:
         lda r7H
         sta dbIconTab+OFF_I_EVENT+1,x
         inc dbIconTab
-@skip:  inc dbIndex
-        inc dbIndex
-        rts
+@skip:  rts
 
 ; A system icon was clicked: its number ends the dialog.
 DbSysIconPress:
@@ -457,13 +475,357 @@ DbGrphStr:
         inc dbIndex
         inc dbIndex
         jmp GraphicsString
-; DBGETFILES: .byte x, y (file system: not yet).
+; DBGETFILES: .byte x, y; r7L = GEOS file type, r10 = permanent name
+; prefix (0: any), r5 = name buffer (a name in it starts selected). The
+; selected name is always in the buffer.
+GF_ROW          = 14
+GF_ROWS         = 5
+GF_MAX          = 15
 DbGetFiles:
-        lda #2
-Skip:   clc
-        adc dbIndex
-        sta dbIndex
+        lda #0
+        jsr DlgRect
+        ldy dbIndex
+        clc
+        lda (DBoxDesc),y
+        adc r3L
+        sta gfLeft
+        lda #0
+        adc r3H
+        sta gfLeft+1
+        iny
+        clc
+        lda (DBoxDesc),y
+        adc r2L
+        sta gfTop
+        inc dbIndex
+        inc dbIndex
+        lda r5L
+        sta gfName
+        lda r5H
+        sta gfName+1
+        lda r7L                 ; FindFTypes needs r7, r10: keep them
+        pha
+        lda r10L
+        pha
+        lda r10H
+        pha
+        jsr GfBox
+        lda #$FF
+        jsr FrameRectangle
+        sec                     ; the line above the arrows
+        lda r2H
+        sbc #16
+        sta r11L
+        lda #$FF
+        jsr HorizontalLine
+        pla
+        sta r10H
+        pla
+        sta r10L
+        pla
+        sta r7L
+        lda #<fileTrScTab       ; up to 15 names, 17 bytes each
+        sta r6L
+        lda #>fileTrScTab
+        sta r6H
+        lda #GF_MAX
+        sta r7H
+        jsr FindFTypes
+        lda #GF_MAX
+        sec
+        sbc r7H
+        sta gfFound
+        beq @end
+        cmp #GF_ROWS + 1
+        bcc @press
+        jsr GfBox               ; arrows: x card left / 8 + 7, y bottom - 14
+        lda r3H
+        lsr
+        lda r3L
+        ror
+        lsr
+        lsr
+        clc
+        adc #7
+        sta r8L
+        sec
+        lda r2H
+        sbc #14
+        sta r8H
+        lda #<arrowPic
+        sta r5L
+        lda #>arrowPic
+        sta r5H
+        lda #3
+        sta r6L
+        lda #12
+        sta r6H
+        lda #<GfArrow
+        sta r7L
+        lda #>GfArrow
+        sta r7H
+        jsr IconAt
+@press: lda #<GfPress
+        sta otherPressVec
+        lda #>GfPress
+        sta otherPressVec+1
+        ldx gfFound             ; select the name in the buffer, else the first
+@find:  dex
+        beq @sel
+        txa
+        jsr GfEntry
+        ldx #r0
+        ldy #r1
+        jsr CmpString
+        php
+        lda r0L                 ; X back: the entry number
+        sec
+        sbc #<fileTrScTab
+        ldx #$FF
+@div:   inx
+        sec
+        sbc #17
+        bcs @div
+        plp
+        bne @find
+@sel:   stx gfSel
+        txa
+        sec
+        sbc #GF_ROWS - 1
+        bcs @first
+        lda #0
+@first: sta gfFirst
+        jsr GfCopy
+        jmp GfDraw
+@end:   rts
+
+; GfEntry: A = file number -> r0 = its name, r1 = the caller's buffer.
+GfEntry:
+        tax
+        lda #<fileTrScTab
+        sta r0L
+        lda #>fileTrScTab
+        sta r0H
+@add:   dex
+        bmi @buf
+        clc
+        lda r0L
+        adc #17
+        sta r0L
+        bcc @add
+        inc r0H
+        bne @add
+@buf:   lda gfName
+        sta r1L
+        lda gfName+1
+        sta r1H
         rts
+
+; GfCopy: the selected name to the caller's buffer.
+GfCopy: lda gfSel
+        jsr GfEntry
+        ldx #r0
+        ldy #r1
+        jmp CopyString
+
+; GfBox: r2L/r2H = top/bottom, r3/r4 = left/right of the box.
+GfBox:  lda gfLeft
+        sta r3L
+        clc
+        adc #124
+        sta r4L
+        lda gfLeft+1
+        sta r3H
+        adc #0
+        sta r4H
+        lda gfTop
+        sta r2L
+        clc
+        adc #88
+        sta r2H
+        rts
+
+; GfRow: A = row -> r2-r4 = the row inside the frame.
+GfRow:  pha
+        jsr GfBox
+        pla
+        tax
+        lda r2L
+@row:   dex
+        bmi @set
+        clc
+        adc #GF_ROW
+        bne @row
+@set:   sta r2L
+        clc
+        adc #GF_ROW
+        sta r2H
+        inc r2L
+        dec r2H
+        inc r3L
+        bne @r4
+        inc r3H
+@r4:    lda r4L
+        bne @dec
+        dec r4H
+@dec:   dec r4L
+        rts
+
+; GfDraw: the five rows (bold names), the selection inverted.
+GfDraw: lda rightMargin
+        pha
+        lda rightMargin+1
+        pha
+        lda #0
+        jsr GfRow
+        lda r4L
+        sta rightMargin
+        lda r4H
+        sta rightMargin+1
+        lda #0
+        jsr SetPattern
+        lda #SET_BOLD
+        sta currentMode
+        lda #0
+        sta dbPort              ; row counter
+@row:   lda dbPort
+        jsr GfRow
+        jsr Rectangle
+        lda dbPort              ; r0 = the name (GfEntry also sets r1)
+        clc
+        adc gfFirst
+        jsr GfEntry
+        lda r3L
+        sta r11L
+        lda r3H
+        sta r11H
+        lda r2L                 ; baseline 9 below the row's top
+        clc
+        adc #9
+        sta r1H
+        jsr PutString
+        inc dbPort
+        lda dbPort
+        cmp #GF_ROWS
+        bne @row
+        jsr GfInvert
+        lda #0
+        sta currentMode
+        pla
+        sta rightMargin+1
+        pla
+        sta rightMargin
+        rts
+
+; GfInvert: invert the selected row.
+GfInvert:
+        lda gfSel
+        sec
+        sbc gfFirst
+        jsr GfRow
+        jmp InvertRectangle
+
+        .segment "KEXT"                 ; space: see ARCHITECTURE.md
+
+; GfPress (otherPressVec): a press on a row selects its file.
+GfPress:
+        lda mouseData
+        bmi @end
+        jsr GfBox
+        clc
+        lda r2L
+        adc #GF_ROWS * GF_ROW - 1
+        sta r2H
+        jsr IsMseInRegion
+        beq @end
+        jsr GfInvert
+        sec
+        lda mouseYPos
+        sbc gfTop
+        ldx #$FF
+@div:   inx
+        sec
+        sbc #GF_ROW
+        bcs @div
+        txa
+        clc
+        adc gfFirst
+        cmp gfFound
+        bcc @sel
+        ldx gfFound
+        dex
+        txa
+@sel:   sta gfSel
+        jsr GfInvert
+        jmp GfCopy
+@end:   rts
+
+; GfArrow (icon): the left half scrolls up, the right half down; the
+; selection stays in view.
+GfArrow:
+        jsr GfInvert
+        jsr GfBox
+        lda r3H
+        lsr
+        lda r3L
+        ror
+        lsr
+        lsr
+        clc
+        adc #7                  ; arrow x card
+        sta r0L
+        lda #0
+        asl r0L
+        rol
+        asl r0L
+        rol
+        asl r0L
+        rol
+        sta r0H
+        clc
+        lda r0L
+        adc #12                 ; the middle of the icon
+        sta r0L
+        bcc @cmp
+        inc r0H
+@cmp:   ldx gfFirst
+        lda mouseXPos+1
+        cmp r0H
+        bne @half
+        lda mouseXPos
+        cmp r0L
+@half:  bcs @down
+        dex
+        bmi @keep
+        bpl @set
+@down:  inx
+        lda gfFound
+        sec
+        sbc gfFirst
+        cmp #GF_ROWS + 1
+        bcc @keep
+@set:   stx gfFirst
+@keep:  lda gfFirst
+        cmp gfSel
+        bcc @low
+        sta gfSel
+@low:   clc
+        adc #GF_ROWS - 1
+        cmp gfSel
+        bcs @copy
+        sta gfSel
+@copy:  jsr GfCopy
+        jmp GfDraw
+
+        .segment "CODE"
+
+; The arrows icon (own design): up and down, 24 x 12, compacted.
+arrowPic:
+        .byte $A4, $FF, $FF, $FF, $80, $18, $01, $86, $18, $61, $8F, $18, $61
+        .byte $9F, $98, $61, $BF, $D8, $61, $86, $1B, $FD, $86, $19, $F9, $86
+        .byte $18, $F1, $86, $18, $61, $80, $18, $01, $FF, $FF, $FF
+
+        .segment "CODE"
 
 ; DBSYSOPV: a press outside the icons ends the dialog with DBSYSOPV.
 DbSysOpv:

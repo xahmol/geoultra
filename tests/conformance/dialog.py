@@ -100,3 +100,31 @@ CASES += [
                             (ROUTINE_AT + 0x80) >> 8, OK, DBI_X_0, DBI_Y_2, 0],
         [dict(x=160, y=180)], extra={ROUTINE_AT + 0x80: GSTR}),
 ]
+
+# DBGETFILES on the oracle disk: the box at (4, 4) of the default dialog
+# (64..255 x 32..127), OPEN to the right of it. At most three files of a
+# type there, so no arrows (GEOS 2.0's arrow picture is Berkeley's).
+DBGETFILES = 16
+NAMEBUF = 0x4500                # not $4F00: the harness's clean-up code
+FILES_DLG = [DEF_DB_POS | 1, DBGETFILES, 4, 4, OPEN, DBI_X_2, 16, 0]
+FILES_AFTER = ["fore", "mem:$4500-$4510", "mem:$4380-$4380"]
+
+
+def files(name, ftype, events, buf="", cls=None, compare=FILES_AFTER):
+    extra = {NAMEBUF: text(buf) + [0] * (16 - len(buf))}
+    r = {"r5": NAMEBUF, "r7L": ftype, "r10": 0}
+    if cls:
+        extra[TEXT_AT + 0x60] = text(cls)
+        r["r10"] = TEXT_AT + 0x60
+    return dlg(name, FILES_DLG, events, extra=extra, r=r, compare=compare)
+
+
+IDLE = [dict(x=300, y=190)]
+CASES += [
+    files("DBGETFILES lists the printer drivers", 9, IDLE),
+    files("DBGETFILES selects with a click, then OPEN", 9,
+          click(100, 57) + click(210, 55)),
+    files("DBGETFILES starts at the name in the buffer", 9, IDLE, buf="ASCII Only"),
+    files("DBGETFILES filters by permanent name", 10, IDLE, cls="Input Drvr  V1.1"),
+    files("DBGETFILES with no files of the type", 8, IDLE),
+]
