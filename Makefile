@@ -1,7 +1,11 @@
 # GeoUltra Makefile
 #
-# For now only the hardware smoke tests (docs/DESIGN.md, "Verified on
-# hardware"):
+# System (docs/ARCHITECTURE.md, "Build"):
+#   make              build build/geoultra64.crt
+#   make vice         run it in VICE 3.10 (16 MB REU, 1351 mouse in port 1)
+#   make vice-shot    run unattended, screenshot to build/vice.png
+#
+# Hardware smoke tests (docs/DESIGN.md, "Verified on hardware"):
 #   make smoke        build build/smoke/gusmoke.crt and guseek.prg
 #   make smoke-vice   run the cartridge in VICE 3.10 with a 16 MB REU,
 #                     screenshot to build/smoke/vice.png
@@ -23,9 +27,62 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all smoke smoke-vice smoke-u64 smoke-u64-restore check-deploy clean
+.PHONY: all vice vice-shot smoke smoke-vice smoke-u64 smoke-u64-restore check-deploy clean
 
-all: smoke
+all: build/geoultra64.crt
+
+# --- System -----------------------------------------------------------
+
+GEN      = build/gen
+KOBJ     = build/kernal
+KSRCS    = $(wildcard src/kernal/*.s)
+INPSRCS  = src/input/mouse1351.s
+INCS     = $(wildcard src/inc/*.inc)
+KOBJS    = $(patsubst src/kernal/%.s,$(KOBJ)/%.o,$(KSRCS)) \
+           $(KOBJ)/mouse1351.o $(KOBJ)/jumptab.o
+VICEOPTS = -default +sound -cartcrt build/geoultra64.crt -reu -reusize 16384 \
+           -mouse -controlport1device 3
+
+$(GEN)/jumptab.s: src/kernal/jumptab.txt tools/genjumptab.py $(KSRCS) $(INPSRCS)
+	@mkdir -p $(GEN)
+	$(PYTHON) tools/genjumptab.py $< $@ $(KSRCS) $(INPSRCS)
+
+$(KOBJ)/%.o: src/kernal/%.s $(INCS)
+	@mkdir -p $(KOBJ)
+	$(CA65) -I src/inc -o $@ $<
+
+$(KOBJ)/mouse1351.o: src/input/mouse1351.s $(INCS)
+	@mkdir -p $(KOBJ)
+	$(CA65) -I src/inc -o $@ $<
+
+$(KOBJ)/jumptab.o: $(GEN)/jumptab.s
+	@mkdir -p $(KOBJ)
+	$(CA65) -o $@ $<
+
+build/kernal64.bin: $(KOBJS) src/kernal/kernal64.cfg
+	$(LD65) -C src/kernal/kernal64.cfg -m build/kernal64.map -Ln build/kernal64.lbl \
+		-o $@ $(KOBJS)
+
+$(GEN)/image.bin $(GEN)/image.inc: build/kernal64.bin tools/mkimage.py
+	@mkdir -p $(GEN)
+	$(PYTHON) tools/mkimage.py $(GEN)/image.bin $(GEN)/image.inc build/kernal64.bin@C000
+
+build/boot.o: src/boot/boot.s $(GEN)/image.inc $(INCS)
+	$(CA65) -I src/inc -I $(GEN) -o $@ $<
+
+build/boot.bin: build/boot.o src/boot/boot.cfg
+	$(LD65) -C src/boot/boot.cfg -o $@ $<
+
+build/geoultra64.crt: build/boot.bin $(GEN)/image.bin tools/mkcrt.py
+	$(PYTHON) tools/mkcrt.py $@ "GEOULTRA" build/boot.bin $(GEN)/image.bin
+
+vice: build/geoultra64.crt
+	$(VICE) $(VICEOPTS) -moncommands build/kernal64.lbl
+
+vice-shot: build/geoultra64.crt
+	$(VICE) $(VICEOPTS) -warp -limitcycles 6000000 -exitscreenshot build/vice.png; true
+
+# --- Smoke tests ------------------------------------------------------
 
 smoke: $(SMOKE)/gusmoke.crt $(SMOKE)/guseek.prg
 
