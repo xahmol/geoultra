@@ -6,6 +6,7 @@
         .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DefFaultVector
         .import Rectangle, FrameRectangle, SetPattern
         .import pointerPic, UseSystemFont, PutString, RecoverRectangle
+        .import StringWidth
         .export ColdStart
 
 DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
@@ -129,7 +130,6 @@ ColdStart:
         lda #>(SC_PIX_WIDTH - 1)
         sta r4H
         jsr Rectangle
-        jsr DrawBanner
 
         lda #IRQ_LINE           ; raster IRQ once per frame
         sta vicRaster
@@ -153,39 +153,78 @@ ColdStart:
         lda #>(SC_PIX_WIDTH - 1)
         sta rightMargin+1
         jsr UseSystemFont
-        lda #<bannerText
-        sta r0L
-        lda #>bannerText
-        sta r0H
-        lda #<96
-        sta r11L
-        lda #>96
-        sta r11H
-        lda #96
-        sta r1H
-        jsr PutString
+        jsr DrawBanner
         cli
         jmp MainLoop
 
 bannerText:
         .byte "GeoUltra ", BOLDON, "kernal", PLAINTEXT, " - ", ULINEON, "own font", ULINEOFF, ", 1.0", 0
 
-; Milestone screen: a white framed box in the middle of the desktop.
+; Boot screen: the banner text centred in a white framed box that is
+; sized by the measured text (BANNER_PAD pixels left and right).
+BANNER_PAD      = 10
+BANNER_TOP      = 88
+BANNER_HEIGHT   = 24
 DrawBanner:
+        lda #<bannerText
+        sta r0L
+        lda #>bannerText
+        sta r0H
+        jsr StringWidth         ; r2 = text width
+        lda r2L                 ; r11 = text x = 160 - width / 2
+        sta r5L
+        lda r2H
+        lsr
+        sta r5H
+        ror r5L
+        sec
+        lda #<(SC_PIX_WIDTH / 2)
+        sbc r5L
+        sta r11L
+        lda #>(SC_PIX_WIDTH / 2)
+        sbc r5H
+        sta r11H
+        sec                     ; box: text +- BANNER_PAD
+        lda r11L
+        sbc #BANNER_PAD
+        sta r3L
+        lda r11H
+        sbc #0
+        sta r3H
+        clc
+        lda r11L
+        adc r2L
+        sta r4L
+        lda r11H
+        adc r2H
+        sta r4H
+        clc
+        lda r4L
+        adc #BANNER_PAD - 1
+        sta r4L
+        bcc @box
+        inc r4H
+@box:   lda r11L                ; keep the text x over the drawing
+        pha
+        lda r11H
+        pha
+        lda #BANNER_TOP
+        sta r2L
+        lda #BANNER_TOP + BANNER_HEIGHT - 1
+        sta r2H
         lda #0
         jsr SetPattern
-        lda #80
-        sta r2L
-        lda #119
-        sta r2H
-        lda #<80
-        sta r3L
-        lda #>80
-        sta r3H
-        lda #<239
-        sta r4L
-        lda #>239
-        sta r4H
         jsr Rectangle
         lda #$FF
-        jmp FrameRectangle
+        jsr FrameRectangle
+        pla
+        sta r11H
+        pla
+        sta r11L
+        lda #<bannerText        ; baseline: the font's 9 lines centred
+        sta r0L
+        lda #>bannerText
+        sta r0H
+        lda #BANNER_TOP + (BANNER_HEIGHT - 9) / 2 + 6
+        sta r1H
+        jmp PutString

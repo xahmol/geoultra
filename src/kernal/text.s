@@ -8,6 +8,7 @@
 
         .export LoadCharSet, UseSystemFont, GetCharWidth, GetRealSize
         .export PutChar, SmallPutChar, PutString, i_PutString, PutDecimal
+        .export StringWidth
         .import SystemFont, GetScanLine
 
         .segment "DATA"
@@ -21,6 +22,8 @@ prevBit:        .byte 0
 digits:         .res 5
 digitCount:     .byte 0
 decFormat:      .byte 0
+swMode:         .byte 0
+swIndex:        .byte 0
 
         .segment "RODATA"
 
@@ -589,3 +592,61 @@ PutDecimal:
         cpx #5
         bne @out
         rts
+
+; StringWidth (GeoUltra, no GEOS jump table entry): r0 = string (up to
+; 255 bytes). Returns r2 = its width in pixels in the current font,
+; following the style codes in it from currentMode (bold is wider);
+; position codes are skipped. For centring and laying out text by its
+; measured width. Destroys A, X, Y.
+StringWidth:
+        lda currentMode
+        sta swMode
+        lda #0
+        sta r2L
+        sta r2H
+        sta swIndex
+@loop:  ldy swIndex
+        lda (r0),y
+        beq @done
+        inc swIndex
+        cmp #32
+        bcc @code
+        ldx swMode
+        jsr GetRealSize
+        tya
+        clc
+        adc r2L
+        sta r2L
+        bcc @loop
+        inc r2H
+        bne @loop
+@code:  ldx #6                  ; style codes as PutChar
+@style: cmp styleCode,x
+        beq @set
+        dex
+        bpl @style
+        cmp #PLAINTEXT
+        bne @pos
+        lda #SET_PLAINTEXT
+        sta swMode
+        jmp @loop
+@set:   lda swMode
+        and styleAnd,x
+        ora styleOr,x
+        sta swMode
+        jmp @loop
+@pos:   ldx #2                  ; skip the parameters of position codes
+        cmp #GOTOX
+        beq @skip
+        dex
+        cmp #GOTOY
+        beq @skip
+        ldx #3
+        cmp #GOTOXY
+        bne @loop
+@skip:  txa
+        clc
+        adc swIndex
+        sta swIndex
+        jmp @loop
+@done:  rts

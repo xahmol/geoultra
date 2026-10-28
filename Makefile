@@ -78,12 +78,20 @@ build/kernal64.bin: $(KOBJS) src/kernal/kernal64.cfg
 	$(LD65) -C src/kernal/kernal64.cfg -m build/kernal64.map -Ln build/kernal64.lbl \
 		-o $@ $(KOBJS)
 
-$(GEN)/image.bin $(GEN)/image.inc: build/kernal64.bin tools/mkimage.py
-	@mkdir -p $(GEN)
-	$(PYTHON) tools/mkimage.py $(GEN)/image.bin $(GEN)/image.inc build/kernal64.bin@C000
+SPLASH   = $(GEN)/splash.bin $(GEN)/splash_col.bin $(GEN)/splash_msg.bin $(GEN)/splash.inc
 
-build/boot.o: src/boot/boot.s $(GEN)/image.inc $(INCS)
-	$(CA65) -I src/inc -I $(GEN) -o $@ $<
+$(SPLASH) &: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/system9.py
+	@mkdir -p $(GEN)
+	$(PYTHON) tools/splash/mksplash.py --boot $(SPLASH)
+
+# The splash comes first: the boot ROM copies it with the CPU (--cpu 2).
+$(GEN)/image.bin $(GEN)/image.inc: build/kernal64.bin $(SPLASH) tools/mkimage.py
+	@mkdir -p $(GEN)
+	$(PYTHON) tools/mkimage.py --cpu 2 $(GEN)/image.bin $(GEN)/image.inc \
+		$(GEN)/splash.bin@A000 $(GEN)/splash_col.bin@8C00 build/kernal64.bin@C000
+
+build/boot.o: src/boot/boot.s $(GEN)/image.inc $(SPLASH) $(INCS)
+	$(CA65) -I src/inc -I $(GEN) --bin-include-dir $(GEN) -o $@ $<
 
 build/boot.bin: build/boot.o src/boot/boot.cfg
 	$(LD65) -C src/boot/boot.cfg -o $@ $<
