@@ -195,9 +195,17 @@ applications call `$9030-$904D` directly.
   ROM in over `$E000` (for serial printer drivers), so they and anything
   running between them must not lie at `$E000-$FFFF`. They also set the
   clock register `$D030` to 1 MHz for the transfer (C128, U64 turbo).
-- Not yet: BAM allocation (`BlkAlloc`, `FreeBlock`, `SetNextFree`,
-  `GetFreeDirBlk`, `SetGEOSDisk`, ...; they trap in the driver), native
-  BAM and subdirectories, 40-track D64s.
+- **Allocation (1541 images):** `SetNextFree` picks blocks exactly as
+  GEOS 2.0 does (sector + `interleave`, one less from track 25; following
+  tracks at 2 * distance + 4 + interleave; never back to lower tracks; the
+  directory track only when the search starts on it), so files land on
+  the same blocks. `BlkAlloc`, `NxtBlkAlloc`, `AllocateBlock`,
+  `FreeBlock`, `FindBAMBit`, `GetFreeDirBlk`, `AddDirBlock` (BAM change
+  left in `curDirHead`, as GEOS 2.0) and `SetGEOSDisk` build on it.
+  `interleave` = 8 from `DiskInit`.
+- Not yet: allocation on 1571, 1581 and native images (it stops in
+  `Trap`), native subdirectories and 1581 partitions (DESIGN.md,
+  "Directories"), 40-track D64s.
 
 ## Conformance harness
 

@@ -145,7 +145,8 @@ def find_sysicon_table(v):
 
 # Disk driver entries applications call directly
 DRIVER_ENTRIES = {"Get1stDirEntry": 0x9030, "GetNxtDirEntry": 0x9033, "GetBorder": 0x9036,
-                  "ReadBuff": 0x903C, "WriteBuff": 0x903F, "ReadLink": 0x904B}
+                  "AddDirBlock": 0x9039, "ReadBuff": 0x903C, "WriteBuff": 0x903F,
+                  "AllocateBlock": 0x9048, "ReadLink": 0x904B}
 
 
 def jumptab():

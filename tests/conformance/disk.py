@@ -89,3 +89,40 @@ CASES = [
          compare=["X", "mem:$8489-$8489", "mem:$BA-$BA"]),
     dict(name="GetPtrCurDkNm", routine="GetPtrCurDkNm", x=0x06, compare=["r2"]),
 ]
+
+# BAM and allocation (after GetDirHead; the BAM changes stay in curDirHead)
+HEAD = "mem:$8200-$82FF"
+
+
+def bam(name, routine, r, compare, **kw):
+    return dict(name=name, routine=routine, pre=["GetDirHead"], r=r, compare=compare, **kw)
+
+
+CASES += [
+    dict(name="interleave", routine="SetDevice", a=8, compare=["mem:$848C-$848C"]),
+    bam("FindBAMBit used block", "FindBAMBit", {"r6L": 18, "r6H": 0}, ["A", "X", "r7H", "r8H"]),
+    bam("FindBAMBit free block", "FindBAMBit", {"r6L": 34, "r6H": 9}, ["A", "X", "r7H", "r8H"]),
+    bam("AllocateBlock free", "AllocateBlock", {"r6L": 34, "r6H": 9}, ["X", "r6", HEAD]),
+    bam("AllocateBlock used", "AllocateBlock", {"r6L": 18, "r6H": 0}, ["X", "r6", HEAD]),
+    bam("FreeBlock used", "FreeBlock", {"r6L": 18, "r6H": 1}, ["X", "r6", HEAD]),
+    bam("FreeBlock free", "FreeBlock", {"r6L": 34, "r6H": 9}, ["X", "r6", HEAD]),
+    bam("SetNextFree from 1/0", "SetNextFree", {"r3L": 1, "r3H": 0}, ["X", "r3", HEAD]),
+    bam("SetNextFree from 18/1", "SetNextFree", {"r3L": 18, "r3H": 1}, ["X", "r3", HEAD]),
+    bam("SetNextFree from 17/20", "SetNextFree", {"r3L": 17, "r3H": 20}, ["X", "r3", HEAD]),
+    bam("SetNextFree from 28/12", "SetNextFree", {"r3L": 28, "r3H": 12}, ["X", "r3", HEAD]),
+    bam("BlkAlloc 3000 bytes", "BlkAlloc", {"r2": 3000, "r6": BUF},
+        ["X", "r2", "r3", HEAD, "mem:$4000-$403F"], mem={BUF: [0xEE] * 64}),
+    bam("BlkAlloc 2540 bytes (whole blocks)", "BlkAlloc", {"r2": 2540, "r6": BUF},
+        ["X", "r2", "r3", HEAD, "mem:$4000-$403F"], mem={BUF: [0xEE] * 64}),
+    bam("NxtBlkAlloc from 20/3", "NxtBlkAlloc", {"r2": 1000, "r3L": 20, "r3H": 3, "r6": BUF},
+        ["X", "r2", "r3", HEAD, "mem:$4000-$403F"], mem={BUF: [0xEE] * 64}),
+    bam("BlkAlloc more than the disk", "BlkAlloc", {"r2": 0x7F00, "r6": BUF},
+        ["X", HEAD]),
+    # These write to the disk, which GEOS 2.0 keeps for the rest of the run
+    # (GeoUltra's REU is restored per case): last, and only one that adds
+    # directory blocks (the oracle disk's directory pages are all full).
+    dict(name="GetFreeDirBlk adds a block", routine="GetFreeDirBlk", pre=["GetDirHead"],
+         r={"r10L": 4}, compare=["X", "Y", "r1", "r10L", "mem:$8000-$80FF", HEAD]),
+    dict(name="SetGEOSDisk", routine="SetGEOSDisk",
+         compare=["X", "r1", "mem:$8000-$80FF", HEAD]),
+]

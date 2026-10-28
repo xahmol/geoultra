@@ -24,6 +24,8 @@ background analysis.
 | Write-back | Automatic: changed runs a few seconds after the last write (from MainLoop, never inside a disk call), and on unmount, `EnterDeskTop`, `ToBasic` and reset recovery |
 | Home folder | `GEOULTRA` folder for settings, mount list, backups and task state, searched on `/Usb0`, `/Usb1`, `/SD` in that order (first found wins; created on the first device present) |
 | Mount dialogue | A file browser on the Ultimate file system (UCI directory commands) mounts an image into drive A-D, unmounts (with write-back) and creates new images. Reachable from the new desktop, from inside any application as a desk accessory (`geoMount`, so every application's GEOS menu offers it) and by a hot key checked in the IRQ like the task switcher. A mount on the drive an application is using behaves like a disk change on real GEOS: the application sees the new disk at its next `OpenDisk`. Formats: D64 (35 and 40 tracks), D71, D81, DNP; G64 (GCR) is decoded to blocks at mount time (read-only first; writing back would need re-encoding) |
+| Directories | Native (DNP) drives: subdirectories; 1581 images: partitions (CBM DOS "sub-directories"), entered, created and deleted as folders. Each drive has a current directory; `OpenDisk`, `GetDirHead`, the BAM and directory routines work on it, so existing applications see that directory as a whole disk (the MegaPatch3/GDOS64 model, own code). Changing directory: the new desktop, the file dialogs and new applications through the extended jump table |
+| Desktop | New, own design, Workbench style: drive icons (A-D, plus printer, trash and the Ultimate file system) on the desktop background; double-click opens a drive or folder in its own movable window; several windows at once, files dragged between them. Views per window: icons (from the GEOS file headers), small icons, list with details (name, type, size, date; sortable). Stays a normal GEOS application towards the kernal (`EnterDeskTop` starts it) |
 | Boot mounts | Restore the last session from the mount list (with its write-back state), plus the read-only system drive |
 | System font | New 9-point design with the BSW metrics (height, baseline, similar widths), so old applications' dialogs and menus lay out correctly |
 | Input driver | 1351 mouse in port 1 in the ROM (also what the U64's USB mouse emulation presents); other drivers load as files |
@@ -141,8 +143,9 @@ size / 65536), export = one `SAVE_REU`, new = format N tracks in the REU.
 Largest drive: 217 tracks (about 13.6 MB) with nothing else mounted; a full
 255-track DNP needs the later track-cache mode. BAM, allocation and
 directory handling are disk driver routines in GEOS 2.0, so native support
-lives in the driver; subdirectories need an extended API used by the new
-desktop.
+lives in the driver; subdirectories and 1581 partitions follow the
+current-directory model in the decisions table, with an extended API for
+the new desktop and new applications.
 
 ## Berkeley assets to replace
 

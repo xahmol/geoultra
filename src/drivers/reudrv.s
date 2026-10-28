@@ -19,9 +19,13 @@
         .include "hw.inc"
 
         .export DiskInit
-        .import Trap, CopyFString, GetPtrCurDkNm
+        .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
 
 FRST_FILE_ENTRY = 2
+DIR_TRACK       = 18            ; 1541
+INSUFF_SPACE    = 3
+FULL_DIRECTORY  = 4
+BAD_BAM         = 6
 WR_PR_ON        = $26           ; write protected
 WR_VER_ERR      = $25           ; verify failed
 BAD_SECTOR      = $20           ; sector beyond the track (header not found)
@@ -39,29 +43,20 @@ dir3Head        = $9C80         ; third BAM block (1581), end of the driver
         .word InitForIO, DoneWithIO, NoTurbo, NoTurbo, NoTurbo
         .word ChangeDiskDevice, NewDisk, ReadBlock, WriteBlock, VerWriteBlock
         .word OpenDisk, ReadBlock, WriteBlock, GetDirHead, PutDirHead
-        .word tGetFreeDirBlk, CalcBlksFree, tFreeBlock, tSetNextFree
-        .word tFindBAMBit, tNxtBlkAlloc, tBlkAlloc, ChkDkGEOS, tSetGEOSDisk
+        .word GetFreeDirBlk, CalcBlksFree, FreeBlock, SetNextFree
+        .word FindBAMBit, NxtBlkAlloc, BlkAlloc, ChkDkGEOS, SetGEOSDisk
 
 ; $9030: entries applications call directly
         jmp FirstDirEntry
         jmp NextDirEntry
         jmp GetBorder
-        jsr Trap                ; AddDirBlock
+        jmp AddDirBlock
         jmp ReadBuff
         jmp WriteBuff
         jsr Trap                ; SendTSBytes (serial drives only)
         jsr Trap                ; CheckErrors (serial drives only)
-        jsr Trap                ; AllocateBlock
+        jmp AllocateBlock
         jmp ReadBlock           ; ReadLink: the whole block
-
-; Not yet implemented (BAM and allocation): halt in Trap with the address.
-tGetFreeDirBlk: jsr Trap
-tFreeBlock:     jsr Trap
-tSetNextFree:   jsr Trap
-tFindBAMBit:    jsr Trap
-tNxtBlkAlloc:   jsr Trap
-tBlkAlloc:      jsr Trap
-tSetGEOSDisk:   jsr Trap
 
 ; Per drive (index curDrive - 8); driveType and ramBase are the GEOS ones.
 drvTracks:      .res 4          ; native: track count
@@ -75,6 +70,7 @@ dmaC64:         .word 0         ; DMA parameters
 dmaReu:         .res 3
 dmaLen:         .word 0
 dirtyByte:      .byte 0
+count:          .byte 0
 dirIndex:       .byte 0
 ioP:            .byte 0         ; InitForIO saves
 ioPort:         .byte 0
@@ -622,6 +618,381 @@ AddFree:
         inc r4H
 @end:   rts
 
+; --- BAM and allocation (1541 images; the other types trap for now) ------
+
+; FindBAMBit: r6 = track/sector. A = the BAM byte masked with r8H, Z set
+; when the block is in use; r7H = offset of the track's free count in
+; curDirHead, X = offset of the BAM byte. Destroys Y.
+FindBAMBit:
+        jsr Need1541
+        lda r6L
+        asl
+        asl
+        sta r7H
+        lda r6H
+        and #7
+        tay
+        lda bamBit,y
+        sta r8H
+        lda r6H
+        lsr
+        lsr
+        lsr
+        sec                     ; the bitmap follows the count byte
+        adc r7H
+        tax
+        lda curDirHead,x
+        and r8H
+        rts
+
+bamBit: .byte $01, $02, $04, $08, $10, $20, $40, $80
+
+; AllocateBlock: r6 = block to mark used. X = 0 or BAD_BAM (already
+; used). Destroys A, Y, r7, r8H.
+AllocateBlock:
+        jsr FindBAMBit
+        beq BadBam
+        eor curDirHead,x        ; A = the set bit: clear it
+        sta curDirHead,x
+        ldx r7H
+        dec curDirHead,x
+        ldx #0
+        rts
+BadBam: ldx #BAD_BAM
+        rts
+
+; FreeBlock: r6 = block to mark free. X = 0 or BAD_BAM (already free).
+FreeBlock:
+        jsr FindBAMBit
+        bne BadBam
+        lda r8H
+        ora curDirHead,x
+        sta curDirHead,x
+        ldx r7H
+        inc curDirHead,x
+        ldx #0
+        rts
+
+; SetNextFree: allocate the next free block after r3 (track/sector), the
+; GEOS 2.0 way: interleave sectors on (one less from track 25), then the
+; following tracks, never back to lower ones; the directory track only
+; when the search starts on it. r3 = the block, X = 0 or INSUFF_SPACE.
+; Destroys A, Y, r6, r7, r8H.
+SetNextFree:
+        jsr Need1541
+        lda r3L
+        sta r6L
+        lda r3H
+        clc
+        adc interleave
+        sta r6H
+        lda r3L
+        cmp #25
+        bcc @start
+        dec r6H
+@start: cmp #DIR_TRACK
+        beq @try
+@track: lda r6L
+        cmp #DIR_TRACK
+        beq @next
+@try:   lda r6L
+        asl
+        asl
+        tax
+        lda curDirHead,x        ; free blocks on the track
+        beq @next
+        ldx r6L
+        jsr Sectors
+        sta r7L
+        sta count
+@sector:
+        lda r6H                 ; r6H modulo sectors on the track
+@mod:   cmp r7L
+        bcc @in
+        sbc r7L
+        bcs @mod
+@in:    sta r6H
+        jsr AllocateBlock
+        txa
+        beq @found
+        inc r6H
+        dec count
+        bne @sector
+@next:  inc r6L
+        lda r6L
+        cmp #36
+        bcs @full
+        sec                     ; next track: 2 * distance + 4 + interleave
+        sbc r3L
+        asl
+        adc #4
+        adc interleave
+        sta r6H
+        jmp @track
+@found: lda r6L
+        sta r3L
+        lda r6H
+        sta r3H
+        rts
+@full:  ldx #INSUFF_SPACE
+        rts
+
+; Need1541: allocation for the other image types is not written yet.
+Need1541:
+        ldy curDrive
+        lda driveType-8,y
+        and #$0F
+        cmp #DRV_1541
+        beq @ok
+        jmp Trap
+@ok:    rts
+
+; BlkAlloc: r2 bytes from track 1; NxtBlkAlloc: from r3. Writes the
+; blocks to the table at r6, then 0 and the bytes used in the last block
+; + 1. Returns X = error, r2 = blocks, r3 = the last block. Destroys A,
+; Y, r4-r8.
+BlkAlloc:
+        lda #1
+        sta r3L
+        lda #0
+        sta r3H
+NxtBlkAlloc:
+        lda r9L                 ; Ddiv destroys r9
+        pha
+        lda r9H
+        pha
+        lda r3L
+        pha
+        lda r3H
+        pha
+        lda #254                ; data bytes per block
+        sta r3L
+        lda #0
+        sta r3H
+        ldx #r2
+        ldy #r3
+        jsr Ddiv
+        lda r8L                 ; a part block counts
+        beq @free
+        inc r2L
+        bne @free
+        inc r2H
+@free:  lda #<curDirHead
+        sta r5L
+        lda #>curDirHead
+        sta r5H
+        jsr CalcBlksFree
+        pla
+        sta r3H
+        pla
+        sta r3L
+        ldx #INSUFF_SPACE
+        lda r4H                 ; blocks > free: no space
+        cmp r2H
+        bne @cmp
+        lda r4L
+        cmp r2L
+@cmp:   bcc @end
+        lda r6L
+        sta r4L
+        lda r6H
+        sta r4H
+        lda r2L
+        sta r5L
+        lda r2H
+        sta r5H
+@block: jsr SetNextFree
+        txa
+        bne @end
+        ldy #0
+        lda r3L
+        sta (r4),y
+        iny
+        lda r3H
+        sta (r4),y
+        clc
+        lda r4L
+        adc #2
+        sta r4L
+        bcc @count
+        inc r4H
+@count: lda r5L
+        bne @low
+        dec r5H
+@low:   dec r5L
+        lda r5L
+        ora r5H
+        bne @block
+        ldy #0
+        tya
+        sta (r4),y
+        iny
+        lda r8L
+        bne @last
+        lda #254
+@last:  clc
+        adc #1
+        sta (r4),y
+        ldx #0
+@end:   pla
+        sta r9H
+        pla
+        sta r9L
+        rts
+
+; GetFreeDirBlk: r10L = directory page (1-18) to start at. Finds the
+; first empty entry from there, adding directory blocks as needed. The
+; block is in diskBlkBuf, r1 its address, Y the entry's offset, r10L its
+; page. X = 0 or FULL_DIRECTORY. Destroys A, r0, r3, r5, r7, r8.
+GetFreeDirBlk:
+        php
+        sei
+        lda r6L
+        pha
+        lda r2L
+        pha
+        lda r2H
+        pha
+        ldx r10L
+        inx
+        stx r6L
+        lda #DIR_TRACK
+        sta r1L
+        lda #1
+        sta r1H
+@read:  jsr ReadBuff
+@got:   txa
+        bne @end
+        dec r6L
+        beq @page
+@link:  lda diskBlkBuf
+        bne @follow
+        jsr AddDirBlock
+        jmp @got
+@follow:
+        sta r1L
+        lda diskBlkBuf+1
+        sta r1H
+        jmp @read
+@page:  ldy #FRST_FILE_ENTRY
+@slot:  lda diskBlkBuf,y
+        beq @end
+        tya
+        clc
+        adc #32
+        tay
+        bcc @slot
+        lda #1                  ; full: the next page
+        sta r6L
+        ldx #FULL_DIRECTORY
+        ldy r10L
+        iny
+        sty r10L
+        cpy #18
+        bcc @link
+@end:   pla
+        sta r2H
+        pla
+        sta r2L
+        pla
+        sta r6L
+        plp
+        rts
+
+; AddDirBlock: r1 = the last directory block (in diskBlkBuf). Allocates
+; a block on the directory track, links it, writes both; the new, empty
+; block is then in diskBlkBuf and r1. X = 0 or FULL_DIRECTORY. The BAM
+; change stays in curDirHead (the caller writes it).
+AddDirBlock:
+        lda r6L
+        pha
+        lda r6H
+        pha
+        ldx #FULL_DIRECTORY
+        lda curDirHead + 4 * DIR_TRACK
+        beq @end
+        lda r1L
+        sta r3L
+        lda r1H
+        sta r3H
+        jsr SetNextFree
+        lda r3L
+        sta diskBlkBuf
+        lda r3H
+        sta diskBlkBuf+1
+        jsr WriteBuff
+        txa
+        bne @end
+        lda r3L
+        sta r1L
+        lda r3H
+        sta r1H
+        jsr ClearAndWrite
+@end:   pla
+        sta r6H
+        pla
+        sta r6L
+        rts
+
+; ClearAndWrite: an empty block (link 0, $FF) to r1.
+ClearAndWrite:
+        lda #0
+        tay
+@clear: sta diskBlkBuf,y
+        iny
+        bne @clear
+        dey
+        sty diskBlkBuf+1
+        jmp WriteBuff
+
+; SetGEOSDisk: make the disk a GEOS disk: a border block (from track 19,
+; else from track 1) and the signature in the header. X = 0 or
+; INSUFF_SPACE. Destroys A, Y, r0L, r1, r4, r5.
+SetGEOSDisk:
+        jsr GetDirHead
+        txa
+        bne @end
+        lda #<curDirHead
+        sta r5L
+        lda #>curDirHead
+        sta r5H
+        jsr CalcBlksFree
+        ldx #INSUFF_SPACE
+        lda r4L
+        ora r4H
+        beq @end
+        lda #DIR_TRACK + 1
+        sta r3L
+        lda #0
+        sta r3H
+        jsr SetNextFree
+        txa
+        beq @border
+        lda #1
+        sta r3L
+        jsr SetNextFree
+        txa
+        bne @end
+@border:
+        lda r3L
+        sta r1L
+        lda r3H
+        sta r1H
+        jsr ClearAndWrite
+        txa
+        bne @end
+        lda r1L
+        sta curDirHead + OFF_OP_TR_SC
+        lda r1H
+        sta curDirHead + OFF_OP_TR_SC + 1
+        ldy #15
+@sig:   lda geosId,y
+        sta curDirHead + OFF_GS_ID,y
+        dey
+        bpl @sig
+        jmp PutDirHead
+@end:   rts
+
 ; --- Directory entries ---------------------------------------------------
 
 ; Get1stDirEntry: the first directory block to diskBlkBuf, r5 = its first
@@ -766,7 +1137,8 @@ DiskInit:
         inx
         cpx #4
         bne @slot
-@none:  lda #8
+@none:  lda #8                  ; GEOS 2.0's sector interleave
+        sta interleave
         sta curDrive
         sta curDevice
         lda driveType
