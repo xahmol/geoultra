@@ -6,7 +6,7 @@
         .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DefFaultVector
         .import Rectangle, FrameRectangle, SetPattern
         .import pointerPic, UseSystemFont, PutString, RecoverRectangle
-        .import StringWidth, sysFlgCopy, DiskInit, ExtraColours
+        .import StringWidth, sysFlgCopy, DiskInit, ExtraColours, ClockInit
         .export ColdStart
 
 DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
@@ -154,6 +154,7 @@ ColdStart:
         lda #$01
         sta vicIrqMask
         sta vicIrq
+        jsr ClockInit
         lda #RAM_ALL            ; from here on the font under I/O is visible
         sta CPU_PORT
         lda #0                  ; text: whole screen, plain style

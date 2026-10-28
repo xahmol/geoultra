@@ -22,7 +22,7 @@
         .import FindFile, ReadFile, GetFHdrInfo, CopyFString, CallRoutine
         .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
-        .import IrqEntry, NmiEntry, SetPattern, Rectangle
+        .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode
 
 DA_BANK         = 18
 MAX_SLEEP       = 20
@@ -330,6 +330,7 @@ InitMachine:
         sta $FFFA
         lda #>NmiEntry
         sta $FFFB
+        jsr TodMode
         lda #RAM_ALL
         sta CPU_PORT
         jsr KeyReset

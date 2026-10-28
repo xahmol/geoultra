@@ -215,10 +215,16 @@ class System:
             raise SystemExit("%s: no GEOS kernal after boot" % self.name)
         time.sleep(0)
         main = jt[1] | jt[2] << 8
-        v.checkpoint(main)
+        # A temporary checkpoint lets VICE 3.10 run on after the hit (the
+        # snapshot then lands anywhere); a permanent one stays stopped.
+        cid = v.checkpoint(main, temporary=False)
         v.resume()
         v.wait_event(RESP_CHECKPOINT)
+        pc = v.regs_get()["PC"]
+        if pc != main:
+            raise SystemExit("%s: stopped at $%04X, not MainLoop $%04X" % (self.name, pc, main))
         v.dump(self.snapshot)
+        v.delete_checkpoint(cid)
         print("%s: snapshot at MainLoop $%04X" % (self.name, main))
 
     def run(self, case, table):
@@ -245,7 +251,10 @@ class System:
         fill = case.get("fill", 0)
         v.mem_set(FORE[0], bytes([case.get("fillfore", fill)]) * (FORE[1] - FORE[0] + 1))
         v.mem_set(BACK[0], bytes([case.get("fillback", fill)]) * (BACK[1] - BACK[0] + 1))
-        code = [0x78]
+        # sei; I/O on: read the TOD tenths (unlatches the clock if the
+        # snapshot caught a time read halfway); $01 = $30, the normal GEOS
+        # state (the snapshot may hold another one)
+        code = [0x78, 0xA9, 0x35, 0x85, 0x01, 0xAD, 0x08, 0xDC, 0xA9, 0x30, 0x85, 0x01]
         if "events" in case:
             v.mem_set(CLEAN_AT, bytes(CLEAN_CODE))
             v.mem_set(0x4F7F, bytes([0x60]))

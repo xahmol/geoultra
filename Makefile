@@ -56,9 +56,13 @@ $(GEN)/jumptab.s: src/kernal/jumptab.txt tools/genjumptab.py $(KSRCS) $(INPSRCS)
 	@mkdir -p $(GEN)
 	$(PYTHON) tools/genjumptab.py $< $@ $(KSRCS) $(INPSRCS)
 
+# The clock starts at the build date until the Ultimate's RTC is read.
+BUILDDATE = -D BUILD_YEAR=$(shell date +%-y) -D BUILD_MONTH=$(shell date +%-m) \
+            -D BUILD_DAY=$(shell date +%-d)
+
 $(KOBJ)/%.o: src/kernal/%.s $(INCS)
 	@mkdir -p $(KOBJ)
-	$(CA65) -I src/inc -o $@ $<
+	$(CA65) -I src/inc $(BUILDDATE) -o $@ $<
 
 $(KOBJ)/%.o: src/drivers/%.s $(INCS)
 	@mkdir -p $(KOBJ)

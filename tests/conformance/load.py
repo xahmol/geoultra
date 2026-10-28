@@ -120,3 +120,23 @@ CASES += [
                                            0x4EA0: [0xEE] * 3},
          compare=["mem:$4EA0-$4EA2"]),
 ]
+
+# Clock: the TOD set to 11:59:59.8 PM, the date to 28 February; after
+# MainLoop has run past midnight the date is the next day.
+TOD_SET = [0xA9, 0x35, 0x85, 0x01, 0xA9, 0x00, 0x8D, 0x0F, 0xDC,      # $01 = $35; CRB
+           0xA9, 0x91, 0x8D, 0x0B, 0xDC, 0xA9, 0x59, 0x8D, 0x0A, 0xDC,  # 11 PM, 59
+           0xA9, 0x59, 0x8D, 0x09, 0xDC, 0xA9, 0x08, 0x8D, 0x08, 0xDC,  # 59, .8 (runs)
+           0xA9, 0x30, 0x85, 0x01, 0x60]
+
+
+def midnight(title, year):
+    return dict(name=title, routine="CallRoutine", a=0x00, x=0x4D,
+                mem={0x4D00: TOD_SET}, poke={0x8516: [year, 2, 28, 23, 59, 59]},
+                events=[dict(x=200, y=150, wait=1.0)],
+                compare=["mem:$8516-$8519"])
+
+
+CASES += [
+    midnight("Clock passes midnight on 28 February 2026", 26),
+    midnight("Clock passes midnight on 28 February 2024", 24),
+]

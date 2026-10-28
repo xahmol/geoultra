@@ -63,7 +63,8 @@ section 2). GeoUltra's own use of the system areas:
 
 | Range | GeoUltra |
 | --- | --- |
-| `$9000-$9C7F` | disk driver: vectors `$9000-$902F`, jump table `$9030-$904D`, REU image driver (now to about `$957A`), then the **overlay slot**: rarely used kernal code fetched from the REU on demand |
+| `$9000-$9A7F` | disk driver: vectors `$9000-$902F`, jump table `$9030-$904D`, REU image driver (now to about `$97EB`); planned: the **overlay slot**, rarely used kernal code fetched from the REU on demand |
+| `$9A80-$9C7F` | `KEXT`: kernal code that no longer fits at `$C000-$FFFF` (now the clock), resident until the overlay slot exists |
 | `$9C80-$9D7F` | `dir3Head` (third BAM block of a 1581 image, as GEOS 2.0) |
 | `$C000-$C0FF` | information block (`BootGEOS`, `bootName`, `version` = `$20`, `c128Flag`, `GU` signature, extension table pointer) |
 | `$C100-$C2D6` | GEOS 2.0 jump table, 157 entries |
@@ -277,6 +278,19 @@ through the application: `r13` before every stream byte, `r14` before
 every packet outside a bigcount group (as GEOS 2.0, which cannot handle
 bigcounts there either; HG2G).
 
+## Clock
+
+`src/kernal/time.s` (in `KEXT`): CIA 1's time-of-day clock is the master
+clock, as in GEOS 2.0. At cold start the raster line count picks 50 Hz
+(PAL) or 60 Hz for the TOD, the TOD starts at 12 AM and the date at the
+build date (until the Ultimate's real-time clock is read, DESIGN.md).
+Writing 12 to the TOD hours flips AM/PM on a 6526 (and in VICE): the
+start writes `$92` and checks. MainLoop copies hour (0-23), minutes and
+seconds, advances the date when the clock passes midnight (leap years
+every fourth year, 99 -> 0) and handles the TOD alarm: `alarmSetFlag`
+bit 7 calls `alarmTmtVector`, bit 6 beeps (own sound) the number of times
+in its low six bits.
+
 ## Conformance harness
 
 `make conformance` (`tools/harness/harness.py`, VICE binary monitor client
@@ -321,6 +335,11 @@ automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
   after all others, and each one after the first gets a newly started
   GEOS 2.0 VICE with a fresh disk copy (the snapshot restores the booted
   system).
+- **Snapshots stop exactly at MainLoop** through a permanent checkpoint:
+  VICE 3.10 runs on after a temporary one, and a snapshot taken at a
+  random point (for example inside the clock update, with I/O on) made
+  every case start with `$01 = $35`. The trampoline also sets `$01 = $30`
+  and reads the TOD tenths (unlatching the clock) before each case.
 - `--show NAME --area x0,y0,x1,y1 [--systems geos]` prints both screens
   as ASCII art; `HARNESS_TRACE=1` prints each case before it runs (to find
   one that hangs).
