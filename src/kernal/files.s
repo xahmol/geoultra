@@ -11,6 +11,7 @@
 ; InitForIO and DoneWithIO (the C64 Kernal ROM is then mapped).
 
         .include "geos.inc"
+        .include "kcalls.inc"
 
         .export FindFile, ReadFile, ReadByte, FollowChain, GetFHdrInfo
         .export FindFTypes

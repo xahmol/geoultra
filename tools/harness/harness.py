@@ -37,7 +37,8 @@ Case files define CASES, a list of dicts:
            "release" | None, "wait": seconds (default 0.4)}; a press or
            release sets mouseData and MOUSE_BIT, a move sets INPUT_BIT
   writes   True when the case writes to the disk: such cases run after
-           all others (GEOS 2.0's disk copy keeps the changes)
+           all others, and each on a fresh copy of the oracle disk (GEOS
+           2.0's disk keeps the changes; GeoUltra's REU is restored)
   compare  list of: "fore", "back" (screen buffers), "A", "X", "Y",
            r-register names (r0..r15, r0L..r15H), "mem:$ADDR-$ADDR",
            "io:$ADDR-$ADDR" (I/O, e.g. VIC-II registers)
@@ -190,11 +191,9 @@ class System:
     def __init__(self, name, rebuild):
         self.name = name
         self.snapshot = os.path.join(OUT, name + ".vsf")
-        args = [VICE, "-default", "+sound", "-sounddev", "dummy", "-warp", "-binarymonitor",
-                "-binarymonitoraddress", "127.0.0.1:%d" % PORTS[name]] + SYSTEMS[name]
         self.log = open(os.path.join(OUT, name + ".log"), "w")
-        self.proc = subprocess.Popen(args, stdout=self.log, stderr=subprocess.STDOUT)
-        self.vice = Vice(port=PORTS[name])
+        self.disk_written = False
+        self.launch()
         crt = os.path.join(ROOT, "build", "geoultra64.crt")
         stale = (name == "geoultra" and os.path.exists(self.snapshot)
                  and max(os.path.getmtime(crt), os.path.getmtime(REU_IMAGE))
@@ -225,6 +224,8 @@ class System:
     def run(self, case, table):
         if os.environ.get("HARNESS_TRACE"):
             print("%s: %s" % (self.name, case["name"]), flush=True)
+        if case.get("writes"):
+            self.fresh_disk()
         v = self.vice
         v.undump(self.snapshot)
         v.events.clear()                        # no stale events of a previous case
@@ -346,6 +347,22 @@ class System:
         v.resume()
         time.sleep(ev.get("wait", 0.2))
         v.ping()
+
+    def launch(self):
+        args = [VICE, "-default", "+sound", "-sounddev", "dummy", "-warp", "-binarymonitor",
+                "-binarymonitoraddress", "127.0.0.1:%d" % PORTS[self.name]] + SYSTEMS[self.name]
+        self.proc = subprocess.Popen(args, stdout=self.log, stderr=subprocess.STDOUT)
+        self.vice = Vice(port=PORTS[self.name])
+
+    def fresh_disk(self):
+        """GEOS 2.0 keeps disk writes: a write case after another one gets
+        a new VICE with a new copy of the oracle disk (the snapshot then
+        restores the booted system)."""
+        if self.name == "geos" and self.disk_written:
+            self.close()
+            shutil.copyfile(ORACLE_DISK, ORACLE_COPY)
+            self.launch()
+        self.disk_written = True
 
     def close(self):
         self.vice.quit()

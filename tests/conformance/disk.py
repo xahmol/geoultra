@@ -118,9 +118,7 @@ CASES += [
         ["X", "r2", "r3", HEAD, "mem:$4000-$403F"], mem={BUF: [0xEE] * 64}),
     bam("BlkAlloc more than the disk", "BlkAlloc", {"r2": 0x7F00, "r6": BUF},
         ["X", HEAD]),
-    # These write to the disk (writes=True: run after all other cases);
-    # only one adds directory blocks (the oracle disk's directory pages are
-    # all full), in this order.
+    # These write to the disk (writes=True: run last, each on a fresh disk)
     dict(name="GetFreeDirBlk adds a block", writes=True, routine="GetFreeDirBlk", pre=["GetDirHead"],
          r={"r10L": 4}, compare=["X", "Y", "r1", "r10L", "mem:$8000-$80FF", HEAD]),
     dict(name="SetGEOSDisk", writes=True, routine="SetGEOSDisk",

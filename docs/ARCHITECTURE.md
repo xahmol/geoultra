@@ -219,6 +219,16 @@ IEC drivers (phase 6) will pay a little per block. Reading: `FindFile`,
 overflow leaves the block in `diskBlkBuf`), `ReadByte`, `FollowChain`,
 `GetFHdrInfo`, `FindFTypes` (permanent-name filter through the header).
 
+Writing (`src/kernal/filewrite.s`, in `CODE`): `WriteFile`, `SaveFile`
+(header block, VLIR index block and data allocated in one `BlkAlloc`;
+the header's info byte `$A0` is cleared, as GEOS 2.0 does), `SetGDirEntry`
+(date only in the directory block), `BldGDirEntry`, `FreeFile` (VLIR
+record chains through `fileHeader`), `DeleteFile`, `FastDelFile`,
+`RenameFile`. GEOS 2.0 writes each file twice, the second time with
+verify; one pass is enough for an REU image. The jump table addresses
+the file code calls are in `src/inc/kcalls.inc`, apart from `geos.inc`,
+because the disk driver's own routines carry those names.
+
 ## Conformance harness
 
 `make conformance` (`tools/harness/harness.py`, VICE binary monitor client
@@ -259,7 +269,10 @@ automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
   disk); GeoUltra gets the same disk as drive A through a 16 MB REU image
   (`-reuimage build/harness/reu.bin`, not written back) holding a mount
   table and the image at bank 31. VICE snapshots restore GeoUltra's REU
-  per case but not GEOS 2.0's disk, so write cases must be repeatable.
+  per case but not GEOS 2.0's disk: cases that write (`writes=True`) run
+  after all others, and each one after the first gets a newly started
+  GEOS 2.0 VICE with a fresh disk copy (the snapshot restores the booted
+  system).
 - `--show NAME --area x0,y0,x1,y1 [--systems geos]` prints both screens
   as ASCII art; `HARNESS_TRACE=1` prints each case before it runs (to find
   one that hangs).

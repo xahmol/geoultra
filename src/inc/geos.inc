@@ -318,16 +318,18 @@ Get1stDirEntry  = $9030
 GetNxtDirEntry  = $9033
 ReadLink        = $904B
 
-; Disk routines the kernal calls (jump table entries through the driver)
-GetBlock        = $C1E4
-PutBlock        = $C1E7
-GetDirHead      = $C247
-PutDirHead      = $C24A
-ReadBuff        = $903C
-WriteBuff       = $903F
 FILE_NOT_FOUND  = 5
 BFR_OVERFLOW    = 11
 OFF_GHDR_PTR    = 19
 OFF_GFILE_TYPE  = 22
 O_GHST_ADDR     = $47
 O_GHFNAME       = $4D
+OFF_GSTRUC_TYPE = 21
+OFF_DE_TR_SC    = 1
+O_GHCMDR_TYPE   = $44
+O_GHGEOS_TYPE   = $45
+O_GHSTR_TYPE    = $46
+O_GHEND_ADDR    = $49
+O_GHINFO_TXT    = $A0
+VLIR            = 1
+year            = $8516
