@@ -267,7 +267,15 @@ environment with `mouseOn` = 0, `BRKVector` = Panic, `msePicPtr` =
   saving X and corrupted every interrupted routine's X.)
 - **Sleep:** up to 20 sleepers, counted down per frame, continued from
   MainLoop after their `jsr Sleep`.
-- Space: `KCODE` in `$CCxx-$CFxx` for code that fits nowhere else.
+- Space: `KCODE` in the low kernal area (after `KSTATE`, up to `$CFFF`)
+  holds code that fits nowhere else: the loader and the point and line
+  routines.
+
+`BitmapClip` and `BitOtherClip` share BitmapUp's decoder (one line at a
+time, skipping bytes outside the window). BitOtherClip's data comes
+through the application: `r13` before every stream byte, `r14` before
+every packet outside a bigcount group (as GEOS 2.0, which cannot handle
+bigcounts there either; HG2G).
 
 ## Conformance harness
 

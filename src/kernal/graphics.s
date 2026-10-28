@@ -11,6 +11,7 @@
         .export InvertLine, RecoverLine, InvertRectangle, RecoverRectangle
         .export ImprintRectangle, i_Rectangle, i_FrameRectangle
         .export i_RecoverRectangle, i_ImprintRectangle, BitmapUp, i_BitmapUp
+        .export BitmapClip, BitOtherClip
         .export DrawPoint, TestPoint, DrawLine, InlineArgs, InlineReturn
         .import patterns
 
@@ -480,6 +481,8 @@ inlineSelf:     .res 2
 inlinePtr:      .res 2
 inlineLen:      .res 1
 
+        .segment "CODE"
+
 ; BitmapUp: r0 = compacted bitmap, r1L = x in cards, r1H = y, r2L =
 ; width in cards, r2H = height in lines; drawn per dispBufferOn.
 ; Destroys A, X, Y, r0-r9L.
@@ -490,9 +493,69 @@ inlineLen:      .res 1
 ; times (the byte after COUNT). The data is one stream over all lines.
 BitmapUp:
         lda #0
+        sta bmOther
         sta bmCount
         sta bmBig
-@line:  ldx r1H
+@line:  jsr BitmapLine
+        inc r1H
+        dec r2H
+        bne @line
+        rts
+
+; BitmapClip: as BitmapUp, but only a window of a larger bitmap: r2L / r2H
+; = the window's width and height, r11L / r11H = cards left / right of
+; it, r12 = lines above it. BitOtherClip: the same with the data from the
+; application: r13 = routine that puts the next stream byte at (r0), r14
+; = routine called before each new packet (resets r0 to its buffer).
+; Destroys A, X, Y, r0-r12.
+BitmapClip:
+        lda #0
+        .byte $2C               ; bit abs: skips the next lda
+BitOtherClip:
+        lda #$FF
+        sta bmOther
+        lda #0
+        sta bmCount
+        sta bmBig
+@above: lda r12L                ; skip the lines above the window
+        ora r12H
+        beq @line
+        lda r11L
+        jsr Skip
+        lda r2L
+        jsr Skip
+        lda r11H
+        jsr Skip
+        lda r12L
+        bne @dec
+        dec r12H
+@dec:   dec r12L
+        jmp @above
+@line:  lda r11L
+        jsr Skip
+        jsr BitmapLine
+        lda r11H
+        jsr Skip
+        inc r1H
+        dec r2H
+        bne @line
+        rts
+
+; Skip: A bytes of the stream.
+Skip:   tax
+        beq @end
+@byte:  txa
+        pha
+        jsr BitmapByte
+        pla
+        tax
+        dex
+        bne @byte
+@end:   rts
+
+; BitmapLine: r2L bytes of the stream to line r1H from card r1L.
+BitmapLine:
+        ldx r1H
         jsr GetScanLine
         lda r1L                 ; r7/r8 = r5/r6 + x * 8
         sta r7L
@@ -538,9 +601,6 @@ BitmapUp:
         inc r7H
 @next:  dec r9L
         bne @byte
-        inc r1H
-        dec r2H
-        bne @line
         rts
 
 ; Next byte of the compacted stream at r0.
@@ -574,7 +634,12 @@ BitmapByte:
         lda #0
         sta bmBig
 @header:
-        jsr StreamByte
+        bit bmOther             ; BitOtherClip: SYNC before a new packet
+        bpl @read               ; (not inside a bigcount group)
+        lda bmBig
+        bne @read
+        jsr CallSync
+@read:  jsr StreamByte
         cmp #128
         bcc @repeat
         cmp #220
@@ -614,12 +679,20 @@ BitmapByte:
 
 ; A = (r0), r0 += 1
 StreamByte:
-        ldy #0
+        bit bmOther             ; BitOtherClip: APPINPUT fills (r0) first
+        bpl @get
+        jsr CallInput
+@get:   ldy #0
         lda (r0),y
         inc r0L
         bne @end
         inc r0H
 @end:   rts
+
+CallInput:
+        jmp (r13)
+CallSync:
+        jmp (r14)
 
 ; i_BitmapUp: .word data, .byte x, y, width, height follow the jsr.
 i_BitmapUp:
@@ -629,6 +702,7 @@ i_BitmapUp:
         jmp InlineReturn
 
         .segment "DATA"
+bmOther:        .res 1          ; $FF: BitOtherClip (data from r13)
 bmCount:        .res 1          ; bytes left in the current packet
 bmRepeat:       .res 1          ; 0 repeat, $80 unique
 bmValue:        .res 1
@@ -636,6 +710,8 @@ bmBig:          .res 1          ; inside a bigcount group
 bmBigLeft:      .res 1
 bmBigStart:     .res 2
 bmBigEnd:       .res 2
+
+        .segment "KCODE"                ; points and lines: low kernal area
 
 ; Pixel address in r5/r6 (per dispBufferOn, or both buffers when kOp is
 ; OP_RECOVER) and bit mask in ptMask for r3/r11L.
