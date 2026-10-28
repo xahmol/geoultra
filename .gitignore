@@ -1,0 +1,12 @@
+# Build outputs
+build/
+*.o
+*.map
+*.lbl
+*.dbg
+
+# Local deployment config
+.env
+
+# Python
+__pycache__/
