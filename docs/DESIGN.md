@@ -1,0 +1,172 @@
+# GeoUltra: design decisions
+
+2026-10-28, Xander Mol (with Claude). Supersedes the route and phase
+recommendations in [`FEASIBILITY.md`](FEASIBILITY.md), which stays as the
+background analysis.
+
+## Decisions
+
+| Topic | Decision |
+| --- | --- |
+| Route | Free-standing clean-room kernal from the start; no hybrid/patch release. The user's GEOS 2.0 is only the test oracle. |
+| Target order | Ultimate 64 family first (U64, Elite, C64 Ultimate): turbo and palette from the start. Then a C64 with an Ultimate II+ (same `.crt`, no turbo/palette), then the C128 with an Ultimate II+ |
+| Clean-room rule | mist64/geos and area6510 (MP3, GDOS64) sources may be read to answer behaviour questions; no code, tables or structure are copied, and a comment credits the source wherever behaviour was derived from it |
+| C64 boot medium | Protovision Megabyter cartridge (CRT type 86), image at most 1 MiB, so the same `.crt` runs in VICE 3.10 and on the Ultimate |
+| C128 boot medium | Separate Ultimate C128 cartridge (CRT "C128 CARTRIDGE", type 1 subtype 2) |
+| Kernal, drivers, desktop | All in assembler (ca65/ld65); the desktop is new, not a deskTop/TopDesk patch |
+| REU | 16 MB required |
+| Swapping | Desk accessory swap, task switcher, print spooler and clipboard all in the REU |
+| Mounting | Whole images in the REU now; data structures ready for a later track-cache mode |
+| `ramExpSize` | Configurable: by default a small legacy size (bank 0 plus a sandbox old applications may use freely; the rest is invisible to them), a desktop setting reports 255 banks. Default legacy size 512 KB (8 banks: bank 0 plus a 7-bank sandbox) |
+| Extended API | A second, GEOS-style jump table (one entry per routine, r-registers in and out) at a fixed published address, found through a `GU` signature in the info area |
+| Turbo | Maximum speed, with a per-application list (by permanent name string) of programs that need 1 MHz, and 1 MHz automatically around IEC transfers |
+| Image protection | Before the first write-back after a mount, the image is copied once to `<name>.bak`; after that changed runs are written in place |
+| Write-back | Automatic: changed runs a few seconds after the last write (from MainLoop, never inside a disk call), and on unmount, `EnterDeskTop`, `ToBasic` and reset recovery |
+| Home folder | `GEOULTRA` folder for settings, mount list, backups and task state, searched on `/Usb0`, `/Usb1`, `/SD` in that order (first found wins; created on the first device present) |
+| Boot mounts | Restore the last session from the mount list (with its write-back state), plus the read-only system drive |
+| System font | New 9-point design with the BSW metrics (height, baseline, similar widths), so old applications' dialogs and menus lay out correctly |
+| Input driver | 1351 mouse in port 1 in the ROM (also what the U64's USB mouse emulation presents); other drivers load as files |
+| Task switcher | Hot key checked in the IRQ (for example C= + RUN/STOP) opens a task list; also a desktop menu entry |
+| Clock | Ultimate real-time clock through UCI (`DOS_CMD_GET_TIME`) at every boot; optional NTP sync through the Ultimate's network |
+
+## Cartridges
+
+**C64, Megabyter (type 86).** `$DE00` selects one of 128 8 KB banks at
+`$8000-$9FFF` (VICE: 1 MiB, 7 bits; the Ultimate allows 256 banks, but we
+stay at or under 1 MiB). `$DE02` bit 1 = EXROM, bit 0 = GAME (set = active);
+`$02` switches the cartridge off. The I/O must be visible in `$01` before
+writing either register. VICE 3.10 has no TwoMegabyter (type 87); VICE
+trunk r46306 (2026-10-27) still only has `megabyter.c`.
+
+**C128, Ultimate type 1 subtype 2** (firmware `c64_crt.cc`,
+`all_carts_v5.vhd`): external function ROM in 32 KB banks at `$8000-$FFFF`,
+bank select at `$DF7F` (7 bits), a register at `$DF7E` (`ram_bank`, 3 bits,
+purpose to be checked), REU and UCI allowed, Ultimate Audio blocked. It does
+not pull EXROM/GAME, so the C128 stays in 128 mode and autostarts through the
+function ROM's `CBM` signature; the MMU only maps it on request, so it never
+overlaps GEOS 128's RAM. U2/U2+ only. Not in VICE (VICE has generic
+16/32 KB function ROMs): VICE tests use a generic 32 KB ROM plus an REU image.
+
+**Boot.** The cartridge is a boot ROM, not a runtime ROM: at cold boot it
+copies its whole content into the REU (planned: REU DMA straight from the
+ROM window, about 1 MB/s), switches itself off and starts the kernal from
+the REU. After a reset it restarts, finds a valid signature in REU bank 1
+and restores the running system and the not yet written back drives from
+the REU (warm boot in under a second); only a power cut loses unsaved data.
+
+## Ultimate settings (`.cfg`)
+
+Each cartridge ships with a `.cfg` of the same name next to it
+(`geoultra64.crt` + `geoultra64.cfg`, `geoultra128.crt` +
+`geoultra128.cfg`). Firmware 3.15 loads it automatically when the `.crt`
+is started from the Ultimate's file browser (in memory only; the user's
+saved settings stay untouched). Format and item names as the Ultimate's
+own "Save settings"; values checked against the U64-II (firmware 3.15a,
+REST `/v1/configs`, 2026-10-28):
+
+```
+[C64 and Cartridge Settings]
+Command Interface=Enabled
+RAM Expansion Unit=Enabled
+REU Size=16 MB
+[U64 Specific Settings]
+Turbo Control=U64 Turbo Registers
+Turbo Control=C64U Turbo Registers
+CPU Speed=64
+```
+
+- The firmware silently skips lines it cannot apply, so one file serves
+  every device: the second `Turbo Control` line is for the C64 Ultimate,
+  the U64 section is ignored on a U2+. `CPU Speed=64` does not exist on the
+  U64 and Elite I (maximum 48): the kernal sets the speed itself through
+  the turbo registers (`$D030`/`$D031`, index 15 = the device's maximum),
+  so the `.cfg` value is only the start value. Check the file against real
+  devices with a `checkcfg` target (the u64-bbcbasic `tools/checkcfg.py`
+  pattern).
+- The C128 `.cfg` has only the C64 and Cartridge section (no turbo on a
+  U2+).
+- **Start-up check** (as in u64-bbcbasic): the `.cfg` is not loaded when
+  the cartridge starts another way (REST `run_crt`, the Ultimate's
+  start-up cartridge setting, VICE). The boot ROM checks for the UCI
+  (unlock sequence `$D038`/`$D036` if needed), an REU of 16 MB and the turbo
+  registers; if something is missing it writes the same settings to
+  `/Temp/uci_config.cfg` and applies them with UCI control command `0x50`.
+  It only does so when needed: changing REU settings may clear the REU,
+  which would destroy what reset recovery relies on. If the UCI cannot be
+  reached, a text screen tells the user to enable the Command Interface.
+- Turbo runs at maximum by default: GeoUltra has no IEC transfers in its own
+  drives, and the CIA timers keep real time under turbo (measured in
+  u64-bbcbasic), so jiffy and process timing are unaffected.
+
+## REU map (16 MB, 256 banks of 64 KB)
+
+| Banks | Use |
+| --- | --- |
+| 0 | GEOS 2.0-compatible kernal bank (reboot copy, `MoveData` scratch) |
+| 1 | System: bank allocation table, mount table, dirty bitmaps, config, boot signature |
+| 2-17 | ROM mirror (1 MB): kernal, all disk drivers resident, desktop, and a read-only system drive with tools, fonts and drivers as GEOS files |
+| 18 | Desk accessory swap |
+| 19-26 | Task slots, one bank each: `$0400-$7FFF`, `$8000-$88FF`, zero page, screen and colour (count configurable) |
+| 27-28 | Print spooler |
+| 29-30 | Clipboard (text scrap, photo scrap) |
+| 31-255 | Drives, handed out in 64 KB units through the allocation table |
+
+Fixed system part: 31 banks; 225 banks (about 14 MB) remain for drives.
+
+## Drives A-D
+
+- One REU block driver for all drive types; geometry tables map track/sector
+  to a linear offset (1541 speed zones, 1571, 1581, native). A block
+  transfer is one 256-byte REU DMA.
+- `driveType` = `$80 | type` (the GEOS RAM-drive convention; native = 4).
+- Mount: one UCI `LOAD_REU` of the image file to the drive's bank range;
+  the mount table holds path, type, REU base, size and dirty state.
+- Dirty map: one bit per block in bank 1 (a 16 MB native drive needs 8 KB).
+- Write-back of changed runs only: seek in the file, then `SAVE_REU` that
+  range (whether `SAVE_REU` writes at the file pointer is still to be
+  verified on the hardware).
+
+## Native RAM drive and DNP
+
+CMD native format: up to 255 tracks of 256 blocks; one track is exactly
+64 KB, so track n = REU bank `base + n - 1` and the drive in the REU is
+byte for byte a `.dnp` file. Import = one `LOAD_REU` (track count = file
+size / 65536), export = one `SAVE_REU`, new = format N tracks in the REU.
+Largest drive: 225 tracks (about 14 MB) with nothing else mounted; a full
+255-track DNP needs the later track-cache mode. BAM, allocation and
+directory handling are disk driver routines in GEOS 2.0, so native support
+lives in the driver; subdirectories need an extended API used by the new
+desktop.
+
+## Berkeley assets to replace
+
+System font (own 9-point font with BSW metrics: height and baseline, so
+dialog layouts stay right), standard icons (OK, Cancel, ...), deskTop.
+User-owned input and printer drivers keep loading as files.
+
+## Phases
+
+| Phase | Content |
+| --- | --- |
+Phases 1-3 target the Ultimate 64 family (and VICE 3.10 for what needs no
+UCI).
+
+| Phase | Content |
+| --- | --- |
+| 1 | Boot ROM with `.cfg` start-up check, REU manager, REU drive driver, core kernal (memory, math, graphics, processes/IRQ, input driver), turbo control, conformance harness against GEOS 2.0 in VICE |
+| 2 | Text and fonts, menus, icons, dialogs, file system up to VLIR: geoWrite and geoPaint run |
+| 3 | Desktop and tools, swapping (tasks, spooler, clipboard), clock, palette |
+| 4 | C64 with an Ultimate II+: same `.crt`, without turbo and palette; test UCI unlock and REU on the U2+ |
+| 5 | GEOS 128 cartridge on a C128 with an Ultimate II+, 40/80 columns |
+
+## To verify on hardware
+
+1. REU DMA reads the cartridge ROM window (C64 Megabyter; C128 function ROM).
+2. The REU keeps its content across a reset.
+3. `SAVE_REU` after a seek writes at the file position.
+4. Maximum C128 cartridge size on a U2+; purpose of `$DF7E`.
+
+## Still open
+
+- Address of the extended jump table; where the 7-bank legacy sandbox sits
+  in the REU map.

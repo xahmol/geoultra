@@ -10,26 +10,57 @@ through the Ultimate Command Interface (UCI) and the REU, and stays
 compatible with existing GEOS applications. Spun off from the GeoUTools
 Oscar64 rebuild on 2026-10-28. **Planning stage: no code yet.**
 
-Read [`docs/FEASIBILITY.md`](docs/FEASIBILITY.md) first: it holds the
-decisions so far and the open questions.
+Read [`docs/DESIGN.md`](docs/DESIGN.md) first: it holds the decisions
+(cartridges, REU map, drives, DNP, phases) and what is still to verify or
+open. [`docs/FEASIBILITY.md`](docs/FEASIBILITY.md) is the background
+analysis; its route and phase recommendations are superseded.
 
 ## Decisions already taken (by the user)
 
 - Name GeoUltra; separate repository; full compatibility with existing GEOS
   applications is a hard requirement.
-- Kernal and drivers in assembler; desktop and tools may be C (Oscar64 with
-  the geos-oscar64 library, see below).
+- Kernal, drivers and the new desktop in assembler (ca65/ld65); tools may
+  be C (Oscar64 with the geos-oscar64 library, see below).
+- Free-standing clean-room kernal from the start (no patch release); the
+  user's GEOS 2.0 is only the test oracle.
+- Boot from cartridge: C64 Megabyter (type 86, at most 1 MiB, runs in VICE
+  3.10 and on the Ultimate), C128 Ultimate C128 cartridge (type 1 sub 2).
+- Ultimate 64 family first; a C64 with an Ultimate II+ next, the C128 last.
+- 16 MB REU required; DA swap, tasks, spooler and clipboard in the REU;
+  whole-image REU drives with automatic write-back.
 - Inspired by GDOS64, MegaPatch3 and TopDesk, but no copying: those sources
   (area6510) are "all rights reserved", the reassembled kernal (mist64/geos)
-  is Berkeley's code. Use them only as references for behaviour.
+  is Berkeley's code. Reading them for behaviour questions is allowed; never
+  copy code, tables or structure, and credit the source in a comment where
+  behaviour was derived from it.
 - C64 and C128 versions; Ultimate firmware 3.15 features (REU, palette,
   turbo, native file system, network/HTTP).
 
-Recommended in the analysis, still to be confirmed with the user: hybrid
-route (start as a patch on the user's GEOS 2.0, replace kernal parts with
-clean-room code later), REU image RAM drives with UCI load/save, ca65/ld65
-as assembler and linker, phase plan 1-4 with gates. Open questions are at
-the end of FEASIBILITY.md: ask them before designing phase 1.
+## Compatibility contract (constrains all code)
+
+Existing applications see only the GEOS 2.0 surface, so it must stay byte
+for byte where GEOS 2.0 put it (details in FEASIBILITY.md, "Compatibility
+contract"):
+
+- Jump table `$C100`-`$C31x` with the same registers in/out and "Destroys"
+  behaviour as HG2G chapter 20, info bytes `$C000`-`$C02F`, GEOS 128 additions.
+- Variables `$8000`-`$88FF`, disk driver jump area at `$9000`, input driver
+  at `$FE80` (`$FD00` on the 128), printer drivers at `$7900`.
+- Zero page: r0-r15 `$02`-`$21`, kernal variables up to `$48`, a0-a9
+  untouched, `$80`-`$FA` free for applications (geos-oscar64 relies on it).
+- Every drive must look like a track/sector block device (`GetBlock`/
+  `PutBlock`, BAM, VLIR), whatever the Ultimate stores underneath.
+- Turbo must not change jiffy-based timing (process timers, double-click).
+- Clean-room: no Berkeley assets either (BSW font, standard icons, deskTop).
+
+## Planned build and test (nothing exists yet)
+
+From FEASIBILITY.md, "Build chain" and "Testing": `make` builds the kernal,
+drivers, desktop and cartridge images with ca65/ld65 (one linker config per
+machine) and C tools with Oscar64; `make test` runs VICE checks; `make e2e`
+drives the U64 through c64bridge/REST; `make deploy` uploads by FTP.
+VICE has no UCI emulation, so every UCI code path needs the hardware loop;
+the REU RAM-drive layer and the kernal can be tested in VICE (with a VICE REU).
 
 ## References
 
@@ -49,8 +80,9 @@ the end of FEASIBILITY.md: ask them before designing phase 1.
 
 ## Test environment (from the GeoUTools work)
 
-- VICE 3.8 (`x64sc`, `x128`): unattended GEOS boots with an AUTO_EXEC test
-  program and `-limitcycles N -exitscreenshot` (`-exitscreenshotvicii` for
+- VICE 3.10 in `~/.local/opt/vice-3.10/bin` (`x64sc`, `x128`; built from
+  `~/vice-3.10`, needed for the Megabyter cartridge); VICE 3.8 stays in
+  `/usr/local/bin`: unattended GEOS boots with an AUTO_EXEC test program and `-limitcycles N -exitscreenshot` (`-exitscreenshotvicii` for
   the 40-column screen in x128, `-40col`/`-80col`).
 - Ultimate 64-II at 192.168.1.148 (firmware 3.15a) through the c64bridge
   MCP server; screenshots with GeoUTools' `tests/e2e/shot.py` (VIC stream).
