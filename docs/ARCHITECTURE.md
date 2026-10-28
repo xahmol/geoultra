@@ -25,8 +25,9 @@ to date as the code grows.
 2. ld65 links the kernal with `src/kernal/kernal64.cfg` into one 16 KB
    image of `$C000-$FFFF` (RAM under I/O and the input driver included).
 3. `mkimage.py` packs the images into the system image (ROM banks 1 and
-   up) and writes `build/gen/image.inc`, the load table the boot code
-   uses: REU offset, C64 address and length per image.
+   up), the boot splash first (`--cpu 2`), and writes `build/gen/image.inc`,
+   the load table the boot code uses: REU offset, C64 address and length
+   per image.
 4. ca65/ld65 build bank 0 (`src/boot/`) with that table; `mkcrt.py`
    writes `build/geoultra64.crt`.
 
@@ -34,7 +35,12 @@ to date as the code grows.
 
 1. Reset: the C64 Kernal finds CBM80 in bank 0 and jumps to the
    cartridge, which runs `IOINIT` from the C64 Kernal (CIA set-up), copies
-   the loader to `$0200` and runs it from there.
+   the loader to `$0200` and runs it from there. The loader copies the
+   boot splash (the first `IMG_CPU` images: bitmap to `$A000`, colours to
+   `$8C00`) with the CPU straight from the ROM banks, so it also shows
+   without an REU, and turns the display on. Status messages are
+   pre-drawn strips of the splash's status line in bank 0
+   (`tools/splash/mksplash.py --boot`); errors colour the line light red.
 2. The loader checks the REU (later also the UCI, 16 MB and the `.cfg`
    start-up check, DESIGN.md), then stashes ROM banks 1..n into the REU
    at `$020000` (bank 2 of the REU map) by DMA from `$8000`.
