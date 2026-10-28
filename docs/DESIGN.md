@@ -170,6 +170,9 @@ Smoke tests in `tests/smoke/` (`make smoke-vice`, `make smoke-u64`), run
 | The Megabyter cartridge autostarts again after a reset | Pass (the basis of reset recovery) |
 | `SAVE_REU` after a seek writes at the file position | Pass: 256 bytes written in place at `$1000` in a 64 KB file opened with attribute `$03` (read/write, existing), size unchanged |
 | `LOAD_REU` after a seek reads from the file position | Pass (the basis of the later track-cache mode) |
+| GeoUltra cartridge boots its own kernal to the GEOS screen (phase 1 milestone) | Pass on the U64 and in VICE 3.10 |
+| 1351 input driver with the U64's USB mouse emulation (Mouse Mode "Mouse", port 1) | Pass: smooth movement, clamped exactly to 0-319 / 0-199, button presses in `mouseData`, `MOUSE_BIT`/`INPUT_BIT` set |
+| 1351 input driver with a real Commodore 1351 in port 1 | Pass: smooth movement, clamped to 0-319 / 0-199, button presses, no drift while the mouse lies still (15 s of identical samples) |
 
 Still to check: on the C128, REU DMA from the external function ROM
 (DMA reaches bank 0 RAM only, UCILIB manual) and the maximum C128
