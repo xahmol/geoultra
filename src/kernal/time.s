@@ -34,6 +34,8 @@ todFreq:        .byte 0         ; $80: 50 Hz (PAL), 0: 60 Hz
 hours:          .byte 0
 alarmWarn:      .byte 0         ; frames until the next beep
 
+        .segment "INIT"                 ; cold start only
+
 ; ClockInit (cold start, I/O on): 50 or 60 Hz for the TOD by the number of
 ; raster lines (PAL has lines past 287), the TOD started at midnight, the
 ; build date.
@@ -72,6 +74,8 @@ ClockInit:
         lda #BUILD_DAY
         sta day
         rts
+
+        .segment "KEXT"
 
 ; TodMode (I/O on): the TOD input frequency in CIA 1 control register A.
 TodMode:

@@ -180,6 +180,13 @@ UCI).
   runs on the GeoUltra kernal: menus, disk, printer and trash icons, the
   notepad with all files, icons and names as on GEOS 2.0 (no clock yet;
   one title bar pattern differs, see the open points).
+- 2026-10-29: geoWrite 1.1 and geoPaint 1.1 (GEOS 1.2 applications disk)
+  start from REU drive B (`tools/harness/apprun.py`): geoWrite creates a
+  document and takes typed text, geoPaint creates a picture and draws
+  pencil strokes. Not yet: opening an existing document (the file list
+  dialog command DBGETFILES is the one dialog command still missing).
+- 2026-10-29: `ToBASIC` gives the same BASIC screen as GEOS 2.0 (`PRINT
+  7*6`), `SYS49152` (`BootGEOS`) reboots GeoUltra with drive A mounted.
 
 ## Verified on hardware
 

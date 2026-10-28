@@ -355,9 +355,12 @@ class System:
                 0x60]                                            # rts
         v.mem_set(stub, bytes(code))
         v.mem_set(0x849B, bytes([stub & 0xFF, stub >> 8]))
-        v.resume()
-        time.sleep(ev.get("wait", 0.2))
-        v.ping()
+        for _ in range(20):                         # until the stub has run
+            v.resume()                              # (it clears appMain)
+            time.sleep(ev.get("wait", 0.2))
+            v.ping()
+            if v.mem_get(0x849B, 0x849C) != bytes([stub & 0xFF, stub >> 8]):
+                break
 
     def launch(self):
         args = [VICE, "-default", "+sound", "-sounddev", "dummy", "-warp", "-binarymonitor",

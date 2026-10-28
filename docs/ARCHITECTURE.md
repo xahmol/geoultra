@@ -63,6 +63,7 @@ section 2). GeoUltra's own use of the system areas:
 
 | Range | GeoUltra |
 | --- | --- |
+| `$5000-$5FFF` | at boot only: the cold start (`INIT`, `build/init64.bin`: `ColdStart`, banner, `DiskInit`, `ClockInit`), loaded by the boot ROM and started at `$5000`; applications overwrite it later |
 | `$9000-$9A7F` | disk driver: vectors `$9000-$902F`, jump table `$9030-$904D`, REU image driver (now to about `$97EB`); planned: the **overlay slot**, rarely used kernal code fetched from the REU on demand |
 | `$9A80-$9C7F` | `KEXT`: kernal code that no longer fits at `$C000-$FFFF` (now the clock), resident until the overlay slot exists |
 | `$9C80-$9D7F` | `dir3Head` (third BAM block of a 1581 image, as GEOS 2.0) |
@@ -350,6 +351,12 @@ automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
   after all others, and each one after the first gets a newly started
   GEOS 2.0 VICE with a fresh disk copy (the snapshot restores the booted
   system).
+- **Applications:** `tools/harness/apprun.py NAME [events]` boots
+  GeoUltra with the oracle disk as drive A and an applications disk
+  (`GEOS_APPS_DISK`, the user's own) as drive B, starts NAME with
+  GetFile, plays mouse and key events and renders the screen to a PNG.
+  Its key routine lives in GeoUltra's information block: applications
+  use `$0200-$03FF` (a stub at `$02A0` crashed geoPaint).
 - **Snapshots stop exactly at MainLoop** through a permanent checkpoint:
   VICE 3.10 runs on after a temporary one, and a snapshot taken at a
   random point (for example inside the clock update, with I/O on) made

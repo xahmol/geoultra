@@ -4,14 +4,13 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .import ColdStart
         .export Trap, sysFlgCopy, BootGEOS, basicBuf
 
         .segment "INFO"
         .org $C000                      ; fixed addresses in this block
 
 BootGEOS:       jmp Reboot              ; $C000: back from BASIC (RESTORE too)
-ResetHandle:    jmp ColdStart           ; $C003
+ResetHandle:    jmp Reboot              ; $C003: the cold start is not resident
 bootName:       .byte "GEOS BOOT"       ; $C006, what applications test
 version:        .byte $20               ; $C00F: GEOS 2.0 interface
 nationality:    .byte 0                 ; $C010: English

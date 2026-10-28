@@ -15,8 +15,8 @@
         .import __LOADER_LOAD__, __LOADER_RUN__
 
 IOINIT  = $FDA3
-KERNAL  = $C003                 ; ResetHandle: the kernal's cold start (BootGEOS
-                                ; at $C000 reboots from the cartridge)
+KERNAL  = $5000                 ; ColdStart, loaded with the system (segment
+                                ; INIT; BootGEOS / ResetHandle reboot from ROM)
 IMG_ROW = 7                     ; table row: REU address, C64 address, length
 SCREEN  = $A000
 COLOURS = $8C00

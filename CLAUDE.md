@@ -63,6 +63,11 @@ table routine gets cases there, written from HG2G, and must pass before
 it counts as done. The GEOS 2.0 oracle disk is the user's own
 (`GEOS_ORACLE`), never committed.
 
+`tools/harness/apprun.py NAME [events]` runs a GEOS application from an
+applications disk (drive B, `GEOS_APPS_DISK`, the user's own) on GeoUltra
+in VICE and renders the screen (docs/ARCHITECTURE.md, "Conformance
+harness").
+
 Only the hardware smoke tests exist so far (`tests/smoke/`, results in
 DESIGN.md "Verified on hardware"): `make smoke` builds the Megabyter test
 cartridge (ca65/ld65, packed by `tools/mkcrt.py`) and an Oscar64 UCI test,

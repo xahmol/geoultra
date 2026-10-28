@@ -1085,6 +1085,8 @@ GetBorder:
 
 ; --- Start-up -------------------------------------------------------------
 
+        .segment "INIT"                 ; cold start only ($5000)
+
 ; DiskInit (cold start): drives from the mount table in the REU, then
 ; drive A (8) current and opened. Destroys A, X, Y, r0-r5.
 DiskInit:

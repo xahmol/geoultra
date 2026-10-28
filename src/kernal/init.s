@@ -1,4 +1,6 @@
-; Cold start: hardware, screen, mouse pointer, IRQ, then MainLoop.
+; Cold start: hardware, screen, mouse pointer, IRQ, then MainLoop. Runs
+; once from $5000 (segment INIT, loaded by the boot ROM; applications
+; overwrite it later), so cold-start-only code costs no kernal space.
 
         .include "geos.inc"
         .include "hw.inc"
@@ -14,9 +16,10 @@ DEFAULT_BORDER  = $0F             ; light grey
 POINTER_COLOR   = $06             ; blue
 IRQ_LINE        = 250             ; lower border
 
-        .segment "CODE"
+        .segment "INIT"
 
-ColdStart:
+ColdStart:                      ; $5000: the boot ROM jumps here
+        .assert ColdStart = $5000, lderror, "ColdStart must start INIT"
         sei
         cld
         ldx #$FF
