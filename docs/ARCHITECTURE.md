@@ -66,7 +66,7 @@ section 2). GeoUltra's own use of the system areas:
 | `$9000-$9A7F` | disk driver: vectors `$9000-$902F`, jump table `$9030-$904D`, REU image driver (now to about `$97EB`); planned: the **overlay slot**, rarely used kernal code fetched from the REU on demand |
 | `$9A80-$9C7F` | `KEXT`: kernal code that no longer fits at `$C000-$FFFF` (now the clock), resident until the overlay slot exists |
 | `$9C80-$9D7F` | `dir3Head` (third BAM block of a 1581 image, as GEOS 2.0) |
-| `$C000-$C0FF` | information block (`BootGEOS`, `bootName`, `version` = `$20`, `c128Flag`, `GU` signature, extension table pointer) |
+| `$C000-$C0FF` | information block (`BootGEOS`, `ResetHandle`, `bootName`, `version` = `$20`, `c128Flag`, `dateCopy` at `$C018`, the reboot code, ToBASIC's buffers, `GU` signature, extension table pointer) |
 | `$C100-$C2D6` | GEOS 2.0 jump table, 157 entries |
 | `$C2D7-$CFFF` | kernal tables (RODATA) and variables (DATA) |
 | `$D000-$DFFF` | RAM under I/O: the system font and other data only read with `$01 = $30` |
@@ -277,6 +277,21 @@ time, skipping bytes outside the window). BitOtherClip's data comes
 through the application: `r13` before every stream byte, `r14` before
 every packet outside a bigcount group (as GEOS 2.0, which cannot handle
 bigcounts there either; HG2G).
+
+## Leaving GEOS: ToBASIC and BootGEOS
+
+`ToBASIC` (`src/kernal/tobasic.s`, in `KCODE`, which stays RAM while the
+BASIC and Kernal ROMs are in) loads an optional PRG, sets up the C64
+Kernal (CIAs, vectors, screen) and starts BASIC; a few CIA 2 NMIs later
+it puts the command on the screen and RETURN in the keyboard queue, and
+RESTORE then leads to `BootGEOS`. Its buffers lie in the information
+block (`$C02B`), which BASIC programs leave alone. `BootGEOS` (`$C000`)
+reboots GeoUltra from the cartridge (Megabyter on, `jmp ($8000)`); the
+boot ROM itself starts the kernal through `ResetHandle` (`$C003`). REU
+drives survive the reboot through the mount table; `sysFlgCopy` bit 5
+tells programs that no boot disk is needed. Checked in VICE: the BASIC
+screen after `PRINT 7*6` is the same as GEOS 2.0's, `SYS49152` returns to
+GeoUltra with drive A still mounted.
 
 ## Clock
 

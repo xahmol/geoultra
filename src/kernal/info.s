@@ -5,12 +5,12 @@
         .include "hw.inc"
 
         .import ColdStart
-        .export Trap, sysFlgCopy
+        .export Trap, sysFlgCopy, BootGEOS, basicBuf
 
         .segment "INFO"
         .org $C000                      ; fixed addresses in this block
 
-BootGEOS:       jmp ColdStart           ; $C000
+BootGEOS:       jmp Reboot              ; $C000: back from BASIC (RESTORE too)
 ResetHandle:    jmp ColdStart           ; $C003
 bootName:       .byte "GEOS BOOT"       ; $C006, what applications test
 version:        .byte $20               ; $C00F: GEOS 2.0 interface
@@ -18,6 +18,19 @@ nationality:    .byte 0                 ; $C010: English
 sysVersion:     .byte 0                 ; $C011
 sysFlgCopy:     .byte 0                 ; $C012
 c128Flag:       .byte 0                 ; $C013: C64
+                .res 4, 0
+dateCopy:       .res 3                  ; $C018: year, month, day
+
+; Reboot: GeoUltra again from the cartridge (its boot ROM copies the
+; system from ROM to the REU and starts it; mounted REU drives stay).
+Reboot: sei
+        lda #ROM_ALL
+        sta CPU_PORT
+        lda #MB_ON8K
+        sta mbCtrl
+        jmp ($8000)                     ; the cartridge's cold start
+
+basicBuf:       .res 46                 ; ToBASIC: command, saved bytes
                 .res $C0E0 - *, 0
 guSignature:    .byte "GU"              ; $C0E0: GeoUltra present
 guVersion:      .byte 0, 1              ; $C0E2: major, minor

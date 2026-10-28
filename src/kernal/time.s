@@ -118,6 +118,11 @@ TimeUpdate:
         jsr FromBCD
         sta seconds
         lda todTenths
+        ldy #2                  ; dateCopy ($C018) as GEOS 2.0
+@date:  lda year,y
+        sta $C018,y
+        dey
+        bpl @date
         ldx cia1Icr             ; X = interrupt flags (reading clears them)
         pla
         sta CPU_PORT

@@ -140,3 +140,12 @@ CASES += [
     midnight("Clock passes midnight on 28 February 2026", 26),
     midnight("Clock passes midnight on 28 February 2024", 24),
 ]
+
+# ToBASIC: BASIC starts and runs the command; the first nine text lines
+# (banner, READY., the command, its output, READY.) compared, the cursor
+# line after them not (it blinks).
+CASES += [
+    dict(name="ToBASIC runs PRINT 7*6", routine="ToBASIC", noreturn=3,
+         r={"r0": NAME, "r5": 0, "r7": 0x0803}, mem={NAME: text("PRINT 7*6"), 0x0800: [0, 0, 0]},
+         compare=["mem:$0400-$0567"]),
+]

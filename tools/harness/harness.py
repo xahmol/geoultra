@@ -27,6 +27,7 @@ Case files define CASES, a list of dicts:
            set (A is then overwritten), e.g. "C", "NC", "" (both clear)
   noreturn the routine does not return before the events (DoDlgBox): the
            events start after a short wait instead of at its return
+           (True: 0.5 s; a number: that many seconds)
   poke     {address: bytes} written by the trampoline after the clean-up
            of event cases (e.g. keyVector, which the clean-up clears)
   mem      {address: bytes} extra memory writes
@@ -296,7 +297,8 @@ class System:
         cid = v.checkpoint(end)
         v.resume()
         if case.get("noreturn"):
-            time.sleep(0.5)
+            wait = case["noreturn"]
+            time.sleep(0.5 if wait is True else wait)
             v.ping()
         else:
             v.wait_event(RESP_CHECKPOINT, timeout=30)
