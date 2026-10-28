@@ -4,6 +4,11 @@
 #   make              build build/geoultra64.crt
 #   make vice         run it in VICE 3.10 (16 MB REU, 1351 mouse in port 1)
 #   make vice-shot    run unattended, screenshot to build/vice.png
+#   make conformance  compare kernal routines with GEOS 2.0 in VICE
+#                     (tests/conformance/*.py; your own GEOS 2.0 disk:
+#                     GEOS_ORACLE=path, default ~/geos-dev/u64-usb/
+#                     GEOS64-v2.0-unkeyed.d64; CONF_REBUILD=1 makes new
+#                     snapshots of both systems)
 #
 # Hardware smoke tests (docs/DESIGN.md, "Verified on hardware"):
 #   make smoke        build build/smoke/gusmoke.crt and guseek.prg
@@ -27,7 +32,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all vice vice-shot smoke smoke-vice smoke-u64 smoke-u64-restore check-deploy clean
+.PHONY: all vice vice-shot conformance smoke smoke-vice smoke-u64 smoke-u64-restore check-deploy clean
 
 all: build/geoultra64.crt
 
@@ -81,6 +86,9 @@ vice: build/geoultra64.crt
 
 vice-shot: build/geoultra64.crt
 	$(VICE) $(VICEOPTS) -warp -limitcycles 6000000 -exitscreenshot build/vice.png; true
+
+conformance: build/geoultra64.crt
+	$(PYTHON) tools/harness/harness.py $(if $(CONF_REBUILD),--rebuild) tests/conformance/*.py
 
 # --- Smoke tests ------------------------------------------------------
 

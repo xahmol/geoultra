@@ -13,7 +13,8 @@ to date as the code grows.
 | `src/input/` | input drivers (`mouse1351.s` is the one in the ROM) |
 | `src/boot/` | cartridge bank 0: start-up and system loader |
 | `tools/` | `genjumptab.py` (jump table with traps), `mkimage.py` (system image and its load table), `mkcrt.py` (Megabyter `.crt`) |
-| `tests/` | smoke tests (hardware facts), later the conformance harness |
+| `tests/smoke/` | smoke tests (hardware facts) |
+| `tests/conformance/` | conformance cases, run by `tools/harness/` against GEOS 2.0 |
 
 ## Build
 
@@ -77,6 +78,20 @@ sprite 0, the mouse pointer).
 - Raster IRQ once per frame (line 250, in the lower border).
 - Unimplemented jump table entries end in a trap: border colour cycling,
   the entry number at `$C0F0` (readable through the monitor or REST).
+
+## Conformance harness
+
+`make conformance` (`tools/harness/harness.py`, VICE binary monitor client
+`tools/harness/vicemon.py`) boots GEOS 2.0 from the user's own disk and
+GeoUltra in two VICE 3.10 instances, stops each at the top of its MainLoop
+and saves a snapshot (`build/harness/*.vsf`). Per case it restores the
+snapshot, clears both screen buffers, writes the inputs (registers,
+r0-r15, a test pattern for `curPattern`, `dispBufferOn`, memory), calls
+the routine through a trampoline at `$0340` with interrupts off, and
+compares the listed outputs: screen buffers, A/X/Y, r-registers. Only
+what HG2G says a routine returns or leaves unchanged is compared; the
+registers it destroys may differ. GeoUltra's snapshot is rebuilt
+automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
 
 ## Attribution
 
