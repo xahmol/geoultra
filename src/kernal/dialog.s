@@ -7,8 +7,8 @@
 ; only. Own code and data layout; the system icons are GeoUltra's own
 ; (tools/mkicons.py). Checked with tests/conformance/dialog.py.
 ;
-; Not yet: DBGETSTRING (needs GetString), DBGRPHSTR (GraphicsString) and
-; DBGETFILES (the file system); their parameters are skipped.
+; Not yet: DBGETSTRING (needs GetString) and DBGETFILES (the file
+; system); their parameters are skipped.
 
         .include "geos.inc"
         .include "hw.inc"
@@ -16,7 +16,7 @@
         .export DoDlgBox, RstrFrmDialogue
         .import DoIcons, StartMouseMode, UseSystemFont, PutString
         .import SetPattern, Rectangle, FrameRectangle, RecoverRectangle
-        .import InterruptMain, MainLoop
+        .import InterruptMain, MainLoop, GraphicsString
         .import SysIconOK, SysIconCANCEL, SysIconYES, SysIconNO
         .import SysIconOPEN, SysIconDISK
         .import __KSTATE_RUN__, __KSTATE_SIZE__
@@ -424,10 +424,18 @@ TextPos:
 DbGetString:
         lda #4
         bne Skip
-; DBGRPHSTR: .word graphics string (GraphicsString: not yet).
+
+; DBGRPHSTR: .word graphics string, drawn now.
 DbGrphStr:
-        lda #2
-        bne Skip
+        ldy dbIndex
+        lda (DBoxDesc),y
+        sta r0L
+        iny
+        lda (DBoxDesc),y
+        sta r0H
+        inc dbIndex
+        inc dbIndex
+        jmp GraphicsString
 ; DBGETFILES: .byte x, y (file system: not yet).
 DbGetFiles:
         lda #2

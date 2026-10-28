@@ -9,7 +9,7 @@
         .export LoadCharSet, UseSystemFont, GetCharWidth, GetRealSize
         .export PutChar, SmallPutChar, PutString, i_PutString, PutDecimal
         .export StringWidth
-        .import SystemFont, GetScanLine
+        .import SystemFont, GetScanLine, GraphicsString
 
         .segment "DATA"
 
@@ -425,6 +425,8 @@ Escape:
         beq @gotoy
         cmp #GOTOXY
         beq @gotoxy
+        cmp #ESC_GRAPHICS
+        beq @graphics
         ldx #6                  ; style codes
 @style: cmp styleCode,x
         beq @setStyle
@@ -471,6 +473,18 @@ Escape:
 @gotoxy:
         jsr @gotox
         jmp @gotoy
+@graphics:                      ; a graphics string up to its NULL, which
+        inc r0L                 ; also ends this string: leave r0 one before
+        bne @gs                 ; the NULL for PutString's increment
+        inc r0H
+@gs:    jsr GraphicsString
+        sec
+        lda r0L
+        sbc #2
+        sta r0L
+        bcs @gsEnd
+        dec r0H
+@gsEnd: rts
 
 ; r0 += 1, A = (r0)
 NextByte:

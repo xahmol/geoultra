@@ -1,7 +1,7 @@
 ; Graphics primitives: GetScanLine, SetPattern, HorizontalLine,
 ; InvertLine, RecoverLine, VerticalLine, Rectangle, FrameRectangle,
-; InvertRectangle, RecoverRectangle, ImprintRectangle, BitmapUp and the
-; inline i_ variants. Written from the HG2G2022 descriptions (parameters, Uses,
+; InvertRectangle, RecoverRectangle, ImprintRectangle, BitmapUp,
+; DrawPoint, TestPoint, DrawLine and the inline i_ variants. Written from the HG2G2022 descriptions (parameters, Uses,
 ; Destroys); checked against GEOS 2.0 with the conformance harness.
 
         .include "geos.inc"
@@ -11,6 +11,7 @@
         .export InvertLine, RecoverLine, InvertRectangle, RecoverRectangle
         .export ImprintRectangle, i_Rectangle, i_FrameRectangle
         .export i_RecoverRectangle, i_ImprintRectangle, BitmapUp, i_BitmapUp
+        .export DrawPoint, TestPoint, DrawLine, InlineArgs, InlineReturn
         .import patterns
 
         .segment "DATA"
@@ -272,18 +273,15 @@ PutMasked:
         eor kMask
         sta (r6),y
         rts
-@pattern:
-        lda r11H
-        and kMask
+@pattern:                       ; as GEOS 2.0: the background (or the only
+        lda r11H                ; buffer) is the source, the result goes
+        and kMask               ; to both
         sta kBits
-        lda (r5),y
-        and kInv
-        ora kBits
-        sta (r5),y
         lda (r6),y
         and kInv
         ora kBits
         sta (r6),y
+        sta (r5),y
         rts
 
 ; VerticalLine: A = pattern byte (bit 7 for the lines with y & 7 = 0),
@@ -316,14 +314,11 @@ VerticalLine:
         lda kMask
 @set:   sta kBits
         ldy #0
-        lda (r5),y
-        and kInv
-        ora kBits
-        sta (r5),y
-        lda (r6),y
+        lda (r6),y              ; background as source (see PutMasked)
         and kInv
         ora kBits
         sta (r6),y
+        sta (r5),y
         lda kY
         cmp r3H
         beq @done
@@ -641,3 +636,308 @@ bmBig:          .res 1          ; inside a bigcount group
 bmBigLeft:      .res 1
 bmBigStart:     .res 2
 bmBigEnd:       .res 2
+
+; Pixel address in r5/r6 (per dispBufferOn, or both buffers when kOp is
+; OP_RECOVER) and bit mask in ptMask for r3/r11L.
+PointAddr:
+        lda dispBufferOn
+        pha
+        lda kOp
+        cmp #OP_RECOVER
+        bne @scan
+        lda #ST_WR_FORE | ST_WR_BACK
+        sta dispBufferOn
+@scan:  ldx r11L
+        jsr GetScanLine
+        pla
+        sta dispBufferOn
+        lda r3L
+        and #$F8
+        clc
+        adc r5L
+        sta r5L
+        lda r3H
+        adc r5H
+        sta r5H
+        lda r3L
+        and #$F8
+        clc
+        adc r6L
+        sta r6L
+        lda r3H
+        adc r6H
+        sta r6H
+        lda r3L
+        and #7
+        tax
+        lda bitMask,x
+        sta ptMask
+        rts
+
+; DrawPoint: r3 = x, r11L = y. N set: recover from the background; else
+; carry set: set, carry clear: clear (per dispBufferOn).
+; Destroys A, X, Y, r5, r6.
+DrawPoint:
+        php
+        bpl @draw
+        lda #OP_RECOVER
+        sta kOp
+        jsr PointAddr
+        ldy #0
+        lda (r6),y
+        and ptMask
+        sta kBits
+        lda ptMask
+        eor #$FF
+        and (r5),y
+        ora kBits
+        sta (r5),y
+        plp
+        rts
+@draw:  lda #OP_PATTERN
+        sta kOp
+        jsr PointAddr
+        ldy #0
+        plp                     ; as GEOS 2.0: the background (or the only
+        bcc @clear              ; buffer) is the source, the result goes
+        lda (r6),y              ; to both
+        ora ptMask
+        sta (r6),y
+        sta (r5),y
+        rts
+@clear: lda ptMask
+        eor #$FF
+        and (r6),y
+        sta (r6),y
+        sta (r5),y
+        rts
+
+; TestPoint: r3 = x, r11L = y. Carry set when the pixel is set (the
+; background is tested when both buffers are on). Destroys A, X, Y, r5,
+; r6.
+TestPoint:
+        lda #OP_PATTERN
+        sta kOp
+        jsr PointAddr
+        ldy #0
+        lda (r6),y
+        and ptMask
+        cmp #1                  ; carry set when not zero
+        rts
+
+; DrawLine: r3/r11L to r4/r11H, Bresenham. N set: recover; else carry
+; set: set, clear: clear. A horizontal line that is not recovered is a
+; HorizontalLine in pattern $FF or $00. Destroys A, X, Y, r3-r13.
+;
+; Steps (as GEOS 2.0): the shallow case walks x from the endpoint with
+; the smaller x, the steep case y from the one with the smaller y; error
+; 2 * minor - major, a negative error adds 2 * minor, otherwise the minor
+; coordinate steps towards the other end and 2 * (minor - major) is added.
+DrawLine:
+        php
+        bmi @line
+        lda r11L
+        cmp r11H
+        bne @line
+        lda #$FF
+        plp
+        bcs @hl
+        lda #0
+@hl:    jmp HorizontalLine
+@line:  lda r11H                ; r7 = |dy|
+        sec
+        sbc r11L
+        bcs @dy
+        eor #$FF
+        adc #1
+@dy:    sta r7L
+        lda #0
+        sta r7H
+        sec                     ; r12 = |dx|
+        lda r4L
+        sbc r3L
+        sta r12L
+        lda r4H
+        sbc r3H
+        sta r12H
+        bpl @dx
+        sec
+        lda #0
+        sbc r12L
+        sta r12L
+        lda #0
+        sbc r12H
+        sta r12H
+@dx:    lda r12H                ; shallow when dx >= dy
+        cmp r7H
+        bne @cmp
+        lda r12L
+        cmp r7L
+@cmp:   bcs @shallow
+        jmp Steep
+
+@shallow:
+        lda r7L                 ; r9 = 2 * dy
+        asl
+        sta r9L
+        lda r7H
+        rol
+        sta r9H
+        sec                     ; r8 = 2 * dy - dx
+        lda r9L
+        sbc r12L
+        sta r8L
+        lda r9H
+        sbc r12H
+        sta r8H
+        sec                     ; r10 = 2 * (dy - dx)
+        lda r7L
+        sbc r12L
+        sta r10L
+        lda r7H
+        sbc r12H
+        sta r10H
+        asl r10L
+        rol r10H
+        jsr XOrder              ; start at the smaller x
+        bcc @keep
+        jsr SwapEnds
+@keep:  lda #1                  ; y step towards the other end
+        ldx r11H
+        cpx r11L
+        bcs @step
+        lda #$FF
+@step:  sta r13L
+@hloop: plp
+        php
+        jsr DrawPoint
+        lda r3H
+        cmp r4H
+        bne @hnext
+        lda r3L
+        cmp r4L
+        beq @done
+@hnext: inc r3L
+        bne @herr
+        inc r3H
+@herr:  bit r8H
+        bpl @hstep
+        clc
+        lda r8L
+        adc r9L
+        sta r8L
+        lda r8H
+        adc r9H
+        sta r8H
+        jmp @hloop
+@hstep: clc
+        lda r11L
+        adc r13L
+        sta r11L
+        clc
+        lda r8L
+        adc r10L
+        sta r8L
+        lda r8H
+        adc r10H
+        sta r8H
+        jmp @hloop
+@done:  plp
+        rts
+
+Steep:  lda r12L                ; r9 = 2 * dx
+        asl
+        sta r9L
+        lda r12H
+        rol
+        sta r9H
+        sec                     ; r8 = 2 * dx - dy
+        lda r9L
+        sbc r7L
+        sta r8L
+        lda r9H
+        sbc r7H
+        sta r8H
+        sec                     ; r10 = 2 * (dx - dy)
+        lda r12L
+        sbc r7L
+        sta r10L
+        lda r12H
+        sbc r7H
+        sta r10H
+        asl r10L
+        rol r10H
+        lda r11H                ; start at the smaller y
+        cmp r11L
+        bcs @keep
+        jsr SwapEnds
+@keep:  lda #1                  ; x step towards the other end
+        sta r13L
+        lda #0
+        sta r13H
+        jsr XOrder
+        bcc @vloop
+        lda #$FF
+        sta r13L
+        sta r13H
+@vloop: plp
+        php
+        jsr DrawPoint
+        lda r11L
+        cmp r11H
+        beq @done
+        inc r11L
+        bit r8H
+        bpl @vstep
+        clc
+        lda r8L
+        adc r9L
+        sta r8L
+        lda r8H
+        adc r9H
+        sta r8H
+        jmp @vloop
+@vstep: clc
+        lda r3L
+        adc r13L
+        sta r3L
+        lda r3H
+        adc r13H
+        sta r3H
+        clc
+        lda r8L
+        adc r10L
+        sta r8L
+        lda r8H
+        adc r10H
+        sta r8H
+        jmp @vloop
+@done:  plp
+        rts
+
+; Carry set when r3 >= r4 (from the other point of view: r4 is not right
+; of r3).
+XOrder: lda r3H
+        cmp r4H
+        bne @end
+        lda r3L
+        cmp r4L
+@end:   rts
+
+; Swap the endpoints r3/r11L and r4/r11H.
+SwapEnds:
+        ldx #1
+@swap:  lda r3,x
+        ldy r4,x
+        sta r4,x
+        sty r3,x
+        dex
+        bpl @swap
+        lda r11L
+        ldy r11H
+        sta r11H
+        sty r11L
+        rts
+
+        .segment "DATA"
+ptMask:         .res 1

@@ -62,3 +62,18 @@ CASES += [
     dict(name="i_ImprintRectangle", routine="i_ImprintRectangle", fillfore=0x5A,
          fillback=0x81, inline=[3, 9, 250, 0, 0x08, 0x01], compare=SCREENS),
 ]
+
+# With different foreground and background contents (GEOS 2.0 takes the
+# background as the source and writes both).
+CASES += [
+    dict(name="HorizontalLine, different buffers", routine="HorizontalLine", a=0x3C,
+         fillfore=0x0F, fillback=0xA5, r={"r3": 13, "r4": 190, "r11L": 40}, compare=SCREENS),
+    dict(name="Rectangle, different buffers", routine="Rectangle", pattern=STRIPES,
+         fillfore=0x0F, fillback=0xA5, r={"r2L": 3, "r2H": 20, "r3": 5, "r4": 60},
+         compare=SCREENS),
+    dict(name="VerticalLine, different buffers", routine="VerticalLine", a=0xA6,
+         fillfore=0x0F, fillback=0xA5, r={"r3L": 3, "r3H": 40, "r4": 21}, compare=SCREENS),
+    dict(name="FrameRectangle, different buffers", routine="FrameRectangle", a=0xFF,
+         fillfore=0x0F, fillback=0xA5, r={"r2L": 20, "r2H": 90, "r3": 13, "r4": 222},
+         compare=SCREENS),
+]

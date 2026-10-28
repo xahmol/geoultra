@@ -93,3 +93,10 @@ CASES = [
         compare=AFTER + ["mem:$84A3-$84A4", "mem:$84AB-$84AC", "mem:$84B3-$84B3", "mem:$002E-$002E",
                          "mem:$0033-$0038"]),
 ]
+
+GSTR = [1, 80, 0, 50, 7, 0xF0, 0, 100, 1, 72, 0, 58, 3, 0xE8, 0, 92, 0]   # frame, solid box
+CASES += [
+    dlg("DBGRPHSTR draws", [DEF_DB_POS | 1, 15, (ROUTINE_AT + 0x80) & 0xFF,
+                            (ROUTINE_AT + 0x80) >> 8, OK, DBI_X_0, DBI_Y_2, 0],
+        [dict(x=160, y=180)], extra={ROUTINE_AT + 0x80: GSTR}),
+]

@@ -126,7 +126,20 @@ the collected icons and runs MainLoop; `RstrFrmDialogue` restores the
 state, recovers the area and returns from `DoDlgBox` with r0L =
 `sysDBData`. The system icons OK..DISK are GeoUltra's own
 (`tools/mkicons.py`, 48 x 16, label centred by measured width). Not yet:
-`DBGETSTRING`, `DBGRPHSTR`, `DBGETFILES`.
+`DBGETSTRING` (needs `GetString`) and `DBGETFILES` (the file system).
+
+## Drawing details found with the harness
+
+- With both buffers on, pattern drawing (`HorizontalLine`, `VerticalLine`,
+  `Rectangle`, `FrameRectangle`), `DrawPoint` and `DrawLine` take the
+  background byte as the source and write the result to both screens;
+  `InvertLine` instead copies the whole inverted foreground byte.
+- `DrawLine` is Bresenham as GEOS 2.0 (start at the smaller x, or y for
+  steep lines; error 2 * minor - major); a horizontal line that is not
+  recovered is drawn by `HorizontalLine`.
+- `GraphicsString`: rectangle corners sorted, the new point becomes the
+  pen, the y delta uses only its low byte, `ESC_PUTSTRING` ends the
+  string; `ESC_GRAPHICS` in text continues it.
 
 MainLoop enables interrupts on every pass, as GEOS 2.0: routines such as
 `DoDlgBox` may be entered with them off.

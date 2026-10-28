@@ -22,6 +22,8 @@ Case files define CASES, a list of dicts:
            fillfore / fillback set them separately
   inline   bytes placed right after the jsr to the routine (i_ routines)
   after    code placed after the call (e.g. store r0L), run when it returns
+  flags    processor flags set just before the call: "C" carry set, "N" N
+           set (A is then overwritten), e.g. "C", "NC", "" (both clear)
   noreturn the routine does not return before the events (DoDlgBox): the
            events start after a short wait instead of at its return
   mem      {address: bytes} extra memory writes
@@ -218,6 +220,9 @@ class System:
         for reg, op in (("a", 0xA9), ("x", 0xA2), ("y", 0xA0)):
             if reg in case:
                 code += [op, case[reg]]
+        if "flags" in case:
+            code += [0xA9, 0xFF if "N" in case["flags"] else 0x00]   # lda: N flag
+            code += [0x38 if "C" in case["flags"] else 0x18]          # sec / clc
         a = table[case["routine"]]
         code += [0x20, a & 0xFF, a >> 8] + list(case.get("inline", []))
         code += list(case.get("after", []))
