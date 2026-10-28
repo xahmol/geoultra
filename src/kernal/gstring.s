@@ -34,7 +34,7 @@ cmdLo:  .byte <MovePenTo, <LineTo, <RectangleTo, <Nothing, <NewPattern
 cmdHi:  .byte >MovePenTo, >LineTo, >RectangleTo, >Nothing, >NewPattern
         .byte >EscPutString, >FrameRecTo, >PenXDelta, >PenYDelta, >PenXYDelta
 
-        .segment "CODE"
+        .segment "IOCODE"               ; RAM under I/O ($01 = $30)
 
 ; GraphicsString: r0 = commands, ended by NULL. Destroys A, X, Y, r0-r13.
 GraphicsString:

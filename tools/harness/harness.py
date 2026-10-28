@@ -64,7 +64,7 @@ ORACLE_DISK = os.environ.get(
 
 SYSTEMS = {
     "geos": ["-drive8truedrive", "+autostart-delay-random", "-autostart-delay", "3",
-             "-autostart", ORACLE_DISK],
+             "-reu", "-reusize", "512", "-autostart", ORACLE_DISK],
     "geoultra": ["-cartcrt", os.path.join(ROOT, "build", "geoultra64.crt"),
                  "-reu", "-reusize", "16384"],
 }

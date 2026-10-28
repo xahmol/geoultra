@@ -32,7 +32,7 @@ bitMask:
 decLo:  .byte <10000, <1000, <100, <10, <1
 decHi:  .byte >10000, >1000, >100, >10, >1
 
-        .segment "CODE"
+        .segment "IOCODE"               ; RAM under I/O ($01 = $30)
 
 ; LoadCharSet: r0 = font header. Destroys A, Y.
 LoadCharSet:
@@ -510,7 +510,7 @@ styleAnd:
 styleOr:
         .byte SET_UNDERLINE, 0, SET_REVERSE, 0, SET_BOLD, SET_ITALIC, SET_OUTLINE
 
-        .segment "CODE"
+        .segment "IOCODE"               ; RAM under I/O ($01 = $30)
 
 ; PutString: r0 = string, r11 = x, r1H = y. Returns r0 at the NULL.
 PutString:

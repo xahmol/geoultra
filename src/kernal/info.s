@@ -5,7 +5,7 @@
         .include "hw.inc"
 
         .import ColdStart
-        .export Trap
+        .export Trap, sysFlgCopy
 
         .segment "INFO"
         .org $C000                      ; fixed addresses in this block

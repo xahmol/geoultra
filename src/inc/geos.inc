@@ -249,3 +249,7 @@ DBUSRICON       = 18
 DB_USR_ROUT     = 19
 SYSDBI_WIDTH    = 6
 SYSDBI_HEIGHT   = 16
+
+; REU
+ramExpSize      = $88C3
+sysRAMFlg       = $88C4

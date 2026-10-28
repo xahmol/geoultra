@@ -6,7 +6,7 @@
         .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DefFaultVector
         .import Rectangle, FrameRectangle, SetPattern
         .import pointerPic, UseSystemFont, PutString, RecoverRectangle
-        .import StringWidth
+        .import StringWidth, sysFlgCopy
         .export ColdStart
 
 DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
@@ -119,6 +119,11 @@ ColdStart:
         sta RecoverVector
         lda #>RecoverRectangle
         sta RecoverVector+1
+        lda #8                  ; applications see 512 KB of REU (legacy view)
+        sta ramExpSize
+        lda #$80                ; MoveData by REU DMA
+        sta sysRAMFlg
+        sta sysFlgCopy
         lda #SELECTION_DELAY
         sta selectionFlash
         lda #ST_FLASH
