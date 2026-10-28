@@ -86,6 +86,16 @@ then reverse applies; LF moves down `curHeight + 1`, UPLINE up
 `curHeight`; a character whose top would be above line 0 is not drawn;
 with outline `GetRealSize` reports the baseline 2 lower.
 
+## Menus and the pointer
+
+As GEOS 2.0 (`src/kernal/menu.s`): only the current menu level reacts
+to presses; a press turns the mouse off until a menu is drawn again; an
+action item flashes asynchronously (MainLoop keeps running) and is
+called with the item number in A; `DoPreviousMenu` recovers the level
+and redraws the parent. The interrupt level clamps the pointer to the
+mouse limits and sets `faultData` (the 1351 driver does not clamp);
+MainLoop calls `mouseFaultVec` while `faultData` is set and clears it.
+
 ## Run-time conventions
 
 - `$01 = $30` (all RAM) outside the kernal's I/O sections, as in GEOS 2.0;
@@ -109,6 +119,23 @@ compares the listed outputs: screen buffers, A/X/Y, r-registers. Only
 what HG2G says a routine returns or leaves unchanged is compared; the
 registers it destroys may differ. GeoUltra's snapshot is rebuilt
 automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
+
+- **Font swap:** BSW 9 in GEOS 2.0 has the same layout as GeoUltra's
+  system font (widths, set width 60, height 9), so the harness writes our
+  bitstream over BSW 9's (`$D2DC`) before every case: GEOS 2.0 then draws
+  system-font text (menus, dialogs) with our glyphs and screens compare
+  pixel for pixel.
+- **Event cases** (`events`): after the call MainLoop runs and the harness
+  injects pointer moves, presses and releases (as the GeoUTools mouse
+  automation: `mouseXPos`/`mouseYPos`, `mouseData`, `pressFlag`). Before
+  such a case a clean-up routine stops the running application on both
+  systems (GEOS 2.0: the deskTop): `appMain`, application vectors and
+  processes off, `RecoverVector` back to the kernal default.
+- **Behaviour reference:** where HG2G is not precise enough (menus), the
+  reassembled kernal (mist64/geos) is read for behaviour only; such code
+  carries a credit comment, and the harness checks the result.
+- `--show NAME --area x0,y0,x1,y1 [--systems geos]` prints both screens
+  as ASCII art.
 
 ## Attribution
 

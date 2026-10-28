@@ -83,7 +83,12 @@ inputVector     = $84A5
 mouseFaultVec   = $84A7
 otherPressVec   = $84A9
 StringFaultVec  = $84AB
+RecoverVector   = $84B1
+selectionFlash  = $84B3
+alphaFlag       = $84B4
+iconSelFlag     = $84B5
 faultData       = $84B6
+menuNumber      = $84B7
 mouseTop        = $84B8
 mouseBottom     = $84B9
 mouseLeft       = $84BA   ; word
@@ -181,3 +186,18 @@ PLAINTEXT       = 27
 ; PutDecimal format
 SET_LEFTJUST    = $80
 SET_SUPRESS     = $40
+
+; Menus
+HORIZONTAL      = $00
+VERTICAL        = $80
+CONSTRAINED     = $40
+UN_CONSTRAINED  = $00
+MENU_ACTION     = $00
+DYN_SUB_MENU    = $40
+SUB_MENU        = $80
+MAX_M_NESTING   = 4
+MAX_M_ITEMS     = 15
+M_HEIGHT        = 14
+SELECTION_DELAY = 10
+TRUE            = $FF
+FALSE           = $00

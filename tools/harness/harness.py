@@ -18,10 +18,16 @@ Case files define CASES, a list of dicts:
   r        {"r3": 10, "r11L": 50, ...} pseudo-register inputs
   pattern  8 bytes for curPattern (optional; curPattern points to them)
   disp     dispBufferOn (default $C0: foreground and background)
-  fill     byte both screen buffers are filled with first (default 0)
+  fill     byte both screen buffers are filled with first (default 0);
+           fillfore / fillback set them separately
+  inline   bytes placed right after the jsr to the routine (i_ routines)
   mem      {address: bytes} extra memory writes
   pre      routines called (in order) before the r-register inputs are set
            and the routine runs, e.g. ["UseSystemFont"]
+  events   after the routine returns, let MainLoop run and inject mouse
+           events, in order: {"x": .., "y": .., "button": "press" |
+           "release" | None, "wait": seconds (default 0.4)}; a press or
+           release sets mouseData and MOUSE_BIT, a move sets INPUT_BIT
   compare  list of: "fore", "back" (screen buffers), "A", "X", "Y",
            r-register names (r0..r15, r0L..r15H), "mem:$ADDR-$ADDR"
 
@@ -57,11 +63,44 @@ SYSTEMS = {
 PORTS = {"geos": 6502, "geoultra": 6503}
 
 TRAMPOLINE = 0x0340
+# Event tests let MainLoop run; this routine first stops the application
+# that was running (GEOS 2.0: the deskTop): appMain, intBotVector, key,
+# input, other-press, string-fault and alarm vectors cleared, RecoverVector
+# back to the kernal's RecoverRectangle, its processes replaced by one
+# frozen dummy.
+CLEAN_AT = 0x4F00
+CLEAN_CODE = [0xA9, 0x00]                                    # lda #0
+for a in (0x849B, 0x849C, 0x849F, 0x84A0, 0x84A3, 0x84A4, 0x84A5, 0x84A6,
+          0x84A9, 0x84AA, 0x84AB, 0x84AC, 0x84AD, 0x84AE):
+    CLEAN_CODE += [0x8D, a & 0xFF, a >> 8]                   # sta vector
+CLEAN_CODE += [0xA9, 0x2D, 0x8D, 0xB1, 0x84,                 # RecoverVector =
+               0xA9, 0xC1, 0x8D, 0xB2, 0x84]                 # RecoverRectangle
+CLEAN_CODE += [0xA9, 0x80, 0x85, 0x02, 0xA9, 0x4F, 0x85, 0x03,  # r0 = $4F80
+               0xA9, 0x01, 0x20, 0x03, 0xC1, 0x60]           # InitProcesses(1); rts
+CLEAN_TABLE = [0x7F, 0x4F, 0xE8, 0x03]                       # .word $4F7F (rts), 1000
+assert len(CLEAN_CODE) < 0x7F
+# GEOS 2.0's BSW 9 (header at $D210, measured): same widths, set width and
+# height as GeoUltra's system font, so writing our bitstream over its
+# bitstream makes GEOS 2.0 draw system-font text with our glyphs and
+# screens with text become comparable.
+BSW_HEADER = 0xD210
+BSW_DATA = 0xD2DC
 PATTERN_BUF = 0x0380
 FORE = (0xA000, 0xBF3F)
 BACK = (0x6000, 0x7F3F)
 CUR_PATTERN = 0x22
 DISP_BUFFER_ON = 0x2F
+
+
+def our_bitstream():
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    import importlib.util as iu
+    spec = iu.spec_from_file_location("system9", os.path.join(ROOT, "tools", "fonts", "system9.py"))
+    font = iu.module_from_spec(spec)
+    spec.loader.exec_module(font)
+    import mkfont
+    blob = mkfont.build(font)
+    return blob[8 + 194:]
 
 
 def jumptab():
@@ -120,10 +159,20 @@ class System:
     def run(self, case, table):
         v = self.vice
         v.undump(self.snapshot)
+        if self.name == "geos":
+            head = v.mem_get(BSW_HEADER, BSW_HEADER + 3)
+            if list(head) != [6, 60, 0, 9]:
+                raise SystemExit("geos: BSW 9 not at $%04X" % BSW_HEADER)
+            v.mem_set(BSW_DATA, our_bitstream())
         fill = case.get("fill", 0)
-        v.mem_set(FORE[0], bytes([fill]) * (FORE[1] - FORE[0] + 1))
-        v.mem_set(BACK[0], bytes([fill]) * (BACK[1] - BACK[0] + 1))
+        v.mem_set(FORE[0], bytes([case.get("fillfore", fill)]) * (FORE[1] - FORE[0] + 1))
+        v.mem_set(BACK[0], bytes([case.get("fillback", fill)]) * (BACK[1] - BACK[0] + 1))
         code = [0x78]
+        if "events" in case:
+            v.mem_set(CLEAN_AT, bytes(CLEAN_CODE))
+            v.mem_set(0x4F7F, bytes([0x60]))
+            v.mem_set(0x4F80, bytes(CLEAN_TABLE))
+            code += [0x20, CLEAN_AT & 0xFF, CLEAN_AT >> 8]
         for pre in case.get("pre", []):
             a = table[pre]
             code += [0x20, a & 0xFF, a >> 8]
@@ -135,9 +184,13 @@ class System:
             if reg in case:
                 code += [op, case[reg]]
         a = table[case["routine"]]
-        code += [0x20, a & 0xFF, a >> 8]
+        code += [0x20, a & 0xFF, a >> 8] + list(case.get("inline", []))
         end = TRAMPOLINE + len(code)
-        code += [0xEA, 0x4C, end & 0xFF, end >> 8]
+        if "events" in case:
+            jt = v.mem_get(0xC1C3, 0xC1C5)      # cli; jmp MainLoop
+            code += [0x58, 0x4C, jt[1], jt[2]]
+        else:
+            code += [0xEA, 0x4C, end & 0xFF, end >> 8]
         v.mem_set(TRAMPOLINE, bytes(code))
         v.mem_set(DISP_BUFFER_ON, bytes([case.get("disp", 0xC0)]))
         if "pattern" in case:
@@ -149,6 +202,20 @@ class System:
         v.checkpoint(end)
         v.resume()
         v.wait_event(RESP_CHECKPOINT, timeout=30)
+        for ev in case.get("events", []):
+            v.resume()
+            time.sleep(0.1)
+            v.ping()                            # stop
+            x, y = ev["x"], ev["y"]
+            v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))
+            flag = v.mem_get(0x39, 0x39)[0] | 0x40
+            if ev.get("button"):
+                v.mem_set(0x8505, bytes([0x00 if ev["button"] == "press" else 0x80]))
+                flag |= 0x20
+            v.mem_set(0x39, bytes([flag]))
+            v.resume()
+            time.sleep(ev.get("wait", 0.4))
+            v.ping()
         out = {}
         cpu = v.regs_get()
         for item in case["compare"]:
@@ -214,6 +281,8 @@ def main():
                     help="run only the cases whose name contains NAME and print "
                          "the --area of both foreground screens")
     ap.add_argument("--area", default="0,0,63,15", help="x0,y0,x1,y1 for --show")
+    ap.add_argument("--systems", default="geos,geoultra",
+                    help="systems to run (--show only), e.g. geos")
     ap.add_argument("casefiles", nargs="+")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
@@ -225,7 +294,7 @@ def main():
                 c["compare"] = c["compare"] + ["fore"]
     table = jumptab()
     results = {}
-    for name in ("geos", "geoultra"):
+    for name in (args.systems.split(",") if args.show else ("geos", "geoultra")):
         system = System(name, args.rebuild)
         try:
             results[name] = [system.run(c, table) for c in cases]
@@ -235,11 +304,14 @@ def main():
         area = [int(n) for n in args.area.split(",")]
         for i, case in enumerate(cases):
             print("%s   (x %d-%d, y %d-%d)" % (case["name"], area[0], area[2], area[1], area[3]))
-            g = pixels(results["geos"][i]["fore"], *area)
-            o = pixels(results["geoultra"][i]["fore"], *area)
-            print("%-*s   %s" % (len(g[0]), "GEOS 2.0", "GeoUltra"))
-            for a, b in zip(g, o):
-                print("%s   %s%s" % (a, b, "   <" if a != b else ""))
+            g = pixels(results["geos"][i]["fore"], *area) if "geos" in results else None
+            o = pixels(results["geoultra"][i]["fore"], *area) if "geoultra" in results else None
+            if g and o:
+                print("%-*s   %s" % (len(g[0]), "GEOS 2.0", "GeoUltra"))
+                for a, b in zip(g, o):
+                    print("%s   %s%s" % (a, b, "   <" if a != b else ""))
+            else:
+                print("\n".join(g or o))
         return
     failed = 0
     for i, case in enumerate(cases):

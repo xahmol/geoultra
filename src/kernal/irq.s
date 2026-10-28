@@ -3,13 +3,15 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .export IrqEntry, NmiEntry, InterruptMain, MainLoop, DefMouseVector
+        .export IrqEntry, NmiEntry, InterruptMain, MainLoop, frameCount
         .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
+        .import MenuTick, CheckMousePos
 
         .segment "DATA"
 
 irqSaveRegs:    .res 32         ; r0-r15 during the IRQ
 irqSavePort:    .res 1
+frameCount:     .res 1          ; counts frames (IRQs)
 
         .segment "CODE"
 
@@ -62,9 +64,11 @@ CallBot:
 ; still selected from the previous frame; the keyboard scan selects it
 ; again at its end.
 InterruptMain:
+        inc frameCount
         bit mouseOn
         bpl @keys
         jsr UpdateMouse
+        jsr CheckMousePos
         jsr PosPointer
 @keys:  jsr KeyScan
         jmp ProcessTimers
@@ -96,6 +100,7 @@ MainLoop:
         beq @input
         jsr CallApp
 @input: jsr HandleInput
+        jsr MenuTick
         jsr RunProcesses
         jmp MainLoop
 
@@ -124,15 +129,28 @@ HandleInput:
         jsr CallMouse
 @key:   lda pressFlag
         and #KEYPRESS_BIT
-        beq @end
+        beq @fault
         jsr GetNextChar
-        beq @end
+        beq @fault
         sta keyData
         lda keyVector
         ora keyVector+1
+        beq @fault
+        jsr CallKey
+@fault: lda faultData           ; a mouse fault from the interrupt level
         beq @end
-        jmp (keyVector)
+        lda mouseFaultVec
+        ora mouseFaultVec+1
+        beq @clear
+        jsr CallFault
+@clear: lda #0                  ; the interrupt level sets it again while
+        sta faultData           ; the pointer stays off
 @end:   rts
+
+CallKey:
+        jmp (keyVector)
+CallFault:
+        jmp (mouseFaultVec)
 
 ; pressFlag &= A, safe against the IRQ setting other bits meanwhile.
 ClearPress:
@@ -147,12 +165,3 @@ CallInput:
         jmp (inputVector)
 CallMouse:
         jmp (mouseVector)
-
-; Default mouseVector: menus and icons come later; a press or release
-; elsewhere goes to otherPressVec.
-DefMouseVector:
-        lda otherPressVec
-        ora otherPressVec+1
-        beq @end
-        jmp (otherPressVec)
-@end:   rts

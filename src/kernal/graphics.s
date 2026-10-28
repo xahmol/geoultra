@@ -1,12 +1,16 @@
 ; Graphics primitives: GetScanLine, SetPattern, HorizontalLine,
-; VerticalLine, Rectangle, FrameRectangle. Written from the HG2G2022
-; descriptions (parameters, Uses, Destroys); behaviour to be checked
-; against GEOS 2.0 with the conformance harness.
+; InvertLine, RecoverLine, VerticalLine, Rectangle, FrameRectangle,
+; InvertRectangle, RecoverRectangle, ImprintRectangle and the inline
+; i_ variants. Written from the HG2G2022 descriptions (parameters, Uses,
+; Destroys); checked against GEOS 2.0 with the conformance harness.
 
         .include "geos.inc"
 
         .export GetScanLine, SetPattern, HorizontalLine, VerticalLine
         .export Rectangle, FrameRectangle
+        .export InvertLine, RecoverLine, InvertRectangle, RecoverRectangle
+        .export ImprintRectangle, i_Rectangle, i_FrameRectangle
+        .export i_RecoverRectangle, i_ImprintRectangle
         .import patterns
 
         .segment "DATA"
@@ -17,6 +21,13 @@ kBits:  .res 1
 kPat:   .res 1
 kY:     .res 1
 kSave:  .res 4
+kOp:    .res 1          ; LineOp: OP_PATTERN, OP_INVERT, OP_RECOVER, OP_IMPRINT
+kDisp:  .res 1          ; dispBufferOn at the start of a LineOp
+
+OP_PATTERN      = 0
+OP_INVERT       = 1
+OP_RECOVER      = 2
+OP_IMPRINT      = 3
 
         .segment "RODATA"
 
@@ -105,8 +116,39 @@ SetPattern:
 ; Destroys A, X, Y, r5-r8, r11H.
 HorizontalLine:
         sta r11H
-        ldx r11L
+        lda #OP_PATTERN
+        jmp LineOp
+
+; InvertLine: r3 = x1, r4 = x2, r11L = y; inverts per dispBufferOn (with
+; both buffers on, the background gets the inverted foreground).
+; Destroys A, X, Y, r5-r8.
+InvertLine:
+        lda #OP_INVERT
+        jmp LineOp
+
+; RecoverLine: r3 = x1, r4 = x2, r11L = y; background to foreground.
+; Destroys A, X, Y, r5-r8.
+RecoverLine:
+        lda #OP_RECOVER
+        jmp LineOp
+
+; ImprintLine (no jump table entry): foreground to background.
+ImprintLine:
+        lda #OP_IMPRINT
+
+; One screen line from r3 to r4 at r11L, card by card, with operation A.
+LineOp:
+        sta kOp
+        lda dispBufferOn
+        sta kDisp
+        lda kOp                 ; all but the pattern line address both
+        beq @scan               ; buffers whatever dispBufferOn says
+        lda #ST_WR_FORE | ST_WR_BACK
+        sta dispBufferOn
+@scan:  ldx r11L
         jsr GetScanLine
+        lda kDisp
+        sta dispBufferOn
         lda r3L
         and #$F8
         sta r7L
@@ -186,15 +228,54 @@ NextCard:
         inc r6H
 @back:  rts
 
-; Write the pattern byte r11H into the bits of mask A at (r5) and (r6).
+; Apply the LineOp operation to the bits of mask A at (r5) and (r6).
 PutMasked:
         sta kMask
         eor #$FF
         sta kInv
+        ldy #0
+        ldx kOp
+        beq @pattern
+        dex
+        beq @invert
+        dex
+        beq @recover
+        lda (r5),y              ; imprint: foreground into background
+        and kMask
+        sta kBits
+        lda (r6),y
+        and kInv
+        ora kBits
+        sta (r6),y
+        rts
+@recover:
+        lda (r6),y              ; background into foreground
+        and kMask
+        sta kBits
+        lda (r5),y
+        and kInv
+        ora kBits
+        sta (r5),y
+        rts
+@invert:
+        bit kDisp
+        bpl @backOnly
+        lda (r5),y
+        eor kMask
+        sta (r5),y
+        bvc @end                ; foreground only
+        sta (r6),y              ; background gets the whole new foreground
+@end:   rts                     ; byte, edge bits included (as GEOS 2.0)
+@backOnly:
+        bvc @end
+        lda (r6),y
+        eor kMask
+        sta (r6),y
+        rts
+@pattern:
         lda r11H
         and kMask
         sta kBits
-        ldy #0
         lda (r5),y
         and kInv
         ora kBits
@@ -307,3 +388,93 @@ FrameRectangle:
         dex
         bpl @rest
         rts
+
+; InvertRectangle, RecoverRectangle, ImprintRectangle: r2L/r2H = y1/y2,
+; r3/r4 = x1/x2. Destroy A, X, Y, r5-r8, r11.
+InvertRectangle:
+        lda #OP_INVERT
+        bne RectOp
+RecoverRectangle:
+        lda #OP_RECOVER
+        bne RectOp
+ImprintRectangle:
+        lda #OP_IMPRINT
+RectOp: sta kPat
+        lda r2L
+        sta r11L
+@loop:  lda kPat
+        jsr LineOp
+        lda r11L
+        cmp r2H
+        beq @done
+        inc r11L
+        jmp @loop
+@done:  rts
+
+; Inline variants: the parameters follow the jsr (.byte y1, y2,
+; .word x1, x2, and for i_FrameRectangle a pattern byte).
+i_Rectangle:
+        jsr InlineRect
+        jsr Rectangle
+        jmp InlineReturn
+i_RecoverRectangle:
+        jsr InlineRect
+        jsr RecoverRectangle
+        jmp InlineReturn
+i_ImprintRectangle:
+        jsr InlineRect
+        jsr ImprintRectangle
+        jmp InlineReturn
+i_FrameRectangle:
+        jsr InlineRect
+        inc inlineLen
+        ldy #7
+        lda (r5),y              ; r5 = inlinePtr after InlineRect
+        jsr FrameRectangle
+        jmp InlineReturn
+
+; Read the six rectangle bytes after the caller's jsr into r2-r4.
+; inlinePtr = address of the last byte of that jsr.
+InlineRect:
+        pla                     ; our own return address
+        sta inlineSelf
+        pla
+        sta inlineSelf+1
+        pla
+        sta inlinePtr
+        sta r5L
+        pla
+        sta inlinePtr+1
+        sta r5H
+        ldy #1
+@copy:  lda (r5),y
+        sta r2-1,y
+        iny
+        cpy #7
+        bne @copy
+        lda #6
+        sta inlineLen
+        lda inlineSelf+1
+        pha
+        lda inlineSelf
+        pha
+        rts
+
+; Return to the byte after the inline data (rts to its address - 1,
+; which is the last data byte).
+InlineReturn:
+        lda inlinePtr
+        clc
+        adc inlineLen
+        tax
+        lda inlinePtr+1
+        adc #0
+        pha
+        txa
+        pha
+        rts
+
+        .segment "DATA"
+inlineSelf:     .res 2
+inlinePtr:      .res 2
+inlineLen:      .res 1

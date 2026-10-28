@@ -1,5 +1,6 @@
 ; Input driver for the Commodore 1351 mouse in proportional mode,
-; control port 1, at MOUSE_BASE ($FE80).
+; control port 1, at MOUSE_BASE ($FE80). Moves the pointer freely; the
+; kernal keeps it within the mouse limits (CheckMousePos).
 ;
 ; The movement calculation follows the algorithm published in the
 ; Commodore 1351 Mouse User's Manual (pot value difference over 7 bits,
@@ -19,6 +20,7 @@ oldY:   .byte 0
 dOld:   .byte 0
 dNew:   .byte 0
 moved:  .byte 0
+lastBtn:.byte $80                       ; last button state read from the port
 
 PORT1_POTS = $7F                        ; CIA1 port A bits 7/6 = 0/1
 
@@ -61,31 +63,6 @@ DrvUpdate:
         txa
         adc mouseXPos+1
         sta mouseXPos+1
-        bmi @xMin                       ; left of 0
-        lda mouseXPos+1                 ; clamp to mouseLeft..mouseRight
-        cmp mouseLeft+1
-        bcc @xMin
-        bne @xMax
-        lda mouseXPos
-        cmp mouseLeft
-        bcc @xMin
-@xMax:  lda mouseRight+1
-        cmp mouseXPos+1
-        bcc @xHigh
-        bne @y
-        lda mouseRight
-        cmp mouseXPos
-        bcs @y
-@xHigh: lda mouseRight
-        sta mouseXPos
-        lda mouseRight+1
-        sta mouseXPos+1
-        jmp @y
-@xMin:  lda mouseLeft
-        sta mouseXPos
-        lda mouseLeft+1
-        sta mouseXPos+1
-
 @y:     lda sidPotY
         ldy oldY
         jsr Delta
@@ -93,29 +70,10 @@ DrvUpdate:
         cmp #0
         beq @button
         inc moved
-        sta dNew                        ; mouseYPos -= delta (pot Y grows upwards)
-        cpx #0
-        bmi @down
-        lda mouseYPos
+        sta dNew                        ; mouseYPos -= delta (pot Y grows
+        lda mouseYPos                   ; upwards); the kernal clamps
         sec
         sbc dNew
-        bcc @yMin
-        cmp mouseTop
-        bcc @yMin
-        sta mouseYPos
-        jmp @button
-@down:  lda mouseYPos
-        sec
-        sbc dNew                        ; subtracting a negative delta
-        bcs @yMax                       ; wrapped past 255
-        cmp mouseBottom
-        bcs @yMax
-        sta mouseYPos
-        jmp @button
-@yMin:  lda mouseTop
-        sta mouseYPos
-        jmp @button
-@yMax:  lda mouseBottom
         sta mouseYPos
 
 @button:
@@ -132,8 +90,9 @@ DrvUpdate:
         and #$10
         beq @same
         lda #$80
-@same:  cmp mouseData
-        beq @end
+@same:  cmp lastBtn                     ; only a change of the port counts, so
+        beq @end                        ; mouseData set by software stays
+        sta lastBtn
         sta mouseData
         lda pressFlag
         ora #MOUSE_BIT

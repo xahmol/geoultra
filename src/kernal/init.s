@@ -3,9 +3,9 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DemoInit
+        .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DefFaultVector
         .import Rectangle, FrameRectangle, SetPattern
-        .import pointerPic, UseSystemFont, PutString
+        .import pointerPic, UseSystemFont, PutString, RecoverRectangle
         .export ColdStart
 
 DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
@@ -103,6 +103,16 @@ ColdStart:
         sta mouseVector
         lda #>DefMouseVector
         sta mouseVector+1
+        lda #<DefFaultVector
+        sta mouseFaultVec
+        lda #>DefFaultVector
+        sta mouseFaultVec+1
+        lda #<RecoverRectangle  ; defaults from HG2G2022 chapter 14
+        sta RecoverVector
+        lda #>RecoverRectangle
+        sta RecoverVector+1
+        lda #SELECTION_DELAY
+        sta selectionFlash
 
         lda #ST_WR_FORE | ST_WR_BACK
         sta dispBufferOn
@@ -120,7 +130,6 @@ ColdStart:
         sta r4H
         jsr Rectangle
         jsr DrawBanner
-        jsr DemoInit
 
         lda #IRQ_LINE           ; raster IRQ once per frame
         sta vicRaster

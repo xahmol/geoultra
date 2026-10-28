@@ -34,3 +34,31 @@ CASES = [
     dict(name="FrameRectangle pattern", routine="FrameRectangle", a=0xCC,
          r={"r2L": 100, "r2H": 180, "r3": 160, "r4": 311}, compare=SCREENS),
 ]
+
+RECT = {"r2L": 13, "r2H": 70, "r3": 21, "r4": 290}
+CASES += [
+    dict(name="InvertLine both buffers", routine="InvertLine", fillfore=0x0F, fillback=0x33,
+         r={"r3": 5, "r4": 170, "r11L": 33}, compare=SCREENS),
+    dict(name="InvertLine foreground only", routine="InvertLine", disp=0x80, fillfore=0x0F,
+         fillback=0x33, r={"r3": 5, "r4": 170, "r11L": 33}, compare=SCREENS),
+    dict(name="InvertLine background only", routine="InvertLine", disp=0x40, fillfore=0x0F,
+         fillback=0x33, r={"r3": 5, "r4": 170, "r11L": 33}, compare=SCREENS),
+    dict(name="RecoverLine", routine="RecoverLine", disp=0x00, fillfore=0x0F, fillback=0x33,
+         r={"r3": 9, "r4": 300, "r11L": 120}, compare=SCREENS),
+    dict(name="InvertRectangle", routine="InvertRectangle", fillfore=0x5A, fillback=0x81,
+         r=RECT, compare=SCREENS),
+    dict(name="InvertRectangle foreground only", routine="InvertRectangle", disp=0x80,
+         fillfore=0x5A, fillback=0x81, r=RECT, compare=SCREENS),
+    dict(name="RecoverRectangle", routine="RecoverRectangle", disp=0x00, fillfore=0x5A,
+         fillback=0x81, r=RECT, compare=SCREENS + ["r2", "r3", "r4"]),
+    dict(name="ImprintRectangle", routine="ImprintRectangle", fillfore=0x5A, fillback=0x81,
+         r=RECT, compare=SCREENS),
+    dict(name="i_Rectangle", routine="i_Rectangle", pattern=STRIPES,
+         inline=[40, 90, 17, 0, 0x2C, 0x01], compare=SCREENS + ["r2", "r3", "r4"]),
+    dict(name="i_FrameRectangle", routine="i_FrameRectangle",
+         inline=[40, 90, 17, 0, 0x2C, 0x01, 0xF0], compare=SCREENS),
+    dict(name="i_RecoverRectangle", routine="i_RecoverRectangle", disp=0x00, fillfore=0x5A,
+         fillback=0x81, inline=[3, 9, 250, 0, 0x08, 0x01], compare=SCREENS),
+    dict(name="i_ImprintRectangle", routine="i_ImprintRectangle", fillfore=0x5A,
+         fillback=0x81, inline=[3, 9, 250, 0, 0x08, 0x01], compare=SCREENS),
+]
