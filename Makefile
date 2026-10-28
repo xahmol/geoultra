@@ -46,7 +46,7 @@ KSRCS    = $(wildcard src/kernal/*.s)
 INPSRCS  = src/input/mouse1351.s
 INCS     = $(wildcard src/inc/*.inc)
 KOBJS    = $(patsubst src/kernal/%.s,$(KOBJ)/%.o,$(KSRCS)) \
-           $(KOBJ)/mouse1351.o $(KOBJ)/jumptab.o $(KOBJ)/sysfont.o
+           $(KOBJ)/mouse1351.o $(KOBJ)/jumptab.o $(KOBJ)/sysfont.o $(KOBJ)/sysicons.o
 VICEOPTS = -default +sound -cartcrt build/geoultra64.crt -reu -reusize 16384 \
            -mouse -controlport1device 3
 
@@ -65,6 +65,14 @@ $(KOBJ)/mouse1351.o: src/input/mouse1351.s $(INCS)
 $(GEN)/sysfont.s: tools/fonts/system9.py tools/mkfont.py
 	@mkdir -p $(GEN)
 	$(PYTHON) tools/mkfont.py $< $@ SystemFont
+
+$(GEN)/sysicons.s: tools/mkicons.py tools/fonts/system9.py
+	@mkdir -p $(GEN)
+	$(PYTHON) tools/mkicons.py $@
+
+$(KOBJ)/sysicons.o: $(GEN)/sysicons.s
+	@mkdir -p $(KOBJ)
+	$(CA65) -o $@ $<
 
 $(KOBJ)/sysfont.o: $(GEN)/sysfont.s
 	@mkdir -p $(KOBJ)

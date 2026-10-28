@@ -166,6 +166,12 @@ class Vice:
         _, data = self.request(CMD_CHECKPOINT_SET, body)
         return struct.unpack_from("<I", data)[0]
 
+    def delete_checkpoint(self, cid):
+        try:
+            self.request(CMD_CHECKPOINT_DELETE, struct.pack("<I", cid))
+        except ViceError:
+            pass                                # already gone (temporary, hit)
+
     def dump(self, path):
         name = path.encode()
         self.request(CMD_DUMP, bytes([0, 0, len(name)]) + name)

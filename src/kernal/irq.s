@@ -97,8 +97,11 @@ PosPointer:
         sta vicSpr0Y
         rts
 
-; Jump table MainLoop: appMain, then input events, then processes.
+; Jump table MainLoop: appMain, then input events, then processes. Like
+; GEOS 2.0 it enables interrupts on every pass (a routine may have been
+; entered with them off, e.g. DoDlgBox).
 MainLoop:
+        cli
         lda appMain
         ora appMain+1
         beq @input

@@ -114,6 +114,23 @@ TRUE on a double click (`dblClickCount` still running, counted down per
 frame). `BitmapUp` has its own decoder for the compacted format
 (repeat, unique, bigcount; one stream over all lines).
 
+## Dialog boxes
+
+As GEOS 2.0 (`src/kernal/dialog.s`): `DoDlgBox` saves the state into
+`dlgBoxRamBuf` (zero page `$22-$38`, globals `$849B-$84C0`, the icon
+table, the kernal state block `KSTATE` and the sprites; the linker checks
+that it fits in 417 bytes), sets the dialog environment (mouse and icons
+on, menus off: measured; no processes), draws the box with its shadow
+one card right and down, runs the commands with r5-r10 kept, activates
+the collected icons and runs MainLoop; `RstrFrmDialogue` restores the
+state, recovers the area and returns from `DoDlgBox` with r0L =
+`sysDBData`. The system icons OK..DISK are GeoUltra's own
+(`tools/mkicons.py`, 48 x 16, label centred by measured width). Not yet:
+`DBGETSTRING`, `DBGRPHSTR`, `DBGETFILES`.
+
+MainLoop enables interrupts on every pass, as GEOS 2.0: routines such as
+`DoDlgBox` may be entered with them off.
+
 ## Run-time conventions
 
 - `$01 = $30` (all RAM) outside the kernal's I/O sections, as in GEOS 2.0;
@@ -143,6 +160,9 @@ automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
   bitstream over BSW 9's (`$D2DC`) before every case: GEOS 2.0 then draws
   system-font text (menus, dialogs) with our glyphs and screens compare
   pixel for pixel.
+- **System icon swap:** the harness finds GEOS 2.0's table of the six
+  dialog system icons and points it at GeoUltra's icons placed at `$5C00`,
+  so dialogs compare pixel for pixel too.
 - **Event cases** (`events`): after the call MainLoop runs and the harness
   injects pointer moves, presses and releases (as the GeoUTools mouse
   automation: `mouseXPos`/`mouseYPos`, `mouseData`, `pressFlag`). Before

@@ -13,7 +13,7 @@ P_RUNNABLE      = $80
 P_BLOCKED       = $40
 P_FROZEN        = $20
 
-        .segment "DATA"
+        .segment "KSTATE"               ; saved and restored by dialog boxes
 
 numProcesses:   .byte 0
 pEventLo:       .res MAX_PROCESSES

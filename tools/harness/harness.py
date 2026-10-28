@@ -21,6 +21,9 @@ Case files define CASES, a list of dicts:
   fill     byte both screen buffers are filled with first (default 0);
            fillfore / fillback set them separately
   inline   bytes placed right after the jsr to the routine (i_ routines)
+  after    code placed after the call (e.g. store r0L), run when it returns
+  noreturn the routine does not return before the events (DoDlgBox): the
+           events start after a short wait instead of at its return
   mem      {address: bytes} extra memory writes
   pre      routines called (in order) before the r-register inputs are set
            and the routine runs, e.g. ["UseSystemFont"]
@@ -86,6 +89,10 @@ assert len(CLEAN_CODE) < 0x7F
 # screens with text become comparable.
 BSW_HEADER = 0xD210
 BSW_DATA = 0xD2DC
+# GEOS 2.0's dialog system icons are Berkeley's pictures; the harness puts
+# GeoUltra's (tools/mkicons.py) at ICONS_AT and points GEOS 2.0's table
+# of the six system icons (found by its layout) at them.
+ICONS_AT = 0x5C00
 PATTERN_BUF = 0x0380
 FORE = (0xA000, 0xBF3F)
 BACK = (0x6000, 0x7F3F)
@@ -102,6 +109,24 @@ def our_bitstream():
     import mkfont
     blob = mkfont.build(font)
     return blob[8 + 194:]
+
+
+def our_sysicons():
+    import importlib.util as iu
+    spec = iu.spec_from_file_location("mkicons", os.path.join(ROOT, "tools", "mkicons.py"))
+    mod = iu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return [mod.compact(mod.icon(label)) for _, label in mod.LABELS]
+
+
+def find_sysicon_table(v):
+    """Address of GEOS 2.0's six system icon entries (.word picture,
+    .word 0, .byte 6, 16, .word routine)."""
+    ram = v.mem_get(0xC000, 0xFFFF)
+    for i in range(len(ram) - 48):
+        if all(ram[i + 8 * k + 2:i + 8 * k + 6] == bytes([0, 0, 6, 16]) for k in range(6)):
+            return 0xC000 + i
+    raise SystemExit("geos: system icon table not found")
 
 
 def jumptab():
@@ -160,11 +185,20 @@ class System:
     def run(self, case, table):
         v = self.vice
         v.undump(self.snapshot)
+        v.events.clear()                        # no stale events of a previous case
         if self.name == "geos":
             head = v.mem_get(BSW_HEADER, BSW_HEADER + 3)
             if list(head) != [6, 60, 0, 9]:
                 raise SystemExit("geos: BSW 9 not at $%04X" % BSW_HEADER)
             v.mem_set(BSW_DATA, our_bitstream())
+            if not hasattr(self, "icon_table"):
+                self.icon_table = find_sysicon_table(v)
+                self.icon_data = our_sysicons()
+            at = ICONS_AT
+            for k, data in enumerate(self.icon_data):
+                v.mem_set(at, bytes(data))
+                v.mem_set(self.icon_table + 8 * k, bytes([at & 0xFF, at >> 8]))
+                at += len(data)
         fill = case.get("fill", 0)
         v.mem_set(FORE[0], bytes([case.get("fillfore", fill)]) * (FORE[1] - FORE[0] + 1))
         v.mem_set(BACK[0], bytes([case.get("fillback", fill)]) * (BACK[1] - BACK[0] + 1))
@@ -186,6 +220,7 @@ class System:
                 code += [op, case[reg]]
         a = table[case["routine"]]
         code += [0x20, a & 0xFF, a >> 8] + list(case.get("inline", []))
+        code += list(case.get("after", []))
         end = TRAMPOLINE + len(code)
         if "events" in case:
             jt = v.mem_get(0xC1C3, 0xC1C5)      # cli; jmp MainLoop
@@ -200,9 +235,13 @@ class System:
         for a, data in case.get("mem", {}).items():
             v.mem_set(a, bytes(data))
         v.regs_set({"PC": TRAMPOLINE})
-        v.checkpoint(end)
+        cid = v.checkpoint(end)
         v.resume()
-        v.wait_event(RESP_CHECKPOINT, timeout=30)
+        if case.get("noreturn"):
+            time.sleep(0.5)
+            v.ping()
+        else:
+            v.wait_event(RESP_CHECKPOINT, timeout=30)
         for ev in case.get("events", []):
             v.resume()
             time.sleep(0.1)
@@ -219,6 +258,7 @@ class System:
             v.resume()
             time.sleep(ev.get("wait", 0.4))
             v.ping()
+        v.delete_checkpoint(cid)                # not hit when it never returned
         out = {}
         cpu = v.regs_get()
         for item in case["compare"]:

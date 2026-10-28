@@ -31,7 +31,7 @@ SET_OFFLEFT     = $20
 SET_OFFRIGHT    = $10
 SET_OFFMENU     = $08
 
-        .segment "DATA"
+        .segment "KSTATE"               ; saved and restored by dialog boxes
 
 mPtrLo:         .res MAX_M_NESTING      ; menu structure per level
 mPtrHi:         .res MAX_M_NESTING
@@ -45,6 +45,10 @@ menuAttr:       .byte 0
 count:          .byte 0
 limitLo:        .res MAX_M_ITEMS + 1    ; item limits of the current level
 limitHi:        .res MAX_M_ITEMS + 1
+flashState:     .byte 0                 ; 0 idle, 1 and 2 waiting
+flashTime:      .byte 0
+
+        .segment "DATA"
 
 item:           .byte 0
 saveText:       .res 9                  ; $26-$2E font variables, currentMode
@@ -54,8 +58,6 @@ saveFault:      .res 2
 savePattern:    .res 2
 sprMask:        .byte 0
 sprPort:        .byte 0
-flashState:     .byte 0                 ; 0 idle, 1 and 2 waiting
-flashTime:      .byte 0
 
         .segment "CODE"
 

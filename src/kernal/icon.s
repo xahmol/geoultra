@@ -10,7 +10,7 @@
         .export DoIcons, IconPress, IconTick
         .import BitmapUp, InvertRectangle, StartMouseMode, frameCount
 
-        .segment "DATA"
+        .segment "KSTATE"               ; saved and restored by dialog boxes
 
 iconNo:         .byte 0
 iconBusy:       .byte 0         ; a selection is flashing: ignore presses
