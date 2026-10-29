@@ -19,7 +19,7 @@
         .include "kcalls.inc"
 
         .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
-        .export hibState
+        .export hibState, RtcClockOvl
         .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
@@ -40,6 +40,7 @@ DOS_DELETE      = $09
 DOS_CD          = $11
 DOS_LOAD_REU    = $21
 DOS_SAVE_REU    = $22
+DOS_GET_TIME    = $26
 REU_STASH_FF00  = $80           ; execute on a write to $FF00, C64 -> REU
 BUF             = $4000         ; cold start: free (TEXT of mount.s)
 
@@ -59,9 +60,9 @@ HibSuspend:                     ; X = 0 or an error
 HibResumeOvl:                   ; returns only when nothing is resumed
         jsr OvlCall
         .byte 9, 0
-TodSetOvl:                      ; (module 10)
+RtcClockOvl:                    ; (module 10)
         jsr OvlCall
-        .byte 10, 0
+        .byte 10, 3
 
         .segment "BFCODE"       ; $BF40 area (not after the RAM copy)
 
@@ -235,8 +236,8 @@ Resumed:
         jsr ChipDma
         lda #$0F
         sta $D019               ; no pending VIC interrupt
-        jsr TodMode             ; the TOD on again, at the session's time
-        jsr TodSetOvl
+        jsr TodMode             ; the TOD on again: the Ultimate's time
+        jsr RtcClockOvl         ; (else the session's)
         plp
         pla
         sta CPU_PORT
@@ -247,11 +248,87 @@ Resumed:
         .segment "OVL10"
 
         jmp TodSet              ; entry 0
+        jmp RtcClock            ; entry 3
+
+; RtcClock (I/O on): date and time from the Ultimate's real-time clock
+; (DOS command $26: "yyyy/mm/dd hh:mm:ss"), then the TOD from it; without
+; an answer the TOD from the time already in the variables.
+RtcClock:
+        lda uciPresent
+        bne @ask
+@none:  jmp TodSet
+@ask:   ldx #0                  ; idle; an old reply is released
+@idle:  lda $DF1C
+        and #$30
+        beq @send
+        and #$20
+        beq @idle
+        lda #$02
+        sta $DF1C
+        bne @idle
+@send:  lda #TARGET_DOS
+        sta $DF1D
+        lda #DOS_GET_TIME
+        sta $DF1D
+        lda #$01                ; push
+        sta $DF1C
+@busy:  lda $DF1C
+        and #$01
+        bne @busy
+        lda $DF1C
+        and #$30
+        cmp #$10
+        beq @busy
+@data:  bit $DF1C               ; the answer, at most 32 characters
+        bpl @status
+        lda $DF1E
+        cpx #32
+        bcs @data
+        sta rtcText,x
+        inx
+        bne @data
+@status:
+        bit $DF1C               ; the status is not needed: the text is
+        bvc @acc                ; checked instead
+        lda $DF1F
+        jmp @status
+@acc:   lda #$02
+        sta $DF1C
+        cpx #19
+        bcc @none
+        lda rtcText+4
+        cmp #'/'
+        bne @none
+        ldx #5                  ; yy mm dd hh mm ss -> year .. seconds
+@field: ldy rtcAt,x
+        lda rtcText,y
+        sec
+        sbc #'0'
+        sta @ten+1
+        asl                     ; tens * 10
+        asl
+        clc
+        adc @ten+1
+        asl
+        sta @ten+1
+        lda rtcText+1,y
+        sec
+        sbc #'0'
+        clc
+@ten:   adc #0
+        sta $8516,x             ; year, month, day, hour, minutes, seconds
+        dex
+        bpl @field
+        ; (falls into TodSet)
+
 
 ; TodSet: the CIA 1 time-of-day clock from hour (0-23), minutes, seconds
 ; (12-hour BCD with the PM bit; the time of the session goes on from the
 ; suspend, the clock not yet being read from the Ultimate).
-TodSet: lda #0                  ; writes set the clock, not the alarm
+TodSet: lda $DC08               ; the tenths: releases a latch left by an
+                                ; earlier read of the hours (ClockInit), or
+                                ; TimeUpdate would see the old AM/PM
+        lda #0                  ; writes set the clock, not the alarm
         sta $DC0F
         lda hour
         ldx #0                  ; X = PM bit
@@ -285,6 +362,9 @@ TodSet: lda #0                  ; writes set the clock, not the alarm
         lda #0
         sta $DC08               ; tenths: the clock runs
         rts
+
+rtcAt:  .byte 2, 5, 8, 11, 14, 17
+rtcText:        .res 32
 
 ; ToBCD: A (0-59) -> BCD. Destroys Y.
 ToBCD:  ldy #$FF

@@ -379,6 +379,13 @@ helpers both modules assemble in `src/inc/hibshared.inc`.
   same in the snapshot); `HibSuspend`'s resumed path restores the chips from
   bank 1 and starts the TOD at the session's time (module 10, `TodSet`:
   the Ultimate's clock is not read yet), and returns X = 0 to its caller.
+- Clock: `RtcClock` (module 10, entry 3) asks the Ultimate's real-time
+  clock (DOS command `$26`, "yyyy/mm/dd hh:mm:ss") at the cold start
+  (after the mounts) and after a resume, sets year .. seconds and starts
+  the TOD from them (`TodSet`: 12-hour BCD with the PM bit, the 6526's
+  AM/PM flip at 12 handled as in `ClockInit`, and a read of the tenths
+  first to release a latch left by an earlier read of the hours). Without
+  a UCI (VICE) the build date at midnight stays.
 - The build ID (`BUILD_ID`, seconds since 1970 modulo 65536 at build time)
   replaces a CRC of the code: KCODE and CODE modify themselves
   (`OvlCall`, `CallRoutine`). Both objects are rebuilt with every kernal

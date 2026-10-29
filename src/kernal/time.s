@@ -5,8 +5,9 @@
 ; 0-23, alarmSetFlag = $4A when the alarm goes off, then the vector or
 ; the beeps counted in its low six bits) follow the reassembled GEOS 2.0
 ; kernal, mist64/geos kernal/time/time1.s, read as behaviour reference
-; only. Own code, own beep. The date starts at the build date until the
-; Ultimate's real-time clock is read (docs/DESIGN.md, "Clock").
+; only. Own code, own beep. The date starts at the build date; on the
+; Ultimate the cold start then reads its real-time clock (RtcClock,
+; src/kernal/hibernate.s, module 10).
 
         .include "geos.inc"
         .include "hw.inc"

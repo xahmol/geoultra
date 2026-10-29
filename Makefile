@@ -68,7 +68,8 @@ $(GEN)/jumptab.s: src/kernal/jumptab.txt tools/genjumptab.py $(KSRCS) $(INPSRCS)
 	@mkdir -p $(GEN)
 	$(PYTHON) tools/genjumptab.py $< $@ $(KSRCS) $(INPSRCS)
 
-# The clock starts at the build date until the Ultimate's RTC is read.
+# The clock starts at the build date (VICE); on the Ultimate the cold start
+# then reads its real-time clock.
 BUILDDATE = -D BUILD_YEAR=$(shell date +%-y) -D BUILD_MONTH=$(shell date +%-m) \
             -D BUILD_DAY=$(shell date +%-d)
 
