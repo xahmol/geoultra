@@ -35,7 +35,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all vice vice-shot conformance conformance81 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all vice vice-shot conformance conformance81 test-bypass smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -220,6 +220,10 @@ smoke-u64-restore: check-deploy
 	curl -s -X PUT "$(CARTCFG)/Command%20Interface?value=Disabled" >/dev/null
 	curl -s -Q "DELE /Temp/gutest.bin" "ftp://$(ULTIP1)/" -o /dev/null; true
 	curl -s -X PUT "$(REST)/machine:reset" >/dev/null
+
+# The answer to an application's first-run disk check (tests/bypass/hook.py).
+test-bypass: all
+	$(PYTHON) tests/bypass/hook.py
 
 clean:
 	rm -rf build

@@ -326,6 +326,27 @@ no data from any application. `apprun.py --bypass` switches it on in
 VICE. Tested: geoWrite 2.1 installed under `$58B5` refuses with serial
 `$1234` and starts with the bypass on; geoWrite 2.0 is unchanged.
 
+### Install on GeoUltra
+
+An application's first-run check for its original disk (geoWrite 2.1:
+the block at 13/7 or 13/9, see "Inside geoWrite 5" on pagetable.com)
+follows the `NewDisk` vector, takes the six bytes after the first
+`STA $8B` there (on GEOS 2.0's 1541 driver: the calls that execute drive
+code and fetch its status) and calls them between `InitForIO` and
+`DoneWithIO`; X = 0 means original. The REU driver's `NewDisk` starts
+with a `jmp` over such a sequence that is never run: `sta $8B / jsr
+ProtExecute / jsr ProtStatus`. `ProtStatus` answers X = 0 only with the
+module on (`bypass.s`), else `DEV_NOT_FOUND`, so the check fails cleanly
+instead of scanning random memory. Both routines are in KCODE: between
+`InitForIO` and `DoneWithIO` the C64 Kernal ROM covers `$E000`-`$FFFF`.
+Such checks accept only 1541/1571 drive types, so it works on D64 images
+made from the original disk (the protection block is an ordinary sector;
+only the gap signature is lost). `make test-bypass` runs the check's
+calling sequence in VICE (`tests/bypass/hook.py`).
+
+The "unkeyed" collections (applications with the check removed and no
+serial stored) run on GeoUltra without any of this; tested: geoWrite 2.1.
+
 ## Jump table repair
 
 `SaveJumpTab` (cold start, last step) stashes the jump table `$C100`-`$C2D6`

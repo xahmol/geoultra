@@ -20,7 +20,7 @@
 
         .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending
         .export drvTracks, drvFlags
-        .import WriteBackNow, FreeNativeOvl
+        .import WriteBackNow, FreeNativeOvl, ProtExecute, ProtStatus
         .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
 
 FRST_FILE_ENTRY = 2
@@ -152,8 +152,19 @@ IoIrq:  pla                     ; the ROM pushed A, X, Y
         pla
 IoNmi:  rti
 
-; EnterTurbo, ExitTurbo, PurgeTurbo, NewDisk: nothing to do for an image.
+; NewDisk: nothing to do for an image. The bytes after the jmp are never
+; run: an application's first-run check for its original disk (1541 drive
+; code) finds the drive-execute and status calls after the first STA $8B
+; behind NewDisk and calls those. GeoUltra's answers (ProtExecute,
+; ProtStatus) report "not an original disk", unless the optional module
+; is switched on (src/kernal/bypass.s, docs/DESIGN.md "Serial number").
 NewDisk:
+        jmp NoTurbo
+        sta $8B
+        jsr ProtExecute
+        jsr ProtStatus
+
+; EnterTurbo, ExitTurbo, PurgeTurbo: nothing to do for an image.
 NoTurbo:
         ldx #0
         rts

@@ -14,6 +14,8 @@
 .ifdef BYPASS
         .export bypassOn
         .import ExpectedSerial
+.else
+        .export ProtExecute, ProtStatus
 .endif
 
 returnAddress   = $3D           ; word: inline routines' return address
@@ -419,6 +421,20 @@ GetSerialNumber:
         .segment "DATA"
 
 serialNumber:   .word SERIAL
+
+.ifndef BYPASS
+        .segment "KCODE"        ; (runs with the C64 Kernal ROM in)
+
+; ProtExecute / ProtStatus: an application's check for its original disk
+; fails (built without src/kernal/bypass.s, see src/drivers/reudrv.s).
+ProtExecute:
+        rts
+ProtStatus:
+        ldx #DEV_NOT_FOUND
+        rts
+
+        .segment "DATA"
+.endif
 .ifdef BYPASS
 bypassOn:       .byte 0         ; $80: answer per application (bypass.s)
 bypassX:        .byte 0

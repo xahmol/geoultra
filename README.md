@@ -47,9 +47,9 @@ with the serial of your own GEOS boot disk when one is mounted, so
 applications installed under your GEOS run.
 
 GeoUltra has optional measures that go further: answering each
-application with the serial it stored (available), and, planned, letting
-an application install itself on GeoUltra and re-keying an application to
-your serial. These bypass Berkeley's copy protection. They are **off by
+application with the serial it stored, and letting an application from a
+D64 image of its original disk install itself on GeoUltra (both
+available), and, planned, re-keying an application to your serial. These bypass Berkeley's copy protection. They are **off by
 default** and must be switched on in `GEOULTRA/SETTINGS.INI`:
 
     [system]

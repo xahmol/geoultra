@@ -22,8 +22,8 @@
 
         .include "geos.inc"
 
-        .export ExpectedSerial
-        .import OvlCall, serialNumber
+        .export ExpectedSerial, ProtExecute, ProtStatus
+        .import OvlCall, serialNumber, bypassOn
 
 SCAN_LENGTH     = 32            ; bytes after the call that are examined
 
@@ -35,6 +35,23 @@ SCAN_LENGTH     = 32            ; bytes after the call that are examined
 ExpectedSerial:
         jsr OvlCall
         .byte 4, 0
+
+; ProtExecute / ProtStatus: what an application's check for its original
+; disk calls instead of executing drive code (found behind NewDisk, see
+; src/drivers/reudrv.s). With the module on, the check passes (X = 0) and
+; the application installs itself under the system's serial number, as it
+; would on a 1541; else X = DEV_NOT_FOUND. In KCODE: they run between
+; InitForIO and DoneWithIO, with the C64 Kernal ROM over $E000-$FFFF.
+        .segment "KCODE"
+
+ProtExecute:
+        rts
+ProtStatus:
+        ldx #0
+        bit bypassOn
+        bmi @end
+        ldx #DEV_NOT_FOUND
+@end:   rts
 
         .segment "OVL4"
 
