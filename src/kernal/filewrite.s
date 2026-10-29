@@ -14,7 +14,7 @@
 
         .export WriteFile, SaveFile, SetGDirEntry, BldGDirEntry, FreeFile
         .export DeleteFile, FastDelFile, RenameFile, FreeChain, CopyDate
-        .import FindFile
+        .import FindFile, saveFlag
 
 OFF_FNAME       = 3
 
@@ -99,6 +99,8 @@ SaveFile:
         bne @alloc
         jsr Add254
 @alloc: jsr TabPtr
+        lda #$80                ; for the 1581 driver: called from SaveFile
+        sta saveFlag
         jsr BlkAlloc
         txa
         bne @end

@@ -172,9 +172,11 @@ class Vice:
         except ViceError:
             pass                                # already gone (temporary, hit)
 
-    def dump(self, path):
+    def dump(self, path, disks=False):
+        """Snapshot; disks=True also stores the attached disk images (and
+        the drives' state that goes with them)."""
         name = path.encode()
-        self.request(CMD_DUMP, bytes([0, 0, len(name)]) + name)
+        self.request(CMD_DUMP, bytes([0, 1 if disks else 0, len(name)]) + name)
 
     def undump(self, path):
         name = path.encode()

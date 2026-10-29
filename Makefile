@@ -4,6 +4,7 @@
 #   make              build build/geoultra64.crt
 #   make vice         run it in VICE 3.10 (16 MB REU, 1351 mouse in port 1)
 #   make vice-shot    run unattended, screenshot to build/vice.png
+#   make conformance81  the same for 1581 images (GEOS 2.0 on a 1581)
 #   make conformance  compare kernal routines with GEOS 2.0 in VICE
 #                     (tests/conformance/*.py; your own GEOS 2.0 disk:
 #                     GEOS_ORACLE=path, default ~/geos-dev/u64-usb/
@@ -34,7 +35,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all vice vice-shot conformance smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all vice vice-shot conformance conformance81 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -129,6 +130,12 @@ vice-shot: build/geoultra64.crt
 
 conformance: build/geoultra64.crt
 	$(PYTHON) tools/harness/harness.py $(if $(CONF_REBUILD),--rebuild) tests/conformance/*.py
+
+# The same against GEOS 2.0 on a 1581 (GEOS_ORACLE81, default
+# ~/geos-dev/u64-usb/GEOS64.D81): GeoUltra's 1581 image drive.
+conformance81: build/geoultra64.crt
+	$(PYTHON) tools/harness/harness.py --set d81 $(if $(CONF_REBUILD),--rebuild) \
+		tests/conformance81/*.py
 
 # --- Smoke tests ------------------------------------------------------
 

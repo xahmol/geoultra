@@ -65,22 +65,39 @@ VICE = os.environ.get("VICE_HARNESS") or next(
     (p for p in (os.path.expanduser("~/.local/opt/vice-3.10-headless/bin/x64sc"),
                  os.path.expanduser("~/.local/opt/vice-3.10/bin/x64sc"))
      if os.path.exists(p)))
-ORACLE_DISK = os.environ.get(
-    "GEOS_ORACLE", os.path.expanduser("~/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64"))
-
-# GEOS 2.0 runs from a copy of the oracle disk (tests write to it); GeoUltra
-# gets the same disk as drive A through an REU image with a mount table
-# (src/drivers/reudrv.s): REU bank 1 holds the table, the image starts at
-# DRIVE_BANK. VICE does not write the REU image back.
-ORACLE_COPY = os.path.join(OUT, "oracle.d64")
-REU_IMAGE = os.path.join(OUT, "reu.bin")
-DRIVE_BANK = 31
-SYSTEMS = {
-    "geos": ["-drive8truedrive", "+autostart-delay-random", "-autostart-delay", "3",
-             "-reu", "-reusize", "512", "-autostart", ORACLE_COPY],
-    "geoultra": ["-cartcrt", os.path.join(ROOT, "build", "geoultra64.crt"),
-                 "-reu", "-reusize", "16384", "-reuimage", REU_IMAGE, "+reuimagerw"],
+# Disk sets (--set): the GEOS 2.0 oracle boot disk (the user's own, never
+# committed), its GeoUltra drive type, its size and VICE's drive 8 type.
+DISK_SETS = {
+    "d64": dict(oracle=os.environ.get("GEOS_ORACLE", os.path.expanduser(
+                    "~/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64")),
+                type=1, size=683 * 256, drive=[], suffix=""),
+    "d81": dict(oracle=os.environ.get("GEOS_ORACLE81", os.path.expanduser(
+                    "~/geos-dev/u64-usb/GEOS64.D81")),
+                type=3, size=3200 * 256, drive=["-drive8type", "1581"], suffix="-d81"),
 }
+DRIVE_BANK = 31
+
+
+def use_disk_set(name):
+    """GEOS 2.0 runs from a copy of the oracle disk (tests write to it);
+    GeoUltra gets the same disk as drive A through an REU image with a
+    mount table (src/drivers/reudrv.s): REU bank 1 holds the table, the
+    image starts at DRIVE_BANK. VICE does not write the REU image back."""
+    global DISK_SET, ORACLE_DISK, ORACLE_COPY, REU_IMAGE, SYSTEMS
+    DISK_SET = DISK_SETS[name]
+    ORACLE_DISK = DISK_SET["oracle"]
+    ORACLE_COPY = os.path.join(OUT, "oracle." + name)
+    REU_IMAGE = os.path.join(OUT, "reu%s.bin" % DISK_SET["suffix"])
+    SYSTEMS = {
+        "geos": ["-drive8truedrive"] + DISK_SET["drive"]
+                + ["+autostart-delay-random", "-autostart-delay", "3",
+                   "-reu", "-reusize", "512", "-autostart", ORACLE_COPY],
+        "geoultra": ["-cartcrt", os.path.join(ROOT, "build", "geoultra64.crt"),
+                     "-reu", "-reusize", "16384", "-reuimage", REU_IMAGE, "+reuimagerw"],
+    }
+
+
+use_disk_set("d64")
 PORTS = {"geos": 6502, "geoultra": 6503}
 
 TRAMPOLINE = 0x0340
@@ -168,12 +185,12 @@ def prepare_disks():
     if (os.path.exists(REU_IMAGE) and os.path.getmtime(REU_IMAGE) > os.path.getmtime(ORACLE_DISK)
             and os.path.getmtime(REU_IMAGE) > os.path.getmtime(__file__)):
         return
-    d64 = open(ORACLE_DISK, "rb").read()[:683 * 256]
+    image = open(ORACLE_DISK, "rb").read()[:DISK_SET["size"]]
     reu = bytearray(16 << 20)
     table = 0x010100
     reu[table:table + 5] = b"GUMT\x01"
-    reu[table + 0x20:table + 0x24] = bytes([1, DRIVE_BANK, 0, 0])     # drive A: 1541
-    reu[DRIVE_BANK << 16:(DRIVE_BANK << 16) + len(d64)] = d64
+    reu[table + 0x20:table + 0x24] = bytes([DISK_SET["type"], DRIVE_BANK, 0, 0])   # drive A
+    reu[DRIVE_BANK << 16:(DRIVE_BANK << 16) + len(image)] = image
     open(REU_IMAGE, "wb").write(reu)
 
 
@@ -188,19 +205,28 @@ def rreg(name):
     return addr, 2
 
 
+class CaseHang(Exception):
+    pass
+
+
 class System:
     def __init__(self, name, rebuild):
         self.name = name
-        self.snapshot = os.path.join(OUT, name + ".vsf")
-        self.log = open(os.path.join(OUT, name + ".log"), "w")
+        self.snapshot = os.path.join(OUT, name + DISK_SET["suffix"] + ".vsf")
+        self.log = open(os.path.join(OUT, name + DISK_SET["suffix"] + ".log"), "w")
         self.disk_written = False
-        self.launch()
         crt = os.path.join(ROOT, "build", "geoultra64.crt")
         stale = (name == "geoultra" and os.path.exists(self.snapshot)
                  and max(os.path.getmtime(crt), os.path.getmtime(REU_IMAGE))
                  > os.path.getmtime(self.snapshot))
-        if rebuild or stale or not os.path.exists(self.snapshot):
+        # GEOS 2.0's emulated 1581 only works reliably in the VICE that
+        # booted it: with the d81 set it always boots afresh.
+        self.boot_always = name == "geos" and DISK_SET["drive"] != []
+        if rebuild or stale or self.boot_always or not os.path.exists(self.snapshot):
+            self.launch(boot=True)
             self.make_snapshot()
+        else:
+            self.launch()
 
     def make_snapshot(self):
         """Let the system boot, then stop at the top of its MainLoop."""
@@ -229,6 +255,27 @@ class System:
         print("%s: snapshot at MainLoop $%04X" % (self.name, main))
 
     def run(self, case, table):
+        """One case; GEOS 2.0's emulated 1581 turbo sometimes waits forever
+        right after a snapshot is restored: such a case runs once more in a
+        newly started VICE."""
+        try:
+            return self.run_once(case, table)
+        except CaseHang as hang:
+            if self.name != "geos":
+                raise SystemExit(str(hang))
+            print("%s, retried in a new VICE" % hang, flush=True)
+            self.close()
+            if case.get("writes"):              # the hung attempt may have
+                shutil.copyfile(ORACLE_DISK, ORACLE_COPY)  # written half
+            self.launch()
+            if self.boot_always:
+                self.make_snapshot()
+            try:
+                return self.run_once(case, table)
+            except CaseHang as again:
+                raise SystemExit(str(again))
+
+    def run_once(self, case, table):
         if os.environ.get("HARNESS_TRACE"):
             print("%s: %s" % (self.name, case["name"]), flush=True)
         if case.get("writes"):
@@ -301,7 +348,13 @@ class System:
             time.sleep(0.5 if wait is True else wait)
             v.ping()
         else:
-            v.wait_event(RESP_CHECKPOINT, timeout=30)
+            try:
+                v.wait_event(RESP_CHECKPOINT, timeout=30)
+            except (TimeoutError, OSError):
+                v.ping()
+                r = v.regs_get()
+                raise CaseHang("%s: case %r did not return (PC $%04X, SP $%02X)" % (
+                    self.name, case["name"], r["PC"], r["SP"]))
         for ev in case.get("events", []):
             if "key" in ev:
                 self.key_event(ev)
@@ -362,7 +415,10 @@ class System:
             if v.mem_get(0x849B, 0x849C) != bytes([stub & 0xFF, stub >> 8]):
                 break
 
-    def launch(self):
+    def launch(self, boot=False):
+        """Start VICE (GEOS 2.0 autostarts its disk; restoring the snapshot
+        over a VICE that only attached the disk made the emulated 1581 hang
+        on its first access)."""
         args = [VICE, "-default", "+sound", "-sounddev", "dummy", "-warp", "-binarymonitor",
                 "-binarymonitoraddress", "127.0.0.1:%d" % PORTS[self.name]] + SYSTEMS[self.name]
         self.proc = subprocess.Popen(args, stdout=self.log, stderr=subprocess.STDOUT)
@@ -376,6 +432,8 @@ class System:
             self.close()
             shutil.copyfile(ORACLE_DISK, ORACLE_COPY)
             self.launch()
+            if self.boot_always:
+                self.make_snapshot()
         self.disk_written = True
 
     def close(self):
@@ -430,8 +488,11 @@ def main():
     ap.add_argument("--area", default="0,0,63,15", help="x0,y0,x1,y1 for --show")
     ap.add_argument("--systems", default="geos,geoultra",
                     help="systems to run (--show only), e.g. geos")
+    ap.add_argument("--set", default="d64", choices=sorted(DISK_SETS),
+                    help="disk set: d64 (1541) or d81 (1581, tests/conformance81)")
     ap.add_argument("casefiles", nargs="+")
     args = ap.parse_args()
+    use_disk_set(args.set)
     os.makedirs(OUT, exist_ok=True)
     prepare_disks()
     cases = load_cases(args.casefiles)

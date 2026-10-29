@@ -18,7 +18,7 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .export DiskInit
+        .export DiskInit, saveFlag
         .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
 
 FRST_FILE_ENTRY = 2
@@ -71,6 +71,8 @@ dmaReu:         .res 3
 dmaLen:         .word 0
 dirtyByte:      .byte 0
 count:          .byte 0
+saveFlag:       .byte 0         ; bit 7: BlkAlloc called from SaveFile (1581)
+firstTwo:       .byte 0         ; 1581 BlkAlloc: blocks before track 35
 dirIndex:       .byte 0
 ioP:            .byte 0         ; InitForIO saves
 ioPort:         .byte 0
@@ -178,6 +180,7 @@ ReadBlock:
         bcc BlkEnd
         ldy #REU_FETCH
         jsr DmaBlock
+        jsr HeaderSwap
         ldx #0
 BlkEnd: ldy #0
         rts
@@ -191,8 +194,10 @@ WriteBlock:
         lda drvFlags-8,y
         and #F_READONLY
         bne BlkEnd
+        jsr HeaderSwap          ; the disk's own layout on the disk
         ldy #REU_STASH
         jsr DmaBlock
+        jsr HeaderSwap          ; the caller's buffer as it was
         jsr MarkDirty
         ldx #0
         beq BlkEnd
@@ -209,6 +214,43 @@ VerWriteBlock:
         beq BlkEnd
         ldx #WR_VER_ERR
         bne BlkEnd
+
+; HeaderSwap: block 40/0 of a 1581 image at r4: bytes $04-$1C swapped
+; with $90-$A8, so GEOS finds the disk name where a 1541 keeps it (GEOS
+; 2.0's 1581 driver does the same, mist64/geos drv/drv1581.s). Destroys
+; A, X, Y.
+HeaderSwap:
+        ldy curDrive
+        lda driveType-8,y
+        and #$0F
+        cmp #DRV_1581
+        bne @end
+        lda r1L
+        cmp #40
+        bne @end
+        lda r1H
+        bne @end
+        ldy #4
+@swap:  lda (r4),y
+        tax
+        tya
+        clc
+        adc #$8C
+        tay
+        lda (r4),y
+        pha
+        txa
+        sta (r4),y
+        tya
+        sec
+        sbc #$8C
+        tay
+        pla
+        sta (r4),y
+        iny
+        cpy #$1D
+        bne @swap
+@end:   rts
 
 DrvReadBuff:
         jsr BufPtr
@@ -453,7 +495,7 @@ Stash:  ldy #REU_STASH
 
 ; GetDirHead / PutDirHead: the directory header to curDirHead and, per
 ; type, the further BAM blocks (dir2Head, dir3Head). Returns X = error,
-; r4 = curDirHead. Destroys A, Y, r1.
+; r4 = the last block's buffer. Destroys A, Y, r1.
 DrvGetDirHead:
         lda #<ReadBlock
         ldy #>ReadBlock
@@ -490,8 +532,9 @@ DirHead:
 @op:    jsr ReadBlock
         txa
         beq @next
-        bne @ptr
-@done:  ldx #0
+        rts
+@done:  ldx #0                  ; r4 = the last block read, as GEOS 2.0
+        rts                     ; (curDirHead on a 1541, dir3Head on a 1581)
 @ptr:   lda #<curDirHead
         sta r4L
         lda #>curDirHead
@@ -618,13 +661,44 @@ AddFree:
         inc r4H
 @end:   rts
 
-; --- BAM and allocation (1541 images; the other types trap for now) ------
+; --- BAM and allocation (1541 and 1581 images; 1571 and native trap) -----
+;
+; The 1581 rules follow GEOS 2.0's 1581 driver (mist64/geos drv/drv1581.s,
+; behaviour reference only): the BAM in dir2Head (tracks 1-40) and
+; dir3Head (41-80), six bytes per track from $10 (count, then the sector
+; bits); sectors searched one after another, tracks from the start down
+; to 1, then from 41 up to 80, once more from 39 if that fails.
 
 ; FindBAMBit: r6 = track/sector. A = the BAM byte masked with r8H, Z set
-; when the block is in use; r7H = offset of the track's free count in
-; curDirHead, X = offset of the BAM byte. Destroys Y.
+; when the block is in use; r7H = offset of the track's free count (in
+; curDirHead; on a 1581 from $10 of the track's BAM block), X = offset of
+; the BAM byte. Destroys Y.
 FindBAMBit:
-        jsr Need1541
+        jsr BamType
+        bne Find1541
+        jsr Off81
+        lda r6H
+        and #7
+        tay
+        lda bamBit,y
+        sta r8H
+        lda r6H
+        lsr
+        lsr
+        lsr
+        sec
+        adc r7H
+        tax
+        lda r6L
+        cmp #41
+        bcs @hi
+        lda dir2Head+$10,x
+        and r8H
+        rts
+@hi:    lda dir3Head+$10,x
+        and r8H
+        rts
+Find1541:
         lda r6L
         asl
         asl
@@ -652,6 +726,19 @@ bamBit: .byte $01, $02, $04, $08, $10, $20, $40, $80
 AllocateBlock:
         jsr FindBAMBit
         beq BadBam
+        jsr BamType
+        bne @c1541
+        jsr Flip81
+        ldx r7H
+        lda r6L
+        cmp #41
+        bcs @hi
+        dec dir2Head+$10,x
+        bcc @done
+@hi:    dec dir3Head+$10,x
+@done:  ldx #0
+        rts
+@c1541: jsr FindBAMBit          ; A, X again (BamType used A)
         eor curDirHead,x        ; A = the set bit: clear it
         sta curDirHead,x
         ldx r7H
@@ -665,6 +752,19 @@ BadBam: ldx #BAD_BAM
 FreeBlock:
         jsr FindBAMBit
         bne BadBam
+        jsr BamType
+        bne @f1541
+        jsr Flip81
+        ldx r7H
+        lda r6L
+        cmp #41
+        bcs @hi
+        inc dir2Head+$10,x
+        bcc @done
+@hi:    inc dir3Head+$10,x
+@done:  ldx #0
+        rts
+@f1541: jsr FindBAMBit
         lda r8H
         ora curDirHead,x
         sta curDirHead,x
@@ -679,8 +779,10 @@ FreeBlock:
 ; when the search starts on it. r3 = the block, X = 0 or INSUFF_SPACE.
 ; Destroys A, Y, r6, r7, r8H.
 SetNextFree:
-        jsr Need1541
-        lda r3L
+        jsr BamType
+        bne @s1541
+        jmp Next1581
+@s1541: lda r3L
         sta r6L
         lda r3H
         clc
@@ -737,27 +839,143 @@ SetNextFree:
 @full:  ldx #INSUFF_SPACE
         rts
 
-; Need1541: allocation for the other image types is not written yet.
-Need1541:
+; BamType: Z set for a 1581 image, clear for a 1541; the other types stop
+; in Trap (not written yet). Destroys A, Y.
+BamType:
         ldy curDrive
         lda driveType-8,y
         and #$0F
+        cmp #DRV_1581
+        beq @end
         cmp #DRV_1541
-        beq @ok
-        jmp Trap
-@ok:    rts
+        bne @trap
+        lda #1                  ; Z clear
+@end:   rts
+@trap:  jmp Trap
+
+; Off81: X = r7H = 6 * (track - 1) within its BAM block (track r6L).
+Off81:  lda r6L
+        cmp #41
+        bcc @low
+        sbc #40
+@low:   sec
+        sbc #1
+        asl
+        sta r7H
+        asl
+        clc
+        adc r7H
+        sta r7H
+        tax
+        rts
+
+; Flip81: flip bit r8H of BAM byte X of track r6L.
+Flip81: lda r6L
+        cmp #41
+        bcs @hi
+        lda r8H
+        eor dir2Head+$10,x
+        sta dir2Head+$10,x
+        rts
+@hi:    lda r8H
+        eor dir3Head+$10,x
+        sta dir3Head+$10,x
+        rts
+
+; Next1581: SetNextFree on a 1581 image.
+Next1581:
+        jsr @search
+        txa
+        beq @end
+        lda #39                 ; not found: once more from track 39
+        sta r3L
+@search:
+        lda r3H
+        clc
+        adc #1
+        sta r6H
+        lda r3L
+        sta r6L
+        cmp #40                 ; the directory track only as the start
+        beq @try
+@track: lda r6L
+        cmp #40
+        beq @next
+@try:   jsr Off81
+        lda r6L
+        cmp #41
+        bcs @upper
+        lda dir2Head+$10,x
+        jmp @count
+@upper: lda dir3Head+$10,x
+@count: beq @next
+        lda #40
+        sta r7L
+        sta count
+@sector:
+        lda r6H
+@mod:   cmp r7L
+        bcc @in
+        sbc r7L
+        bcs @mod
+@in:    sta r6H
+        jsr AllocateBlock
+        txa
+        beq @found
+        inc r6H
+        dec count
+        bne @sector
+@next:  lda r6L                 ; down to track 1, then up from 41
+        cmp #41
+        bcs @up
+        dec r6L
+        bne @range
+        lda #41
+        sta r6L
+        bne @range
+@up:    inc r6L
+@range: lda r6L
+        cmp #81
+        bcs @full
+        lda #0
+        sta r6H
+        jmp @track
+@found: lda r6L
+        sta r3L
+        lda r6H
+        sta r3H
+@end:   rts
+@full:  ldx #INSUFF_SPACE
+        rts
 
 ; BlkAlloc: r2 bytes from track 1; NxtBlkAlloc: from r3. Writes the
 ; blocks to the table at r6, then 0 and the bytes used in the last block
 ; + 1. Returns X = error, r2 = blocks, r3 = the last block. Destroys A,
 ; Y, r4-r8.
 BlkAlloc:
+        jsr BamType
+        bne @b1541
+        lda #35                 ; 1581: from track 35, from SaveFile 39
+        bit saveFlag
+        bpl @track
+        lda #39
+@track: sta r3L
+        lda #0
+        sta r3H
+        sta saveFlag
+        lda #2                  ; then back to track 35 after two blocks
+        sta firstTwo
+        bne Alloc
+@b1541: lda #0
+        sta saveFlag
         lda #1
         sta r3L
         lda #0
         sta r3H
 NxtBlkAlloc:
-        lda r9L                 ; Ddiv destroys r9
+        lda #0
+        sta firstTwo
+Alloc:  lda r9L                 ; Ddiv destroys r9
         pha
         lda r9H
         pha
@@ -814,8 +1032,14 @@ NxtBlkAlloc:
         lda r4L
         adc #2
         sta r4L
-        bcc @count
+        bcc @first
         inc r4H
+@first: lda firstTwo
+        beq @count
+        dec firstTwo
+        bne @count
+        lda #35
+        sta r3L
 @count: lda r5L
         bne @low
         dec r5H
@@ -856,10 +1080,7 @@ GetFreeDirBlk:
         ldx r10L
         inx
         stx r6L
-        lda #DIR_TRACK
-        sta r1L
-        lda #1
-        sta r1H
+        jsr FirstDirBlock
 @read:  jsr DrvReadBuff
 @got:   txa
         bne @end
@@ -908,8 +1129,9 @@ AddDirBlock:
         pha
         lda r6H
         pha
+        jsr DirTrackFree
         ldx #FULL_DIRECTORY
-        lda curDirHead + 4 * DIR_TRACK
+        and #$FF
         beq @end
         lda r1L
         sta r3L
@@ -932,6 +1154,27 @@ AddDirBlock:
         sta r6H
         pla
         sta r6L
+        rts
+
+; DirTrackFree: A = free blocks on the directory track.
+DirTrackFree:
+        jsr BamType
+        bne @t1541
+        lda dir2Head + $10 + 6 * 39
+        rts
+@t1541: lda curDirHead + 4 * DIR_TRACK
+        rts
+
+; FirstDirBlock: r1 = the first directory block of the drive's type.
+FirstDirBlock:
+        ldy curDrive
+        lda driveType-8,y
+        and #$0F
+        tay
+        lda dirTrack,y
+        sta r1L
+        lda dirSector,y
+        sta r1H
         rts
 
 ; ClearAndWrite: an empty block (link 0, $FF) to r1.
@@ -961,7 +1204,17 @@ SetGEOSDisk:
         lda r4L
         ora r4H
         beq @end
-        lda #DIR_TRACK + 1
+        jsr BamType
+        bne @t1541
+        lda #40                 ; 1581: on the directory track from 18
+        sta r3L
+        lda #18
+        sta r3H
+        jsr SetNextFree
+        txa
+        bne @end
+        beq @border
+@t1541: lda #DIR_TRACK + 1
         sta r3L
         lda #0
         sta r3H

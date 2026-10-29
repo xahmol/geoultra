@@ -57,7 +57,8 @@ contract"):
 
 `make` builds `build/geoultra64.crt` (boot ROM, kernal, 1351 driver;
 docs/ARCHITECTURE.md), `make vice` / `make vice-shot` run it in VICE 3.10.
-`make conformance` compares kernal routines with GEOS 2.0 in VICE
+`make conformance` (1541) and `make conformance81` (1581 images) compare
+kernal routines with GEOS 2.0 in VICE
 (tests/conformance/*.py, tools/harness/): every newly implemented jump
 table routine gets cases there, written from HG2G, and must pass before
 it counts as done. The GEOS 2.0 oracle disk is the user's own

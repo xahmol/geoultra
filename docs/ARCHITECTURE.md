@@ -218,9 +218,19 @@ applications call `$9030-$904D` directly.
   `FreeBlock`, `FindBAMBit`, `GetFreeDirBlk`, `AddDirBlock` (BAM change
   left in `curDirHead`, as GEOS 2.0) and `SetGEOSDisk` build on it.
   `interleave` = 8 from `DiskInit`.
-- Not yet: allocation on 1571, 1581 and native images (it stops in
-  `Trap`), native subdirectories and 1581 partitions (DESIGN.md,
-  "Directories"), 40-track D64s.
+- **1581 images** as GEOS 2.0's 1581 driver: block 40/0 is read with
+  bytes `$04-$1C` swapped with `$90-$A8` (the disk name where a 1541 has
+  it) and swapped back around a write; `GetDirHead` leaves `r4` at the
+  last block read (`dir3Head`). Allocation: the BAM in `dir2Head` /
+  `dir3Head`, six bytes per track from `$10`; `SetNextFree` takes the next
+  sector, searches from the start track down to 1, then from 41 up to 80,
+  once more from 39; `BlkAlloc` starts at track 35, or at 39 when called
+  from `SaveFile` (GEOS 2.0 looks at its caller's return address; the
+  kernal's SaveFile sets the driver's `saveFlag`) and goes back to 35
+  after two blocks. Checked with `make conformance81`.
+- Not yet: allocation on 1571 and native images (it stops in `Trap`),
+  native subdirectories and 1581 partitions (DESIGN.md, "Directories"),
+  40-track D64s.
 
 ## Files
 
@@ -375,6 +385,12 @@ automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
   random point (for example inside the clock update, with I/O on) made
   every case start with `$01 = $35`. The trampoline also sets `$01 = $30`
   and reads the TOD tenths (unlatching the clock) before each case.
+- **1581 set** (`--set d81`, `make conformance81`,
+  `tests/conformance81/`): GEOS 2.0 boots the user's GEOS64.D81 on a 1581
+  (`GEOS_ORACLE81`), GeoUltra mounts the same image. GEOS 2.0's emulated
+  1581 only works reliably in the VICE that booted it, so that side boots
+  afresh at the start, before every write case after the first and for
+  every retry; a case whose oracle hangs runs once more.
 - `--show NAME --area x0,y0,x1,y1 [--systems geos]` prints both screens
   as ASCII art; `HARNESS_TRACE=1` prints each case before it runs (to find
   one that hangs).
