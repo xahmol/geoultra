@@ -4,6 +4,7 @@
         .include "geos.inc"
         .include "hw.inc"
 
+        .import ExtTable
         .export Trap, sysFlgCopy, BootGEOS, basicBuf
 
         .segment "INFO"
@@ -33,7 +34,7 @@ basicBuf:       .res 46                 ; ToBASIC: command, saved bytes
                 .res $C0E0 - *, 0
 guSignature:    .byte "GU"              ; $C0E0: GeoUltra present
 guVersion:      .byte 0, 1              ; $C0E2: major, minor
-guExtTable:     .word 0                 ; $C0E4: extension jump table (later)
+guExtTable:     .word ExtTable          ; $C0E4: extension jump table (folders.s)
                 .res $C0F1 - *, 0
 trapAddress:    .word 0                 ; $C0F1: entry hit by Trap
         .reloc

@@ -21,7 +21,9 @@
         .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending
         .export drvTracks, drvFlags
         .import WriteBackNow, FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, Ovl1571
-        .import ProtExecute, ProtStatus
+        .import ProtExecute, ProtStatus, SetGEOSDiskOvl, folderT, folderS
+        .export DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite
+        .export geosId, FindBAMBit, FreeBlock, AllocateBlock, DrvReadBuff, DrvWriteBuff
         .import natLoaded
         .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
 
@@ -49,7 +51,7 @@ dir3Head        = $9C80         ; third BAM block (1581), end of the driver
         .word ChangeDiskDevice, NewDisk, ReadBlock, WriteBlock, VerWriteBlock
         .word OpenDisk, ReadBlock, WriteBlock, DrvGetDirHead, DrvPutDirHead
         .word GetFreeDirBlk, CalcBlksFree, FreeBlock, SetNextFree
-        .word FindBAMBit, NxtBlkAlloc, BlkAlloc, ChkDkGEOS, SetGEOSDisk
+        .word FindBAMBit, NxtBlkAlloc, BlkAlloc, ChkDkGEOS, SetGEOSDiskOvl
 
 ; $9030: entries applications call directly
         jmp FirstDirEntry
@@ -272,12 +274,13 @@ HeaderSwap:
         lda r1H
         bne @end
         beq @go
-@native:
+@native:                        ; the current folder's header
+        ldx curDrive
         lda r1L
-        cmp #1
+        cmp folderT-8,x
         bne @end
         lda r1H
-        cmp #1
+        cmp folderS-8,x
         bne @end
 @go:
         ldy #4
@@ -567,7 +570,14 @@ DirHead:
         ldx #DEV_NOT_FOUND
         bne @ptr
 @type:  tay
-        lda headStart,y
+        cpy #DRV_NATIVE         ; native: the current folder's header
+        bne @start
+        ldx curDrive
+        lda folderT-8,x
+        sta tNative
+        lda folderS-8,x
+        sta tNative+1
+@start: lda headStart,y
         sta dirIndex
 @next:  ldy dirIndex
         lda headTab,y
@@ -1246,7 +1256,14 @@ FirstDirBlock:
         ldy curDrive
         lda driveType-8,y
         and #$0F
-        tay
+        cmp #DRV_NATIVE         ; native: the current folder's first block
+        bne @table              ; (its header's link, in curDirHead)
+        lda curDirHead
+        sta r1L
+        lda curDirHead+1
+        sta r1H
+        rts
+@table: tay
         lda dirTrack,y
         sta r1L
         lda dirSector,y
@@ -1264,84 +1281,13 @@ ClearAndWrite:
         sty diskBlkBuf+1
         jmp DrvWriteBuff
 
-; SetGEOSDisk: make the disk a GEOS disk: a border block (from track 19,
-; else from track 1) and the signature in the header. X = 0 or
-; INSUFF_SPACE. Destroys A, Y, r0L, r1, r4, r5.
-SetGEOSDisk:
-        jsr DrvGetDirHead
-        txa
-        bne @end
-        lda #<curDirHead
-        sta r5L
-        lda #>curDirHead
-        sta r5H
-        jsr CalcBlksFree
-        ldx #INSUFF_SPACE
-        lda r4L
-        ora r4H
-        beq @end
-        jsr BamType
-        bne @t1541
-        lda #40                 ; 1581: on the directory track from 18
-        sta r3L
-        lda #18
-        sta r3H
-        jsr SetNextFree
-        txa
-        bne @end
-        beq @border
-@t1541: lda #DIR_TRACK + 1
-        sta r3L
-        lda #0
-        sta r3H
-        jsr SetNextFree
-        txa
-        beq @border
-        lda #1
-        sta r3L
-        jsr SetNextFree
-        txa
-        bne @end
-@border:
-        lda r3L
-        sta r1L
-        lda r3H
-        sta r1H
-        jsr ClearAndWrite
-        txa
-        bne @end
-        lda r1L
-        sta curDirHead + OFF_OP_TR_SC
-        lda r1H
-        sta curDirHead + OFF_OP_TR_SC + 1
-        ldy #15
-@sig:   lda geosId,y
-        sta curDirHead + OFF_GS_ID,y
-        dey
-        bpl @sig
-        jmp DrvPutDirHead
-@end:   rts
-
 ; --- Directory entries ---------------------------------------------------
 
 ; Get1stDirEntry: the first directory block to diskBlkBuf, r5 = its first
 ; entry. Returns X = error. Destroys A, Y, r1, r4.
 FirstDirEntry:
-        ldy curDrive
-        lda driveType-8,y
-        and #$0F
-        tay
-        lda dirTrack,y
-        sta r1L
-        lda dirSector,y
-        sta r1H
-        cpy #DRV_NATIVE         ; native: the header's link
-        bne @read
-        lda curDirHead
-        sta r1L
-        lda curDirHead+1
-        sta r1H
-@read:  lda #0
+        jsr FirstDirBlock       ; (native: the current folder's header link)
+        lda #0
         sta borderFlag
 EntryBlock:
         jsr DrvReadBuff

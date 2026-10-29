@@ -353,6 +353,45 @@ installed under the user's GEOS (geoWrite 2.1, which otherwise asks to
 "reboot using the same GEOS disk") run. `apprun.py --serial` sets it in
 VICE.
 
+## Folders (native drives)
+
+`src/kernal/folders.s` (resident: the current folder per drive, the
+extension table; overlay modules 12-14 with the shared helpers in
+`src/inc/foldershared.inc`), plus three places in the disk driver.
+
+- Format: CMD native subdirectories. A folder is a directory entry of CBM
+  type DIR (`$86`) whose T/S is its header block; a header as the root's
+  (1/1): `$00/$01` the first directory block, `$02` "H", name, disk ID,
+  "1H", `$20/$21` its own T/S, `$22/$23` the parent header (0/0 at the
+  root), `$24/$25` the block of its entry in the parent and `$26` the
+  entry's offset (GeoUltra writes the offset of the type byte; to check
+  against an image made by CMD software). The BAM is shared.
+- Current folder: `folderT`/`folderS` per drive (header T/S, 1/1 the
+  root; in RAM, so kept by hibernation). The driver's `DirHead` reads and
+  writes that header as `curDirHead`, `HeaderSwap` swaps it (the disk
+  name to `$90` as GEOS 2.0 has it), and `FirstDirBlock` (also used by
+  `Get1stDirEntry`, `GetFreeDirBlk`) starts at its link: existing
+  applications see the folder as the whole disk, with its name.
+- Extension jump table at `guExtTable` (`$C0E4` points to it), 5 bytes an
+  entry, X = 0 or an error: +0 `GetCurDir` (r1 = the folder, 0/0 without
+  folders), +5 `SetCurDir` (r0 = name of a folder in it), +10 `DirUp`, +15
+  `DirRoot`, +20 `MakeDir` (r0 = name; X = `$40` when the name exists),
+  +25 `RemoveDir` (r0 = name of an empty folder; X = `$41` when not
+  empty). `MakeDir` takes two blocks near the current folder (header and
+  first directory block); `RemoveDir` frees them through the BAM's
+  working copy, so a refused one changes nothing.
+- `SetGEOSDisk` moved to module 13 (driver room), now also on native
+  drives (border block from 1/0); `SaveState`/`RestoreState` moved to
+  module 11 (room in CODE for the table).
+- Overlay rule learnt here: a module's own bytes are fetched anew after
+  every nested overlay call, so variables that must survive one (here
+  across `SetNextFree`) are resident.
+- `make test-folders` (tests/drives/folders.py): MakeDir, SetCurDir (name,
+  root files not seen), SaveFile/ReadFile inside, DirUp, RemoveDir refused
+  and then done, the free count back.
+- Not yet: 1581 partitions, renaming and moving folders, `MoveFile`, long
+  names, folders in `DBGETFILES`, geoFolder.
+
 ## Hibernation
 
 `src/kernal/hibernate.s` (overlay modules 8 and 10, `Snap` at `$BF40`,

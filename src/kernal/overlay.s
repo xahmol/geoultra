@@ -11,8 +11,11 @@
 ; slot, calls the entry with A, X, Y and the flags as at the stub, then
 ; fetches the previous module back and returns to the stub's caller (the
 ; stub is entered like the routine itself), so overlay routines may call
-; others. Rule: overlay code never installs a vector into the slot
-; (a callback may find another module there). docs/ARCHITECTURE.md.
+; others. Rules: overlay code never installs a vector into the slot
+; (a callback may find another module there), and a module's own bytes
+; (variables included) are fetched anew from the REU after every nested
+; overlay call, so values that must survive one live outside the module.
+; docs/ARCHITECTURE.md.
 
         .include "geos.inc"
         .include "hw.inc"
@@ -131,10 +134,10 @@ OvlLoad:
 
 modLo:  .byte <(OVL_REU), <(OVL_REU + OVL_SIZE), <(OVL_REU + 2 * OVL_SIZE)
         .byte <(OVL_REU + 3 * OVL_SIZE), <(OVL_REU + 4 * OVL_SIZE)
-        .byte <(OVL_REU + 5 * OVL_SIZE), <(OVL_REU + 6 * OVL_SIZE), <(OVL_REU + 7 * OVL_SIZE), <(OVL_REU + 8 * OVL_SIZE), <(OVL_REU + 9 * OVL_SIZE), <(OVL_REU + 10 * OVL_SIZE)
+        .byte <(OVL_REU + 5 * OVL_SIZE), <(OVL_REU + 6 * OVL_SIZE), <(OVL_REU + 7 * OVL_SIZE), <(OVL_REU + 8 * OVL_SIZE), <(OVL_REU + 9 * OVL_SIZE), <(OVL_REU + 10 * OVL_SIZE), <(OVL_REU + 11 * OVL_SIZE), <(OVL_REU + 12 * OVL_SIZE), <(OVL_REU + 13 * OVL_SIZE), <(OVL_REU + 14 * OVL_SIZE)
 modMid: .byte >(OVL_REU), >(OVL_REU + OVL_SIZE), >(OVL_REU + 2 * OVL_SIZE)
         .byte >(OVL_REU + 3 * OVL_SIZE), >(OVL_REU + 4 * OVL_SIZE)
-        .byte >(OVL_REU + 5 * OVL_SIZE), >(OVL_REU + 6 * OVL_SIZE), >(OVL_REU + 7 * OVL_SIZE), >(OVL_REU + 8 * OVL_SIZE), >(OVL_REU + 9 * OVL_SIZE), >(OVL_REU + 10 * OVL_SIZE)
+        .byte >(OVL_REU + 5 * OVL_SIZE), >(OVL_REU + 6 * OVL_SIZE), >(OVL_REU + 7 * OVL_SIZE), >(OVL_REU + 8 * OVL_SIZE), >(OVL_REU + 9 * OVL_SIZE), >(OVL_REU + 10 * OVL_SIZE), >(OVL_REU + 11 * OVL_SIZE), >(OVL_REU + 12 * OVL_SIZE), >(OVL_REU + 13 * OVL_SIZE), >(OVL_REU + 14 * OVL_SIZE)
 modHi:  .byte ^(OVL_REU), ^(OVL_REU + OVL_SIZE), ^(OVL_REU + 2 * OVL_SIZE)
         .byte ^(OVL_REU + 3 * OVL_SIZE), ^(OVL_REU + 4 * OVL_SIZE)
-        .byte ^(OVL_REU + 5 * OVL_SIZE), ^(OVL_REU + 6 * OVL_SIZE), ^(OVL_REU + 7 * OVL_SIZE), ^(OVL_REU + 8 * OVL_SIZE), ^(OVL_REU + 9 * OVL_SIZE), ^(OVL_REU + 10 * OVL_SIZE)
+        .byte ^(OVL_REU + 5 * OVL_SIZE), ^(OVL_REU + 6 * OVL_SIZE), ^(OVL_REU + 7 * OVL_SIZE), ^(OVL_REU + 8 * OVL_SIZE), ^(OVL_REU + 9 * OVL_SIZE), ^(OVL_REU + 10 * OVL_SIZE), ^(OVL_REU + 11 * OVL_SIZE), ^(OVL_REU + 12 * OVL_SIZE), ^(OVL_REU + 13 * OVL_SIZE), ^(OVL_REU + 14 * OVL_SIZE)

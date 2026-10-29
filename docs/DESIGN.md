@@ -321,4 +321,5 @@ GEOS memory map, so the cartridge stays a boot and overlay store:
   (tests/conformance/menu.py, `action`); GEOS 2.0 bug or test artefact
   still to find out.
 
-- Address of the extended jump table.
+- Extended jump table: settled, `guExtTable` (`$C0E4`) points to it
+  (ARCHITECTURE, "Folders").

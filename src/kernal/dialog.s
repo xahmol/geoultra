@@ -17,6 +17,7 @@
         .include "hw.inc"
 
         .export DoDlgBox, RstrFrmDialogue, SaveState, RestoreState, InitGEOEnv
+        .import OvlCall
         .import DoIcons, StartMouseMode, UseSystemFont, PutString
         .import SetPattern, Rectangle, FrameRectangle, RecoverRectangle
         .import InterruptMain, MainLoop, GraphicsString, GetString
@@ -885,121 +886,15 @@ LoadParams:
         bpl @copy
         rts
 
-; Save zero page $22-$38, the globals $849B-$84C0, the icon table, the
-; kernal state block and the sprites into dlgBoxRamBuf.
+; SaveState / RestoreState: the kernal state around a dialog box or a desk
+; accessory (overlay module 11; they save and restore what DoDlgBox and
+; LdDeskAcc must keep).
 SaveState:
-        ldx #22
-@zp:    lda curPattern,x
-        sta SAVE_ZP,x
-        dex
-        bpl @zp
-        ldx #37
-@gl:    lda appMain,x
-        sta SAVE_GL,x
-        dex
-        bpl @gl
-        lda IconDescVec
-        sta SAVE_IC
-        lda IconDescVec+1
-        sta SAVE_IC+1
-        ldx #0
-@ks:    cpx #<__KSTATE_SIZE__
-        beq @spr
-        lda __KSTATE_RUN__,x
-        sta SAVE_KS,x
-        inx
-        bne @ks
-@spr:   ldx #7
-@ptr:   lda SPR_PTRS,x
-        sta SAVE_SPR,x
-        dex
-        bpl @ptr
-        php
-        sei
-        lda CPU_PORT
-        sta dbPort
-        lda #RAM_IO
-        sta CPU_PORT
-        ldx #16
-@pos:   lda vicSpr0X,x
-        sta SAVE_SPR+8,x
-        dex
-        bpl @pos
-        lda vicSprEnable
-        sta SAVE_SPR+25
-        lda $D017               ; double height
-        sta SAVE_SPR+26
-        ldx #2
-@prio:  lda $D01B,x             ; priority, multicolour, double width
-        sta SAVE_SPR+27,x
-        dex
-        bpl @prio
-        ldx #9
-@col:   lda $D025,x             ; multicolours and sprite colours
-        sta SAVE_SPR+30,x
-        dex
-        bpl @col
-        lda dbPort
-        sta CPU_PORT
-        plp
-        rts
-
+        jsr OvlCall
+        .byte 11, 0
 RestoreState:
-        php
-        sei
-        ldx #22
-@zp:    lda SAVE_ZP,x
-        sta curPattern,x
-        dex
-        bpl @zp
-        ldx #37
-@gl:    lda SAVE_GL,x
-        sta appMain,x
-        dex
-        bpl @gl
-        lda SAVE_IC
-        sta IconDescVec
-        lda SAVE_IC+1
-        sta IconDescVec+1
-        ldx #0
-@ks:    cpx #<__KSTATE_SIZE__
-        beq @spr
-        lda SAVE_KS,x
-        sta __KSTATE_RUN__,x
-        inx
-        bne @ks
-@spr:   ldx #7
-@ptr:   lda SAVE_SPR,x
-        sta SPR_PTRS,x
-        dex
-        bpl @ptr
-        lda CPU_PORT
-        sta dbPort
-        lda #RAM_IO
-        sta CPU_PORT
-        ldx #16
-@pos:   lda SAVE_SPR+8,x
-        sta vicSpr0X,x
-        dex
-        bpl @pos
-        lda SAVE_SPR+25
-        sta vicSprEnable
-        lda SAVE_SPR+26
-        sta $D017
-        ldx #2
-@prio:  lda SAVE_SPR+27,x
-        sta $D01B,x
-        dex
-        bpl @prio
-        ldx #9
-@col:   lda SAVE_SPR+30,x
-        sta $D025,x
-        dex
-        bpl @col
-        lda dbPort
-        sta CPU_PORT
-        plp
-        rts
+        jsr OvlCall
+        .byte 11, 3
 
 ; The default environment of a dialog box (HG2G2022 chapter 14, "Dialog
 ; Box and Auto Exec Configuration"): plain text, both buffers, mouse
@@ -1058,3 +953,125 @@ InitGEOEnv:
         sta mouseRight+1
         plp
         rts
+
+        .segment "OVL11"                ; overlay module 11: dialog state
+
+        jmp OvSaveState         ; entry 0
+        jmp OvRestoreState      ; entry 3
+
+; Save zero page $22-$38, the globals $849B-$84C0, the icon table, the
+; kernal state block and the sprites into dlgBoxRamBuf.
+OvSaveState:
+        ldx #22
+@zp:    lda curPattern,x
+        sta SAVE_ZP,x
+        dex
+        bpl @zp
+        ldx #37
+@gl:    lda appMain,x
+        sta SAVE_GL,x
+        dex
+        bpl @gl
+        lda IconDescVec
+        sta SAVE_IC
+        lda IconDescVec+1
+        sta SAVE_IC+1
+        ldx #0
+@ks:    cpx #<__KSTATE_SIZE__
+        beq @spr
+        lda __KSTATE_RUN__,x
+        sta SAVE_KS,x
+        inx
+        bne @ks
+@spr:   ldx #7
+@ptr:   lda SPR_PTRS,x
+        sta SAVE_SPR,x
+        dex
+        bpl @ptr
+        php
+        sei
+        lda CPU_PORT
+        sta dbPort
+        lda #RAM_IO
+        sta CPU_PORT
+        ldx #16
+@pos:   lda vicSpr0X,x
+        sta SAVE_SPR+8,x
+        dex
+        bpl @pos
+        lda vicSprEnable
+        sta SAVE_SPR+25
+        lda $D017               ; double height
+        sta SAVE_SPR+26
+        ldx #2
+@prio:  lda $D01B,x             ; priority, multicolour, double width
+        sta SAVE_SPR+27,x
+        dex
+        bpl @prio
+        ldx #9
+@col:   lda $D025,x             ; multicolours and sprite colours
+        sta SAVE_SPR+30,x
+        dex
+        bpl @col
+        lda dbPort
+        sta CPU_PORT
+        plp
+        rts
+
+OvRestoreState:
+        php
+        sei
+        ldx #22
+@zp:    lda SAVE_ZP,x
+        sta curPattern,x
+        dex
+        bpl @zp
+        ldx #37
+@gl:    lda SAVE_GL,x
+        sta appMain,x
+        dex
+        bpl @gl
+        lda SAVE_IC
+        sta IconDescVec
+        lda SAVE_IC+1
+        sta IconDescVec+1
+        ldx #0
+@ks:    cpx #<__KSTATE_SIZE__
+        beq @spr
+        lda SAVE_KS,x
+        sta __KSTATE_RUN__,x
+        inx
+        bne @ks
+@spr:   ldx #7
+@ptr:   lda SAVE_SPR,x
+        sta SPR_PTRS,x
+        dex
+        bpl @ptr
+        lda CPU_PORT
+        sta dbPort
+        lda #RAM_IO
+        sta CPU_PORT
+        ldx #16
+@pos:   lda SAVE_SPR+8,x
+        sta vicSpr0X,x
+        dex
+        bpl @pos
+        lda SAVE_SPR+25
+        sta vicSprEnable
+        lda SAVE_SPR+26
+        sta $D017
+        ldx #2
+@prio:  lda SAVE_SPR+27,x
+        sta $D01B,x
+        dex
+        bpl @prio
+        ldx #9
+@col:   lda SAVE_SPR+30,x
+        sta $D025,x
+        dex
+        bpl @col
+        lda dbPort
+        sta CPU_PORT
+        plp
+        rts
+

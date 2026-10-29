@@ -35,7 +35,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all vice vice-shot conformance conformance81 test-bypass test-native test-d71 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -231,6 +231,11 @@ smoke-u64-restore: check-deploy
 # default the user's own ~/geos-dev/u64-usb/ramapps.DNP, is only read).
 test-native: all
 	$(PYTHON) tests/drives/write.py native
+
+# Folders on a native drive (tests/drives/folders.py, on a copy of the
+# same DNP).
+test-folders: all
+	$(PYTHON) tests/drives/folders.py
 
 # Writing to a 1571 drive, on a D71 the test formats itself.
 test-d71: all
