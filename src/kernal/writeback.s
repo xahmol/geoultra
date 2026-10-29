@@ -17,7 +17,7 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .export WriteBackNow
+        .export WriteBackNow, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
         .import OvlCall, uciPresent, wbPending, drvTracks, drvFlags
         .export FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, Ovl1571, natLoaded
 

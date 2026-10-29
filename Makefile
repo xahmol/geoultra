@@ -79,9 +79,14 @@ $(KOBJ)/.bypass: FORCE
 
 FORCE:
 
+# The hibernation file carries the kernal's build ID: these two objects are
+# rebuilt with every kernal change (src/kernal/hibernate.s).
+BUILD_ID := $(shell expr $$(date +%s) % 65536)
+$(KOBJ)/hibernate.o $(KOBJ)/hibresume.o: $(KSRCS) $(DRVSRCS)
+
 $(KOBJ)/%.o: src/kernal/%.s $(INCS) $(KOBJ)/.bypass
 	@mkdir -p $(KOBJ)
-	$(CA65) -I src/inc $(BUILDDATE) $(KDEFS) -o $@ $<
+	$(CA65) -I src/inc $(BUILDDATE) $(KDEFS) -D BUILD_ID=$(BUILD_ID) -o $@ $<
 
 $(KOBJ)/%.o: src/drivers/%.s $(INCS)
 	@mkdir -p $(KOBJ)

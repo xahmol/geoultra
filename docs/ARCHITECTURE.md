@@ -353,6 +353,40 @@ installed under the user's GEOS (geoWrite 2.1, which otherwise asks to
 "reboot using the same GEOS disk") run. `apprun.py --serial` sets it in
 VICE.
 
+## Hibernation
+
+`src/kernal/hibernate.s` (overlay modules 8 and 10, `Snap` at `$BF40`,
+`Resume` in KCODE) and `src/kernal/hibresume.s` (module 9), with the
+helpers both modules assemble in `src/inc/hibshared.inc`.
+
+- `HibSuspend` (module 8): `WriteBackNow`, the VIC-II registers and CIA
+  2's port A/B and direction to bank 1 (`$0500`, `$0530`) by REU DMA,
+  then `Snap`: the stack pointer to `hibSP`, all 64 KB of RAM to REU bank
+  19 (one DMA, triggered by a write to `$FF00` with all RAM visible). Then
+  the header (signature `GUHIB1`, the build ID) to bank 1 at `$0400` and
+  `GEOULTRA/HIBERNAT.BIN` (created or overwritten) with four parts, each
+  one SEEK + `SAVE_REU`: bank 1, bank 19, bank 18 (desk accessory swap),
+  banks 192-199 (the applications' REU), 704 KB. Returns X = 0.
+- `HibResumeOvl` (module 9) from the cold start, after `MountAll`: with
+  a UCI, C= not held, the file there, its signature and build ID this
+  kernal's, and its mount table (per drive type, bank, tracks; the image
+  paths; the home path) the one just mounted, the four parts are loaded
+  back, the file is deleted (an unplanned power-off later must not bring
+  back an old state) and `Resume` (KCODE) copies bank 19 back to all of
+  RAM. The CPU goes on in `Resume`, whose bytes are the same in the
+  snapshot (same build), takes `hibSP` and returns from `Snap` a second
+  time with A = 1; `HibSuspend`'s resumed path restores the chips from
+  bank 1 and starts the TOD at the session's time (module 10, `TodSet`:
+  the Ultimate's clock is not read yet), and returns X = 0 to its caller.
+- The build ID (`BUILD_ID`, seconds since 1970 modulo 65536 at build time)
+  replaces a CRC of the code: KCODE and CODE modify themselves
+  (`OvlCall`, `CallRoutine`). Both objects are rebuilt with every kernal
+  change.
+- Not yet: the triggers (Suspend command in the desktop, hot key,
+  automatically at quiet moments, on ToBASIC and reset), the "safe to
+  switch off" notice, saving only the banks in use, task slots, spooler
+  and clipboard.
+
 ## Serial number per application (optional)
 
 `src/kernal/bypass.s`, overlay module 4, only built with `BYPASS=1` (the
