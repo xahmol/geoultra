@@ -39,6 +39,29 @@ decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 - [ultimate-uci-oscar64](https://github.com/xahmol/ultimate-uci-oscar64):
   Ultimate Command Interface library for Oscar64.
 
+## Serial numbers and copy protection
+
+GEOS applications from Berkeley Softworks key themselves to the serial
+number of the GEOS boot disk they were installed under. GeoUltra answers
+with the serial of your own GEOS boot disk when one is mounted, so
+applications installed under your GEOS run.
+
+GeoUltra is planned to get optional measures that go further: letting an
+application install itself on GeoUltra, answering each application with
+the serial it stored, and re-keying an application to your serial. These
+bypass Berkeley's copy protection. They are **off by default** and must be
+switched on in `SETTINGS.INI`.
+
+**Disclaimer.** These measures are intended only for using GEOS and GEOS
+applications for which you own a licensed copy, for example on an
+Ultimate after your original disks have worn out. They are not meant to
+run copies you have no licence for. GEOS and its applications are still
+under copyright, whatever their age, and the publication of
+reverse-engineered source code does not grant a licence. Whether using
+these measures is allowed depends on the law where you live; you use them
+at your own responsibility. GeoUltra contains no Berkeley code and ships
+no GEOS software.
+
 ## Licence
 
 GNU GPL v3. GEOS is a trademark of its owners; GeoUltra contains no
