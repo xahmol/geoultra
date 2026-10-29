@@ -20,7 +20,7 @@
 
         .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending
         .export drvTracks, drvFlags
-        .import WriteBackNow
+        .import WriteBackNow, FreeNativeOvl
         .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
 
 FRST_FILE_ENTRY = 2
@@ -240,14 +240,16 @@ VerWriteBlock:
         ldx #WR_VER_ERR
         bne BlkEnd
 
-; HeaderSwap: block 40/0 of a 1581 image at r4: bytes $04-$1C swapped
-; with $90-$A8, so GEOS finds the disk name where a 1541 keeps it (GEOS
-; 2.0's 1581 driver does the same, mist64/geos drv/drv1581.s). Destroys
-; A, X, Y.
+; HeaderSwap: block 40/0 of a 1581 image (1/1 of a native one) at r4:
+; bytes $04-$1C swapped with $90-$A8, so GEOS finds the disk name where a
+; 1541 keeps it (GEOS 2.0's 1581 driver does the same, mist64/geos
+; drv/drv1581.s; native: the same layout, own choice). Destroys A, X, Y.
 HeaderSwap:
         ldy curDrive
         lda driveType-8,y
         and #$0F
+        cmp #DRV_NATIVE         ; native: the header is 1/1
+        beq @native
         cmp #DRV_1581
         bne @end
         lda r1L
@@ -255,6 +257,15 @@ HeaderSwap:
         bne @end
         lda r1H
         bne @end
+        beq @go
+@native:
+        lda r1L
+        cmp #1
+        bne @end
+        lda r1H
+        cmp #1
+        bne @end
+@go:
         ldy #4
 @swap:  lda (r4),y
         tax
@@ -634,7 +645,10 @@ CalcBlksFree:
         ldy curDrive
         lda driveType-8,y
         and #$0F
-        cmp #DRV_1581
+        cmp #DRV_NATIVE
+        bne @cbm
+        jmp FreeNativeOvl
+@cbm:   cmp #DRV_1581
         beq @1581
         pha
         ldy #4                  ; side 1: one count per track, 4 bytes each
@@ -877,10 +891,14 @@ BamType:
         cmp #DRV_1581
         beq @end
         cmp #DRV_1541
-        bne @trap
+        bne @none
         lda #1                  ; Z clear
 @end:   rts
-@trap:  jmp Trap
+@none:  pla                     ; 1571 and native: no allocation yet; the
+        pla                     ; calling routine returns WR_PR_ON (the
+        ldx #WR_PR_ON           ; drive acts write protected, no Trap)
+        lda #0
+        rts
 
 ; Off81: X = r7H = 6 * (track - 1) within its BAM block (track r6L).
 Off81:  lda r6L
@@ -1432,3 +1450,57 @@ DiskInit:
 @end:   rts
 
 mountSig:       .byte "GUMT"
+
+        .segment "OVL3"                 ; overlay module 3
+
+        jmp FreeNative          ; entry 0
+
+; FreeNative: CalcBlksFree on a native image: r4 = the free bits of tracks
+; 1 .. drvTracks in the BAM (from 1/2 offset $20, 32 bytes a track), read
+; byte by byte from the REU; r3 = all blocks (tracks * 256).
+FreeNative:
+        ldx curDrive
+        lda #0
+        sta r3L
+        lda drvTracks-8,x
+        sta r3H
+        lda #$20                ; REU: drive bank + block 1/2 ($0200) + $20
+        sta dmaReu
+        lda #$02
+        sta dmaReu+1
+        lda ramBase-8,x
+        sta dmaReu+2
+        lda r3H                 ; bytes: tracks * 32
+        sta blkLo
+        lda #0
+        sta blkHi
+        ldy #5
+@mul:   asl blkLo
+        rol blkHi
+        dey
+        bne @mul
+@byte:  lda blkLo
+        ora blkHi
+        beq @end
+        jsr Byte
+        lda dirtyByte
+@bit:   lsr
+        bcc @next
+        inc r4L
+        bne @next
+        inc r4H
+@next:  tax
+        bne @bit
+        inc dmaReu
+        bne @count
+        inc dmaReu+1
+        bne @count
+        inc dmaReu+2
+@count: lda blkLo
+        bne @low
+        dec blkHi
+@low:   dec blkLo
+        jmp @byte
+@end:   ldx #0
+        rts
+

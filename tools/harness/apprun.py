@@ -4,8 +4,9 @@
 Usage: apprun.py NAME [--wait S] [--out PNG] [EVENT ...]
 
 Drive A is the GEOS 2.0 oracle disk (GEOS_ORACLE), drive B an
-applications disk (GEOS_APPS_DISK, e.g. a GEOS disk with geoWrite and
-geoPaint; the user's own, never committed); both are mounted through an
+applications disk (GEOS_APPS_DISK: a D64, D81 or DNP image, by its
+extension, e.g. a GEOS disk with geoWrite and geoPaint; the user's own,
+never committed); both are mounted through an
 REU image as in the conformance harness. After the boot the application
 NAME is started from drive B with GetFile; after --wait seconds the
 events run in order, then the foreground screen (bitmap and colour
@@ -42,14 +43,19 @@ PALETTE = [(0, 0, 0), (255, 255, 255), (136, 57, 50), (103, 182, 189), (139, 63,
 def reu_image():
     """Drive A: the oracle disk at bank 31; drive B: the apps disk at 40."""
     newest = max(os.path.getmtime(p) for p in (harness.ORACLE_DISK, APPS_DISK, __file__))
-    if os.path.exists(REU_IMAGE) and os.path.getmtime(REU_IMAGE) > newest:
+    if (os.path.exists(REU_IMAGE) and os.path.getmtime(REU_IMAGE) > newest
+            and open(REU_IMAGE + ".src").read() == APPS_DISK):
         return
+    open(REU_IMAGE + ".src", "w").write(APPS_DISK)
     reu = bytearray(16 << 20)
     reu[0x010100:0x010105] = b"GUMT\x01"
     for slot, (path, bank) in enumerate(((harness.ORACLE_DISK, 31), (APPS_DISK, 40))):
-        d64 = open(path, "rb").read()[:683 * 256]
-        reu[0x010120 + 32 * slot:0x010124 + 32 * slot] = bytes([1, bank, 0, 0])
-        reu[bank << 16:(bank << 16) + len(d64)] = d64
+        image = open(path, "rb").read()
+        ext = os.path.splitext(path)[1].lower()
+        dtype, tracks = {".d81": (3, 0), ".dnp": (4, len(image) >> 16)}.get(ext, (1, 0))
+        image = image[:{1: 683 * 256, 3: 3200 * 256, 4: len(image)}[dtype]]
+        reu[0x010120 + 32 * slot:0x010124 + 32 * slot] = bytes([dtype, bank, tracks, 0])
+        reu[bank << 16:(bank << 16) + len(image)] = image
     os.makedirs(harness.OUT, exist_ok=True)
     open(REU_IMAGE, "wb").write(reu)
 
@@ -74,6 +80,8 @@ def main():
     ap.add_argument("name")
     ap.add_argument("--wait", type=float, default=8)
     ap.add_argument("--out", default=os.path.join(harness.OUT, "app.png"))
+    ap.add_argument("--serial", help="serial number (hex) for GetSerialNumber, as "
+                    "[system] serial= in SETTINGS.INI on the Ultimate")
     ap.add_argument("events", nargs="*")
     args = ap.parse_args()
     reu_image()
@@ -105,6 +113,12 @@ def main():
         code += [0x4C, end & 0xFF, end >> 8]            # GetFile returned: X at $02F0
         v.mem_set(start, bytes(code))
         v.mem_set(0x4F00, args.name.encode() + b"\0")
+        if args.serial:
+            serial = int(args.serial, 16)
+            lbl = open(os.path.join(harness.ROOT, "build", "kernal64.lbl")).read()
+            addr = int(next(l.split()[1] for l in lbl.splitlines()
+                            if l.endswith(".serialNumber")), 16)
+            v.mem_set(addr, bytes([serial & 0xFF, serial >> 8]))
         v.mem_set(0x02F0, b"\xEE")
         v.regs_set({"PC": start})
         v.resume()

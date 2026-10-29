@@ -10,7 +10,7 @@
         .export DShiftLeft, DShiftRight, BBMult, BMult, DMult, Ddiv, DSdiv
         .export Dabs, Dnegate, Ddec, ClearRam, FillRam, i_FillRam, InitRam
         .export CopyString, CopyFString, CmpString, CmpFString, CallRoutine
-        .export DoInlineReturn, GetRandom, GetSerialNumber
+        .export DoInlineReturn, GetRandom, GetSerialNumber, serialNumber
 
 returnAddress   = $3D           ; word: inline routines' return address
 random          = $850A         ; word
@@ -389,10 +389,16 @@ GetRandom:
         inc random              ; never stuck at zero
 @ok:    rts
 
-; GetSerialNumber: r0 = GeoUltra's serial number. Destroys A.
+; GetSerialNumber: r0 = the serial number: GeoUltra's own, or the one in
+; SETTINGS.INI ([system] serial=, read at boot), so that applications
+; installed under another GEOS serial number run. Destroys A.
 GetSerialNumber:
-        lda #<SERIAL
+        lda serialNumber
         sta r0L
-        lda #>SERIAL
+        lda serialNumber+1
         sta r0H
         rts
+
+        .segment "DATA"
+
+serialNumber:   .word SERIAL

@@ -299,6 +299,18 @@ driver; the driver's vectors must stay at `$9000`); the path and the
 command buffer use the overlay slot's scratch area (`$9F70-$9FFF`).
 Overlay modules are at most 496 bytes since then.
 
+## Serial number
+
+`GetSerialNumber` returns `serialNumber` (DATA), set at the cold start:
+`[system] serial=XXXX` (hex) in `GEOULTRA/SETTINGS.INI` (read in
+`mount.s` right after the home folder is found), otherwise the serial of
+the first mounted drive holding GEOS 2.0's `GEOBOOT` (permanent name
+`GeoBoot     V1.0`; file block 82, offset 183, found on the user's GEOS
+2.0 D64 and D81), otherwise GeoUltra's own default. With it, applications
+installed under the user's GEOS (geoWrite 2.1, which otherwise asks to
+"reboot using the same GEOS disk") run. `apprun.py --serial` sets it in
+VICE.
+
 ## Overlays
 
 Rarely used kernal routines live in overlay modules of 640 bytes, linked

@@ -22,9 +22,11 @@
 
         .include "geos.inc"
         .include "hw.inc"
+        .include "kcalls.inc"
 
-        .export MountAll
-        .import uciPresent, wbPending
+        .export MountAll, SerialFromDisk
+        .import uciPresent, wbPending, serialNumber, SetDevice, FindFile
+        .import GetFHdrInfo
 
 uciCtrl         = $DF1C         ; write: control; read: status
 uciCmd          = $DF1D         ; write: command bytes; read: identity
@@ -66,6 +68,9 @@ type:           .byte 0
 banks:          .byte 0
 tracks:         .byte 0
 textEnd:        .word 0
+serialSet:      .byte 0         ; SETTINGS.INI gave serial=
+walk:           .byte 0
+sdDrive:        .byte 0
 
 ; MountAll (cold start, I/O on). Destroys A, X, Y, r0-r3.
 MountAll:
@@ -94,6 +99,7 @@ MountAll:
         sta LOG+3
         jsr FindHome            ; always: the write-back needs the home path
         bcs @end
+        jsr ReadSettings        ; (in the home folder)
         jsr KeepDirty
         bcs @kept
         jsr ReadList
@@ -309,9 +315,117 @@ ListName:
 
 ; --- MOUNTS.INI -------------------------------------------------------------
 
+; ReadSettings: SETTINGS.INI from the home folder; [system] serial=XXXX
+; (hex) sets the serial number. Missing file or key: nothing changes.
+ReadSettings:
+        ldy #0
+@name:  lda settingsName,y
+        sta path,y
+        beq @named
+        iny
+        bne @name
+@named: sty pathLen
+        jsr ReadText
+        bcs @end
+        lda #<TEXT
+        sta r1L
+        lda #>TEXT
+        sta r1H
+        lda #0
+        sta inDrives            ; here: inside [system]
+@line:  jsr AtEnd
+        bcs @end
+        jsr GetChar
+        cmp #'['
+        beq @section
+        ldx inDrives
+        beq @skip
+        and #$DF
+        cmp #'S'
+        bne @skip
+        ldx #serialKey - keys   ; "ERIAL="
+        jsr Match
+        bne @skip
+        jsr Hex2                ; four hex digits, high byte first
+        bcs @skip
+        sta serialNumber+1
+        jsr Hex2
+        bcs @skip
+        sta serialNumber
+        lda #1
+        sta serialSet
+        jmp @skip
+@section:
+        ldx #systemKey - keys
+        jsr Match
+        php
+        lda #0
+        plp
+        bne @set                ; (Match: Z set when equal)
+        lda #1
+@set:   sta inDrives
+@skip:  jsr SkipLine
+        jmp @line
+@end:   rts
+
+settingsName:   .byte "SETTINGS.INI", 0
+keys:
+systemKey:      .byte "SYSTEM]", 0
+serialKey:      .byte "ERIAL=", 0
+
+; Match: the next characters (upper case) against keys + X up to its 0.
+; Z set when they match (C clear).
+Match:  lda keys,x
+        beq @yes
+        jsr GetChar
+        cmp #'a'
+        bcc @cmp
+        and #$DF
+@cmp:   cmp keys,x
+        bne @no
+        inx
+        bne Match
+@yes:   clc
+        lda #0
+        rts
+@no:    clc
+        lda #1
+        rts
+
+; Hex2: two hex digits -> A. C set when not hex.
+Hex2:   jsr Nibble
+        bcs @end
+        asl
+        asl
+        asl
+        asl
+        sta r2L
+        jsr Nibble
+        bcs @end
+        ora r2L
+@end:   rts
+Nibble: jsr GetChar
+        cmp #'a'
+        bcc @upper
+        and #$DF
+@upper: sec
+        sbc #'0'
+        cmp #10
+        bcc @ok
+        sbc #'A' - '0' - 10
+        cmp #10
+        bcc @bad
+        cmp #16
+        bcs @bad
+@ok:    clc
+        rts
+@bad:   sec
+        rts
+
 ; ReadList: the file into TEXT; textEnd past its end. C set on failure.
 ReadList:
         jsr ListName
+ReadText:
         lda #$01
         jsr OpenFile
         bne @fail
@@ -898,3 +1012,84 @@ Accept: lda #$02
         and #$02
         bne @wait
         rts
+
+; --- Serial number from the user's own GEOS boot disk -------------------------
+
+; SerialFromDisk (cold start, after DiskInit, $01 = $30): when SETTINGS.INI
+; gave no serial, the first mounted drive with GEOS 2.0's GEOBOOT
+; (permanent name "GeoBoot     V1.0") gives it: file block 82, offset
+; 183, as found on the user's GEOS 2.0 disks (D64 and D81). Drive A is
+; current and open again afterwards.
+SerialFromDisk:
+        lda serialSet
+        beq @start
+        rts
+@start:
+        ldx #8
+@drive: stx sdDrive
+        lda driveType-8,x
+        beq @skip
+        txa
+        jsr SetDevice
+        jsr OpenDisk
+        txa
+        bne @skip
+        lda #<bootName
+        sta r6L
+        lda #>bootName
+        sta r6H
+        jsr FindFile
+        txa
+        bne @skip
+        lda #<dirEntryBuf       ; the header: GEOS 2.0's GEOBOOT?
+        sta r9L
+        lda #>dirEntryBuf
+        sta r9H
+        jsr GetFHdrInfo
+        txa
+        bne @skip
+        ldx #15
+@perm:  lda fileHeader + O_GHFNAME,x
+        cmp bootPerm,x
+        bne @skip
+        dex
+        bpl @perm
+        lda #82                 ; r1 = the first data block (GetFHdrInfo)
+        sta walk
+@block: lda #<diskBlkBuf
+        sta r4L
+        lda #>diskBlkBuf
+        sta r4H
+        jsr GetBlock
+        txa
+        bne @skip
+        lda walk
+        beq @found
+        dec walk
+        lda diskBlkBuf
+        beq @skip               ; shorter than expected: not this one
+        sta r1L
+        lda diskBlkBuf+1
+        sta r1H
+        jmp @block
+@found: lda diskBlkBuf+183
+        ora diskBlkBuf+184
+        beq @skip
+        lda diskBlkBuf+183
+        sta serialNumber
+        lda diskBlkBuf+184
+        sta serialNumber+1
+        jmp @back
+@skip:
+@next:  ldx sdDrive
+        inx
+        cpx #12
+        beq @back
+        jmp @drive
+@back:  lda #8
+        jsr SetDevice
+        jmp OpenDisk
+@end:   rts
+
+bootName:       .byte "GEOBOOT", 0
+bootPerm:       .byte "GeoBoot     V1.0"

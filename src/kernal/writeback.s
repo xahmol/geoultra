@@ -19,6 +19,7 @@
 
         .export WriteBackNow
         .import OvlCall, uciPresent, wbPending, drvTracks, drvFlags
+        .export FreeNativeOvl
 
 path            = $9F70         ; the slot's scratch area (overlay.s)
 cmdBuf          = $9FB0
@@ -47,6 +48,9 @@ WriteBackNow:
 WriteDrive:
         jsr OvlCall
         .byte 2, 0
+FreeNativeOvl:                  ; CalcBlksFree on native images (reudrv.s)
+        jsr OvlCall
+        .byte 3, 0
 
         .segment "OVL1"
 

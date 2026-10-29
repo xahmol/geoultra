@@ -9,7 +9,7 @@
         .import Rectangle, FrameRectangle, SetPattern
         .import pointerPic, UseSystemFont, PutString, RecoverRectangle
         .import StringWidth, sysFlgCopy, DiskInit, ExtraColours, ClockInit
-        .import MountAll
+        .import MountAll, SerialFromDisk
         .export ColdStart
 
 DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
@@ -176,6 +176,7 @@ ColdStart:                      ; $5000: the boot ROM jumps here
         jsr UseSystemFont
         jsr DrawBanner
         jsr DiskInit            ; drives from the REU mount table
+        jsr SerialFromDisk      ; the user's GEOS serial, when a boot disk is in
         cli
         jmp MainLoop
 
