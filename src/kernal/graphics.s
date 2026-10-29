@@ -290,8 +290,11 @@ PutMasked:
 ; VerticalLine: A = pattern byte (bit 7 for the lines with y & 7 = 0),
 ; r3L = y1, r3H = y2, r4 = x. Destroys A, X, Y, r5-r7.
 VerticalLine:
-        sta kPat
-        lda r4L
+        ldx r4H                 ; x from 512 (GEOS 128's DOUBLE_W flag): off
+        cpx #2                  ; the screen; GEOS 2.0 adds the whole x and
+        bcs @off                ; writes into memory there (also its own
+        sta kPat                ; kernal through the back buffer), the screen
+        lda r4L                 ; stays the same; nothing is written here
         and #7
         tax
         lda bitMask,x
@@ -327,7 +330,8 @@ VerticalLine:
         beq @done
         inc kY
         jmp @loop
-@done:  rts
+@done:
+@off:   rts
 
 ; Rectangle: r2L = y1, r2H = y2, r3 = x1, r4 = x2, filled with the
 ; current pattern. Destroys A, X, Y, r5-r8, r11.

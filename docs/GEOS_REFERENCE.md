@@ -735,6 +735,9 @@ routines between the two: they expect their own memory configuration.
   16-bit card difference. Applications built for both GEOS 64 and 128 pass
   `DOUBLE_W` (`$8000`)/`ADD1_W` (`$2000`) on GEOS 64 too (geoProgPatch's
   dialog box), which then wraps oddly on screen but stays inside it.
+  Exception: VerticalLine adds the whole x word to the line address, so
+  with `$81xx` it writes off-screen (application memory and, through the
+  back buffer, GEOS's own kernal at `$E1xx`); nothing shows on screen.
 
 ## 17a. Serial numbers and copy protection
 

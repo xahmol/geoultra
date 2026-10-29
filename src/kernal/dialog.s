@@ -24,7 +24,7 @@
         .import SysIconOK, SysIconCANCEL, SysIconYES, SysIconNO
         .import SysIconOPEN, SysIconDISK
         .import FindFTypes, IsMseInRegion, InvertRectangle, HorizontalLine
-        .import CopyString, CmpString
+        .import CopyString, CmpString, folderT, folderS
         .import __KSTATE_RUN__, __KSTATE_SIZE__
 
 ; dlgBoxRamBuf: zero page $22-$38, globals $849B-$84C0, the active icon
@@ -381,13 +381,23 @@ IconAt: ldx dbIconTab
 DbSysIconPress:
         ldx r0L
         lda dbIconCmd,x
-        sta sysDBData
+        cmp #OPEN               ; OPEN on a folder row: into the folder,
+        bne @close              ; the dialog stays
+        jsr GfOpen
+        bcc @close
+        rts
+@close: sta sysDBData
         jmp RstrFrmDialogue
 
 ; RETURN presses OK.
 DbKey:  lda keyData
-        cmp #CR
+        cmp #KEY_DELETE         ; file list: DEL to the folder above
+        bne @cr
+        jmp GfUpKey
+@cr:    cmp #CR
         bne @end
+        jsr GfOpen              ; file list: RETURN on a folder row enters it
+        bcs @end
         lda #OK
         sta sysDBData
         jmp RstrFrmDialogue
@@ -523,24 +533,22 @@ DbGetFiles:
         jsr HorizontalLine
         pla
         sta r10H
+        sta gfCls+1
         pla
         sta r10L
+        sta gfCls
         pla
         sta r7L
-        lda #<fileTrScTab       ; up to 15 names, 17 bytes each
-        sta r6L
-        lda #>fileTrScTab
-        sta r6H
-        lda #GF_MAX
-        sta r7H
-        jsr FindFTypes
-        lda #GF_MAX
-        sec
-        sbc r7H
-        sta gfFound
-        beq @end
-        cmp #GF_ROWS + 1
-        bcc @press
+        sta gfType
+        jsr GfFind
+        lda gfFound
+        bne :+
+        rts
+:       cmp #GF_ROWS + 1
+        bcs @arrows
+        lda gfDirs              ; with folders the list can grow: arrows
+        beq @press
+@arrows:
         jsr GfBox               ; arrows: x card left / 8 + 7, y bottom - 14
         lda r3H
         lsr
@@ -572,6 +580,16 @@ DbGetFiles:
         sta otherPressVec
         lda #>GfPress
         sta otherPressVec+1
+        lda gfDirs              ; folders listed and no key routine of the
+        beq @keys               ; dialog's own: RETURN and DEL for them
+        lda keyVector
+        ora keyVector+1
+        bne @keys
+        lda #<GfKeys
+        sta keyVector
+        lda #>GfKeys
+        sta keyVector+1
+@keys:
         ldx gfFound             ; select the name in the buffer, else the first
 @find:  dex
         beq @sel
@@ -624,10 +642,18 @@ GfEntry:
         sta r1H
         rts
 
-; GfCopy: the selected name to the caller's buffer.
+; GfCopy: the selected name to the caller's buffer (a folder row: no name,
+; so that an application never gets one back).
 GfCopy: lda gfSel
         jsr GfEntry
-        ldx #r0
+        lda gfSel
+        cmp gfDirs
+        bcs @file
+        lda #0
+        tay
+        sta (r1),y
+        rts
+@file:  ldx #r0
         ldy #r1
         jmp CopyString
 
@@ -727,6 +753,243 @@ GfInvert:
         sbc gfFirst
         jsr GfRow
         jmp InvertRectangle
+
+; --- Folders in the file list (native drives; docs/DESIGN.md "Directories")
+
+GetDirHead      = $C247         ; jump table
+OFF_FNAME       = 3             ; the name in a directory entry
+
+; GfFind: FindFTypes (r7L, r10 as set) into fileTrScTab, up to 15 names
+; of 17 bytes; gfFound = their number; then the folders (GfFolders).
+GfFind: lda #<fileTrScTab
+        sta r6L
+        lda #>fileTrScTab
+        sta r6H
+        lda #GF_MAX
+        sta r7H
+        jsr FindFTypes
+        lda #GF_MAX
+        sec
+        sbc r7H
+        sta gfFound
+        ; (falls into GfFolders)
+
+; GfFolders (after FindFTypes, gfFound files in fileTrScTab): on a native
+; drive ".." (not at the root) and the folders as "/name" are put before
+; the files, within GF_MAX places. gfDirs = those rows, gfUp = 1 with "..".
+GfFolders:
+        lda #$FF
+        sta gfTarget
+        lda #0
+        sta gfDirs
+        sta gfUp
+        ldx curDrive
+        lda driveType-8,x
+        and #$0F
+        cmp #DRV_NATIVE
+        bne @end
+        lda folderT-8,x
+        cmp #1
+        bne @up
+        lda folderS-8,x
+        cmp #1
+        beq @count
+@up:    inc gfUp
+@count: lda gfUp
+        sta gfDirs
+        lda #$FF                ; count only
+        sta gfWrite
+        jsr GfScan
+        lda gfDirs
+        beq @end
+        lda #GF_MAX             ; files kept: GF_MAX - gfDirs at most
+        sec
+        sbc gfDirs
+        cmp gfFound
+        bcs @move
+        sta gfFound
+@move:  lda gfDirs              ; r0 = the files' new place
+        jsr GfEntry
+        ldx gfFound             ; bytes to move: gfFound * 17
+        lda #0
+@bytes: dex
+        bmi @copy
+        clc
+        adc #17
+        bne @bytes
+@copy:  tay
+@back:  dey
+        cpy #$FF
+        beq @names
+        lda fileTrScTab,y
+        sta (r0),y
+        jmp @back
+@names: lda gfFound
+        clc
+        adc gfDirs
+        sta gfFound
+        lda gfUp
+        beq @dirs
+        lda #'.'
+        sta fileTrScTab
+        sta fileTrScTab+1
+        lda #0
+        sta fileTrScTab+2
+@dirs:  lda gfUp                ; write "/name" from row gfUp on
+        sta gfWrite
+        jsr GfScan
+@end:   rts
+
+; GfScan: the directory's folders. gfWrite = $FF: count them into gfDirs
+; (at most GF_MAX); else write them as "/name" from row gfWrite on, as
+; many as gfDirs allows. With gfTarget < $FF: stop at that folder (0 the
+; first) with r5 at its entry, C clear; else C set.
+GfScan: jsr Get1stDirEntry
+        txa
+        bne @none
+@entry: ldy #0
+        lda (r5),y
+        beq @next
+        and #$07
+        cmp #6                  ; DIR
+        bne @next
+        lda gfTarget
+        cmp #$FF
+        beq @list
+        dec gfTarget
+        bpl @next
+        clc                     ; (the folder sought: r5 at it)
+        rts
+@list:  lda gfWrite
+        cmp #$FF
+        bne @write
+        lda gfDirs
+        cmp #GF_MAX
+        bcs @next
+        inc gfDirs
+        bne @next
+@write: cmp gfDirs
+        bcs @next
+        jsr GfEntry             ; r0 = the row
+        inc gfWrite
+        ldy #0
+        lda #'/'
+        sta (r0),y
+@char:  iny                     ; the name: entry bytes 3-17, up to $A0
+        cpy #16
+        beq @zero
+        tya
+        clc
+        adc #OFF_FNAME - 1
+        sty gfTmp
+        tay
+        lda (r5),y
+        ldy gfTmp
+        cmp #$A0
+        beq @zero
+        sta (r0),y
+        bne @char
+@zero:  lda #0
+        sta (r0),y
+@next:  jsr GetNxtDirEntry
+        txa
+        bne @none
+        tya
+        beq @entry
+@none:  sec
+        rts
+
+; GfUpKey: DEL in a file list: to the folder above.
+GfUpKey:
+        lda gfUp
+        beq GfRts
+        lda #0
+        sta gfSel
+        beq GfOpen              ; (always)
+GfRts:  rts
+
+; GfKeys (keyVector of a file list without a key routine of its own):
+; RETURN on a folder row enters it (into GfOpen), DEL goes up; other keys
+; do nothing.
+GfKeys: lda keyData
+        cmp #KEY_DELETE
+        beq GfUpKey
+        cmp #CR
+        bne GfRts
+
+; GfOpen: with a file list on the screen and a folder row selected, into
+; that folder (".." up) and the list built anew. C set when done, else C
+; clear (A kept).
+GfOpen: pha
+        lda otherPressVec       ; a file list: its press routine is set
+        cmp #<GfPress
+        bne @not
+        lda otherPressVec+1
+        cmp #>GfPress
+        bne @not
+        lda gfSel
+        cmp gfDirs
+        bcc @row
+@not:   pla
+        clc
+        rts
+@row:
+        ldx gfUp                ; ".."
+        beq @into
+        cmp #0
+        bne @into
+        lda curDirHead+$22      ; the parent header
+        ldy curDirHead+$23
+        jmp @set
+@into:  sec
+        sbc gfUp
+        sta gfTarget
+        jsr GfScan
+        bcs @no
+        ldy #1                  ; the folder's header
+        lda (r5),y
+        pha
+        iny
+        lda (r5),y
+        tay
+        pla
+@set:   ldx curDrive
+        sta folderT-8,x
+        tya
+        sta folderS-8,x
+        jsr GetDirHead
+        lda #$FF
+        sta gfTarget
+        lda gfType              ; the list anew
+        sta r7L
+        lda gfCls
+        sta r10L
+        lda gfCls+1
+        sta r10H
+        jsr GfFind
+        lda #0
+        sta gfSel
+        sta gfFirst
+        jsr GfCopy
+        jsr GfDraw
+        pla
+        sec
+        rts
+@no:    pla
+        clc
+        rts
+
+        .segment "IODATA"
+
+gfDirs:         .byte 0         ; rows of ".." and folders at the top
+gfUp:           .byte 0         ; 1: ".." is row 0
+gfWrite:        .byte 0
+gfTarget:       .byte $FF       ; GfScan: folder sought, $FF: none
+gfTmp:          .byte 0
+gfType:         .byte 0         ; the dialog's FindFTypes arguments
+gfCls:          .word 0
+
+        .segment "IOCODE"
 
         .segment "KEXT"                 ; space: see ARCHITECTURE.md
 

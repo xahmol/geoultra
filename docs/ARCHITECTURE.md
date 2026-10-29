@@ -81,6 +81,17 @@ VIC-II: bank 2 (`$8000-$BFFF`), colour matrix `$8C00`, bitmap `$A000`
 (`$D018 = $38`), sprite pictures from `$8A00` (sprite pointer `$28` for
 sprite 0, the mouse pointer).
 
+## x coordinates with GEOS 128 flags
+
+GEOS 2.0 (64) has no `NormalizeX`: applications that pass `DOUBLE_W`
+(`$8000`) or `ADD1_W` (`$2000`) on the C64 (geoProgPatch) get the
+drawing routines' arithmetic as is. `LineOp` and `PointAddr` do as GEOS
+2.0: any high byte other than 0 counts as one page (the card count is the
+low byte of the 16-bit difference). `VerticalLine` in GEOS 2.0 adds the
+whole x word and writes off-screen (also into its own kernal through the
+back buffer); GeoUltra draws nothing there for x from 512 (the screen is
+the same, memory stays intact). Six conformance cases (graphics.py).
+
 ## Code under I/O
 
 Applications may call any routine that GEOS 2.0 keeps outside `$D000`-
@@ -389,13 +400,22 @@ extension table; overlay modules 12-14 with the shared helpers in
 - `make test-folders` (tests/drives/folders.py): MakeDir, SetCurDir (name,
   root files not seen), SaveFile/ReadFile inside, DirUp, RemoveDir refused
   and then done, the free count back.
+- File dialogs (`DBGETFILES`, dialog.s, under I/O): on a native drive
+  `GfFolders` puts `..` (not at the root) and the folders as `/name`
+  before the files found by `FindFTypes` (within the 15 places; the files
+  move down, the last ones drop out); `gfDirs` counts those rows. A folder
+  is found again by its position among the DIR entries (`GfScan`), so no
+  names are kept and 16-character names work. OPEN on such a row (the
+  system icon, `GfOpen`) enters the folder (`..` its parent from
+  `curDirHead` `$22/$23`) and builds the list anew; the dialog stays.
+  With folders listed and no key routine of the dialog's own, `GfKeys`
+  becomes `keyVector`: RETURN on a folder row enters it, DEL goes up.
+  While a folder row is selected the application's name buffer is empty,
+  so it never gets a folder name back. Seen in VICE with geoWrite 2.0's
+  Open dialog on the user's DNP. The disk name in an application's dialog
+  ("On disk:") is the application's own text and stays.
 - Not yet: 1581 partitions, renaming and moving folders, `MoveFile`, long
-  names, folders in `DBGETFILES`, geoFolder. Planned for `DBGETFILES`:
-  after `FindFTypes`, `..` (not at the root) and the folders as `/name`
-  are put before the files (within the 15 places); a folder is found again
-  by its position among the DIR entries (no names kept, 16-character names
-  work); OPEN or a double-click on it calls `SetCurDir`/`DirUp` and builds
-  the list anew instead of closing; RETURN and DEL do the same.
+  names, geoFolder, the setting to switch the folders in file dialogs off.
 
 ## Hibernation
 
