@@ -390,7 +390,12 @@ extension table; overlay modules 12-14 with the shared helpers in
   root files not seen), SaveFile/ReadFile inside, DirUp, RemoveDir refused
   and then done, the free count back.
 - Not yet: 1581 partitions, renaming and moving folders, `MoveFile`, long
-  names, folders in `DBGETFILES`, geoFolder.
+  names, folders in `DBGETFILES`, geoFolder. Planned for `DBGETFILES`:
+  after `FindFTypes`, `..` (not at the root) and the folders as `/name`
+  are put before the files (within the 15 places); a folder is found again
+  by its position among the DIR entries (no names kept, 16-character names
+  work); OPEN or a double-click on it calls `SetCurDir`/`DirUp` and builds
+  the list anew instead of closing; RETURN and DEL do the same.
 
 ## Hibernation
 
@@ -432,8 +437,10 @@ helpers both modules assemble in `src/inc/hibshared.inc`.
 - Triggers: `ToBASIC` calls `HibSuspend` first (a resumed session then
   goes to the deskTop, not to BASIC); quiet moments: `HibTick` (interrupt,
   before `WbTick`) marks the session changed on a key or mouse button
-  (pointer moves alone do not count: the 1351 jitters) and, after 512
-  frames (about 10 s) without such input, makes a save due and sets
+  (pointer moves alone do not count: the 1351 jitters) and, after
+  `hibLimit` * 256 frames without such input (default 6: about 30 s;
+  SETTINGS.INI `[system] hibernate=` seconds, rounded to steps of about
+  5 s, `0` off), makes a save due and sets
   `wbPending`; MainLoop's `WbCheck` runs the write-back, whose module 1
   then calls `HibSuspend`.
 - Not yet: the Suspend command in the desktop, a hot key, a reset from

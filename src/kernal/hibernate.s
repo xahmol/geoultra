@@ -19,7 +19,7 @@
         .include "kcalls.inc"
 
         .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
-        .export hibState, RtcClockOvl
+        .export hibState, RtcClockOvl, hibLimit
         .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
@@ -53,6 +53,8 @@ hibState:       .byte 0         ; bit 7: changed since the last save,
 hibIdle:        .word 0         ; frames without input since a change
 
         .segment "CODE"
+
+hibLimit:       .byte IDLE_HI       ; SETTINGS.INI [system] hibernate=
 
 HibSuspend:                     ; X = 0 or an error
         jsr OvlCall
@@ -104,9 +106,10 @@ RamSetup:
 
 ; HibTick (interrupt, then WbTick): input (a key or a mouse button) marks
 ; the session changed and restarts the count; after IDLE_HI * 256 frames
-; (about 10 s) without input a save is due: the write-back path runs it
+; (30 s; SETTINGS.INI [system] hibernate=, 0 off) without input a save is
+; due: the write-back path runs it
 ; from MainLoop (WbCheck, module 1). Destroys A.
-IDLE_HI         = 2
+IDLE_HI         = 6             ; 6 * 256 frames: about 30 s (PAL)
 HibTick:
         lda pressFlag           ; keys and buttons (pointer moves alone
         and #KEYPRESS_BIT | MOUSE_BIT   ; change nothing; the 1351 jitters)
@@ -117,13 +120,15 @@ HibTick:
         lda #$80
         sta hibState
         bne @wb
-@quiet: bit hibState
+@quiet: lda hibLimit            ; 0: automatic saves off
+        beq @wb
+        bit hibState
         bpl @wb
         inc hibIdle
         bne @wb
         inc hibIdle+1
         lda hibIdle+1
-        cmp #IDLE_HI
+        cmp hibLimit
         bne @wb
         lda #$40                ; due (no longer counting)
         sta hibState

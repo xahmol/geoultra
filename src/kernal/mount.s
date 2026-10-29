@@ -28,7 +28,7 @@
 .ifdef BYPASS
         .import bypassOn
 .endif
-        .import uciPresent, wbPending, serialNumber, SetDevice, FindFile
+        .import uciPresent, wbPending, serialNumber, hibLimit, SetDevice, FindFile
         .import GetFHdrInfo
 
 uciCtrl         = $DF1C         ; write: control; read: status
@@ -329,7 +329,9 @@ ReadSettings:
         bne @name
 @named: sty pathLen
         jsr ReadText
-        bcs @end
+        bcc :+
+        rts
+:
         lda #<TEXT
         sta r1L
         lda #>TEXT
@@ -337,7 +339,9 @@ ReadSettings:
         lda #0
         sta inDrives            ; here: inside [system]
 @line:  jsr AtEnd
-        bcs @end
+        bcc :+
+        rts
+:
         jsr GetChar
         cmp #'['
         beq @section
@@ -359,6 +363,26 @@ ReadSettings:
         jmp @skip
 @serial:
 .endif
+        cmp #'H'
+        bne @serial2
+        ldx #hibKey - keys      ; "IBERNATE=" seconds after a change (0:
+        jsr Match               ; off), in steps of 256 frames (about 5 s)
+        beq :+
+        jmp @skip
+:
+        jsr Decimal
+        ldx #0
+@five:  cmp #5
+        bcc @round
+        sbc #5
+        inx
+        bne @five
+@round: cmp #3                  ; (rounded)
+        bcc @limit
+        inx
+@limit: stx hibLimit
+        jmp @skip
+@serial2:
         cmp #'S'
         bne @skip
         ldx #serialKey - keys   ; "ERIAL="
@@ -390,9 +414,40 @@ settingsName:   .byte "SETTINGS.INI", 0
 keys:
 systemKey:      .byte "SYSTEM]", 0
 serialKey:      .byte "ERIAL=", 0
+hibKey:         .byte "IBERNATE=", 0
 .ifdef BYPASS
 protKey:        .byte "ROTECTION=BYPASS", 0
 .endif
+
+; Decimal: A = the decimal number that follows (up to 255; stops at the
+; first other character).
+Decimal:
+        lda #0
+        sta r2L
+@digit: jsr AtEnd
+        bcs @end
+        ldy #0
+        lda (r1),y
+        sec
+        sbc #'0'
+        cmp #10
+        bcs @end
+        pha
+        jsr GetChar
+        lda r2L                 ; r2L = r2L * 10 + digit
+        asl
+        asl
+        clc
+        adc r2L
+        asl
+        sta r2L
+        pla
+        clc
+        adc r2L
+        sta r2L
+        jmp @digit
+@end:   lda r2L
+        rts
 
 ; Match: the next characters (upper case) against keys + X up to its 0.
 ; Z set when they match (C clear).
