@@ -314,6 +314,19 @@ GEOS memory map, so the cartridge stays a boot and overlay store:
 - C128: the MMU maps the external function ROM only on request, so
   occasional ROM calls are possible there; decided in phase 5.
 
+## For the user, at the computer (2026-10-29)
+
+1. DirMaster: File > New > DNP; folder `TEST`, inside it `INNER`; a small
+   file into `TEST`; save as `C:\Users\xande\Downloads\folders.dnp`
+   (reference for the native folder format, see below).
+2. Hibernation on a real power cycle: GeoUltra running with something
+   changed, wait 30 s (now still 10 s), switch the U64 off and on: the
+   session should come back; once more with C= held: a fresh start.
+3. Look at `/USB0/GEOULTRA/test` (test copies, some changed by tests) and
+   `/USB0/GEOULTRA/BACKUP`: keep or delete.
+4. geoDex 1.0 (Unkeyed collection): its input fields are white on
+   GeoUltra, checked before; compare on GEOS 2.0 if convenient.
+
 ## Still open
 
 - Native folders: compare GeoUltra's folder headers and entries with a
