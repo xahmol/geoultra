@@ -6,9 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 GeoUltra: a GEOS-compatible system for the C64 and C128 with an Ultimate
 (U2+, U2+L, U64, C64 Ultimate) that does storage, RAM and system work
-through the Ultimate Command Interface (UCI) and the REU, and stays
-compatible with existing GEOS applications. Spun off from the GeoUTools
-Oscar64 rebuild on 2026-10-28. **Planning stage: no code yet.**
+through the Ultimate Command Interface (UCI) and the REU, and aims to run
+existing GEOS applications. Spun off from the GeoUTools Oscar64 rebuild on
+2026-10-28. **In development**: all GEOS 2.0 jump table entries exist;
+GEOS 2.0's deskTop, geoWrite and geoPaint run in VICE, the deskTop on the
+U64 from boot-mounted images.
 
 Read [`docs/DESIGN.md`](docs/DESIGN.md) first: it holds the decisions
 (cartridges, REU map, drives, DNP, phases) and what is still to verify or
@@ -17,8 +19,10 @@ analysis; its route and phase recommendations are superseded.
 
 ## Decisions already taken (by the user)
 
-- Name GeoUltra; separate repository; full compatibility with existing GEOS
-  applications is a hard requirement.
+- Name GeoUltra; separate repository; compatibility with existing GEOS
+  applications is the aim (the GEOS 2.0 interface, checked against GEOS
+  2.0). Documentation never promises full or 100% compatibility: the GEOS
+  ecosystem has many versions, add-ons and developments, some lost in time.
 - Kernal, drivers and the new desktop in assembler (ca65/ld65); tools may
   be C (Oscar64 with the geos-oscar64 library, see below).
 - Free-standing clean-room kernal from the start (no patch release); the

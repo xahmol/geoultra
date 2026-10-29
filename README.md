@@ -7,12 +7,18 @@ RAM drives loaded and saved through the Ultimate Command Interface, RAM
 boot, the Ultimate's file system in the desktop, network time, and on the
 Ultimate 64 family turbo speed and the palette.
 
-Existing GEOS applications stay compatible: GeoUltra keeps the GEOS 2.0
-jump table, variables and zero page contract.
+GeoUltra aims to run existing GEOS applications: it keeps the GEOS 2.0
+jump table, variables and zero page contract, and every kernal routine is
+checked against GEOS 2.0's behaviour. It does not promise that every GEOS
+application runs: the GEOS world has many versions, add-ons and later
+developments, some of them lost, and applications that rely on
+undocumented internals may not work.
 
-**Status: planning.** Nothing is built yet. The feasibility analysis, the
-chosen route and the open questions are in
-[`docs/FEASIBILITY.md`](docs/FEASIBILITY.md).
+**Status: in development.** The kernal implements all GEOS 2.0 jump table
+entries; GEOS 2.0's deskTop, geoWrite and geoPaint run on it in VICE, and
+the deskTop runs on an Ultimate 64 from disk images mounted at boot. The
+decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Documents
 
