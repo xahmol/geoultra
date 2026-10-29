@@ -356,7 +356,7 @@ VICE.
 ## Hibernation
 
 `src/kernal/hibernate.s` (overlay modules 8 and 10, `Snap` at `$BF40`,
-`Resume` in KCODE) and `src/kernal/hibresume.s` (module 9), with the
+`Resume` in KEXT, `HibTick` in KCODE) and `src/kernal/hibresume.s` (module 9), with the
 helpers both modules assemble in `src/inc/hibshared.inc`.
 
 - `HibSuspend` (module 8): `WriteBackNow`, the VIC-II registers and CIA
@@ -375,17 +375,24 @@ helpers both modules assemble in `src/inc/hibshared.inc`.
   back an old state) and `Resume` (KCODE) copies bank 19 back to all of
   RAM. The CPU goes on in `Resume`, whose bytes are the same in the
   snapshot (same build), takes `hibSP` and returns from `Snap` a second
-  time with A = 1; `HibSuspend`'s resumed path restores the chips from
+  time with A = 1 (`Resume` may be anywhere resident: those bytes are the
+  same in the snapshot); `HibSuspend`'s resumed path restores the chips from
   bank 1 and starts the TOD at the session's time (module 10, `TodSet`:
   the Ultimate's clock is not read yet), and returns X = 0 to its caller.
 - The build ID (`BUILD_ID`, seconds since 1970 modulo 65536 at build time)
   replaces a CRC of the code: KCODE and CODE modify themselves
   (`OvlCall`, `CallRoutine`). Both objects are rebuilt with every kernal
   change.
-- Not yet: the triggers (Suspend command in the desktop, hot key,
-  automatically at quiet moments, on ToBASIC and reset), the "safe to
-  switch off" notice, saving only the banks in use, task slots, spooler
-  and clipboard.
+- Triggers: `ToBASIC` calls `HibSuspend` first (a resumed session then
+  goes to the deskTop, not to BASIC); quiet moments: `HibTick` (interrupt,
+  before `WbTick`) marks the session changed on a key or mouse button
+  (pointer moves alone do not count: the 1351 jitters) and, after 512
+  frames (about 10 s) without such input, makes a save due and sets
+  `wbPending`; MainLoop's `WbCheck` runs the write-back, whose module 1
+  then calls `HibSuspend`.
+- Not yet: the Suspend command in the desktop, a hot key, a reset from
+  the menu, the "safe to switch off" notice, saving only the banks in use,
+  task slots, spooler and clipboard.
 
 ## Serial number per application (optional)
 

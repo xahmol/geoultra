@@ -18,7 +18,9 @@
         .include "hw.inc"
         .include "kcalls.inc"
 
-        .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed
+        .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
+        .export hibState
+        .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
 
@@ -45,6 +47,9 @@ BUF             = $4000         ; cold start: free (TEXT of mount.s)
 
 hibSP:          .byte 0         ; stack pointer inside Snap
 hibResumed:     .byte 0         ; 1 after Resume
+hibState:       .byte 0         ; bit 7: changed since the last save,
+                                ; bit 6: a save is due (module 1)
+hibIdle:        .word 0         ; frames without input since a change
 
         .segment "CODE"
 
@@ -94,7 +99,37 @@ RamSetup:
         sta CPU_PORT
         rts
 
-        .segment "KCODE"        ; (these bytes run on after the RAM copy:
+        .segment "KCODE"
+
+; HibTick (interrupt, then WbTick): input (a key or a mouse button) marks
+; the session changed and restarts the count; after IDLE_HI * 256 frames
+; (about 10 s) without input a save is due: the write-back path runs it
+; from MainLoop (WbCheck, module 1). Destroys A.
+IDLE_HI         = 2
+HibTick:
+        lda pressFlag           ; keys and buttons (pointer moves alone
+        and #KEYPRESS_BIT | MOUSE_BIT   ; change nothing; the 1351 jitters)
+        beq @quiet
+        lda #0
+        sta hibIdle
+        sta hibIdle+1
+        lda #$80
+        sta hibState
+        bne @wb
+@quiet: bit hibState
+        bpl @wb
+        inc hibIdle
+        bne @wb
+        inc hibIdle+1
+        lda hibIdle+1
+        cmp #IDLE_HI
+        bne @wb
+        lda #$40                ; due (no longer counting)
+        sta hibState
+        sta wbPending
+@wb:    jmp WbTick
+
+        .segment "KEXT"         ; (these bytes run on after the RAM copy:
                                 ; the same build, checked by BUILD_ID)
 
 ; Resume: REU bank HIB_RAM -> RAM, then on as after Snap (never returns).

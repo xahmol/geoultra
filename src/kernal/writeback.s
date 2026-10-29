@@ -18,7 +18,7 @@
         .include "hw.inc"
 
         .export WriteBackNow, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
-        .import OvlCall, uciPresent, wbPending, drvTracks, drvFlags
+        .import OvlCall, uciPresent, wbPending, drvTracks, drvFlags, hibState, HibSuspend
         .export FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, Ovl1571, natLoaded
 
 path            = $9F70         ; the slot's scratch area (overlay.s)
@@ -98,6 +98,11 @@ WriteBack:
         sta wbPending
         pla
         sta CPU_PORT
+        bit hibState            ; a quiet moment after changes: the
+        bvc @end                ; session saved too (HibTick)
+        lda #0
+        sta hibState
+        jmp HibSuspend
 @end:   rts
 
 ; Drive: write drive slot back.

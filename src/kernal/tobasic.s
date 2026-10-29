@@ -12,7 +12,8 @@
         .include "hw.inc"
 
         .export ToBASIC
-        .import ReadFile, BootGEOS, sysFlgCopy, basicBuf, WriteBackNow
+        .import ReadFile, BootGEOS, sysFlgCopy, basicBuf, HibSuspend, hibResumed
+        .import EnterDeskTop
 
 IOINIT          = $FDA3         ; C64 Kernal: CIAs
 RESTOR          = $FD15         ; Kernal vectors
@@ -39,7 +40,11 @@ nmiCount        = basicBuf + 45
 ; directory entry of a PRG file to load at r7 ($0000: no file; r7 is then
 ; the end of the BASIC program in memory, $0803 for none). Does not return.
 ToBASIC:
-        jsr WriteBackNow        ; changed drives to their images first
+        jsr HibSuspend          ; drives written back, the session saved
+        lda hibResumed          ; that session resumed: back to the deskTop
+        beq @toBasic            ; rather than into BASIC
+        jmp EnterDeskTop
+@toBasic:
         ldy #39
 @cmd:   lda (r0),y
         cmp #'A'
