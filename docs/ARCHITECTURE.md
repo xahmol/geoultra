@@ -311,6 +311,17 @@ installed under the user's GEOS (geoWrite 2.1, which otherwise asks to
 "reboot using the same GEOS disk") run. `apprun.py --serial` sets it in
 VICE.
 
+## Jump table repair
+
+`SaveJumpTab` (cold start, last step) stashes the jump table `$C100`-`$C2D6`
+to REU bank 1 at `$1000`; `RepairJumpTab` fetches it back in `StartAppl`
+(after `SaveArgs`, as it uses r0-r3) and in `EnterDeskTop` (after the
+write-back). A program that changed the table (a buggy one, or the
+deskTop incrementing `LdDeskAcc` when it finds a foreign serial) cannot
+break the next one. Programs that patch the table on purpose and expect
+it to stay patched across applications lose the patch; auto-exec support
+will take the copy after the auto-exec files have run.
+
 ## Overlays
 
 Rarely used kernal routines live in overlay modules of 640 bytes, linked

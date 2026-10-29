@@ -18,7 +18,11 @@
 
         .export GetFile, LdFile, LdApplic, LdDeskAcc, RstrAppl, StartAppl
         .export EnterDeskTop, FirstInit, Panic, Sleep, CRC
-        .export SleepTick, WakeSleepers, InitMachine, ExtraColours
+        .export SleepTick, WakeSleepers, InitMachine, ExtraColours, SaveJumpTab
+
+JT_START        = $C100         ; the GEOS 2.0 jump table
+JT_SIZE         = $01D7
+JT_COPY         = $1000         ; its copy in REU bank 1
         .import FindFile, ReadFile, GetFHdrInfo, CopyFString, CallRoutine
         .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
@@ -179,12 +183,39 @@ StartAppl:
         ldx #$FF
         txs
         jsr SaveArgs
+        jsr RepairJumpTab       ; (destroys r0-r3: LoadArgs sets them)
         jsr InitMachine
         jsr UseSystemFont
         jsr LoadArgs
         lda loadAddr
         ldx loadAddr+1
         jmp MainLoopCall
+
+; Jump table repair: SaveJumpTab (cold start) keeps the jump table in REU
+; bank 1; RepairJumpTab (StartAppl, EnterDeskTop) puts it back, so that a
+; program that changed it (a buggy one, or one that sabotages the system
+; when it finds a foreign serial number) cannot break the next ones.
+; Destroy r0-r3, A, X, Y.
+SaveJumpTab:
+        ldy #REU_STASH
+        .byte $2C               ; (skips the next ldy)
+RepairJumpTab:
+        ldy #REU_FETCH
+        lda #<JT_START
+        sta r0L
+        lda #>JT_START
+        sta r0H
+        lda #<JT_COPY
+        sta r1L
+        lda #>JT_COPY
+        sta r1H
+        lda #<JT_SIZE
+        sta r2L
+        lda #>JT_SIZE
+        sta r2H
+        lda #1                  ; SYS_BANK
+        sta r3L
+        jmp SysRAMOp
 
 ; LdDeskAcc: r9 = entry, r10L passed on. Saves what the accessory loads
 ; over and the kernal state to REU bank DA_BANK, runs it; returns when it
@@ -539,6 +570,7 @@ OvEnterDeskTop:
         ldx #$FF
         txs
         jsr WriteBackNow        ; changed drives to their images first
+        jsr RepairJumpTab
         jsr InitMachine
         jsr Background
         lda curDrive

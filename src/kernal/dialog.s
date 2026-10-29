@@ -1004,6 +1004,8 @@ RestoreState:
 ; and icons on, full-screen window and limits, vectors empty
 ; except intTopVector and RecoverVector, no processes, menus or icons.
 InitGEOEnv:
+        php                     ; no IRQ while intTopVector is cleared
+        sei                     ; (geoWrite 2.0 calls this with IRQs on)
         lda #SET_PLAINTEXT
         sta currentMode
         lda #ST_WR_FORE | ST_WR_BACK
@@ -1052,4 +1054,5 @@ InitGEOEnv:
         sta mouseRight
         lda #>(SC_PIX_WIDTH - 1)
         sta mouseRight+1
+        plp
         rts

@@ -732,7 +732,11 @@ Protection", and the user's disks.)
   Unkeyed copies (stored serial 0) install again.
 - Sabotage on mismatch: the deskTop compares the high byte and increments
   the `LdDeskAcc` vector ($C218); other applications break the system in
-  other ways (geoWrite 2.0 seen to end in `JMP (intTopVector)` = $0000).
+  other ways.
+- `InitGEOEnv` must run with interrupts off (or set `intTopVector` before
+  clearing anything): geoWrite 2.0 calls it with IRQs enabled, and a
+  raster IRQ between clearing and setting the vector jumps to $0000
+  (a GeoUltra bug, 2026-10-29, first mistaken for copy-protection sabotage).
 - GEOS's own kernal guards `GetSerialNumber`: a patched vector corrupts the
   `GraphicsString` vector, a patched routine makes FindFTypes increment
   `LdDeskAcc`. A replacement kernal has none of this.
