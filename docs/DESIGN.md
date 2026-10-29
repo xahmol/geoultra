@@ -195,6 +195,11 @@ UCI).
   arrow icon (six desk accessories on drive B).
 - 2026-10-29: `ToBASIC` gives the same BASIC screen as GEOS 2.0 (`PRINT
   7*6`), `SYS49152` (`BootGEOS`) reboots GeoUltra with drive A mounted.
+- 2026-10-29: writing to a native drive (DNP): `make test-native` saves,
+  reads back and deletes sequential and VLIR files, grows the directory
+  and checks that BAM changes without `PutDirHead` are dropped; geoWrite
+  2.0 from the user's ramapps.DNP creates a document ("GU native doc",
+  VLIR, type 7) and takes typed text.
 
 ## Verified on hardware
 

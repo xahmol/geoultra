@@ -20,7 +20,9 @@
 
         .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending
         .export drvTracks, drvFlags
-        .import WriteBackNow, FreeNativeOvl, ProtExecute, ProtStatus
+        .import WriteBackNow, FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl
+        .import ProtExecute, ProtStatus
+        .import natLoaded
         .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
 
 FRST_FILE_ENTRY = 2
@@ -75,6 +77,7 @@ dmaLen:         .word 0
 dirtyByte:      .byte 0
 count:          .byte 0
 saveFlag:       .byte 0         ; bit 7: BlkAlloc called from SaveFile (1581)
+nativeFrom:     .word 0         ; BamType's caller (native drives)
 uciPresent:     .byte 0         ; the boot found a UCI: write-back possible
 wbPending:      .byte 0         ; a drive has changes not written back
 wbDelay:        .byte 0         ; frames until the write-back may run
@@ -555,8 +558,8 @@ DrvPutDirHead:
         lda #<WriteBlock
         ldy #>WriteBlock
 DirHead:
-        sta @op+1
-        sty @op+2
+        sta DirOp+1
+        sty DirOp+2
         ldy curDrive
         lda driveType-8,y
         and #$0F
@@ -569,6 +572,7 @@ DirHead:
 @next:  ldy dirIndex
         lda headTab,y
         beq @done
+        bmi @bam
         sta r1L
         lda headTab+1,y
         sta r1H
@@ -580,10 +584,11 @@ DirHead:
         clc
         adc #4
         sta dirIndex
-@op:    jsr ReadBlock
+        jsr DirOp
         txa
         beq @next
         rts
+@bam:   jmp NatBamOvl           ; native: the BAM's working copy (r4 kept)
 @done:  ldx #0                  ; r4 = the last block read, as GEOS 2.0
         rts                     ; (curDirHead on a 1541, dir3Head on a 1581)
 @ptr:   lda #<curDirHead
@@ -591,6 +596,7 @@ DirHead:
         lda #>curDirHead
         sta r4H
         rts
+DirOp:  jmp ReadBlock            ; ReadBlock or WriteBlock (set by DirHead)
 
 ; Per type: track, sector, buffer of each header block, 0 at the end.
 headStart:
@@ -603,7 +609,7 @@ t1571:  .byte 18, 0, <curDirHead, >curDirHead, 53, 0, <dir2Head, >dir2Head, 0
 t1581:  .byte 40, 0, <curDirHead, >curDirHead, 40, 1, <dir2Head, >dir2Head
         .byte 40, 2, <dir3Head, >dir3Head, 0
 tNative:
-        .byte 1, 1, <curDirHead, >curDirHead, 1, 2, <dir2Head, >dir2Head, 0
+        .byte 1, 1, <curDirHead, >curDirHead, 1, 2, <dir2Head, >dir2Head, $FF
 
 ; OpenDisk: header in, isGEOS set, disk name to DrXCurDkNm. Returns X =
 ; error, r5 = the name. Destroys A, Y, r0-r4.
@@ -729,7 +735,7 @@ AddFree:
 ; the BAM byte. Destroys Y.
 FindBAMBit:
         jsr BamType
-        bne Find1541
+fbbBam: bne Find1541
         jsr Off81
         lda r6H
         and #7
@@ -781,7 +787,7 @@ AllocateBlock:
         jsr FindBAMBit
         beq BadBam
         jsr BamType
-        bne @c1541
+abBam:  bne @c1541
         jsr Flip81
         ldx r7H
         lda r6L
@@ -807,7 +813,7 @@ FreeBlock:
         jsr FindBAMBit
         bne BadBam
         jsr BamType
-        bne @f1541
+fbBam:  bne @f1541
         jsr Flip81
         ldx r7H
         lda r6L
@@ -834,7 +840,7 @@ FreeBlock:
 ; Destroys A, Y, r6, r7, r8H.
 SetNextFree:
         jsr BamType
-        bne @s1541
+snfBam: bne @s1541
         jmp Next1581
 @s1541: lda r3L
         sta r6L
@@ -893,8 +899,11 @@ SetNextFree:
 @full:  ldx #INSUFF_SPACE
         rts
 
-; BamType: Z set for a 1581 image, clear for a 1541; the other types stop
-; in Trap (not written yet). Destroys A, Y.
+; BamType: Z set for a 1581 image, clear for a 1541. Native: the calling
+; routine's work is done by overlay module 3 (NativeOp, which knows the
+; routine by the return address taken here) and the result goes to that
+; routine's caller. 1571: the routine returns WR_PR_ON (no allocation
+; yet, the drive acts write protected). Destroys A, Y.
 BamType:
         ldy curDrive
         lda driveType-8,y
@@ -905,9 +914,16 @@ BamType:
         bne @none
         lda #1                  ; Z clear
 @end:   rts
-@none:  pla                     ; 1571 and native: no allocation yet; the
-        pla                     ; calling routine returns WR_PR_ON (the
-        ldx #WR_PR_ON           ; drive acts write protected, no Trap)
+@none:  cmp #DRV_NATIVE
+        bne @wp
+        pla
+        sta nativeFrom
+        pla
+        sta nativeFrom+1
+        jmp NativeOvl
+@wp:    pla
+        pla
+        ldx #WR_PR_ON
         lda #0
         rts
 
@@ -1012,7 +1028,7 @@ Next1581:
 ; Y, r4-r8.
 BlkAlloc:
         jsr BamType
-        bne @b1541
+baBam:  bne @b1541
         lda #35                 ; 1581: from track 35, from SaveFile 39
         bit saveFlag
         bpl @track
@@ -1217,7 +1233,7 @@ AddDirBlock:
 ; DirTrackFree: A = free blocks on the directory track.
 DirTrackFree:
         jsr BamType
-        bne @t1541
+dtfBam: bne @t1541
         lda dir2Head + $10 + 6 * 39
         rts
 @t1541: lda curDirHead + 4 * DIR_TRACK
@@ -1462,24 +1478,282 @@ DiskInit:
 
 mountSig:       .byte "GUMT"
 
-        .segment "OVL3"                 ; overlay module 3
+        .segment "OVL3"                 ; overlay module 3: native allocation
+
+        jmp NativeOp            ; entry 0
+
+; NativeOp: the BAM work of the driver routine that called BamType
+; (nativeFrom) on a native image; returns to that routine's caller. The
+; BAM lies in the image (in the REU) from 1/2 offset $20, 32 bytes a
+; track, sector 0 in bit 7 (CMD native format, checked on a DNP made
+; by CMD-compatible software); a bit set means free. Behaviour of the
+; allocation follows GEOS 2.0's 1541/1581 routines where they apply;
+; SetNextFree searches on from r3, then from track 1.
+NativeOp:
+        ldx #0
+@find:  lda nativeFrom
+        cmp natLo,x
+        bne @next
+        lda nativeFrom+1
+        cmp natHi,x
+        beq @found
+@next:  inx
+        cpx #6
+        bne @find
+        ldx #WR_PR_ON           ; (not reached)
+        rts
+@found: lda natJmpLo,x
+        sta @jmp+1
+        lda natJmpHi,x
+        sta @jmp+2
+@jmp:   jmp $FFFF
+
+natLo:  .byte <(fbbBam-1), <(abBam-1), <(fbBam-1), <(snfBam-1), <(baBam-1), <(dtfBam-1)
+natHi:  .byte >(fbbBam-1), >(abBam-1), >(fbBam-1), >(snfBam-1), >(baBam-1), >(dtfBam-1)
+natJmpLo:
+        .byte <NatFind, <NatAlloc, <NatFree, <NatNext, <NatBlkAlloc, <NatDirFree
+natJmpHi:
+        .byte >NatFind, >NatAlloc, >NatFree, >NatNext, >NatBlkAlloc, >NatDirFree
+
+; NatFind (FindBAMBit): r6 = block. A = the BAM byte AND r8H (Z set:
+; used), r8H = the sector's bit, dirtyByte = the byte, dmaReu its REU
+; address, blkLo = the BAM block (1/blkLo) holding it.
+NatFind:
+        jsr NatSureOvl
+        lda r6L                 ; offset = $0220 + 32 * (track - 1) + sector / 8
+        sec
+        sbc #1
+        sta dmaReu+1            ; (track - 1) * 32 = (track - 1) * 256 / 8
+        lda #0
+        ldx #3
+@div:   lsr dmaReu+1
+        ror
+        dex
+        bne @div
+        sta dmaReu
+        lda r6H
+        lsr
+        lsr
+        lsr
+        clc
+        adc #$20
+        adc dmaReu
+        sta dmaReu
+        lda dmaReu+1            ; in the working copy: page NAT_WORK for 1/2
+        adc #NAT_WORK
+        sta dmaReu+1
+        lda #SYS_BANK
+        sta dmaReu+2
+        lda r6H
+        and #7
+        tax
+        lda #$80
+@bit:   dex
+        bmi @mask
+        lsr
+        bne @bit
+@mask:  sta r8H
+        jsr Byte
+        lda dirtyByte
+        and r8H
+        rts
+
+; NatAlloc / NatFree (AllocateBlock / FreeBlock after FindBAMBit): flip
+; the bit, store the byte, mark the BAM block for the write-back. X = 0.
+NatAlloc:
+NatFree:
+        jsr NatFind
+        lda dirtyByte
+        eor r8H
+        sta dirtyByte
+        jsr Stash
+        ldx #0
+        rts
+
+; NatNext (SetNextFree): the next free block after r3, allocated. r3 =
+; the block, X = 0 or INSUFF_SPACE.
+NatNext:
+        lda r3L
+        sta r6L
+        lda #0
+        sta r7L                 ; 0: first round (from r3), 1: from track 1
+        ldx r3H
+        inx
+        stx r6H
+        bne @track
+@nextTrack:
+        lda #0
+        sta r6H
+        inc r6L
+@track: ldx curDrive
+        lda r6L
+        beq @wrap
+        cmp drvTracks-8,x
+        beq @try
+        bcc @try
+@wrap:  lda r7L
+        bne @full
+        inc r7L
+        lda #1
+        sta r6L
+        lda #0
+        sta r6H
+@try:   jsr NatFind
+        bne @take
+        lda dirtyByte           ; all 8 used: on to the next byte
+        bne @one
+        lda r6H
+        ora #7
+        sta r6H
+@one:   inc r6H
+        bne @try
+        beq @nextTrack
+@take:  jsr NatAlloc
+        lda r6L
+        sta r3L
+        lda r6H
+        sta r3H
+        rts
+@full:  ldx #INSUFF_SPACE
+        rts
+
+; NatBlkAlloc (BlkAlloc): from block 1/0, then as on a 1541.
+NatBlkAlloc:
+        lda #0
+        sta saveFlag
+        sta r3H
+        lda #1
+        sta r3L
+        jmp NxtBlkAlloc
+
+; NatDirFree (DirTrackFree): the directory may grow on any track.
+NatDirFree:
+        lda #$FF
+        rts
+
+        .segment "OVL6"                 ; overlay module 6: native BAM copy
 
         jmp FreeNative          ; entry 0
+        jmp NatBam              ; entry 3
+        jmp NatSure             ; entry 6
+
+natDir: .byte 0                 ; NatBam: $FF load, 0 save
+
+; The BAM of a native drive is used through a working copy in REU bank 1
+; at NAT_WORK (blocks 1/2 on, a page each), as GEOS 2.0 keeps a 1541's
+; BAM in curDirHead: GetDirHead loads it (discarding changes not written),
+; PutDirHead writes it to the image and marks those blocks for the
+; write-back; a failed SaveFile therefore leaves the image's BAM as it
+; was. One copy, for the drive in natLoaded (GEOS 2.0 also has one
+; curDirHead).
+NAT_WORK        = $A0           ; page in bank 1 ($A000-$BFFF)
+
+; NatBam (GetDirHead / PutDirHead, after the header blocks; direction from
+; the block routine in DirOp): copy all BAM pages. X = 0.
+NatBam: lda DirOp+1
+        cmp #<ReadBlock
+        bne NatSave
+        lda DirOp+2
+        cmp #>ReadBlock
+        bne NatSave
+NatLoad:
+        lda #$FF
+        .byte $2C
+NatSave:
+        lda #0
+        sta natDir              ; $FF: image -> working copy
+        ldx curDrive
+        lda drvTracks-8,x       ; pages = (tracks + 8) / 8
+        clc
+        adc #8
+        ror
+        lsr
+        lsr
+        sta count
+        lda #2
+        sta blkLo
+@page:  lda #<dir3Head          ; buffer: dir3Head (not used by native)
+        sta dmaC64
+        lda #>dir3Head
+        sta dmaC64+1
+        lda #0
+        sta dmaLen
+        sta dmaReu
+        sta blkHi
+        lda #1
+        sta dmaLen+1
+        bit natDir
+        bpl @fromWork
+        jsr ImagePage
+        ldy #REU_FETCH
+        jsr Dma
+        jsr WorkPage
+        ldy #REU_STASH
+        jsr Dma
+        jmp @on
+@fromWork:
+        jsr WorkPage
+        ldy #REU_FETCH
+        jsr Dma
+        jsr ImagePage
+        ldy #REU_STASH
+        jsr Dma
+        jsr MarkDirty           ; block 1/blkLo of the image
+@on:    inc blkLo
+        dec count
+        bne @page
+        lda curDrive
+        sta natLoaded
+        ldx #0
+        rts
+
+ImagePage:
+        ldx curDrive
+        lda ramBase-8,x
+        sta dmaReu+2
+        lda blkLo
+        sta dmaReu+1
+        rts
+WorkPage:
+        lda #SYS_BANK
+        sta dmaReu+2
+        lda blkLo
+        clc
+        adc #NAT_WORK - 2
+        sta dmaReu+1
+        rts
+
+; NatSure: the working copy belongs to the current drive.
+NatSure:
+        lda natLoaded
+        cmp curDrive
+        beq @end
+        lda DirOp+1             ; (keeps GetDirHead's direction)
+        pha
+        lda DirOp+2
+        pha
+        jsr NatLoad
+        pla
+        sta DirOp+2
+        pla
+        sta DirOp+1
+@end:   rts
 
 ; FreeNative: CalcBlksFree on a native image: r4 = the free bits of tracks
 ; 1 .. drvTracks in the BAM (from 1/2 offset $20, 32 bytes a track), read
 ; byte by byte from the REU; r3 = all blocks (tracks * 256).
 FreeNative:
+        jsr NatSure
         ldx curDrive
         lda #0
         sta r3L
         lda drvTracks-8,x
         sta r3H
-        lda #$20                ; REU: drive bank + block 1/2 ($0200) + $20
+        lda #$20                ; the working copy of 1/2, from offset $20
         sta dmaReu
-        lda #$02
+        lda #NAT_WORK
         sta dmaReu+1
-        lda ramBase-8,x
+        lda #SYS_BANK
         sta dmaReu+2
         lda r3H                 ; bytes: tracks * 32
         sta blkLo

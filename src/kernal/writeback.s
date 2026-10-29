@@ -19,7 +19,7 @@
 
         .export WriteBackNow
         .import OvlCall, uciPresent, wbPending, drvTracks, drvFlags
-        .export FreeNativeOvl
+        .export FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, natLoaded
 
 path            = $9F70         ; the slot's scratch area (overlay.s)
 cmdBuf          = $9FB0
@@ -50,7 +50,21 @@ WriteDrive:
         .byte 2, 0
 FreeNativeOvl:                  ; CalcBlksFree on native images (reudrv.s)
         jsr OvlCall
+        .byte 6, 0
+NativeOvl:                      ; native BAM work (reudrv.s, BamType)
+        jsr OvlCall
         .byte 3, 0
+NatBamOvl:                      ; native BAM working copy (reudrv.s, DirHead)
+        jsr OvlCall
+        .byte 6, 3
+NatSureOvl:                     ; the working copy is the current drive's
+        jsr OvlCall
+        .byte 6, 6
+
+        .segment "DATA"
+
+natLoaded:      .byte 0         ; drive whose native BAM is in the working copy
+
 
         .segment "OVL1"
 

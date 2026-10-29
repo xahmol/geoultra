@@ -246,9 +246,25 @@ applications call `$9030-$904D` directly.
   from `SaveFile` (GEOS 2.0 looks at its caller's return address; the
   kernal's SaveFile sets the driver's `saveFlag`) and goes back to 35
   after two blocks. Checked with `make conformance81`.
-- Not yet: allocation on 1571 and native images (it stops in `Trap`),
-  native subdirectories and 1581 partitions (DESIGN.md, "Directories"),
-  40-track D64s.
+- Native (CMD format, `.dnp`): header 1/1 (swapped like the 1581's),
+  directory chain from 1/34, BAM from 1/2 offset `$20`, 32 bytes a track,
+  sector 0 in bit 7, a set bit free (checked against a DNP's file chains).
+  The 1541/1581 BAM routines call `BamType`; on a native drive it takes
+  the calling routine's return address (`nativeFrom`) and overlay module 3
+  (`NativeOp`) does that routine's work (`FindBAMBit`, `AllocateBlock`,
+  `FreeBlock`, `SetNextFree`: on from r3, then from track 1; `BlkAlloc`:
+  from 1/0; `DirTrackFree`: the directory may grow anywhere), returning to
+  the routine's caller. The BAM is used through a working copy in REU bank
+  1 at `$A000` (module 6): `GetDirHead` loads it, `PutDirHead` writes it to
+  the image and marks those blocks for the write-back, so changes without
+  `PutDirHead` are dropped as GEOS 2.0 drops a changed `curDirHead`; one
+  copy, for the drive in `natLoaded`. The 18-page directory limit of
+  `GetFreeDirBlk` stays (GEOS 2.0's; MegaPatch 3 allows more on native).
+  `make test-native` (tests/native/native.py): save, read back, delete,
+  directory growth and the working copy, on a copy of a DNP.
+- Not yet: allocation on 1571 images (they answer `WR_PR_ON`), native
+  subdirectories and 1581 partitions (DESIGN.md, "Directories"), 40-track
+  D64s.
 
 ## Files
 

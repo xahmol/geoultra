@@ -35,7 +35,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all vice vice-shot conformance conformance81 test-bypass smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all vice vice-shot conformance conformance81 test-bypass test-native smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -220,6 +220,11 @@ smoke-u64-restore: check-deploy
 	curl -s -X PUT "$(CARTCFG)/Command%20Interface?value=Disabled" >/dev/null
 	curl -s -Q "DELE /Temp/gutest.bin" "ftp://$(ULTIP1)/" -o /dev/null; true
 	curl -s -X PUT "$(REST)/machine:reset" >/dev/null
+
+# Writing to a native (DNP) drive (tests/native/native.py; GEOS_NATIVE_DISK,
+# default the user's own ~/geos-dev/u64-usb/ramapps.DNP, is only read).
+test-native: all
+	$(PYTHON) tests/native/native.py
 
 # The answer to an application's first-run disk check (tests/bypass/hook.py).
 test-bypass: all

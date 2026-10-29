@@ -84,6 +84,8 @@ def main():
                     "[system] serial= in SETTINGS.INI on the Ultimate")
     ap.add_argument("--bypass", action="store_true", help="serial number per "
                     "application, as [system] protection=bypass (src/kernal/bypass.s)")
+    ap.add_argument("--find", help="afterwards: FindFile of this name on drive B "
+                    "(stops the application; prints X)")
     ap.add_argument("events", nargs="*")
     args = ap.parse_args()
     reu_image()
@@ -172,6 +174,22 @@ def main():
             v.mem_get(0xC0F1, 0xC0F2).hex(), v.regs_get()["PC"]))
         render(v.mem_get(0xA000, 0xBF3F), v.mem_get(0x8C00, 0x8FE7), args.out)
         print("screen:", args.out)
+        if args.find:
+            v.mem_set(0x4F00, args.find.encode() + b"\0")
+            v.mem_set(0x02F0, b"\xEE")
+            code = ([0x78, 0xA9, 0x30, 0x85, 0x01, 0xA9, 0x09] + jsr("SetDevice") + jsr("OpenDisk")
+                    + [0xA9, 0x00, 0x85, 0x0E, 0xA9, 0x4F, 0x85, 0x0F] + jsr("FindFile")
+                    + [0x8E, 0xF0, 0x02])
+            end = start + len(code)
+            code += [0x4C, end & 0xFF, end >> 8]
+            v.mem_set(start, bytes(code))
+            v.regs_set({"PC": start})
+            v.resume()
+            time.sleep(3)
+            v.ping()
+            entry = v.mem_get(0x8400, 0x841D)
+            print("FindFile %r on drive B: X = $%02X, entry %s" % (
+                args.find, v.mem_get(0x2F0, 0x2F0)[0], entry.hex()))
     finally:
         v.quit()
         proc.kill()
