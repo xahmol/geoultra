@@ -32,6 +32,7 @@ from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
 APPS_DISK = os.environ.get("GEOS_APPS_DISK", os.path.expanduser(
     "~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
 REU_IMAGE = os.path.join(harness.OUT, "reu-apps.bin")
+CARTRIDGE = os.environ.get("GEOULTRA_CRT", os.path.join(harness.ROOT, "build", "geoultra64.crt"))
 PORT = 6504
 KEY_STUB = 0xC0A0               # unused bytes in GeoUltra's information block
 PALETTE = [(0, 0, 0), (255, 255, 255), (136, 57, 50), (103, 182, 189), (139, 63, 150),
@@ -92,7 +93,7 @@ def main():
     reu_image()
     cmd = [harness.VICE, "-default", "+sound", "-sounddev", "dummy", "-warp", "-binarymonitor",
            "-binarymonitoraddress", "127.0.0.1:%d" % PORT,
-           "-cartcrt", os.path.join(harness.ROOT, "build", "geoultra64.crt"),
+           "-cartcrt", CARTRIDGE,
            "-reu", "-reusize", "16384", "-reuimage", REU_IMAGE, "+reuimagerw"]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     v = Vice(port=PORT)

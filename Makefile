@@ -37,7 +37,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -61,10 +61,14 @@ build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 build/tools/%.cvt: build/tools/%.bin src/tools/%.toml
 	$(PYTHON) $(GEOSAPP) src/tools/$*.toml $< $@
 
-build/sysdrive.d64: $(SYSFILES)
-	rm -f $@
-	$(C1541) -format "geoultra system,gu" d64 $@ $(foreach f,$(SYSFILES),-geoswrite $(f)) >/dev/null 2>&1
-	@test -s $@
+# build/sysdrive-plain.d64 is an ordinary disk image; build/sysdrive.d64,
+# the one in the cartridge, has its track numbers moved to 221-255
+# (tools/sysreloc.py, src/inc/sysdrive.inc).
+build/sysdrive.d64: $(SYSFILES) tools/sysreloc.py
+	rm -f build/sysdrive-plain.d64
+	$(C1541) -format "geoultra system,gu" d64 build/sysdrive-plain.d64 $(foreach f,$(SYSFILES),-geoswrite $(f)) >/dev/null 2>&1
+	@test -s build/sysdrive-plain.d64
+	$(PYTHON) tools/sysreloc.py build/sysdrive-plain.d64 $@
 
 # --- System -----------------------------------------------------------
 
@@ -266,6 +270,11 @@ test-folders: all
 # copy of the same DNP).
 test-filedialog: all
 	$(PYTHON) tests/drives/filedialog.py
+
+# A font on drive E in geoWrite (the user's own disks: SYSFONT_DISK,
+# GEOS_APPS_DISK); screens in build/harness/sysfont-*.png.
+test-sysfont: all
+	$(PYTHON) tests/drives/sysfont.py
 
 # Writing to a 1571 drive, on a D71 the test formats itself.
 test-d71: all

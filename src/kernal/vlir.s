@@ -15,7 +15,7 @@
         .export OpenRecordFile, CloseRecordFile, UpdateRecordFile
         .export NextRecord, PreviousRecord, PointRecord, DeleteRecord
         .export InsertRecord, AppendRecord, ReadRecord, WriteRecord
-        .import FindFile, ReadFile, WriteFile, FreeChain, CopyDate
+        .import SysFindFile, ReadFile, WriteFile, FreeChain, CopyDate
 
 MAX_RECORDS     = 127
 
@@ -35,7 +35,7 @@ OpenRecordFile:
         sta r6L
         lda r0H
         sta r6H
-        jsr FindFile
+        jsr SysFindFile         ; (drive E: fonts)
         txa
         bne Closed
         ldx #STRUCT_MISMAT

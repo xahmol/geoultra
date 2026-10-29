@@ -819,18 +819,36 @@ TestPoint:
 ; the smaller x, the steep case y from the one with the smaller y; error
 ; 2 * minor - major, a negative error adds 2 * minor, otherwise the minor
 ; coordinate steps towards the other end and 2 * (minor - major) is added.
+        .segment "CODE"                 ; (the low kernal area is full)
 DrawLine:
         php
-        bmi @line
+        bmi @any
         lda r11L
         cmp r11H
-        bne @line
-        lda #$FF
+        beq @horiz
+@any:   jmp LineAny
+@horiz: lda r4L                 ; horizontal from right to left: GEOS 2.0
+        cmp r3L                 ; draws it (geoWrite's filename box), and
+        lda r4H                 ; HorizontalLine needs r3 <= r4: x swapped
+        sbc r3H
+        bcs @lr
+        ldx r3L
+        lda r4L
+        sta r3L
+        stx r4L
+        ldx r3H
+        lda r4H
+        sta r3H
+        stx r4H
+@lr:    lda #$FF
         plp
         bcs @hl
         lda #0
 @hl:    jmp HorizontalLine
-@line:  lda r11H                ; r7 = |dy|
+        .segment "KCODE"
+
+LineAny:                        ; (php done by DrawLine)
+        lda r11H                ; r7 = |dy|
         sec
         sbc r11L
         bcs @dy

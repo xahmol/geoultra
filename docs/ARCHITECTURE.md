@@ -422,40 +422,53 @@ extension table; overlay modules 12-14 with the shared helpers in
 
 DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
 
-- Image: `build/sysdrive.d64` (1541 layout: no BAM working copy, the
-  directory at 18/1 without `curDirHead`, so it is read without touching
-  the current drive's state), built from GeoUltra's own GEOS files: each
-  `src/tools/NAME.s` assembled at `$0400` (`NAME.cfg`), packed as CVT by
-  geos-oscar64's `geosapp.py` (`NAME.toml`), written with VICE's c1541
-  (`-geoswrite`). `mkimage.py` places it at REU bank 4 (`FILE@BANK4`,
-  padded; the cartridge grows to about 320 KB); `src/kernal/sysdrive.s`
-  knows that bank.
-- Access (`sysdrive.s`, overlay module 15): `Enter` borrows the current
-  drive's slot (driveType and curType as a 1541, ramBase = bank 4, the
-  driver's flags with F_READONLY), `OvLeave` puts it back; the saved
-  values are resident (they survive nested overlay calls).
-- Merging: `FindFTypes` ends in `SysFTypes`: for `DESK_ACC` with room left
-  it runs once more on drive E into the rest of the caller's buffer.
-  `GetFile` ends in `SysGetFile` when the name is not found: a desk
-  accessory of that name on E is loaded from there (`LoadArgs`, then
-  `LdDeskAcc`, which calls `SysLeave` after reading, before the accessory
-  runs). Fonts on E: later (an application reads a font's records over
-  several calls, so the slot cannot stay borrowed).
+- Image: built from GeoUltra's own GEOS files: each `src/tools/NAME.s`
+  assembled at `$0400` (`NAME.cfg`), padded to whole 254-byte blocks,
+  packed as CVT by geos-oscar64's `geosapp.py` (`NAME.toml`), written with
+  VICE's c1541 (`-geoswrite`) to `build/sysdrive-plain.d64` (1541 layout).
+  `tools/sysreloc.py` then moves every track/sector reference in it
+  (directory header link and border block, directory chain, entries' data
+  and header blocks, block links, VLIR index blocks) up by 220:
+  `build/sysdrive.d64`, which `mkimage.py` places at REU bank 4
+  (`FILE@BANK4`). Constants in `src/inc/sysdrive.inc`.
+- High tracks: the driver's `Locate` reads tracks 221-255 of every drive
+  from bank 4 at track - 220 (1541 zones); `WriteBlock` refuses them
+  (`WR_PR_ON`). So a file found on E is read through the current drive,
+  also by an application that keeps track/sector pairs: geoWrite reads a
+  font's header, index block and records by them. Not on a native drive
+  with more than 220 tracks, whose tracks are real (drive E is then left
+  out).
+- Search (`src/kernal/sysdrive.s`, overlay module 15): E's directory is
+  read by borrowing the current drive's slot for a moment (driveType and
+  curType as a 1541, ramBase = bank 4, F_READONLY), resident saved values.
+  - `FindFTypes` ends in `SysFTypes`: for `DESK_ACC` and `FONT` with room
+    left, it runs once more on E into the rest of the caller's buffer.
+  - `SysFindFile`: `FindFile`, and when the name is not found, E's
+    directory; a desk accessory or font found there is returned (entry
+    with E's high tracks). Used by `FindFile` from the jump table
+    (`jumptab.txt`: `FindFile = SysFindFile`), `GetFile` and
+    `OpenRecordFile`; the kernal's other callers (DeleteFile, RenameFile,
+    SaveFile ...) keep plain `FindFile`, so they never touch E's files.
+  - A desk accessory from E loads as any other (`LdDeskAcc` reads the
+    high tracks); a font opened with `OpenRecordFile` reads its records
+    the same way.
 - geoFolder (`src/tools/geofolder.s`, 133 bytes): one `DBGETFILES` dialog
   for a file type no file has, so the kernal lists only `..` and the
   folders; OPEN/RETURN/DEL move through them, DISK goes to the next drive,
   OK leaves the chosen folders current.
-- The tool binaries are padded to whole 254-byte blocks (Makefile): c1541
-  writes a short last block full, and a desk accessory's header end
-  address must cover all it loads, or `LdDeskAcc` saves less of the
-  application than `ReadFile` overwrites (geoWrite crashed after
-  geoFolder until this; docs/GEOS_REFERENCE.md section 17).
-- Checked in VICE with the user's DNP as drive B: the desk accessory list
-  ends with geoFolder, `GetFile("geoFolder")` starts it from E with drive
-  B's slot back as it was, OK returns to the caller with X = 0. In geoWrite
-  2.0, geoFolder is the last entry of the geos menu; started from there
-  and closed with OK, geoWrite goes on (typing, menus); GeoClock and Text
-  Manager from drive B also start and close.
+- The tool binaries are padded to whole blocks: c1541 writes a short last
+  block full, and a desk accessory's header end address must cover all it
+  loads, or `LdDeskAcc` saves less of the application than `ReadFile`
+  overwrites (geoWrite crashed after geoFolder until this;
+  docs/GEOS_REFERENCE.md section 17).
+- Checked in VICE: geoFolder is the last entry of geoWrite 2.0's geos
+  menu (the user's DNP as drive B), started from there and closed with
+  OK, geoWrite goes on; GeoClock and Text Manager from drive B too.
+  `make test-sysfont` puts a font from the user's disks on a test copy of
+  E (block by block: c1541 3.10's `-geosread` writes no record data of a
+  VLIR file) and patches it into a copy of the cartridge: geoWrite lists
+  it in its font menu with its point sizes and types with it.
+- No fonts of GeoUltra's own yet: the cartridge's E holds geoFolder only.
 
 ## Hibernation
 

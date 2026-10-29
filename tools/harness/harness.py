@@ -315,7 +315,9 @@ class System:
         # sei; I/O on: read the TOD tenths (unlatches the clock if the
         # snapshot caught a time read halfway); $01 = $30, the normal GEOS
         # state (the snapshot may hold another one)
-        code = [0x78, 0xA9, 0x35, 0x85, 0x01, 0xAD, 0x08, 0xDC, 0xA9, 0x30, 0x85, 0x01]
+        # clv: V as the snapshots left it differs between systems (cases
+        # that compare P after the call saw it)
+        code = [0xB8, 0x78, 0xA9, 0x35, 0x85, 0x01, 0xAD, 0x08, 0xDC, 0xA9, 0x30, 0x85, 0x01]
         if "events" in case:
             v.mem_set(CLEAN_AT, bytes(CLEAN_CODE))
             v.mem_set(0x4F7F, bytes([0x60]))

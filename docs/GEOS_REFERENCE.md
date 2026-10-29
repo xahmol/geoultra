@@ -710,6 +710,10 @@ routines between the two: they expect their own memory configuration.
 - GEOS 128: OR x/width with `DOUBLE_W`/`DOUBLE_B`; set `O_128_FLAGS`.
 - The background buffer `$6000`-`$7F3F` is only free memory if the app
   never draws to it and never relies on recovery from it.
+- `DrawLine` for a horizontal line from right to left (r3 > r4): GEOS
+  2.0 draws it (geoWrite 2.0's filename box relies on it), while
+  `HorizontalLine` itself needs r3 <= r4. A kernal that hands the pair
+  straight to its HorizontalLine draws garbage across the bitmap.
 - Desk accessory end address: `LdDeskAcc` saves (and `RstrAppl` puts
   back) only start..end address from the file header, but `ReadFile`
   loads every byte the file's blocks hold. If the last block holds more
@@ -785,6 +789,9 @@ Protection", and the user's disks.)
   `-geosread name file.cvt` exports one.
   With a short last CVT block it writes a full `$FF`-padded block (see
   the desk accessory gotcha in section 17).
+  `-geosread` of a VLIR file (VICE 3.10) writes only the directory entry,
+  header and record table, no record data: the CVT is unusable (found
+  with fonts in GeoUltra, 2026-10-29).
 - **GEOSBuild** (Daniel England, https://github.com/M3wP/GEOSBuild,
   Lazarus/Pascal): builds GEOS files on images from header + binary
   (used by GeoUTools 1.x).

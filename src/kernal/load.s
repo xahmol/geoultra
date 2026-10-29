@@ -19,7 +19,6 @@
         .export GetFile, LdFile, LdApplic, LdDeskAcc, RstrAppl, StartAppl
         .export EnterDeskTop, FirstInit, Panic, Sleep, CRC
         .export SleepTick, WakeSleepers, InitMachine, ExtraColours, SaveJumpTab
-        .export LoadArgs
 
 JT_START        = $C100         ; the GEOS 2.0 jump table
 JT_SIZE         = $01D7
@@ -28,7 +27,7 @@ JT_COPY         = $1000         ; its copy in REU bank 1
         .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
-        .import WriteBackNow, SysGetFile, SysLeave
+        .import WriteBackNow, SysFindFile
 
 DA_BANK         = 18
 MAX_SLEEP       = 20
@@ -57,7 +56,7 @@ sleepRtnHi:     .res MAX_SLEEP
 ; r0L, r7, r2, r3, r10L as for those. X = error.
 GetFile:
         jsr SaveArgs
-        jsr FindFile
+        jsr SysFindFile     ; (drive E: desk accessories)
         txa
         bne @end
         jsr LoadArgs
@@ -74,7 +73,7 @@ GetFile:
         cmp #AUTO_EXEC
         bne LdFile
 @start: jmp LdApplic
-@end:   jmp SysGetFile          ; not found: a desk accessory on drive E?
+@end:   rts
 
 ; LdFile: r9 = directory entry. Loads the file (record 0 of a VLIR file)
 ; at its header's load address, or at r7 when bit 0 of the last load
@@ -271,7 +270,6 @@ LdDeskAcc:
         jsr ReadFile
         txa
         bne RstrAppl
-        jsr SysLeave            ; loaded from drive E: the slot back
         jsr UseSystemFont
         jsr InitEnv
         lda loadR10

@@ -44,6 +44,8 @@ CASES = [
     line("DrawLine recover", 10, 20, 200, 60, flags="N", **FILL),
     line("DrawLine horizontal", 10, 77, 300, 77),
     line("DrawLine horizontal clear", 10, 77, 300, 77, flags="", **FILL),
+    line("DrawLine horizontal right to left", 314, 2, 216, 2),
+    line("DrawLine horizontal right to left, x above 255", 300, 90, 270, 90, flags="", **FILL),
     line("DrawLine vertical", 160, 10, 160, 150),
     line("DrawLine single point", 55, 55, 55, 55),
 ]
@@ -52,6 +54,15 @@ GS = ([MOVEPENTO] + w(20) + [30] + [LINETO] + w(120) + [60] + [LINETO] + w(40) +
       [NEWPATTERN, 1, RECTANGLETO] + w(200) + [100] + [FRAME_RECTO] + w(150) + [20] +
       [PEN_X_DELTA] + w(-30) + [PEN_Y_DELTA] + w(25) + [LINETO] + w(300) + [190] +
       [PEN_XY_DELTA] + w(-100) + w(-20) + [FRAME_RECTO] + w(260) + [140] + [0])
+# geoWrite 2.0's menu bar surround (mist64/geowrite geoWrite-1.s,
+# drawMenuAndFilenameBox): its filename box has right-to-left lines.
+GW_FRAME = ([NEWPATTERN, 2, MOVEPENTO] + w(192) + [0, RECTANGLETO] + w(319) + [14, MOVEPENTO] +
+            w(0) + [36, RECTANGLETO] + w(319) + [199, NEWPATTERN, 9, MOVEPENTO] + w(216) +
+            [3, RECTANGLETO] + w(314) + [4, MOVEPENTO] + w(213) + [4, RECTANGLETO] + w(317) +
+            [14, MOVEPENTO] + w(318) + [14] +
+            sum(([LINETO] + w(x) + [y] for x, y in ((318, 5), (314, 2), (216, 2), (212, 5),
+                                                     (212, 14), (318, 14))), []) +
+            [NEWPATTERN, 1, MOVEPENTO] + w(0) + [14, RECTANGLETO] + w(319) + [14, 0])
 GSTEXT = ([MOVEPENTO] + w(10) + [10] + [FRAME_RECTO] + w(120) + [40] +
           [ESC_PUTSTRING] + w(20) + [28] + [ord(c) for c in "Graphics"] + [0])
 CASES += [
@@ -59,6 +70,8 @@ CASES += [
          mem={STR_AT: GS}, r={"r0": STR_AT}, compare=SCREENS),
     dict(name="GraphicsString ESC_PUTSTRING ends it", routine="GraphicsString",
          pre=["UseSystemFont"], mem={STR_AT: GSTEXT}, r={"r0": STR_AT}, compare=SCREENS + ["r0"]),
+    dict(name="GraphicsString geoWrite 2.0's frame", routine="GraphicsString",
+         mem={STR_AT: GW_FRAME}, r={"r0": STR_AT}, compare=SCREENS),
     dict(name="i_GraphicsString", routine="i_GraphicsString",
          inline=GS, after=[0xA9, 0x77, 0x85, 0x20], compare=SCREENS + ["r15L"]),
 ]

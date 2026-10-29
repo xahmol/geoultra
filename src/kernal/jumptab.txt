@@ -91,7 +91,7 @@ ReadFile
 SmallPutChar
 FollowChain
 GetFile
-FindFile
+FindFile = SysFindFile    # drive E fallback (sysdrive.s)
 CRC
 LdFile
 EnterTurbo = ($9008)

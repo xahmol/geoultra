@@ -17,6 +17,7 @@
 
         .include "geos.inc"
         .include "hw.inc"
+        .include "sysdrive.inc"
 
         .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending
         .export drvTracks, drvFlags
@@ -70,6 +71,8 @@ drvTracks:      .res 4          ; native: track count
 drvFlags:       .res 4          ; mount table flags (F_DIRTY, F_READONLY)
 
 borderFlag:     .byte 0
+locBase:        .byte 0         ; Locate: the image's first REU bank
+locSys:         .byte 0         ; Locate: $80 for a block of drive E
 blkLo:          .byte 0         ; block number within the image
 blkHi:          .byte 0
 track:          .byte 0
@@ -232,6 +235,8 @@ WriteBlock:
         bcc BlkEnd
         ldy curDrive
         ldx #WR_PR_ON
+        bit locSys              ; drive E: read-only
+        bmi BlkEnd
         lda drvFlags-8,y
         and #F_READONLY
         bne BlkEnd
@@ -317,17 +322,12 @@ BufPtr: lda #<diskBlkBuf
         sta r4H
         rts
 
-BadTrack:
-        ldx #INV_TRACK
-        clc
-        rts
-BadSector:
-        ldx #BAD_SECTOR
-        clc
-        rts
 
 ; Locate: r1 of the current drive -> blkHi/blkLo and dmaReu. C set when
-; valid; else C clear and X = error.
+; valid; else C clear and X = error. Tracks SYSDRV_TRACK+1 and up are drive
+; E's blocks (docs/ARCHITECTURE.md "System drive"): its 1541 image at
+; SYSDRV_BANK, track - SYSDRV_TRACK, on every drive but a native one that
+; large (locSys = $80 then).
 Locate: ldy curDrive
         lda driveType-8,y
         and #$0F
@@ -335,12 +335,32 @@ Locate: ldy curDrive
         ldx #DEV_NOT_FOUND
         clc
         rts
-@type:  ldx #0
+@type:  ldx ramBase-8,y
+        stx locBase
+        ldx #0
         stx blkLo
         stx blkHi
+        stx locSys
         ldx r1L                 ; track
         beq BadTrack
-        cmp #DRV_1581
+        cpx #SYSDRV_TRACK + 1
+        bcc @own
+        cmp #DRV_NATIVE
+        bcc @sys
+        ldx drvTracks-8,y
+        cpx #SYSDRV_TRACK + 1
+        ldx r1L
+        bcs @own                ; real tracks of this native drive
+@sys:   lda #SYSDRV_BANK
+        sta locBase
+        lda #$80
+        sta locSys
+        txa
+        sec
+        sbc #SYSDRV_TRACK
+        tax
+        lda #DRV_1541
+@own:   cmp #DRV_1581
         beq Loc1581
         bcs LocNative
         cpx #36                 ; 1541 / 1571
@@ -372,6 +392,15 @@ Locate: ldy curDrive
         lda r1H
         jsr AddBlk
         jmp Address
+
+BadTrack:
+        ldx #INV_TRACK
+        clc
+        rts
+BadSector:
+        ldx #BAD_SECTOR
+        clc
+        rts
 
 ; 1581: 80 tracks of 40 sectors.
 Loc1581:
@@ -411,7 +440,7 @@ Address:
         sta dmaReu+1
         lda blkHi
         clc
-        adc ramBase-8,y
+        adc locBase
         sta dmaReu+2
         sec
         rts
