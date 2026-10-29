@@ -418,6 +418,26 @@ extension table; overlay modules 12-14 with the shared helpers in
 - Not yet: 1581 partitions, renaming and moving folders, `MoveFile`, long
   names, geoFolder, the setting to switch the folders in file dialogs off.
 
+## System drive (plan)
+
+DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
+
+- Image: 1541 layout (D64, 664 blocks): no BAM working copy, the
+  directory at 18/1 without `curDirHead`, so it can be read without
+  touching the current drive's state. Built by `tools/mksysdrive.py` from
+  the GEOS files GeoUltra ships (geoFolder first), placed by `mkimage.py`
+  at a 64 KB boundary of the REU image (REU drives need whole banks), its
+  first bank exported to the kernal.
+- Access: the kernal borrows the current drive's slot for a moment
+  (driveType, ramBase, the driver's flags with F_READONLY), works on E and
+  puts the slot back. For a desk accessory loaded from E the slot is put
+  back after loading, before it runs.
+- Merging: `FindFTypes` for `DESK_ACC` and `FONT` appends E's entries
+  (within the caller's room); `GetFile` and loading a font fall back to E
+  when the name is not on the application's drive.
+- geoFolder: a desk accessory showing each drive's current folder and the
+  folders in it, changed with the extension jump table.
+
 ## Hibernation
 
 `src/kernal/hibernate.s` (overlay modules 8 and 10, `Snap` at `$BF40`,
