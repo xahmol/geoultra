@@ -265,6 +265,21 @@ BAM. As GEOS 2.0: `usedRecords` counts index entries up to the first
 emptied record is 0/$FF, `fileSize` is adjusted by the low byte of the
 block count only.
 
+## Boot mounts
+
+`src/kernal/mount.s` (cold start, `INIT`): with a UCI (unlocked on
+firmware 3.15 when not mapped), the home folder `GEOULTRA` is looked for
+on `/USB0`, `/USB1`, `/SD`, or created with an empty `MOUNTS.INI`
+(`[drives]`) on the first present. Every `A=` to `D=` line of `[drives]`
+is mounted: the image's folder, `OPEN_FILE $01`, the type from the
+extension (D64, D71, D81, DNP; a DNP's tracks from `FILE_INFO`), one
+`LOAD_REU` of the whole image into the next free banks from 31, then the
+mount table in REU bank 1 for `DiskInit`. Without a UCI (VICE), or when
+the REU's table has a drive with unsaved changes (after a reset; there is
+no write-back yet), the REU's table stays. The handshake follows the
+ultimate-uci-oscar64 library's corrected `uii_sendcommand`. Diagnostics
+at `$4E00` (see the source) until an application overwrites them.
+
 ## Overlays
 
 Rarely used kernal routines live in overlay modules of 640 bytes, linked

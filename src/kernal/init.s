@@ -9,6 +9,7 @@
         .import Rectangle, FrameRectangle, SetPattern
         .import pointerPic, UseSystemFont, PutString, RecoverRectangle
         .import StringWidth, sysFlgCopy, DiskInit, ExtraColours, ClockInit
+        .import MountAll
         .export ColdStart
 
 DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
@@ -158,6 +159,7 @@ ColdStart:                      ; $5000: the boot ROM jumps here
         sta vicIrqMask
         sta vicIrq
         jsr ClockInit
+        jsr MountAll            ; images from MOUNTS.INI (Ultimate only)
         lda #RAM_ALL            ; from here on the font under I/O is visible
         sta CPU_PORT
         lda #0                  ; text: whole screen, plain style
