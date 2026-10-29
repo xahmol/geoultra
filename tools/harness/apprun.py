@@ -125,6 +125,9 @@ def main():
             v.mem_set(label("serialNumber"), bytes([serial & 0xFF, serial >> 8]))
         if args.bypass:
             v.mem_set(label("bypassOn"), b"\x80")
+        if os.environ.get("APPRUN_FILL"):   # memory before the start: hex addr,len,byte
+            addr, n, b = (int(x, 16) for x in os.environ["APPRUN_FILL"].split(","))
+            v.mem_set(addr, bytes([b]) * n)
         v.mem_set(0x02F0, b"\xEE")
         v.regs_set({"PC": start})
         v.resume()
