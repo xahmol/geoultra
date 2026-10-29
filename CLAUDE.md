@@ -27,7 +27,8 @@ analysis; its route and phase recommendations are superseded.
   best effort, list what was tested.
 - Full transparency about the use of AI: README "Use of AI", the
   `Co-Authored-By` line in every commit, and a mention in release notes,
-  Facebook posts and blog texts.
+  Facebook posts and blog texts. Standing rule for every update: keep the
+  README section current with what the AI does in the project.
 - Kernal, drivers and the new desktop in assembler (ca65/ld65); tools may
   be C (Oscar64 with the geos-oscar64 library, see below).
 - Free-standing clean-room kernal from the start (no patch release); the
