@@ -418,25 +418,36 @@ extension table; overlay modules 12-14 with the shared helpers in
 - Not yet: 1581 partitions, renaming and moving folders, `MoveFile`, long
   names, geoFolder, the setting to switch the folders in file dialogs off.
 
-## System drive (plan)
+## System drive (drive E)
 
 DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
 
-- Image: 1541 layout (D64, 664 blocks): no BAM working copy, the
-  directory at 18/1 without `curDirHead`, so it can be read without
-  touching the current drive's state. Built by `tools/mksysdrive.py` from
-  the GEOS files GeoUltra ships (geoFolder first), placed by `mkimage.py`
-  at a 64 KB boundary of the REU image (REU drives need whole banks), its
-  first bank exported to the kernal.
-- Access: the kernal borrows the current drive's slot for a moment
-  (driveType, ramBase, the driver's flags with F_READONLY), works on E and
-  puts the slot back. For a desk accessory loaded from E the slot is put
-  back after loading, before it runs.
-- Merging: `FindFTypes` for `DESK_ACC` and `FONT` appends E's entries
-  (within the caller's room); `GetFile` and loading a font fall back to E
-  when the name is not on the application's drive.
-- geoFolder: a desk accessory showing each drive's current folder and the
-  folders in it, changed with the extension jump table.
+- Image: `build/sysdrive.d64` (1541 layout: no BAM working copy, the
+  directory at 18/1 without `curDirHead`, so it is read without touching
+  the current drive's state), built from GeoUltra's own GEOS files: each
+  `src/tools/NAME.s` assembled at `$0400` (`NAME.cfg`), packed as CVT by
+  geos-oscar64's `geosapp.py` (`NAME.toml`), written with VICE's c1541
+  (`-geoswrite`). `mkimage.py` places it at REU bank 4 (`FILE@BANK4`,
+  padded; the cartridge grows to about 320 KB); `src/kernal/sysdrive.s`
+  knows that bank.
+- Access (`sysdrive.s`, overlay module 15): `Enter` borrows the current
+  drive's slot (driveType and curType as a 1541, ramBase = bank 4, the
+  driver's flags with F_READONLY), `OvLeave` puts it back; the saved
+  values are resident (they survive nested overlay calls).
+- Merging: `FindFTypes` ends in `SysFTypes`: for `DESK_ACC` with room left
+  it runs once more on drive E into the rest of the caller's buffer.
+  `GetFile` ends in `SysGetFile` when the name is not found: a desk
+  accessory of that name on E is loaded from there (`LoadArgs`, then
+  `LdDeskAcc`, which calls `SysLeave` after reading, before the accessory
+  runs). Fonts on E: later (an application reads a font's records over
+  several calls, so the slot cannot stay borrowed).
+- geoFolder (`src/tools/geofolder.s`, 133 bytes): one `DBGETFILES` dialog
+  for a file type no file has, so the kernal lists only `..` and the
+  folders; OPEN/RETURN/DEL move through them, DISK goes to the next drive,
+  OK leaves the chosen folders current.
+- Checked in VICE with the user's DNP as drive B: the desk accessory list
+  ends with geoFolder, `GetFile("geoFolder")` starts it from E with drive
+  B's slot back as it was, OK returns to the caller with X = 0.
 
 ## Hibernation
 

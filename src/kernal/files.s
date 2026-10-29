@@ -13,6 +13,7 @@
         .include "geos.inc"
         .include "kcalls.inc"
 
+        .import SysFTypes
         .export FindFile, ReadFile, ReadByte, FollowChain, GetFHdrInfo
         .export FindFTypes
         .import ClearRam
@@ -313,7 +314,7 @@ FindFTypes:
         tya
         beq @entry
 @end:   plp
-        rts
+        jmp SysFTypes           ; drive E's desk accessories added
 
 ; ClassMatch: r5 = entry. With r10 set, its header to fileHeader and the
 ; permanent name compared with r10 (up to r10's NULL). Y = 0 when it

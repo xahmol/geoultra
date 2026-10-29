@@ -6,6 +6,9 @@ Usage: mkimage.py [--cpu N] OUT.bin OUT.inc FILE@ADDR [FILE@ADDR ...]
 FILE@REU puts FILE at the start of the image (REU $020000 at run time)
 without a load table row: data the kernal fetches itself (the overlay
 modules, src/kernal/overlay.s). At most one, before the others.
+FILE@BANKn puts FILE at the start of REU bank n (hex), padding up to it, also
+without a load table row: the system drive (drive E), which the kernal
+reads as an REU drive from that bank.
 
 Each FILE is a binary to be loaded at the C64 address ADDR (hex). The
 images are concatenated into OUT.bin (ROM banks 1 and up, copied to REU
@@ -38,6 +41,13 @@ def main(argv):
             if blob:
                 sys.exit("%s: an REU-only image must come first" % path)
             blob += data
+            continue
+        if addr.upper().startswith("BANK"):
+            at = (int(addr[4:], 16) << 16) - REU_BASE
+            if at < len(blob):
+                sys.exit("%s: bank %s is already used (image up to $%06X)"
+                         % (path, addr[4:], REU_BASE + len(blob)))
+            blob += b"\xff" * (at - len(blob)) + data
             continue
         if not 0 < len(data) <= 0x10000:
             sys.exit("%s: size %d not 1..65536" % (path, len(data)))
