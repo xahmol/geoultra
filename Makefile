@@ -34,7 +34,9 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all vice vice-shot conformance smoke smoke-vice smoke-u64 smoke-u64-restore check-deploy clean
+.PHONY: all vice vice-shot conformance smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+        check-deploy clean
+GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
 all: build/geoultra64.crt
 
@@ -130,7 +132,7 @@ conformance: build/geoultra64.crt
 
 # --- Smoke tests ------------------------------------------------------
 
-smoke: $(SMOKE)/gusmoke.crt $(SMOKE)/guseek.prg
+smoke: $(SMOKE)/gusmoke.crt $(SMOKE)/guseek.prg $(SMOKE)/gud64.prg
 
 $(SMOKE)/gusmoke.o: tests/smoke/gusmoke.s
 	@mkdir -p $(SMOKE)
@@ -145,6 +147,12 @@ $(SMOKE)/gusmoke.crt: $(SMOKE)/bank0.bin tools/mkcrt.py
 $(SMOKE)/guseek.prg: tests/smoke/guseek.c $(UCILIB)/ultimate_common_lib.c \
                      $(UCILIB)/ultimate_common_lib.h \
                      $(UCILIB)/ultimate_dos_lib.c $(UCILIB)/ultimate_dos_lib.h
+	@mkdir -p $(SMOKE)
+	$(OSCAR64) -i=$(UCILIB) -tm=c64 -tf=prg -O2 -dNOFLOAT -n -o=$@ $<
+
+$(SMOKE)/gud64.prg: tests/smoke/gud64.c $(UCILIB)/ultimate_common_lib.c \
+                    $(UCILIB)/ultimate_common_lib.h \
+                    $(UCILIB)/ultimate_dos_lib.c $(UCILIB)/ultimate_dos_lib.h
 	@mkdir -p $(SMOKE)
 	$(OSCAR64) -i=$(UCILIB) -tm=c64 -tf=prg -O2 -dNOFLOAT -n -o=$@ $<
 
@@ -169,6 +177,18 @@ smoke-u64: check-deploy smoke
 	curl -s -X POST --data-binary @$(SMOKE)/guseek.prg "$(REST)/runners:run_prg" >/dev/null
 	sleep 8
 	@echo "seek test:"; curl -s "$(REST)/machine:readmem?address=C000&length=48" | xxd
+
+# Disk image into the REU: a copy of GEOS_ORACLE in /Temp (results: $C000
+# block, see tests/smoke/gud64.c); then REU and Command Interface off.
+smoke-u64-d64: check-deploy $(SMOKE)/gud64.prg
+	curl -s -T "$(GEOS_ORACLE)" "ftp://$(ULTIP1)/Temp/probe.d64"
+	curl -s -X PUT "$(CARTCFG)/RAM%20Expansion%20Unit?value=Enabled" >/dev/null
+	curl -s -X PUT "$(CARTCFG)/Command%20Interface?value=Enabled" >/dev/null
+	curl -s -X POST --data-binary @$(SMOKE)/gud64.prg "$(REST)/runners:run_prg" >/dev/null
+	sleep 10
+	@echo "d64 probe:"; curl -s "$(REST)/machine:readmem?address=C000&length=112" | xxd
+	curl -s -Q "DELE /Temp/probe.d64" "ftp://$(ULTIP1)/" -o /dev/null; true
+	$(MAKE) smoke-u64-restore
 
 smoke-u64-restore: check-deploy
 	curl -s -X PUT "$(CARTCFG)/RAM%20Expansion%20Unit?value=Disabled" >/dev/null
