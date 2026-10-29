@@ -444,6 +444,10 @@ automatically when the cartridge is newer; `CONF_REBUILD=1` rebuilds both.
   GetFile, plays mouse and key events and renders the screen to a PNG.
   Its key routine lives in GeoUltra's information block: applications
   use `$0200-$03FF` (a stub at `$02A0` crashed geoPaint).
+- **Keys on GEOS 2.0:** now and then GEOS 2.0 has no `keyVector` when a
+  case's first key arrives (its text input already gone); such a case runs
+  once more on the GEOS 2.0 side. Keys wait until the delivery routine has
+  run.
 - **Snapshots stop exactly at MainLoop** through a permanent checkpoint:
   VICE 3.10 runs on after a temporary one, and a snapshot taken at a
   random point (for example inside the clock update, with I/O on) made

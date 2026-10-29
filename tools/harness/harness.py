@@ -259,7 +259,14 @@ class System:
         right after a snapshot is restored: such a case runs once more in a
         newly started VICE."""
         try:
-            return self.run_once(case, table)
+            self.key_lost = False
+            out = self.run_once(case, table)
+            if self.key_lost and self.name == "geos":
+                # GEOS 2.0 now and then has no keyVector when the first key
+                # arrives (its text input already gone): once more.
+                self.key_lost = False
+                out = self.run_once(case, table)
+            return out
         except CaseHang as hang:
             if self.name != "geos":
                 raise SystemExit(str(hang))
@@ -408,12 +415,18 @@ class System:
                 0x60]                                            # rts
         v.mem_set(stub, bytes(code))
         v.mem_set(0x849B, bytes([stub & 0xFF, stub >> 8]))
+        kv = v.mem_get(0x84A3, 0x84A4)
         for _ in range(20):                         # until the stub has run
             v.resume()                              # (it clears appMain)
             time.sleep(ev.get("wait", 0.2))
             v.ping()
             if v.mem_get(0x849B, 0x849C) != bytes([stub & 0xFF, stub >> 8]):
                 break
+        else:
+            print("%s: key $%02X not delivered (appMain never called, PC $%04X)"
+                  % (self.name, ev["key"], v.regs_get()["PC"]), flush=True)
+        if kv == b"\0\0":
+            self.key_lost = True
 
     def launch(self, boot=False):
         """Start VICE (GEOS 2.0 autostarts its disk; restoring the snapshot
