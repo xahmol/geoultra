@@ -445,9 +445,17 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
   for a file type no file has, so the kernal lists only `..` and the
   folders; OPEN/RETURN/DEL move through them, DISK goes to the next drive,
   OK leaves the chosen folders current.
+- The tool binaries are padded to whole 254-byte blocks (Makefile): c1541
+  writes a short last block full, and a desk accessory's header end
+  address must cover all it loads, or `LdDeskAcc` saves less of the
+  application than `ReadFile` overwrites (geoWrite crashed after
+  geoFolder until this; docs/GEOS_REFERENCE.md section 17).
 - Checked in VICE with the user's DNP as drive B: the desk accessory list
   ends with geoFolder, `GetFile("geoFolder")` starts it from E with drive
-  B's slot back as it was, OK returns to the caller with X = 0.
+  B's slot back as it was, OK returns to the caller with X = 0. In geoWrite
+  2.0, geoFolder is the last entry of the geos menu; started from there
+  and closed with OK, geoWrite goes on (typing, menus); GeoClock and Text
+  Manager from drive B also start and close.
 
 ## Hibernation
 

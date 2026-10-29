@@ -45,7 +45,7 @@ all: build/geoultra64.crt
 
 # --- System drive (drive E, docs/DESIGN.md "System drive") ------------
 
-# GeoUltra's own GEOS files, assembled at $0400 and packed as CVT by
+# GeoUltra's own GEOS files, assembled at $0400 (padded to whole blocks) and packed as CVT by
 # geos-oscar64's geosapp.py, written to a D64 with VICE's c1541.
 SYSFILES = build/tools/geofolder.cvt
 
@@ -53,6 +53,10 @@ build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	@mkdir -p build/tools
 	$(CA65) -o build/tools/$*.o $<
 	$(LD65) -C src/tools/$*.cfg -o $@ build/tools/$*.o
+	@# whole 254-byte blocks: c1541 -geoswrite writes the last block full
+	@# ($FF-padded), so a desk accessory's end address must cover it, or
+	@# LdDeskAcc saves less of the application than ReadFile overwrites
+	$(PYTHON) -c "import sys; p=sys.argv[1]; d=open(p,'rb').read(); open(p,'wb').write(d+bytes(-len(d)%254))" $@
 
 build/tools/%.cvt: build/tools/%.bin src/tools/%.toml
 	$(PYTHON) $(GEOSAPP) src/tools/$*.toml $< $@

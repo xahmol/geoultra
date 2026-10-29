@@ -710,6 +710,15 @@ routines between the two: they expect their own memory configuration.
 - GEOS 128: OR x/width with `DOUBLE_W`/`DOUBLE_B`; set `O_128_FLAGS`.
 - The background buffer `$6000`-`$7F3F` is only free memory if the app
   never draws to it and never relies on recovery from it.
+- Desk accessory end address: `LdDeskAcc` saves (and `RstrAppl` puts
+  back) only start..end address from the file header, but `ReadFile`
+  loads every byte the file's blocks hold. If the last block holds more
+  than the header says, the application's code beyond the end address is
+  overwritten and it crashes after the DA returns. VICE 3.10's
+  `c1541 -geoswrite` from a CVT whose last block is short wrote that block
+  full (`$FF`-padded) plus an empty block (found in GeoUltra, 2026-10-29):
+  pad a DA binary to whole 254-byte blocks before packing, so the end
+  address covers what is loaded.
 
 ---
 
@@ -774,6 +783,8 @@ Protection", and the user's disks.)
 - **VICE c1541**: `-geoswrite file.cvt` writes a CVT as a GEOS file into a
   D64/D71/D81 (converting the disk to GEOS format if needed);
   `-geosread name file.cvt` exports one.
+  With a short last CVT block it writes a full `$FF`-padded block (see
+  the desk accessory gotcha in section 17).
 - **GEOSBuild** (Daniel England, https://github.com/M3wP/GEOSBuild,
   Lazarus/Pascal): builds GEOS files on images from header + binary
   (used by GeoUTools 1.x).
