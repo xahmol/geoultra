@@ -69,6 +69,8 @@ FindFile:
 @end:   plp
         rts
 
+        .segment "CODE"         ; (not under I/O: GEOS 2.0 allows it with I/O on)
+
 ; ReadFile: r1 = first block, r7 = buffer, r2 = its size. Follows the
 ; chain into the buffer; fileTrScTab+2 on gets the blocks. Returns X = 0
 ; or BFR_OVERFLOW (r1 = the block that did not fit, its data in
@@ -130,6 +132,8 @@ ReadFile:
         bne @block
         ldx #0
 @end:   rts
+
+        .segment "IOCODE"
 
 ; ReadByte: the next byte of a chain in A. First call: r1 = first block,
 ; r4 = a block buffer, r5 = 0. Returns X = 0, or BFR_OVERFLOW after the

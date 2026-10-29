@@ -73,6 +73,8 @@ BufPtr: lda #<diskBlkBuf
         sta r4H
         rts
 
+        .segment "IOCODE"       ; (under I/O, as in GEOS 2.0)
+
 ; SaveFile: r9 = file header (its first word points to the name), r10L =
 ; directory page to start at. Allocates the header block, a VLIR index
 ; block and the data (header load to end address), writes the directory

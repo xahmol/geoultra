@@ -234,12 +234,12 @@ drive 9). Only starting is tested here, not working with the program.
 | Program (permanent name) | Kind | Disk | Result |
 | --- | --- | --- | --- |
 | grabber basic | APP | GeoBasic (Unkeyed).D64 | starts (dialog, menu or window as expected) |
-| basic       V1.0 | APP | GeoBasic (Unkeyed).D64 | stops at once: calls `ClearRam` with I/O on; GeoUltra has that code under I/O, GEOS 2.0 not (being fixed) |
+| basic       V1.0 | APP | GeoBasic (Unkeyed).D64 | stopped at once: calls `ClearRam` with I/O on, which GeoUltra had under I/O (fixed: routines placed as on GEOS 2.0); still no start dialog, not pursued (GeoBasic was never finished and is known to be buggy) |
 | geoClock-40 V1.1 | DA | GeoBasic (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | GEOMERGE    V1.0 | APP | GeoCalc (Unkeyed).D64 | GetFile error `$02`, the same on GEOS 2.0 |
 | geoText     V1.0 | APP | GeoCalc (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | Grabber     V2.0 | APP | GeoCalc (Unkeyed).D64 | refuses: "System unter Verwendung der ... GEOS-Diskette rebooten" (German version, keyed, not unkeyed) |
-| TEXT GRABBER 2.0 | APP | GeoCalc (Unkeyed).D64 | blank screen, stops in `FillRam`/`InitRam` code under I/O (same cause as GeoBasic, being fixed) |
+| TEXT GRABBER 2.0 | APP | GeoCalc (Unkeyed).D64 | crashed in code under I/O (fixed); now the same screen as on GEOS 2.0 |
 | GEOLASER    V2.0 | APP | GeoCalc (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | geoWrite    V2.0 | APP | GeoCalc (Unkeyed).D64 | refuses: keyed to another serial (runs with `protection=bypass`) |
 | WRITE 2 KEY V1.0 | DA | GeoCalc (Unkeyed).D64 | starts (dialog, menu or window as expected) |
@@ -258,8 +258,8 @@ drive 9). Only starting is tested here, not working with the program.
 | geoSidPlayer  V1 | APP | GeoPrint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | FontViewer  V1.0 | APP | GeoPrint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | GEOS>PM/PS  V1.0 | DA | GeoPrint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
-| geoProgPatchV2.0 | APP | GeoProgrammer Patch 2.1.D64 | OK/Cancel icons without the dialog box GEOS 2.0 draws (under investigation) |
-| geoPublish  V1.0 | APP | GeoPublish (Unkeyed).D64 | garbled screen (under investigation; the GEOS 2.0 comparison run failed on drive 9) |
+| geoProgPatchV2.0 | APP | GeoProgrammer Patch 2.1.D64 | dialog box with GEOS 128 position flags (`DOUBLE_W`) was drawn into the kernal; fixed to draw as GEOS 2.0 does (the box partly off to the side, as there) |
+| geoPublish  V1.0 | APP | GeoPublish (Unkeyed).D64 | garbled screen (code under I/O, fixed); now starts |
 | GEOSPELL    V1.1 | APP | GeoSpell (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | geoWrite    V2.1 | APP | GeoWrite (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | Linker .obj V1.0 | APP | GeoWrite (Unkeyed).D64 | starts (dialog, menu or window as expected) |

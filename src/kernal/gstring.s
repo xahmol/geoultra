@@ -9,6 +9,7 @@
 
         .export GraphicsString, i_GraphicsString
         .import DrawLine, Rectangle, FrameRectangle, SetPattern, PutString
+        .import OvlCall
 
 MOVEPENTO       = 1
 LINETO          = 2
@@ -27,29 +28,13 @@ penY:   .res 1
 newX:   .res 2
 newY:   .res 1
 
-        .segment "RODATA"
-
-cmdLo:  .byte <MovePenTo, <LineTo, <RectangleTo, <Nothing, <NewPattern
-        .byte <EscPutString, <FrameRecTo, <PenXDelta, <PenYDelta, <PenXYDelta
-cmdHi:  .byte >MovePenTo, >LineTo, >RectangleTo, >Nothing, >NewPattern
-        .byte >EscPutString, >FrameRecTo, >PenXDelta, >PenYDelta, >PenXYDelta
-
-        .segment "IOCODE"               ; RAM under I/O ($01 = $30)
+        .segment "CODE"                 ; (not under I/O: GEOS 2.0 allows it with I/O on)
 
 ; GraphicsString: r0 = commands, ended by NULL. Destroys A, X, Y, r0-r13.
+; The interpreter is overlay module 5.
 GraphicsString:
-@loop:  jsr NextByte
-        beq @end
-        cmp #PEN_XY_DELTA + 1
-        bcs @end                ; unknown command: stop
-        tax
-        lda cmdLo-1,x
-        sta @call+1
-        lda cmdHi-1,x
-        sta @call+2
-@call:  jsr $FFFF
-        jmp @loop
-@end:   rts
+        jsr OvlCall
+        .byte 5, 0
 
 ; i_GraphicsString: the commands follow the jsr; returns after the NULL.
 i_GraphicsString:
@@ -70,6 +55,29 @@ i_GraphicsString:
         lda r0L
         pha
         rts
+
+        .segment "OVL5"
+
+        jmp Interpret           ; entry 0
+
+cmdLo:  .byte <MovePenTo, <LineTo, <RectangleTo, <Nothing, <NewPattern
+        .byte <EscPutString, <FrameRecTo, <PenXDelta, <PenYDelta, <PenXYDelta
+cmdHi:  .byte >MovePenTo, >LineTo, >RectangleTo, >Nothing, >NewPattern
+        .byte >EscPutString, >FrameRecTo, >PenXDelta, >PenYDelta, >PenXYDelta
+
+Interpret:
+@loop:  jsr NextByte
+        beq @end
+        cmp #PEN_XY_DELTA + 1
+        bcs @end                ; unknown command: stop
+        tax
+        lda cmdLo-1,x
+        sta @call+1
+        lda cmdHi-1,x
+        sta @call+2
+@call:  jsr $FFFF
+        jmp @loop
+@end:   rts
 
 ; A = (r0), r0 += 1 (flags from A)
 NextByte:

@@ -7,7 +7,7 @@
 
         .export SetDevice, GetPtrCurDkNm
 
-        .segment "CODE"
+        .segment "IOCODE"       ; (under I/O, as in GEOS 2.0)
 
 ; SetDevice: A = device (8-11 drives, else any serial device). Sets
 ; curDevice and, for a drive, curDrive and curType. Returns X = 0.
@@ -24,6 +24,8 @@ SetDevice:
         sta curType
 @end:   ldx #0
         rts
+
+        .segment "CODE"
 
 ; GetPtrCurDkNm: X = zero page word, set to the current drive's disk
 ; name buffer. Destroys A, Y.

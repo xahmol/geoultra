@@ -713,6 +713,29 @@ routines between the two: they expect their own memory configuration.
 
 ---
 
+## 17b. GEOS 2.0 (C64) layout facts applications depend on
+
+(Measured in GeoUltra, 2026-10-29, on a running GEOS 2.0 in VICE.)
+
+- Kernal code under I/O (`$D000`-`$DFFF`): only these jump table entries
+  lead there: GetRealSize, i_FillRam, SaveFile, SetGDirEntry,
+  BldGDirEntry, FollowChain, GetFile, FindFile, LdFile, LdDeskAcc,
+  LdApplic, FreeFile, GetFHdrInfo, DeleteFile, FindFTypes, RstrAppl,
+  FastDelFile, RenameFile, Open/Close/Next/Previous/Point/Delete/Insert/
+  Append/Read/Write/UpdateRecordFile, SetDevice, ReadByte. Everything
+  else (text, arithmetic, strings, memory fills, graphics) works with I/O
+  banked in, and applications rely on it (GeoBasic calls ClearRam with
+  `$01 = $35`). Data under I/O: the BSW font (`$D210`) and the fill
+  patterns (`$D010`, `curPattern` after boot).
+- System icon pictures sit outside I/O (`$BF58`, `$BFAC`, `$F914`-`$FA03`);
+  the kernal starts at `$BF40`.
+- x coordinates: GEOS 64 has no NormalizeX; the drawing routines take the
+  low 3 bits for the mask, `r3L & $F8` for the card and count any high
+  byte other than 0 as one page; the card count is the low byte of the
+  16-bit card difference. Applications built for both GEOS 64 and 128 pass
+  `DOUBLE_W` (`$8000`)/`ADD1_W` (`$2000`) on GEOS 64 too (geoProgPatch's
+  dialog box), which then wraps oddly on screen but stays inside it.
+
 ## 17a. Serial numbers and copy protection
 
 (Learned in GeoUltra, 2026-10-29; sources: pagetable.com 149 "Copy

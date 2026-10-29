@@ -51,6 +51,7 @@ import argparse
 import importlib.util
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -222,11 +223,16 @@ class System:
         # GEOS 2.0's emulated 1581 only works reliably in the VICE that
         # booted it: with the d81 set it always boots afresh.
         self.boot_always = name == "geos" and DISK_SET["drive"] != []
-        if rebuild or stale or self.boot_always or not os.path.exists(self.snapshot):
-            self.launch(boot=True)
-            self.make_snapshot()
-        else:
-            self.launch()
+        try:
+            if rebuild or stale or self.boot_always or not os.path.exists(self.snapshot):
+                self.launch(boot=True)
+                self.make_snapshot()
+            else:
+                self.launch()
+        except BaseException:
+            if hasattr(self, "proc"):           # no VICE left behind on the port
+                self.proc.kill()
+            raise
 
     def make_snapshot(self):
         """Let the system boot, then stop at the top of its MainLoop."""
@@ -432,6 +438,15 @@ class System:
         """Start VICE (GEOS 2.0 autostarts its disk; restoring the snapshot
         over a VICE that only attached the disk made the emulated 1581 hang
         on its first access)."""
+        probe = socket.socket()
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)   # (TIME_WAIT is fine)
+        try:                                    # a VICE left running from an
+            probe.bind(("127.0.0.1", PORTS[self.name]))   # earlier run would
+        except OSError:                         # answer in place of the new one
+            raise SystemExit("%s: port %d in use (an old VICE still running?)"
+                             % (self.name, PORTS[self.name]))
+        finally:
+            probe.close()
         args = [VICE, "-default", "+sound", "-sounddev", "dummy", "-warp", "-binarymonitor",
                 "-binarymonitoraddress", "127.0.0.1:%d" % PORTS[self.name]] + SYSTEMS[self.name]
         self.proc = subprocess.Popen(args, stdout=self.log, stderr=subprocess.STDOUT)

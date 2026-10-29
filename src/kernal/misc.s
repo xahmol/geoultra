@@ -30,7 +30,7 @@ saveY:  .res 1
 sign:   .res 1
 fixLen: .res 1
 
-        .segment "IOCODE"               ; RAM under I/O ($01 = $30)
+        .segment "KCODE"                ; (not under I/O: GEOS 2.0 allows it with I/O on)
 
 ; --- Arithmetic ---------------------------------------------------------
 

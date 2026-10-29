@@ -481,6 +481,8 @@ DbGrphStr:
 GF_ROW          = 14
 GF_ROWS         = 5
 GF_MAX          = 15
+        .segment "IOCODE"               ; (needs $01 = $30 like GEOS 2.0's,
+                                        ; which calls FindFTypes from there)
 DbGetFiles:
         lda #0
         jsr DlgRect

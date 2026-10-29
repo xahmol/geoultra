@@ -32,7 +32,7 @@ bitMask:
 decLo:  .byte <10000, <1000, <100, <10, <1
 decHi:  .byte >10000, >1000, >100, >10, >1
 
-        .segment "IOCODE"               ; RAM under I/O ($01 = $30)
+        .segment "CODE"                 ; (not under I/O: GEOS 2.0 allows it with I/O on)
 
 ; LoadCharSet: r0 = font header. Destroys A, Y.
 LoadCharSet:
@@ -510,7 +510,7 @@ styleAnd:
 styleOr:
         .byte SET_UNDERLINE, 0, SET_REVERSE, 0, SET_BOLD, SET_ITALIC, SET_OUTLINE
 
-        .segment "IOCODE"               ; RAM under I/O ($01 = $30)
+        .segment "CODE"                 ; (not under I/O: GEOS 2.0 allows it with I/O on)
 
 ; PutString: r0 = string, r11 = x, r1H = y. Returns r0 at the NULL.
 PutString:
@@ -545,6 +545,8 @@ i_PutString:
         lda r0L
         pha
         rts
+
+        .segment "BFCODE"       ; $BF40-$BFFF (GEOS 2.0's kernal starts there too)
 
 ; PutDecimal: A = format, r0 = number, r11 = x, r1H = y.
 PutDecimal:
@@ -619,6 +621,8 @@ PutDecimal:
 ; following the style codes in it from currentMode (bold is wider);
 ; position codes are skipped. For centring and laying out text by its
 ; measured width. Destroys A, X, Y.
+        .segment "CODE"
+
 StringWidth:
         lda currentMode
         sta swMode

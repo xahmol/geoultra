@@ -136,6 +136,8 @@ ColdStart:                      ; $5000: the boot ROM jumps here
 
         lda #ST_WR_FORE | ST_WR_BACK
         sta dispBufferOn
+        lda #RAM_ALL            ; the patterns are under I/O
+        sta CPU_PORT
         lda #2                  ; desktop background
         jsr SetPattern
         lda #0
@@ -149,6 +151,8 @@ ColdStart:                      ; $5000: the boot ROM jumps here
         lda #>(SC_PIX_WIDTH - 1)
         sta r4H
         jsr Rectangle
+        lda #RAM_IO
+        sta CPU_PORT
 
         lda #IRQ_LINE           ; raster IRQ once per frame
         sta vicRaster

@@ -49,7 +49,7 @@ sleepHi:        .res MAX_SLEEP
 sleepRtnLo:     .res MAX_SLEEP
 sleepRtnHi:     .res MAX_SLEEP
 
-        .segment "KCODE"
+        .segment "IOCODE"       ; (under I/O, as in GEOS 2.0)
 
 ; GetFile: r6 = name. Starts applications and auto-exec files (LdApplic),
 ; runs desk accessories (LdDeskAcc), loads anything else (LdFile).
@@ -123,6 +123,8 @@ LdApplic:
         sta r7H
         jmp StartAppl
 @end:   rts
+
+        .segment "KCODE"
 
 ; SaveArgs: keep r0L, r10L, r7; with bit 7 or 6 of r0L the data disk and
 ; file names (r2, r3) to dataDiskName and dataFileName.
@@ -216,6 +218,8 @@ RepairJumpTab:
         lda #1                  ; SYS_BANK
         sta r3L
         jmp SysRAMOp
+
+        .segment "IOCODE"       ; (under I/O, as in GEOS 2.0)
 
 ; LdDeskAcc: r9 = entry, r10L passed on. Saves what the accessory loads
 ; over and the kernal state to REU bank DA_BANK, runs it; returns when it
@@ -320,6 +324,8 @@ Swap:   lda r0L
         lda #DA_BANK
         sta r3L
         jmp SysRAMOp
+
+        .segment "KCODE"
 
 ; InitMachine: hardware and GEOS variables to the warm-start state (VIC,
 ; CIAs, keyboard, vectors, environment; mouse off until the application

@@ -154,17 +154,19 @@ LineOp:
         lda r3L
         and #$F8
         sta r7L
-        lda r3H
-        sta r7H
-        jsr AddR7
         lda r4L                 ; r8L = number of cards after the first
-        and #$F8
-        sec
+        and #$F8                ; (the low byte of the 16-bit card
+        sec                     ; difference, as GEOS 2.0)
         sbc r7L
         sta r8L
         lda r4H
-        sbc r7H
+        sbc r3H
         sta r8H
+        lda r3H                 ; the first card: any high byte other than
+        beq @page               ; 0 counts as one page, as on GEOS 2.0
+        lda #1                  ; (GEOS 128's DOUBLE_W/ADD1_W flags then
+@page:  sta r7H                 ; stay on the screen and out of the kernal)
+        jsr AddR7
         lsr r8H
         ror r8L
         lsr r8H
@@ -727,12 +729,16 @@ PointAddr:
         jsr GetScanLine
         pla
         sta dispBufferOn
+        lda r3H                 ; any high byte other than 0 counts as
+        beq @page               ; one page, as on GEOS 2.0 (see LineOp)
+        lda #1
+@page:  sta ptMask
         lda r3L
         and #$F8
         clc
         adc r5L
         sta r5L
-        lda r3H
+        lda ptMask
         adc r5H
         sta r5H
         lda r3L
@@ -740,7 +746,7 @@ PointAddr:
         clc
         adc r6L
         sta r6L
-        lda r3H
+        lda ptMask
         adc r6H
         sta r6H
         lda r3L

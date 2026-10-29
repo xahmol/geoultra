@@ -68,10 +68,11 @@ section 2). GeoUltra's own use of the system areas:
 | `$9A80-$9C7F` | `KEXT`: resident kernal code that no longer fits at `$C000-$FFFF` (the clock, the file list's click and arrow routines) |
 | `$9D80-$9FFF` | the **overlay slot**: one overlay module at a time (src/kernal/overlay.s) |
 | `$9C80-$9D7F` | `dir3Head` (third BAM block of a 1581 image, as GEOS 2.0) |
+| `$BF40-$BFFF` | `BFCODE` (`build/kbf64.bin`): `PutDecimal`; GEOS 2.0's kernal starts here too, so applications leave it alone |
 | `$C000-$C0FF` | information block (`BootGEOS`, `ResetHandle`, `bootName`, `version` = `$20`, `c128Flag`, `dateCopy` at `$C018`, the reboot code, ToBASIC's buffers, `GU` signature, extension table pointer) |
 | `$C100-$C2D6` | GEOS 2.0 jump table, 157 entries |
 | `$C2D7-$CFFF` | kernal tables (RODATA) and variables (DATA) |
-| `$D000-$DFFF` | RAM under I/O: the system font and other data only read with `$01 = $30` |
+| `$D000-$DFFF` | RAM under I/O, as GEOS 2.0 uses it: the system font, the fill patterns (GEOS 2.0: `$D010`) and only those routines that GEOS 2.0 also keeps there (file, load and VLIR routines, `SetDevice`, `ReadByte`, the file list of `DBGETFILES`); see "Code under I/O" |
 | `$E000-$FE7F` | kernal code |
 | `$FE80-$FFF9` | input driver (`MOUSE_BASE`) |
 | `$FFFA-$FFFF` | NMI, reset and IRQ vectors in RAM |
@@ -79,6 +80,22 @@ section 2). GeoUltra's own use of the system areas:
 VIC-II: bank 2 (`$8000-$BFFF`), colour matrix `$8C00`, bitmap `$A000`
 (`$D018 = $38`), sprite pictures from `$8A00` (sprite pointer `$28` for
 sprite 0, the mouse pointer).
+
+## Code under I/O
+
+Applications may call any routine that GEOS 2.0 keeps outside `$D000`-
+`$DFFF` with I/O banked in (GeoBasic calls `ClearRam` with `$01 = $35`).
+So only the jump table entries whose code GEOS 2.0 has under I/O may be
+there on GeoUltra, with code that never writes `$01` itself; the entries
+are compared with a running GEOS 2.0 (its jump table targets): `GetRealSize`,
+`i_FillRam`, `SaveFile`, `SetGDirEntry`, `BldGDirEntry`, `FollowChain`,
+`GetFile`, `FindFile`, `LdFile`, `LdDeskAcc`, `LdApplic`, `FreeFile`,
+`GetFHdrInfo`, `DeleteFile`, `FindFTypes`, `RstrAppl`, `FastDelFile`,
+`RenameFile`, the VLIR routines, `SetDevice`, `ReadByte`. Data under I/O
+is read wrongly with I/O in, as on GEOS 2.0 (font, patterns), but does
+not crash. Text, arithmetic, string, memory and graphics routines are in
+`KCODE`/`CODE`/`BFCODE`; the `GraphicsString` interpreter is overlay
+module 5 (`GraphicsString` and `i_GraphicsString` stay resident).
 
 ## System font
 

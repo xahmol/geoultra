@@ -4,7 +4,7 @@
         .export patterns, pointerPic
         .import IrqEntry, NmiEntry, ColdStart
 
-        .segment "RODATA"
+        .segment "IODATA"       ; under I/O, as GEOS 2.0's (at $D010)
 
 patterns:
         ; GeoUltra's own designs; at each number the same kind of pattern
@@ -42,6 +42,8 @@ patterns:
         .byte $F0, $F0, $F0, $F0, $0F, $0F, $0F, $0F  ; 29 big checks
         .byte $FF, $AA, $FF, $AA, $FF, $AA, $FF, $AA  ; 30 bars
         .byte $18, $3C, $7E, $FF, $7E, $3C, $18, $00  ; 31 diamonds
+
+        .segment "RODATA"
 
 ; Mouse pointer: an arrow, hot spot top left (sprite, 24 x 21).
 pointerPic:

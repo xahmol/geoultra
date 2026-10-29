@@ -124,3 +124,21 @@ CASES += [
          mem={CLIP_DATA: clip_stream(False), CLIP_IN: CLIP_IN_CODE, CLIP_SYNC: CLIP_SYNC_CODE},
          compare=["fore", "back"]),
 ]
+
+# x words with GEOS 128's flags (DOUBLE_W $8000, ADD1_W $2000), as some
+# applications pass them on GEOS 64 too (geoProgPatch's dialog box): GEOS
+# 2.0 counts any high byte other than 0 as one page.
+CASES += [
+    dict(name="Rectangle DOUBLE_W x", routine="Rectangle", pattern=CHECKER,
+         r={"r2L": 0x10, "r2H": 0x9F, "r3": 0x801B, "r4": 0x8124}, compare=SCREENS),
+    dict(name="FrameRectangle DOUBLE_W x", routine="FrameRectangle", a=0xFF,
+         r={"r2L": 0x10, "r2H": 0x9F, "r3": 0x801B, "r4": 0x8124}, compare=SCREENS),
+    dict(name="Rectangle ADD1_W x", routine="Rectangle", pattern=CHECKER,
+         r={"r2L": 0x20, "r2H": 0x40, "r3": 0x2010, "r4": 0x2050}, compare=SCREENS),
+    dict(name="VerticalLine DOUBLE_W x", routine="VerticalLine", a=0xFF,
+         r={"r3L": 20, "r3H": 90, "r4": 0x8124}, compare=SCREENS),
+    dict(name="InvertRectangle DOUBLE_W x", routine="InvertRectangle", fillfore=0x5A, fillback=0x81,
+         r={"r2L": 30, "r2H": 60, "r3": 0x8020, "r4": 0x8090}, compare=SCREENS),
+    dict(name="DrawPoint DOUBLE_W x", routine="DrawPoint", flags="C",
+         r={"r3": 0x8105, "r11L": 50}, compare=SCREENS),
+]
