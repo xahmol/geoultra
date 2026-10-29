@@ -259,7 +259,7 @@ drive 9). Only starting is tested here, not working with the program.
 | FontViewer  V1.0 | APP | GeoPrint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | GEOS>PM/PS  V1.0 | DA | GeoPrint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | geoProgPatchV2.0 | APP | GeoProgrammer Patch 2.1.D64 | dialog box with GEOS 128 position flags (`DOUBLE_W`) was drawn into the kernal; fixed to draw as GEOS 2.0 does (the box partly off to the side, as there) |
-| geoPublish  V1.0 | APP | GeoPublish (Unkeyed).D64 | garbled screen (mosaic). Under investigation: geoPublish patches the `OpenRecordFile` vector (+14, past `FindFile`) and fills `dirEntryBuf` from its own table at `$750F` (in the back buffer area), which holds 0/0 on GeoUltra; the outcome depends on what the back buffer held before (zeros: starts). Something GEOS 2.0 does fills that table |
+| geoPublish  V1.0 | APP | GeoPublish (Unkeyed).D64 | garbled screen (mosaic) - **the same on genuine GEOS 2.0** on the U64 (2026-10-29, this image as drive B, started with `GetFile` from the deskTop's MainLoop), so a defect of this unkeyed image, not of GeoUltra. Details: geoPublish patches the `OpenRecordFile` vector (+14, past `FindFile`) and fills `dirEntryBuf` from its own table at `$750F`, which nothing initialises; with zeros there it happens to start |
 | GEOSPELL    V1.1 | APP | GeoSpell (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | geoWrite    V2.1 | APP | GeoWrite (Unkeyed).D64 | starts (dialog, menu or window as expected) |
 | Linker .obj V1.0 | APP | GeoWrite (Unkeyed).D64 | starts (dialog, menu or window as expected) |
