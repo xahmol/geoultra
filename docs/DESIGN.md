@@ -223,6 +223,67 @@ Still to check: on the C128, REU DMA from the external function ROM
 (DMA reaches bank 0 RAM only, UCILIB manual) and the maximum C128
 cartridge size on a U2+, plus the purpose of `$DF7E`.
 
+## Applications tried (2026-10-29, VICE)
+
+Every C64 application and desk accessory of the user's "GEOS64Unkeyed"
+collection (unkeyed or de-protected versions, from the USB stick),
+started with `GetFile` from drive B on GeoUltra (`apprun.py`), screen
+after 10 s; failures compared with GEOS 2.0 in VICE (application disk in
+drive 9). Only starting is tested here, not working with the program.
+
+| Program (permanent name) | Kind | Disk | Result |
+| --- | --- | --- | --- |
+| grabber basic | APP | GeoBasic (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| basic       V1.0 | APP | GeoBasic (Unkeyed).D64 | stops at once: calls `ClearRam` with I/O on; GeoUltra has that code under I/O, GEOS 2.0 not (being fixed) |
+| geoClock-40 V1.1 | DA | GeoBasic (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOMERGE    V1.0 | APP | GeoCalc (Unkeyed).D64 | GetFile error `$02`, the same on GEOS 2.0 |
+| geoText     V1.0 | APP | GeoCalc (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Grabber     V2.0 | APP | GeoCalc (Unkeyed).D64 | refuses: "System unter Verwendung der ... GEOS-Diskette rebooten" (German version, keyed, not unkeyed) |
+| TEXT GRABBER 2.0 | APP | GeoCalc (Unkeyed).D64 | blank screen, stops in `FillRam`/`InitRam` code under I/O (same cause as GeoBasic, being fixed) |
+| GEOLASER    V2.0 | APP | GeoCalc (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| geoWrite    V2.0 | APP | GeoCalc (Unkeyed).D64 | refuses: keyed to another serial (runs with `protection=bypass`) |
+| WRITE 2 KEY V1.0 | DA | GeoCalc (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOCHART    V1.0 | APP | GeoChart (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Text Mgr    V2.1 | DA | GeoChart (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Photo Mgr   V2.1 | DA | GeoChart (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| geoDex      V1.0 | DA | GeoDex (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOMERGE    V2.0 | APP | GeoFile (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOFONT     V2.0 | APP | GeoFont (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOLABEL    V1.2 | APP | GeoLabel (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| geoPaint    V2.0 | APP | GeoPaint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Geo_PxlPzzlrV1.0 | APP | GeoPaint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GeoReplicatrV2.0 | APP | GeoPaint (Unkeyed).D64 | "Cannot find printer driver": none on the disk (as expected) |
+| GP_Viewer   V1.0 | DA | GeoPaint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOPRINT    V1.2 | APP | GeoPrint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| geoSidPlayer  V1 | APP | GeoPrint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| FontViewer  V1.0 | APP | GeoPrint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOS>PM/PS  V1.0 | DA | GeoPrint (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| geoProgPatchV2.0 | APP | GeoProgrammer Patch 2.1.D64 | OK/Cancel icons without the dialog box GEOS 2.0 draws (under investigation) |
+| geoPublish  V1.0 | APP | GeoPublish (Unkeyed).D64 | garbled screen (under investigation; the GEOS 2.0 comparison run failed on drive 9) |
+| GEOSPELL    V1.1 | APP | GeoSpell (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| geoWrite    V2.1 | APP | GeoWrite (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Linker .obj V1.0 | APP | GeoWrite (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Converter   V7.0 | APP | GeoWrite (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Calculator  V1.0 | DA | GEOS Applications (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| note pad    V2.0 | DA | GEOS Applications (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Word P W P  V1.0 | APP | GEOS Better Working Publisher Side 1 (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Photo Mgr   V1.3 | DA | GEOS Better Working Publisher Side 1 (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Calendar I  V1.2 | DA | GEOS Desk Pack Plus (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Blackjack   V1.2 | DA | GEOS Desk Pack Plus (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Icon Editor V2.0 | APP | GEOS Desk Pack Plus (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| geoDex      V2.0 | DA | GEOS Desk Pack Plus (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Photo Mgr   V2.0 | DA | GEOS Desk Pack Plus (Unkeyed).D64 | "This program can only run on a C128" (correct) |
+| TEXT GRABBER 2.3 | APP | Write Utilities (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOLASER    V2.1 | APP | Write Utilities (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOMERGE    V2.1 | APP | Write Utilities (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+| Prfrnce Mgr V1.0 | DA | GEOS 64 v2.0 (UnKeyed).D64 | starts (dialog, menu or window as expected) |
+| Pad Color Mgr  V | DA | GEOS 64 v2.0 (UnKeyed).D64 | starts (dialog, menu or window as expected) |
+| Alarm clock V1.0 | DA | GEOS 64 v2.0 (UnKeyed).D64 | starts (dialog, menu or window as expected) |
+| Paint Drvr  V1.0 | APP | GEOS 64 v2.0 (UnKeyed).D64 | starts (dialog, menu or window as expected) |
+| CONVERT     V2.5 | APP | GEOS 64 v2.0 (UnKeyed).D64 | starts (dialog, menu or window as expected) |
+| GEOSBUSTERS V4.0 | APP | GEOS Busters 4.0.D64 | asks for its own disk (correct) |
+| geoMusic    V1.0 | APP | GeoMusic (Unkeyed).D64 | starts (dialog, menu or window as expected) |
+
 ## Resident ROM
 
 Keeping part of the cartridge mapped as resident ROM does not fit the
