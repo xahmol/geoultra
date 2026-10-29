@@ -43,3 +43,23 @@ decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 
 GNU GPL v3. GEOS is a trademark of its owners; GeoUltra contains no
 Berkeley Softworks code.
+
+## Use of AI
+
+GeoUltra is developed with AI. Xander Mol takes the decisions (what
+GeoUltra is, its design choices, priorities), tests on real hardware and
+reviews; most of the code, tools, tests and documentation are written by
+Claude (Anthropic) through Claude Code, at his direction. Every commit
+written with AI says so in a `Co-Authored-By: Claude` line.
+
+How the AI's work is checked: every kernal routine is compared with
+GEOS 2.0's behaviour in VICE by the conformance harness
+(`make conformance`, `make conformance81`), and hardware facts are
+measured on an Ultimate 64 (docs/DESIGN.md, "Verified on hardware").
+Tests reduce the risk of mistakes; they do not exclude them.
+
+Clean-room: the AI reads GEOS reference sources (the reassembled GEOS 2.0
+kernal, MegaPatch3 and GDOS64 sources) for behaviour questions only and
+does not copy their code, tables or structure; code whose behaviour was
+taken from such a source names it in a comment.
+

@@ -25,6 +25,9 @@ analysis; its route and phase recommendations are superseded.
   ecosystem has many versions, add-ons and developments, some lost in time.
   Likewise no promise of hardware compatibility with all peripherals:
   best effort, list what was tested.
+- Full transparency about the use of AI: README "Use of AI", the
+  `Co-Authored-By` line in every commit, and a mention in release notes,
+  Facebook posts and blog texts.
 - Kernal, drivers and the new desktop in assembler (ca65/ld65); tools may
   be C (Oscar64 with the geos-oscar64 library, see below).
 - Free-standing clean-room kernal from the start (no patch release); the
