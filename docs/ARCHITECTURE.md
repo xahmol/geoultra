@@ -260,11 +260,20 @@ applications call `$9030-$904D` directly.
   `PutDirHead` are dropped as GEOS 2.0 drops a changed `curDirHead`; one
   copy, for the drive in `natLoaded`. The 18-page directory limit of
   `GetFreeDirBlk` stays (GEOS 2.0's; MegaPatch 3 allows more on native).
-  `make test-native` (tests/native/native.py): save, read back, delete,
-  directory growth and the working copy, on a copy of a DNP.
-- Not yet: allocation on 1571 images (they answer `WR_PR_ON`), native
-  subdirectories and 1581 partitions (DESIGN.md, "Directories"), 40-track
-  D64s.
+  `make test-native` (tests/drives/write.py native): save, read back,
+  delete, directory growth and the working copy, on a copy of a DNP.
+- 1571 (`.d71`): as GEOS 2.0's 1571 driver (behaviour reference
+  mist64/geos drv/drv1571.s): tracks 1-35 as on a 1541, 36-70 with the
+  sector bits in `dir2Head` (block 53/0, 3 bytes a track) and the free
+  counts in `curDirHead` from `$DD`; `SetNextFree` without the 1541's
+  correction from track 25, tracks 18 and 53 only as the start, the sides
+  alternating on a double-sided disk (1, 36, 2, 37, ...). `BamType` hands
+  1571 drives to overlay module 7 like native ones to module 3. `make
+  test-d71` (tests/drives/write.py d71) formats an empty D71 and checks
+  saving, the in-memory BAM, the directory and SetNextFree sequences
+  against a model of GEOS 2.0's rules.
+- Not yet: native subdirectories and 1581 partitions (DESIGN.md,
+  "Directories"), 40-track D64s.
 
 ## Files
 

@@ -200,6 +200,10 @@ UCI).
   and checks that BAM changes without `PutDirHead` are dropped; geoWrite
   2.0 from the user's ramapps.DNP creates a document ("GU native doc",
   VLIR, type 7) and takes typed text.
+- 2026-10-29: writing to a 1571 drive (D71): `make test-d71` on an empty
+  D71 formatted by the test: save, read back, delete, BAM changes dropped
+  without `PutDirHead`, directory growth, and `SetNextFree` sequences
+  across both sides matching a model of GEOS 2.0's 1571 driver.
 
 ## Verified on hardware
 

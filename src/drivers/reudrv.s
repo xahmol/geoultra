@@ -20,7 +20,7 @@
 
         .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending
         .export drvTracks, drvFlags
-        .import WriteBackNow, FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl
+        .import WriteBackNow, FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, Ovl1571
         .import ProtExecute, ProtStatus
         .import natLoaded
         .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
@@ -899,11 +899,11 @@ snfBam: bne @s1541
 @full:  ldx #INSUFF_SPACE
         rts
 
-; BamType: Z set for a 1581 image, clear for a 1541. Native: the calling
-; routine's work is done by overlay module 3 (NativeOp, which knows the
-; routine by the return address taken here) and the result goes to that
-; routine's caller. 1571: the routine returns WR_PR_ON (no allocation
-; yet, the drive acts write protected). Destroys A, Y.
+; BamType: Z set for a 1581 image, clear for a 1541. Native and 1571:
+; the calling routine's work is done by an overlay module (3: NativeOp,
+; 7: Op1571; both know the routine by the return address taken here) and
+; the result goes to that routine's caller. Other types: the routine
+; returns WR_PR_ON. Destroys A, X, Y.
 BamType:
         ldy curDrive
         lda driveType-8,y
@@ -914,16 +914,18 @@ BamType:
         bne @none
         lda #1                  ; Z clear
 @end:   rts
-@none:  cmp #DRV_NATIVE
-        bne @wp
+@none:  tax
         pla
         sta nativeFrom
         pla
         sta nativeFrom+1
+        cpx #DRV_NATIVE
+        bne @not
         jmp NativeOvl
-@wp:    pla
-        pla
-        ldx #WR_PR_ON
+@not:   cpx #DRV_1571
+        bne @wp
+        jmp Ovl1571
+@wp:    ldx #WR_PR_ON
         lda #0
         rts
 
@@ -1789,3 +1791,212 @@ FreeNative:
 @end:   ldx #0
         rts
 
+        .segment "OVL7"                 ; overlay module 7: 1571 allocation
+
+        jmp Op1571              ; entry 0
+
+; Op1571: the BAM work of the driver routine that called BamType
+; (nativeFrom) on a 1571 image; returns to that routine's caller. Rules
+; as GEOS 2.0's 1571 driver (mist64/geos drv/drv1571.s, behaviour
+; reference only): tracks 1-35 as on a 1541 (curDirHead); 36-70: the
+; sector bits in dir2Head (block 53/0, 3 bytes a track), the free counts
+; in curDirHead from $DD. SetNextFree: interleave on (no correction from
+; track 25), tracks 18 and 53 only when the search starts there; on a
+; double-sided disk the sides alternate (1, 36, 2, 37, ...).
+Op1571:
+        ldx #0
+@find:  lda nativeFrom
+        cmp d71FromLo,x
+        bne @next
+        lda nativeFrom+1
+        cmp d71FromHi,x
+        beq @found
+@next:  inx
+        cpx #6
+        bne @find
+        ldx #WR_PR_ON           ; (not reached)
+        rts
+@found: lda d71Lo,x
+        sta @jmp+1
+        lda d71Hi,x
+        sta @jmp+2
+@jmp:   jmp $FFFF
+
+d71FromLo:                      ; (module 3's natLo/natHi are not loaded)
+        .byte <(fbbBam-1), <(abBam-1), <(fbBam-1), <(snfBam-1), <(baBam-1), <(dtfBam-1)
+d71FromHi:
+        .byte >(fbbBam-1), >(abBam-1), >(fbBam-1), >(snfBam-1), >(baBam-1), >(dtfBam-1)
+d71Lo:  .byte <D71Find, <D71Alloc, <D71Free, <D71Next, <D71BlkAlloc, <D71DirFree
+d71Hi:  .byte >D71Find, >D71Alloc, >D71Free, >D71Next, >D71BlkAlloc, >D71DirFree
+
+; D71Find (FindBAMBit): r6 = block. A = the BAM byte AND r8H (Z set:
+; used), r8H = the sector's bit, X = the byte's offset (curDirHead for
+; tracks 1-35, dir2Head above), r7H = the track's free count in curDirHead.
+D71Find:
+        lda r6H
+        and #7
+        tax
+        lda bamBit,x
+        sta r8H
+        lda r6L
+        cmp #36
+        bcc @side1
+        sbc #36                 ; (carry set)
+        sta r7H
+        lda r6H
+        lsr
+        lsr
+        lsr
+        clc
+        adc r7H
+        asl r7H                 ; X = 3 * (track - 36) + sector / 8
+        clc
+        adc r7H
+        tax
+        lda r6L
+        clc
+        adc #$DD - 36
+        sta r7H
+        lda dir2Head,x
+        and r8H
+        rts
+@side1: asl
+        asl
+        sta r7H
+        lda r6H
+        lsr
+        lsr
+        lsr
+        sec
+        adc r7H
+        tax
+        lda curDirHead,x
+        and r8H
+        rts
+
+; D71Alloc / D71Free (AllocateBlock / FreeBlock after FindBAMBit): flip the
+; bit, count down / up. X = 0.
+D71Alloc:
+        lda #$FF
+        .byte $2C
+D71Free:
+        lda #1
+        sta r7L
+        jsr D71Find
+        lda r6L
+        cmp #36
+        lda r8H
+        bcs @side2
+        eor curDirHead,x
+        sta curDirHead,x
+        bcc @count
+@side2: eor dir2Head,x
+        sta dir2Head,x
+@count: ldx r7H
+        lda curDirHead,x
+        clc
+        adc r7L
+        sta curDirHead,x
+        ldx #0
+        rts
+
+; D71Next (SetNextFree): the next free block after r3, allocated. r3 =
+; the block, X = 0 or INSUFF_SPACE. Destroys A, Y, r6, r7, r8H.
+D71Next:
+        lda r3H
+        clc
+        adc interleave
+        sta r6H
+        lda r3L
+        sta r6L
+        cmp #DIR_TRACK
+        beq @count
+        cmp #53
+        beq @count
+@track: lda r6L
+        cmp #DIR_TRACK
+        beq @advance
+        cmp #53
+        beq @advance
+@count: cmp #36                 ; free blocks on the track
+        bcc @c1
+        adc #$DD - 36 - 1       ; (carry set)
+        tax
+        bne @c2
+@c1:    asl
+        asl
+        tax
+@c2:    lda curDirHead,x
+        beq @advance
+        lda r6L
+        cmp #36
+        bcc @zone
+        sbc #35
+@zone:  tax
+        jsr Sectors
+        sta r7L
+        sta count
+@sector:
+        lda r6H                 ; r6H modulo the sectors
+@mod:   cmp r7L
+        bcc @in
+        sbc r7L
+        bcs @mod
+@in:    sta r6H
+        jsr D71Find
+        beq @used
+        lda r7L
+        pha
+        jsr D71Alloc
+        pla
+        sta r7L
+        lda r6L
+        sta r3L
+        lda r6H
+        sta r3H
+        ldx #0
+        rts
+@used:  inc r6H
+        dec count
+        bne @sector
+@advance:
+        bit curDirHead+3        ; double-sided: the other side
+        bpl @single
+        lda r6L
+        cmp #36
+        bcs @back
+        adc #35
+        sta r6L
+        bne @calc
+@back:  sbc #34
+        sta r6L
+        bne @check
+@single:
+        inc r6L
+        lda r6L
+@check: cmp #36
+        bcs @full
+@calc:  lda r6L                 ; r6H = 2 * (track - start) + 4 + interleave
+        sec
+        sbc r3L
+        asl
+        adc #4
+        adc interleave
+        sta r6H
+        jmp @track
+@full:  ldx #INSUFF_SPACE
+        rts
+
+; D71BlkAlloc (BlkAlloc): from block 1/0, as on a 1541.
+D71BlkAlloc:
+        lda #0
+        sta saveFlag
+        sta r3H
+        lda #1
+        sta r3L
+        jmp NxtBlkAlloc
+
+; D71DirFree (DirTrackFree): the free blocks on track 18.
+D71DirFree:
+        lda curDirHead + 4 * DIR_TRACK
+        rts
