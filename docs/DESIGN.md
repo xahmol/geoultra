@@ -324,8 +324,6 @@ GEOS memory map, so the cartridge stays a boot and overlay store:
    session should come back; once more with C= held: a fresh start.
 3. Look at `/USB0/GEOULTRA/test` (test copies, some changed by tests) and
    `/USB0/GEOULTRA/BACKUP`: keep or delete.
-4. geoDex 1.0 (Unkeyed collection): its input fields are white on
-   GeoUltra, checked before; compare on GEOS 2.0 if convenient.
 
 ## Still open
 
