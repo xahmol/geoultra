@@ -316,6 +316,13 @@ GEOS memory map, so the cartridge stays a boot and overlay store:
 
 ## Still open
 
+- Native folders: compare GeoUltra's folder headers and entries with a
+  DNP made by DirMaster (installed on the user's PC, no command line; VICE
+  3.10's c1541 creates neither DNP nor CMD FD images). Steps for the user:
+  File > New > DNP; folder `TEST`, inside it `INNER`; a small file into
+  `TEST`; save as `Downloads/folders.dnp`. In particular byte `$26` of a
+  header (the entry's offset in the parent block).
+
 - Conformance: in the menu interaction tests GEOS 2.0 shows "System error"
   after a click on the third item of a three-item vertical sub-menu
   (tests/conformance/menu.py, `action`); GEOS 2.0 bug or test artefact
