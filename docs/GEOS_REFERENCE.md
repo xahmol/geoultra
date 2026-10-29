@@ -713,6 +713,32 @@ routines between the two: they expect their own memory configuration.
 
 ---
 
+## 17a. Serial numbers and copy protection
+
+(Learned in GeoUltra, 2026-10-29; sources: pagetable.com 149 "Copy
+Protection Traps in GEOS for C64", 240 "Inside geoWrite 5: Copy
+Protection", and the user's disks.)
+
+- At its first boot GEOS picks a random non-zero 16-bit serial and stores it
+  in its kernal (also on the backup boot disk). `GetSerialNumber` ($C196)
+  returns it in r0. On the user's GEOS 2.0 D64 and D81 it sits in the file
+  `GEOBOOT` (permanent name `GeoBoot     V1.0`), file block 82, offset 183.
+- Applications key themselves on first run: geoWrite 2.1 checks the
+  original disk with drive code (gap signature `55 55 55 67` over 16
+  sectors), then stores the serial XOR `$DE` in its record 1 (encrypted
+  with XOR `$DE`) and a copy rotated left one bit in the disk header at
+  offset `$BE`. Later runs compare it (via `CallRoutine`) and on mismatch
+  show "Please reboot your system using the same GEOS disk" and exit.
+  Unkeyed copies (stored serial 0) install again.
+- Sabotage on mismatch: the deskTop compares the high byte and increments
+  the `LdDeskAcc` vector ($C218); other applications break the system in
+  other ways (geoWrite 2.0 seen to end in `JMP (intTopVector)` = $0000).
+- GEOS's own kernal guards `GetSerialNumber`: a patched vector corrupts the
+  `GraphicsString` vector, a patched routine makes FindFTypes increment
+  `LdDeskAcc`. A replacement kernal has none of this.
+- Drive-code checks cannot work on RAM/REU drives or disk images served by
+  other means: unkeyed applications cannot install there.
+
 ## 18. Tools
 
 - **VICE c1541**: `-geoswrite file.cvt` writes a CVT as a GEOS file into a

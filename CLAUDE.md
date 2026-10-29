@@ -106,6 +106,15 @@ the REU RAM-drive layer and the kernal can be tested in VICE (with a VICE REU).
 - mist64/geos (kernal, drivers, `inc/*.inc`), MegaPatch3/GDOS64 sources
   (https://bitbucket.org/mkgit64/area6510; geoWrite files on D81, extract
   with `~/.claude/tools/geos/geosextract.py`).
+- pagetable.com (Michael Steil), via `https://www.pagetable.com/search.json`
+  (all article texts): GEOS copy protection traps (149), Inside geoWrite
+  1-9 (overlays, screen recovery, fonts, zero page, copy protection,
+  localization, file format, copy & paste, keyboard; 240 is part 5), the
+  reverse-engineered GEOS 2.0 and geoWrite 2.1 sources (mist64 GitHub),
+  why GEOS boot disks break (parts 1-2), the GEOS 2.0 master images,
+  TopDesk and its source, the Klaus Finke collection, geowrite2rtf,
+  Final Cartridge III with GEOS, the Ultimate C64 KERNAL API, Commodore
+  peripheral bus series.
 - UCI: `~/git/ultimate-uci-oscar64/docs/UCILIB_MANUAL.md` (firmware 3.15
   commands incl. `DOS_CMD_LOAD_REU`/`SAVE_REU` with address and length, GEOS
   RAM disk commands, unlock sequence for a disabled Command Interface).
