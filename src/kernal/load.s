@@ -22,7 +22,7 @@
         .import FindFile, ReadFile, GetFHdrInfo, CopyFString, CallRoutine
         .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
-        .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode
+        .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
 
 DA_BANK         = 18
 MAX_SLEEP       = 20
@@ -357,108 +357,6 @@ InitEnv:
         bpl @spr
         rts
 
-; FirstInit: InitMachine plus the cold-start colours. Destroys A, X, Y,
-; r0-r2. (The 1351 driver does not use the mouse speed variables.)
-FirstInit:
-        sei
-        cld
-        jsr InitMachine
-        lda #<EnterDeskTop
-        sta EnterDeskTopVec+1
-        lda #>EnterDeskTop
-        sta EnterDeskTopVec+2
-        lda #$BF                ; dark grey on light grey
-        sta screencolors
-        ldx #0
-@col:   sta COLOR_MATRIX,x
-        sta COLOR_MATRIX+$100,x
-        sta COLOR_MATRIX+$200,x
-        sta COLOR_MATRIX+$2E8,x
-        inx
-        bne @col
-        jsr ExtraColours
-        lda #RAM_IO
-        sta CPU_PORT
-        lda #$06                ; pointer and prompt blue, border black
-        sta vicSpr0Color
-        sta vicSpr0Color+1
-        lda #0
-        sta vicBorder
-        lda #RAM_ALL
-        sta CPU_PORT
-        rts
-
-EnterDeskTopVec = $C22C         ; the jump table entry (jmp EnterDeskTop)
-
-; EnterDeskTop: warm start and load the desktop ("DESK TOP", version 1.5
-; or higher) from the current drive, else from the others; asks for it
-; while none is found. Does not return.
-EnterDeskTop:
-        sei
-        cld
-        ldx #$FF
-        txs
-        jsr InitMachine
-        jsr Background
-        lda curDrive
-        sta dtDrive
-@try:   lda dtDrive             ; the current drive first, then 8-11
-        jsr TryDesk
-        ldy #8
-@other: tya
-        pha
-        cmp dtDrive
-        beq @next
-        ldx driveType-8,y
-        beq @next
-        jsr TryDesk
-@next:  pla
-        tay
-        iny
-        cpy #12
-        bne @other
-        lda #<deskDlg
-        sta r0L
-        lda #>deskDlg
-        sta r0H
-        jsr DoDlgBox
-        jmp @try
-
-; TryDesk: A = drive. Starts the desktop on it if there is one; returns
-; otherwise.
-TryDesk:
-        jsr SetDevice
-        jsr OpenDisk
-        txa
-        bne @end
-        sta r0L
-        lda #<deskName
-        sta r6L
-        lda #>deskName
-        sta r6H
-        jsr FindFile
-        txa
-        bne @end
-        lda #<dirEntryBuf
-        sta r9L
-        lda #>dirEntryBuf
-        sta r9H
-        jsr GetFHdrInfo
-        txa
-        bne @end
-        lda fileHeader + O_GHFNAME + 13 ; "V1.5" or higher
-        cmp #'1'
-        bcc @end
-        bne @load
-        lda fileHeader + O_GHFNAME + 15
-        cmp #'5'
-        bcc @end
-@load:  lda #0
-        sta r0L
-        jsr SaveArgs
-        jmp LdApplic
-@end:   rts
-
         .segment "CODE"
 
 ; ExtraColours: the colour bytes after the colour matrix ($8FE8-$8FF0)
@@ -474,80 +372,7 @@ ExtraColours:
         sta COLOR_MATRIX + $3F0
         rts
 
-; Background: the screen in the desktop pattern.
-Background:
-        lda #2
-        jsr SetPattern
-        lda #0
-        sta r2L
-        sta r3L
-        sta r3H
-        lda #SC_PIX_HEIGHT - 1
-        sta r2H
-        lda #<(SC_PIX_WIDTH - 1)
-        sta r4L
-        lda #>(SC_PIX_WIDTH - 1)
-        sta r4H
-        jmp Rectangle
-
-deskName:
-        .byte "DESK TOP", 0
-deskDlg:
-        .byte DEF_DB_POS | 1
-        .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
-        .word deskText1
-        .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
-        .word deskText2
-        .byte OK, DBI_X_2, DBI_Y_2
-        .byte 0
-deskText1:
-        .byte BOLDON, "Please mount a disk", 0
-deskText2:
-        .byte "with a desktop", 0
-
         .segment "CODE"
-
-; Panic (BRKVector): the BRK address + 2 on the stack. Shows "System
-; error near $xxxx"; OK goes to the desktop.
-Panic:  pla
-        sec
-        sbc #2
-        sta r0L
-        pla
-        sbc #0
-        ldx #0
-        jsr Hex
-        lda r0L
-        jsr Hex
-        lda #<panicDlg
-        sta r0L
-        lda #>panicDlg
-        sta r0H
-        jsr DoDlgBox
-        jmp EnterDeskTop
-
-Hex:    pha
-        lsr
-        lsr
-        lsr
-        lsr
-        jsr @digit
-        pla
-        and #$0F
-@digit: cmp #10
-        bcc @num
-        adc #'A' - '0' - 10 - 1
-@num:   adc #'0'
-        sta panicAddr,x
-        inx
-        rts
-
-panicDlg:
-        .byte DEF_DB_POS | 1
-        .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
-        .word panicText
-        .byte OK, DBI_X_2, DBI_Y_2
-        .byte 0
 
         .segment "DATA"
 
@@ -637,9 +462,214 @@ WakeSleepers:
 @call:  jmp (r0)
 @end:   rts
 
+; --- Overlay module 0 stubs (src/kernal/overlay.s) -----------------------
+
+        .segment "CODE"
+
+EnterDeskTop:
+        jsr OvlCall
+        .byte 0, 0
+FirstInit:
+        jsr OvlCall
+        .byte 0, 3
+CRC:    jsr OvlCall
+        .byte 0, 9
+
+; Panic (BRKVector): the BRK address + 2 on the stack (taken here, before
+; the overlay call adds its own frame); the message is in the overlay.
+Panic:  pla
+        sec
+        sbc #2
+        sta r0L
+        pla
+        sbc #0
+        sta r0H
+        jsr OvlCall
+        .byte 0, 6
+
+; --- Overlay module 0: run in the slot at $9D80 ---------------------------
+
+        .segment "OVL0"
+
+        jmp OvEnterDeskTop      ; entry 0
+        jmp OvFirstInit         ; entry 3
+        jmp PanicMsg            ; entry 6
+        jmp OvCRC               ; entry 9
+
+; FirstInit: InitMachine plus the cold-start colours. Destroys A, X, Y,
+; r0-r2. (The 1351 driver does not use the mouse speed variables.)
+OvFirstInit:
+        sei
+        cld
+        jsr InitMachine
+        lda #<EnterDeskTop
+        sta EnterDeskTopVec+1
+        lda #>EnterDeskTop
+        sta EnterDeskTopVec+2
+        lda #$BF                ; dark grey on light grey
+        sta screencolors
+        ldx #0
+@col:   sta COLOR_MATRIX,x
+        sta COLOR_MATRIX+$100,x
+        sta COLOR_MATRIX+$200,x
+        sta COLOR_MATRIX+$2E8,x
+        inx
+        bne @col
+        jsr ExtraColours
+        lda #RAM_IO
+        sta CPU_PORT
+        lda #$06                ; pointer and prompt blue, border black
+        sta vicSpr0Color
+        sta vicSpr0Color+1
+        lda #0
+        sta vicBorder
+        lda #RAM_ALL
+        sta CPU_PORT
+        rts
+
+EnterDeskTopVec = $C22C         ; the jump table entry (jmp EnterDeskTop)
+
+; EnterDeskTop: warm start and load the desktop ("DESK TOP", version 1.5
+; or higher) from the current drive, else from the others; asks for it
+; while none is found. Does not return.
+OvEnterDeskTop:
+        sei
+        cld
+        ldx #$FF
+        txs
+        jsr InitMachine
+        jsr Background
+        lda curDrive
+        sta dtDrive
+@try:   lda dtDrive             ; the current drive first, then 8-11
+        jsr TryDesk
+        ldy #8
+@other: tya
+        pha
+        cmp dtDrive
+        beq @next
+        ldx driveType-8,y
+        beq @next
+        jsr TryDesk
+@next:  pla
+        tay
+        iny
+        cpy #12
+        bne @other
+        lda #<deskDlg
+        sta r0L
+        lda #>deskDlg
+        sta r0H
+        jsr DoDlgBox
+        jmp @try
+
+; TryDesk: A = drive. Starts the desktop on it if there is one; returns
+; otherwise.
+TryDesk:
+        jsr SetDevice
+        jsr OpenDisk
+        txa
+        bne @end
+        sta r0L
+        lda #<deskName
+        sta r6L
+        lda #>deskName
+        sta r6H
+        jsr FindFile
+        txa
+        bne @end
+        lda #<dirEntryBuf
+        sta r9L
+        lda #>dirEntryBuf
+        sta r9H
+        jsr GetFHdrInfo
+        txa
+        bne @end
+        lda fileHeader + O_GHFNAME + 13 ; "V1.5" or higher
+        cmp #'1'
+        bcc @end
+        bne @load
+        lda fileHeader + O_GHFNAME + 15
+        cmp #'5'
+        bcc @end
+@load:  lda #0
+        sta r0L
+        jsr SaveArgs
+        jmp LdApplic
+@end:   rts
+
+; Background: the screen in the desktop pattern.
+Background:
+        lda #2
+        jsr SetPattern
+        lda #0
+        sta r2L
+        sta r3L
+        sta r3H
+        lda #SC_PIX_HEIGHT - 1
+        sta r2H
+        lda #<(SC_PIX_WIDTH - 1)
+        sta r4L
+        lda #>(SC_PIX_WIDTH - 1)
+        sta r4H
+        jmp Rectangle
+
+deskName:
+        .byte "DESK TOP", 0
+deskDlg:
+        .byte DEF_DB_POS | 1
+        .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+        .word deskText1
+        .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+        .word deskText2
+        .byte OK, DBI_X_2, DBI_Y_2
+        .byte 0
+deskText1:
+        .byte BOLDON, "Please mount a disk", 0
+deskText2:
+        .byte "with a desktop", 0
+
+; PanicMsg: r0 = the address of the BRK. Shows "System error near
+; $xxxx"; OK goes to the desktop.
+PanicMsg:
+        lda r0H
+        ldx #0
+        jsr Hex
+        lda r0L
+        jsr Hex
+        lda #<panicDlg
+        sta r0L
+        lda #>panicDlg
+        sta r0H
+        jsr DoDlgBox
+        jmp EnterDeskTop
+
+Hex:    pha
+        lsr
+        lsr
+        lsr
+        lsr
+        jsr @digit
+        pla
+        and #$0F
+@digit: cmp #10
+        bcc @num
+        adc #'A' - '0' - 10 - 1
+@num:   adc #'0'
+        sta panicAddr,x
+        inx
+        rts
+
+panicDlg:
+        .byte DEF_DB_POS | 1
+        .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+        .word panicText
+        .byte OK, DBI_X_2, DBI_Y_2
+        .byte 0
+
 ; CRC: CRC-16 (polynomial $1021, start $FFFF, high bit first) of r1 bytes
 ; from r0 in r2. Destroys A, Y, r0, r1, r3L.
-CRC:    ldy #$FF
+OvCRC:  ldy #$FF
         sty r2L
         sty r2H
         iny

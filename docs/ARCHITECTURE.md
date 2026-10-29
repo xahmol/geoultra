@@ -65,7 +65,8 @@ section 2). GeoUltra's own use of the system areas:
 | --- | --- |
 | `$5000-$5FFF` | at boot only: the cold start (`INIT`, `build/init64.bin`: `ColdStart`, banner, `DiskInit`, `ClockInit`), loaded by the boot ROM and started at `$5000`; applications overwrite it later |
 | `$9000-$9A7F` | disk driver: vectors `$9000-$902F`, jump table `$9030-$904D`, REU image driver (now to about `$97EB`); planned: the **overlay slot**, rarely used kernal code fetched from the REU on demand |
-| `$9A80-$9C7F` | `KEXT`: kernal code that no longer fits at `$C000-$FFFF` (now the clock), resident until the overlay slot exists |
+| `$9A80-$9C7F` | `KEXT`: resident kernal code that no longer fits at `$C000-$FFFF` (the clock, the file list's click and arrow routines) |
+| `$9D80-$9FFF` | the **overlay slot**: one overlay module at a time (src/kernal/overlay.s) |
 | `$9C80-$9D7F` | `dir3Head` (third BAM block of a 1581 image, as GEOS 2.0) |
 | `$C000-$C0FF` | information block (`BootGEOS`, `ResetHandle`, `bootName`, `version` = `$20`, `c128Flag`, `dateCopy` at `$C018`, the reboot code, ToBASIC's buffers, `GU` signature, extension table pointer) |
 | `$C100-$C2D6` | GEOS 2.0 jump table, 157 entries |
@@ -263,6 +264,23 @@ BAM. As GEOS 2.0: `usedRecords` counts index entries up to the first
 0/0 pair, `PointRecord` returns the record's first track in Y, an
 emptied record is 0/$FF, `fileSize` is adjusted by the low byte of the
 block count only.
+
+## Overlays
+
+Rarely used kernal routines live in overlay modules of 640 bytes, linked
+to run at `$9D80` (segments `OVL0`, `OVL1`, ... in `build/overlays64.bin`)
+and stored at the start of the system image, so they sit at REU
+`$020000` after the boot (mkimage's `FILE@REU`: in the image, no load
+table row). A routine keeps a 5-byte resident stub, `jsr OvlCall` and
+`.byte module, entry`; `OvlCall` fetches the module when another one is
+in the slot (one REU DMA), calls the entry with A, X, Y and the flags as
+at the stub, fetches the previous module back and returns to the stub's
+caller, so overlay routines may call each other. Overlay code must never
+install a vector into the slot (callbacks stay resident), and nothing
+the IRQ or a BASIC program after `ToBASIC` may reach goes there (`ToBASIC`
+and its NMI routine stay at `$Cxxx`). Module 0: `EnterDeskTop` with its
+dialog, `FirstInit`, Panic's message (Panic takes the BRK address from
+the stack resident, before the overlay call) and `CRC`.
 
 ## Loading and starting
 

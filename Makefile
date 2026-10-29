@@ -95,7 +95,8 @@ $(KOBJ)/jumptab.o: $(GEN)/jumptab.s
 	@mkdir -p $(KOBJ)
 	$(CA65) -o $@ $<
 
-build/kernal64.bin build/reudrv64.bin build/init64.bin &: $(KOBJS) src/kernal/kernal64.cfg
+build/kernal64.bin build/reudrv64.bin build/init64.bin build/overlays64.bin &: $(KOBJS) \
+		src/kernal/kernal64.cfg
 	$(LD65) -C src/kernal/kernal64.cfg -m build/kernal64.map -Ln build/kernal64.lbl \
 		-o $@ $(KOBJS)
 
@@ -107,9 +108,10 @@ $(SPLASH) &: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/sy
 
 # The splash comes first: the boot ROM copies it with the CPU (--cpu 2).
 $(GEN)/image.bin $(GEN)/image.inc: build/kernal64.bin build/reudrv64.bin build/init64.bin \
+		build/overlays64.bin \
 		$(SPLASH) tools/mkimage.py
 	@mkdir -p $(GEN)
-	$(PYTHON) tools/mkimage.py --cpu 2 $(GEN)/image.bin $(GEN)/image.inc \
+	$(PYTHON) tools/mkimage.py --cpu 2 $(GEN)/image.bin $(GEN)/image.inc build/overlays64.bin@REU \
 		$(GEN)/splash.bin@A000 $(GEN)/splash_col.bin@8C00 build/kernal64.bin@C000 \
 		build/reudrv64.bin@9000 build/init64.bin@5000
 

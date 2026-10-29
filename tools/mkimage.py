@@ -3,6 +3,10 @@
 
 Usage: mkimage.py [--cpu N] OUT.bin OUT.inc FILE@ADDR [FILE@ADDR ...]
 
+FILE@REU puts FILE at the start of the image (REU $020000 at run time)
+without a load table row: data the kernal fetches itself (the overlay
+modules, src/kernal/overlay.s). At most one, before the others.
+
 Each FILE is a binary to be loaded at the C64 address ADDR (hex). The
 images are concatenated into OUT.bin (ROM banks 1 and up, copied to REU
 $020000 at boot) and OUT.inc gets the load table for src/boot/boot.s:
@@ -30,6 +34,11 @@ def main(argv):
     for arg in argv[3:]:
         path, addr = arg.rsplit("@", 1)
         data = open(path, "rb").read()
+        if addr.upper() == "REU":
+            if blob:
+                sys.exit("%s: an REU-only image must come first" % path)
+            blob += data
+            continue
         if not 0 < len(data) <= 0x10000:
             sys.exit("%s: size %d not 1..65536" % (path, len(data)))
         rows.append((REU_BASE + len(blob), int(addr, 16), len(data)))
