@@ -12,7 +12,9 @@ jump table, variables and zero page contract, and every kernal routine is
 checked against GEOS 2.0's behaviour. It does not promise that every GEOS
 application runs: the GEOS world has many versions, add-ons and later
 developments, some of them lost, and applications that rely on
-undocumented internals may not work.
+undocumented internals may not work. The same holds for hardware:
+peripherals are supported on a best-effort basis, and the documentation
+lists what was tested.
 
 **Status: in development.** The kernal implements all GEOS 2.0 jump table
 entries; GEOS 2.0's deskTop, geoWrite and geoPaint run on it in VICE, and

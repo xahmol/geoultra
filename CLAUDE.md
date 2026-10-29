@@ -23,6 +23,8 @@ analysis; its route and phase recommendations are superseded.
   applications is the aim (the GEOS 2.0 interface, checked against GEOS
   2.0). Documentation never promises full or 100% compatibility: the GEOS
   ecosystem has many versions, add-ons and developments, some lost in time.
+  Likewise no promise of hardware compatibility with all peripherals:
+  best effort, list what was tested.
 - Kernal, drivers and the new desktop in assembler (ca65/ld65); tools may
   be C (Oscar64 with the geos-oscar64 library, see below).
 - Free-standing clean-room kernal from the start (no patch release); the
