@@ -1,6 +1,7 @@
 ; Overlays: rarely used kernal routines live in modules of OVL_SIZE bytes
 ; in the REU (at the start of the system image, REU $020000) and run in
-; the slot at OVL_SLOT ($9D80-$9FFF, the end of the disk driver area).
+; the slot at OVL_SLOT ($9D80-$9F6F, the end of the disk driver area);
+; $9F70-$9FFF is scratch for the running module that loads leave alone.
 ; A routine is reached through a resident stub:
 ;
 ;       jsr OvlCall
@@ -19,7 +20,8 @@
         .export OvlCall
 
 OVL_SLOT        = $9D80
-OVL_SIZE        = $0280
+OVL_SIZE        = $01F0         ; a module; $9F70-$9FFF: scratch for
+                                ; the running module (kept across loads)
 OVL_REU         = $020000
 NO_MODULE       = $FF
 
@@ -127,6 +129,6 @@ OvlLoad:
         plp
 @end:   rts
 
-modLo:  .byte <(OVL_REU), <(OVL_REU + OVL_SIZE)
-modMid: .byte >(OVL_REU), >(OVL_REU + OVL_SIZE)
-modHi:  .byte ^(OVL_REU), ^(OVL_REU + OVL_SIZE)
+modLo:  .byte <(OVL_REU), <(OVL_REU + OVL_SIZE), <(OVL_REU + 2 * OVL_SIZE)
+modMid: .byte >(OVL_REU), >(OVL_REU + OVL_SIZE), >(OVL_REU + 2 * OVL_SIZE)
+modHi:  .byte ^(OVL_REU), ^(OVL_REU + OVL_SIZE), ^(OVL_REU + 2 * OVL_SIZE)

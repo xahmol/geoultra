@@ -7,6 +7,7 @@
         .export MainLoopCall
         .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
         .import SleepTick, WakeSleepers, CallRoutine, TimeUpdate, AlarmTick
+        .import WbTick, WbCheck
         .import MenuTick, CheckMousePos, IconTick, PromptTick, GetRandom
 
         .segment "DATA"
@@ -90,6 +91,7 @@ InterruptMain:
         jsr ProcessTimers
         jsr SleepTick
         jsr AlarmTick
+        jsr WbTick
         jmp GetRandom
 
 ; Position sprite 0 (the pointer) at mouseXPos/mouseYPos.
@@ -130,6 +132,7 @@ MainLoop:
         jsr RunProcesses
         jsr WakeSleepers
         jsr TimeUpdate
+        jsr WbCheck
         jmp MainLoop
 
 CallApp:

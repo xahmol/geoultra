@@ -23,6 +23,7 @@
         .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
+        .import WriteBackNow
 
 DA_BANK         = 18
 MAX_SLEEP       = 20
@@ -537,6 +538,7 @@ OvEnterDeskTop:
         cld
         ldx #$FF
         txs
+        jsr WriteBackNow        ; changed drives to their images first
         jsr InitMachine
         jsr Background
         lda curDrive

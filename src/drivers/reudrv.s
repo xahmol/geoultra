@@ -18,7 +18,9 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .export DiskInit, saveFlag
+        .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending
+        .export drvTracks, drvFlags
+        .import WriteBackNow
         .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
 
 FRST_FILE_ENTRY = 2
@@ -35,6 +37,7 @@ MOUNT_ENTRY     = $0120
 DIRTY_MAP       = $20           ; page of slot 0's dirty map in bank 1
 F_DIRTY         = $01
 F_READONLY      = $02
+WB_DELAY        = 150           ; frames (3 s at 50 Hz) after the last write
 dir3Head        = $9C80         ; third BAM block (1581), end of the driver
 
         .segment "DRIVER"
@@ -72,6 +75,9 @@ dmaLen:         .word 0
 dirtyByte:      .byte 0
 count:          .byte 0
 saveFlag:       .byte 0         ; bit 7: BlkAlloc called from SaveFile (1581)
+uciPresent:     .byte 0         ; the boot found a UCI: write-back possible
+wbPending:      .byte 0         ; a drive has changes not written back
+wbDelay:        .byte 0         ; frames until the write-back may run
 firstTwo:       .byte 0         ; 1581 BlkAlloc: blocks before track 35
 dirIndex:       .byte 0
 ioP:            .byte 0         ; InitForIO saves
@@ -170,6 +176,25 @@ ChangeDiskDevice:
         sty curDevice
         ldx #0
         rts
+
+; --- Write-back trigger (the write-back itself: src/kernal/writeback.s) ---
+
+; WbTick (interrupt level): count the delay down.
+WbTick: lda wbDelay
+        beq @end
+        dec wbDelay
+@end:   rts
+
+; WbCheck (MainLoop): write changed drives back once the delay is over.
+WbCheck:
+        lda uciPresent
+        beq @end
+        lda wbPending
+        beq @end
+        lda wbDelay
+        bne @end
+        jmp WriteBackNow
+@end:   rts
 
 ; --- Blocks ---------------------------------------------------------------
 
@@ -420,6 +445,10 @@ Dma:    php
 ; MarkDirty: set the block's bit in the dirty map, and the drive's
 ; changed flag in the mount table the first time.
 MarkDirty:
+        lda #WB_DELAY           ; write back a while after the last write
+        sta wbDelay
+        lda #1
+        sta wbPending
         lda blkHi               ; dmaReu = map + block / 8
         sta dmaReu+1
         lda blkLo

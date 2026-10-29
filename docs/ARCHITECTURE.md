@@ -280,6 +280,25 @@ no write-back yet), the REU's table stays. The handshake follows the
 ultimate-uci-oscar64 library's corrected `uii_sendcommand`. Diagnostics
 at `$4E00` (see the source) until an application overwrites them.
 
+## Write-back
+
+A disk write marks the block in the drive's dirty map and starts a delay
+of 150 frames (`WbTick` counts it down in the IRQ). When it has run out,
+MainLoop (`WbCheck`) calls the write-back, overlay modules 1 and 2
+(`src/kernal/writeback.s`); `EnterDeskTop` and `ToBASIC` call it first
+too. Only with a UCI (the boot sets `uciPresent`). Per changed drive:
+the image's path (stored at boot at REU `$01:0200 + 64 * drive`), its
+folder; before the first write-back after a mount a copy into
+`<home>BACKUP/` (the home path at `$01:0300`; deletes happen only after a
+confirmed change into that absolute path); then the image is opened
+(`$03`) and every run of non-zero dirty-map bytes is written with a seek
+and one `SAVE_REU` straight from the REU (clipped to the image's size).
+The map is cleared and the drive's changed flag too. The UCI command
+routines, the DMA helper and the state are resident (`DRVEXT`, after the
+driver; the driver's vectors must stay at `$9000`); the path and the
+command buffer use the overlay slot's scratch area (`$9F70-$9FFF`).
+Overlay modules are at most 496 bytes since then.
+
 ## Overlays
 
 Rarely used kernal routines live in overlay modules of 640 bytes, linked

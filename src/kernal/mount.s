@@ -24,6 +24,7 @@
         .include "hw.inc"
 
         .export MountAll
+        .import uciPresent, wbPending
 
 uciCtrl         = $DF1C         ; write: control; read: status
 uciCmd          = $DF1D         ; write: command bytes; read: identity
@@ -81,6 +82,8 @@ MountAll:
         rts
 @uci:   lda #$04                ; abort whatever an earlier run left
         sta uciCtrl
+        lda #1                  ; the write-back can run
+        sta uciPresent
         lda #'G'
         sta LOG
         lda #'U'
@@ -89,16 +92,19 @@ MountAll:
         sta LOG+2
         lda #'N'
         sta LOG+3
+        jsr FindHome            ; always: the write-back needs the home path
+        bcs @end
         jsr KeepDirty
-        bcs @end
-        jsr FindHome
-        bcs @end
+        bcs @kept
         jsr ReadList
         bcs @end
         jsr ClearTable
         jsr ParseList
         jsr StoreTable
 @end:   rts
+@kept:  lda #1                  ; write the kept changes back soon
+        sta wbPending
+        rts
 
 ; --- The REU mount table --------------------------------------------------
 
@@ -213,7 +219,8 @@ FindHome:
         jsr ChangeDirName
         bne @fail
         jsr NewList
-@found: clc
+@found: jsr StashHome
+        clc
         rts
 @fail:  sec
         rts
@@ -473,6 +480,7 @@ Mount:  lda drive
         sta LOG+$10,x
         jsr ImageType           ; by the extension
         bcs @end
+        jsr StashPath           ; the whole path, for the write-back
         ldx slashPos            ; the folder: path up to the last "/"
         beq @file
         lda path,x
@@ -514,6 +522,7 @@ Mount:  lda drive
         plp
         bne @close
         jsr Enter               ; the mount table entry
+        jsr ClearMap
         lda nextBank
         clc
         adc banks
@@ -679,6 +688,81 @@ Enter:  lda drive
         lda nextBank
         sta LOG+$16,x
         rts
+
+; StashHome: the home folder's path with a trailing "/" ("/USB0/GEOULTRA/",
+; device in drive) to REU $01:0300, for the write-back's backups.
+StashHome:
+        ldx drive
+        jsr HomePath
+        lda #'/'
+        sta path,x
+        lda #0
+        sta path+1,x
+        lda #0
+        sta reuAddr
+        lda #$03
+        sta reuAddr+1
+        jmp StashAt
+
+; StashPath: path (64 bytes) to REU $01:0200 + 64 * drive.
+StashPath:
+        lda drive               ; 64 * drive (at most 192)
+        asl
+        asl
+        asl
+        asl
+        asl
+        asl
+        sta reuAddr
+        lda #$02
+        sta reuAddr+1
+StashAt:
+        lda #<path
+        sta reuC64
+        lda #>path
+        sta reuC64+1
+        lda #64
+        sta reuLen
+        lda #0
+        sta reuLen+1
+        sta reuCtrl
+        lda #SYS_BANK
+        sta reuAddr+2
+        lda #REU_STASH
+        sta reuCmd
+        rts
+
+; ClearMap: the drive's dirty map ($01:2000 + $2000 * drive) to zeros.
+ClearMap:
+        lda #<zero
+        sta reuC64
+        lda #>zero
+        sta reuC64+1
+        lda #0
+        sta reuAddr
+        sta reuLen
+        lda drive
+        asl
+        asl
+        asl
+        asl
+        asl
+        clc
+        adc #$20
+        sta reuAddr+1
+        lda #SYS_BANK
+        sta reuAddr+2
+        lda #$20
+        sta reuLen+1
+        lda #$80                ; the same C64 byte for every REU byte
+        sta reuCtrl
+        lda #REU_STASH
+        sta reuCmd
+        lda #0
+        sta reuCtrl
+        rts
+
+zero:   .byte 0
 
 ; --- File commands ----------------------------------------------------------
 
