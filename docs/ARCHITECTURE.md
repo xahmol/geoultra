@@ -411,8 +411,9 @@ extension table; overlay modules 12-14 with the shared helpers in
   With folders listed and no key routine of the dialog's own, `GfKeys`
   becomes `keyVector`: RETURN on a folder row enters it, DEL goes up.
   While a folder row is selected the application's name buffer is empty,
-  so it never gets a folder name back. Seen in VICE with geoWrite 2.0's
-  Open dialog on the user's DNP. The disk name in an application's dialog
+  so it never gets a folder name back. `make test-filedialog`
+  (tests/drives/filedialog.py): geoWrite 2.0's Open dialog on a copy of the
+  user's DNP lists the new folder first, RETURN enters it, DEL goes up. The disk name in an application's dialog
   ("On disk:") is the application's own text and stays.
 - Not yet: 1581 partitions, renaming and moving folders, `MoveFile`, long
   names, geoFolder, the setting to switch the folders in file dialogs off.

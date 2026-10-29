@@ -35,7 +35,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -236,6 +236,11 @@ test-native: all
 # same DNP).
 test-folders: all
 	$(PYTHON) tests/drives/folders.py
+
+# Folders in geoWrite 2.0's Open dialog (tests/drives/filedialog.py, on a
+# copy of the same DNP).
+test-filedialog: all
+	$(PYTHON) tests/drives/filedialog.py
 
 # Writing to a 1571 drive, on a D71 the test formats itself.
 test-d71: all
