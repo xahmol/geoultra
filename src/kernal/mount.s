@@ -25,6 +25,9 @@
         .include "kcalls.inc"
 
         .export MountAll, SerialFromDisk
+.ifdef BYPASS
+        .import bypassOn
+.endif
         .import uciPresent, wbPending, serialNumber, SetDevice, FindFile
         .import GetFHdrInfo
 
@@ -338,9 +341,24 @@ ReadSettings:
         jsr GetChar
         cmp #'['
         beq @section
+        cmp #13                 ; (SkipLine stops at CR: LF still to come)
+        beq @line
+        cmp #10
+        beq @line
         ldx inDrives
         beq @skip
         and #$DF
+.ifdef BYPASS
+        cmp #'P'
+        bne @serial
+        ldx #protKey - keys     ; "ROTECTION=BYPASS"
+        jsr Match
+        bne @skip
+        lda #$80
+        sta bypassOn
+        jmp @skip
+@serial:
+.endif
         cmp #'S'
         bne @skip
         ldx #serialKey - keys   ; "ERIAL="
@@ -372,6 +390,9 @@ settingsName:   .byte "SETTINGS.INI", 0
 keys:
 systemKey:      .byte "SYSTEM]", 0
 serialKey:      .byte "ERIAL=", 0
+.ifdef BYPASS
+protKey:        .byte "ROTECTION=BYPASS", 0
+.endif
 
 ; Match: the next characters (upper case) against keys + X up to its 0.
 ; Z set when they match (C clear).

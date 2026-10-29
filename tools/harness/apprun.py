@@ -82,6 +82,8 @@ def main():
     ap.add_argument("--out", default=os.path.join(harness.OUT, "app.png"))
     ap.add_argument("--serial", help="serial number (hex) for GetSerialNumber, as "
                     "[system] serial= in SETTINGS.INI on the Ultimate")
+    ap.add_argument("--bypass", action="store_true", help="serial number per "
+                    "application, as [system] protection=bypass (src/kernal/bypass.s)")
     ap.add_argument("events", nargs="*")
     args = ap.parse_args()
     reu_image()
@@ -113,12 +115,16 @@ def main():
         code += [0x4C, end & 0xFF, end >> 8]            # GetFile returned: X at $02F0
         v.mem_set(start, bytes(code))
         v.mem_set(0x4F00, args.name.encode() + b"\0")
+        lbl = open(os.path.join(harness.ROOT, "build", "kernal64.lbl")).read()
+
+        def label(name):
+            return int(next(l.split()[1] for l in lbl.splitlines()
+                            if l.endswith("." + name)), 16)
         if args.serial:
             serial = int(args.serial, 16)
-            lbl = open(os.path.join(harness.ROOT, "build", "kernal64.lbl")).read()
-            addr = int(next(l.split()[1] for l in lbl.splitlines()
-                            if l.endswith(".serialNumber")), 16)
-            v.mem_set(addr, bytes([serial & 0xFF, serial >> 8]))
+            v.mem_set(label("serialNumber"), bytes([serial & 0xFF, serial >> 8]))
+        if args.bypass:
+            v.mem_set(label("bypassOn"), b"\x80")
         v.mem_set(0x02F0, b"\xEE")
         v.regs_set({"PC": start})
         v.resume()

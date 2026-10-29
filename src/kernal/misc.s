@@ -11,6 +11,10 @@
         .export Dabs, Dnegate, Ddec, ClearRam, FillRam, i_FillRam, InitRam
         .export CopyString, CopyFString, CmpString, CmpFString, CallRoutine
         .export DoInlineReturn, GetRandom, GetSerialNumber, serialNumber
+.ifdef BYPASS
+        .export bypassOn
+        .import ExpectedSerial
+.endif
 
 returnAddress   = $3D           ; word: inline routines' return address
 random          = $850A         ; word
@@ -393,6 +397,19 @@ GetRandom:
 ; SETTINGS.INI ([system] serial=, read at boot), so that applications
 ; installed under another GEOS serial number run. Destroys A.
 GetSerialNumber:
+.ifdef BYPASS
+        bit bypassOn            ; [system] protection=bypass: the number
+        bpl @own                ; the calling application stored (bypass.s)
+        stx bypassX
+        tsx
+        lda $0101,x
+        sta r0L
+        lda $0102,x
+        sta r0H
+        ldx bypassX
+        jmp ExpectedSerial
+@own:
+.endif
         lda serialNumber
         sta r0L
         lda serialNumber+1
@@ -402,3 +419,7 @@ GetSerialNumber:
         .segment "DATA"
 
 serialNumber:   .word SERIAL
+.ifdef BYPASS
+bypassOn:       .byte 0         ; $80: answer per application (bypass.s)
+bypassX:        .byte 0
+.endif

@@ -130,8 +130,8 @@ OvlLoad:
 @end:   rts
 
 modLo:  .byte <(OVL_REU), <(OVL_REU + OVL_SIZE), <(OVL_REU + 2 * OVL_SIZE)
-        .byte <(OVL_REU + 3 * OVL_SIZE)
+        .byte <(OVL_REU + 3 * OVL_SIZE), <(OVL_REU + 4 * OVL_SIZE)
 modMid: .byte >(OVL_REU), >(OVL_REU + OVL_SIZE), >(OVL_REU + 2 * OVL_SIZE)
-        .byte >(OVL_REU + 3 * OVL_SIZE)
+        .byte >(OVL_REU + 3 * OVL_SIZE), >(OVL_REU + 4 * OVL_SIZE)
 modHi:  .byte ^(OVL_REU), ^(OVL_REU + OVL_SIZE), ^(OVL_REU + 2 * OVL_SIZE)
-        .byte ^(OVL_REU + 3 * OVL_SIZE)
+        .byte ^(OVL_REU + 3 * OVL_SIZE), ^(OVL_REU + 4 * OVL_SIZE)

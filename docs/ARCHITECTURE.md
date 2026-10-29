@@ -311,6 +311,21 @@ installed under the user's GEOS (geoWrite 2.1, which otherwise asks to
 "reboot using the same GEOS disk") run. `apprun.py --serial` sets it in
 VICE.
 
+## Serial number per application (optional)
+
+`src/kernal/bypass.s`, overlay module 4, only built with `BYPASS=1` (the
+default; `make BYPASS=0` leaves it out) and only used when SETTINGS.INI
+has `[system] protection=bypass` (`bypassOn`). `GetSerialNumber` then
+passes the caller's return address to `ExpectedSerial`, which examines
+the 32 bytes after it for a load of `r0L`/`r0H` followed by a compare
+with an absolute address, or a load from an absolute address followed
+by a compare with `r0L`/`r0H` (LDA/CMP, LDX/CPX, LDY/CPY), and answers
+with the bytes stored at those addresses. Nothing found, or both bytes
+0 (not installed yet): the system's own serial number. The module holds
+no data from any application. `apprun.py --bypass` switches it on in
+VICE. Tested: geoWrite 2.1 installed under `$58B5` refuses with serial
+`$1234` and starts with the bypass on; geoWrite 2.0 is unchanged.
+
 ## Jump table repair
 
 `SaveJumpTab` (cold start, last step) stashes the jump table `$C100`-`$C2D6`

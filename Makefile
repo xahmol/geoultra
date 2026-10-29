@@ -45,7 +45,16 @@ all: build/geoultra64.crt
 
 GEN      = build/gen
 KOBJ     = build/kernal
+# BYPASS=0 builds without the serial-number-per-application module
+# (src/kernal/bypass.s, docs/DESIGN.md "Serial number").
+BYPASS  ?= 1
+ifeq ($(BYPASS),1)
 KSRCS    = $(wildcard src/kernal/*.s)
+KDEFS    = -D BYPASS=1
+else
+KSRCS    = $(filter-out src/kernal/bypass.s,$(wildcard src/kernal/*.s))
+KDEFS    =
+endif
 DRVSRCS  = $(wildcard src/drivers/*.s)
 INPSRCS  = src/input/mouse1351.s
 INCS     = $(wildcard src/inc/*.inc)
@@ -63,9 +72,16 @@ $(GEN)/jumptab.s: src/kernal/jumptab.txt tools/genjumptab.py $(KSRCS) $(INPSRCS)
 BUILDDATE = -D BUILD_YEAR=$(shell date +%-y) -D BUILD_MONTH=$(shell date +%-m) \
             -D BUILD_DAY=$(shell date +%-d)
 
-$(KOBJ)/%.o: src/kernal/%.s $(INCS)
+# Rebuild the kernal objects when BYPASS changes.
+$(KOBJ)/.bypass: FORCE
 	@mkdir -p $(KOBJ)
-	$(CA65) -I src/inc $(BUILDDATE) -o $@ $<
+	@echo $(BYPASS) | cmp -s - $@ || echo $(BYPASS) > $@
+
+FORCE:
+
+$(KOBJ)/%.o: src/kernal/%.s $(INCS) $(KOBJ)/.bypass
+	@mkdir -p $(KOBJ)
+	$(CA65) -I src/inc $(BUILDDATE) $(KDEFS) -o $@ $<
 
 $(KOBJ)/%.o: src/drivers/%.s $(INCS)
 	@mkdir -p $(KOBJ)
