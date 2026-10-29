@@ -1,0 +1,8 @@
+[file]
+name    = "geoFolder"
+type    = "DESK_ACC"
+class   = "geoFolder"
+version = "V0.1"
+author  = "GeoUltra"
+info    = "The drives' current folders: open, up (DEL), next drive"
+mode    = "40"

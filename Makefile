@@ -28,6 +28,8 @@ OSCAR64 = /home/xahmol/oscar64/bin/oscar64
 VICE    = $(HOME)/.local/opt/vice-3.10/bin/x64sc
 # Headless VICE 3.10 (no window, no sound) for unattended runs
 VICEHL  = $(HOME)/.local/opt/vice-3.10-headless/bin/x64sc
+C1541   = $(HOME)/.local/opt/vice-3.10/bin/c1541
+GEOSAPP = $(HOME)/git/geos-oscar64/tools/geosapp.py
 PYTHON  = python3
 
 UCILIB  = lib/ultimate-uci-oscar64/include
@@ -40,6 +42,25 @@ CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
 all: build/geoultra64.crt
+
+# --- System drive (drive E, docs/DESIGN.md "System drive") ------------
+
+# GeoUltra's own GEOS files, assembled at $0400 and packed as CVT by
+# geos-oscar64's geosapp.py, written to a D64 with VICE's c1541.
+SYSFILES = build/tools/geofolder.cvt
+
+build/tools/%.bin: src/tools/%.s src/tools/%.cfg
+	@mkdir -p build/tools
+	$(CA65) -o build/tools/$*.o $<
+	$(LD65) -C src/tools/$*.cfg -o $@ build/tools/$*.o
+
+build/tools/%.cvt: build/tools/%.bin src/tools/%.toml
+	$(PYTHON) $(GEOSAPP) src/tools/$*.toml $< $@
+
+build/sysdrive.d64: $(SYSFILES)
+	rm -f $@
+	$(C1541) -format "geoultra system,gu" d64 $@ $(foreach f,$(SYSFILES),-geoswrite $(f)) >/dev/null 2>&1
+	@test -s $@
 
 # --- System -----------------------------------------------------------
 
