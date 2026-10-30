@@ -10,3 +10,6 @@ build/
 
 # Python
 __pycache__/
+
+# Private test set (the user's own applications; never committed)
+private/

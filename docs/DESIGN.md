@@ -185,6 +185,29 @@ lives in the driver; subdirectories and 1581 partitions follow the
 current-directory model in the decisions table, with an extended API for
 the new desktop and new applications.
 
+**DNP of another size than the drive (investigated 2026-10-30, user's
+question; proposal, not built).** Today a DNP always loads whole, the
+track count taken from the file size (`ImageSize`), and the driver uses
+only that count (`drvTracks`: locating, free count, allocation), never the
+BAM header's last track (1/2 `$08`). The user's GDOS64 `ramapps.DNP` is
+such a mismatch (header 191 tracks, file 69: GDOS64 saved the used front
+of a larger RAM drive); it mounts and writes safely already. A drive size
+of its own (MOUNTS.INI `A=path,tracks=N`, the mount dialogue, a new RAM
+drive) would work like this:
+- **DNP smaller than the drive:** load the file into the first banks, then
+  grow it: BAM header `$08` = N, the BAM bits of the new tracks set free.
+  Write-back then extends the file (to check on the hardware: a UCI write
+  past the end of a file), or the drive is saved as a new image.
+- **DNP larger than the drive:** load only the first N tracks. Safe only
+  when the image's BAM shows no used block after track N; GeoUltra checks
+  that first and refuses otherwise (the files there would be lost), BAM
+  header `$08` = N. Write-back must not leave the original file with a
+  header that disagrees with its length: save the N tracks as a new image,
+  or write the whole file anew, after a confirmation.
+- **Full or fragmented large DNPs:** a file-level import instead (files
+  and folders copied one by one, packed at the front), as
+  `tools/mkappsdnp.py` does on the PC; later the desktop's file manager.
+
 ## Berkeley assets to replace
 
 System font (own 9-point font with BSW metrics: height and baseline, so
