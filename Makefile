@@ -162,6 +162,11 @@ build/kernal64.bin build/reudrv64.bin build/init64.bin build/overlays64.bin buil
 	$(LD65) -C src/kernal/kernal64.cfg -m build/kernal64.map -Ln build/kernal64.lbl \
 		-o $@ $(KOBJS)
 
+# The overlay modules ($1F0 bytes each from the linker) spread to a stride
+# of $200 in the REU, so OvlLoad computes a module's address (overlay.s).
+build/overlays64s.bin: build/overlays64.bin
+	$(PYTHON) -c "import sys; d=open(sys.argv[1],'rb').read(); n=len(d)//0x1F0; assert len(d)==n*0x1F0; open(sys.argv[2],'wb').write(b''.join(d[i*0x1F0:(i+1)*0x1F0]+bytes(0x10) for i in range(n)))" $< $@
+
 SPLASH   = $(GEN)/splash.bin $(GEN)/splash_col.bin $(GEN)/splash_msg.bin $(GEN)/splash.inc
 
 $(SPLASH) &: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/system9.py
@@ -170,10 +175,10 @@ $(SPLASH) &: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/sy
 
 # The splash comes first: the boot ROM copies it with the CPU (--cpu 2).
 $(GEN)/image.bin $(GEN)/image.inc: build/kernal64.bin build/reudrv64.bin build/init64.bin build/kbf64.bin \
-		build/overlays64.bin build/sysdrive.d64 \
+		build/overlays64s.bin build/sysdrive.d64 \
 		$(SPLASH) tools/mkimage.py
 	@mkdir -p $(GEN)
-	$(PYTHON) tools/mkimage.py --cpu 2 $(GEN)/image.bin $(GEN)/image.inc build/overlays64.bin@REU \
+	$(PYTHON) tools/mkimage.py --cpu 2 $(GEN)/image.bin $(GEN)/image.inc build/overlays64s.bin@REU \
 		$(GEN)/splash.bin@A000 $(GEN)/splash_col.bin@8C00 build/kbf64.bin@BF40 build/kernal64.bin@C000 \
 		build/reudrv64.bin@9000 build/init64.bin@5000 build/sysdrive.d64@BANK4
 

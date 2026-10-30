@@ -350,7 +350,17 @@ The map is cleared and the drive's changed flag too. The UCI command
 routines, the DMA helper and the state are resident (`DRVEXT`, after the
 driver; the driver's vectors must stay at `$9000`); the path and the
 command buffer use the overlay slot's scratch area (`$9F70-$9FFF`).
-Overlay modules are at most 496 bytes since then.
+Overlay modules are at most 496 bytes since then. A failed SEEK or
+SAVE_REU keeps the map and the flag, and the write-back is tried again
+after 5 s (code sweep 2026-10-30).
+
+Module placement in the REU (2026-10-30): the linker writes the modules
+one after another, `$1F0` bytes each (`build/overlays64.bin`); the
+Makefile spreads them to a stride of `$200` (`build/overlays64s.bin`, in
+the image at `$020000`), so `OvlLoad` computes module n's address
+(`$020000 + n * $200`) instead of looking it up: no tables in the
+resident `CODE` (55 bytes freed), and new modules cost no resident bytes
+(up to 128).
 
 ## Serial number
 
