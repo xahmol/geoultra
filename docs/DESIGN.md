@@ -378,7 +378,7 @@ after about ten feature commits). Log:
 
 | Date | Scope | Findings | Fixed | Open |
 | --- | --- | --- | --- | --- |
-| (first sweep due) | | | | |
+| 2026-10-30 | All of `src/kernal`, `src/drivers` (buffers, UCI open/close and error paths, interrupt state, overlay rules, stack use, segment budgets); `tools/` read for the same | (1) The write-back ignored SEEK/SAVE_REU errors and cleared the change map and flag anyway: a failed write (stick removed, file write-protected, stick full) lost the changes silently. (2) `UciData` copied any reply in full: into `SCRATCH` (one page before the mount table being built) a long reply (control `$50`'s log) could overwrite the table. (3) Menus with more than 15 items or 4 levels, more than 20 processes or sleepers overrun their tables, as in GEOS 2.0 (the application's responsibility there too). (4) Segment room: `CODE` 1 byte, `KCODE` 3, `IOCODE` 12, overlay module 15: 5. (5) Stack: an application start uses about 104 bytes (the gate's saved r0-r15 and the speed list) plus overlay frames. (6) `irq.s` imported `WbCheck` unused. Checked without findings: every UCI file opened in mount, write-back and hibernation is closed on every path; `sei` always with `plp` or a deliberate `cli`; nested overlay calls keep their values resident | (1) a failed write keeps map and flag and is tried again after 5 s (`RETRY_DELAY`); (2) `UciData` stops at `dataLimit`; (6) removed | (1) to verify on the U64 (rename the mounted test copy, change the disk, rename back). (3) clamps once there is room. (4) before more resident code: move rarely used `CODE` routines into overlay modules (each new module costs 3 bytes of `CODE` for the tables). (5) watch with new stack users |
 
 ## For the user, at the computer
 

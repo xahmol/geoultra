@@ -63,6 +63,7 @@ F_READONLY      = $02
 
 cmdBuf:         .res 112        ; (ApplyCfg: 4 + 93 bytes)
 cmdLen:         .byte 0
+dataLimit:      .byte 0         ; UciData: the first page it may not write
 statBuf:        .res 32
 path:           .res 64
 pathLen:        .byte 0
@@ -624,6 +625,8 @@ ReadText:
         sta r0L
         lda #>TEXT
         sta r0H
+        lda #>(TEXT + TEXT_MAX)
+        sta dataLimit
 @packet:
         jsr UciData
         lda uciCtrl             ; "data more": the next packet after an ack
@@ -1249,6 +1252,8 @@ Simple: jsr UciSend
         sta r0L
         lda #>SCRATCH
         sta r0H
+        lda #>SCRATCH + 1       ; (one page)
+        sta dataLimit
         jsr UciData
         jsr UciStatus
         php
@@ -1305,7 +1310,10 @@ UciData:
 @byte:  bit uciCtrl             ; N: data available
         bpl @end
         lda uciResp
-        ldy #0
+        ldy r0H                 ; the buffer full (dataLimit, a page):
+        cpy dataLimit           ; the rest is dropped (code sweep
+        bcs @byte               ; 2026-10-30: a long reply overran
+        ldy #0                  ; SCRATCH into the mount table)
         sta (r0),y
         inc r0L
         bne @byte

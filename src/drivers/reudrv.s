@@ -19,7 +19,7 @@
         .include "hw.inc"
         .include "sysdrive.inc"
 
-        .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending
+        .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending, wbDelay
         .export drvTracks, drvFlags
         .import WriteBackNow, FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, Ovl1571
         .import ProtExecute, ProtStatus, SetGEOSDiskOvl, folderT, folderS

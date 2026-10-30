@@ -18,7 +18,7 @@
         .include "hw.inc"
 
         .export WriteBackNow, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
-        .import OvlCall, uciPresent, wbPending, drvTracks, drvFlags, hibState, HibSuspend
+        .import OvlCall, uciPresent, wbPending, wbDelay, drvTracks, drvFlags, hibState, HibSuspend
         .export FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, Ovl1571, natLoaded
 
 path            = $9F70         ; the slot's scratch area (overlay.s)
@@ -94,8 +94,17 @@ WriteBack:
         inx
         cpx #4
         bne @drive
-        lda #0
+        ldx #3                  ; a drive still changed (its write failed):
+        lda #0                  ; tried again after RETRY_DELAY frames
+@still: ora drvFlags,x
+        dex
+        bpl @still
+        and #F_DIRTY
         sta wbPending
+        beq @saved
+        lda #RETRY_DELAY
+        sta wbDelay
+@saved:
         pla
         sta CPU_PORT
         bit hibState            ; a quiet moment after changes: the
@@ -400,16 +409,23 @@ dmaCmd: .res 1
 status: .res 2
 cmdLen: .res 1
 
+RETRY_DELAY     = 250           ; frames (5 s) before a failed write-back
+                                ; is tried again
+
         .segment "OVL2"
 
         jmp WriteDrive2         ; entry 0
 
 ; WriteDrive (module 2, entry 0): the open image of drive slot: every run
-; of changed blocks, then close, clear the map and the changed flag.
+; of changed blocks, then close, clear the map and the changed flag. When
+; a SEEK or SAVE_REU failed (stick removed, file write-protected, stick
+; full), the map and the flag stay set: the next write-back tries again
+; (code sweep 2026-10-30: the changes counted as saved and were lost).
 WriteDrive2:
         lda #0
         sta mapIdx
         sta mapIdx+1
+        sta wrFailed
 @scan:  jsr MapEnd
         bcs @done
         jsr MapByte
@@ -430,6 +446,8 @@ WriteDrive2:
 @done:  lda #DOS_CLOSE
         jsr Begin
         jsr Simple
+        lda wrFailed            ; not all written: keep map and flag
+        bne @end
         jsr ClearMap
         ldx slot
         lda drvFlags,x
@@ -519,7 +537,10 @@ WriteRun:
         lda #0
         jsr Put
         jsr Simple
-        lda #DOS_SAVE_REU       ; REU: drive bank + first * 256
+        beq :+
+        lda #$FF
+        sta wrFailed
+:       lda #DOS_SAVE_REU       ; REU: drive bank + first * 256
         jsr Begin
         lda #0
         jsr Put
@@ -539,7 +560,11 @@ WriteRun:
         jsr Put
         lda #0
         jsr Put
-        jmp Simple
+        jsr Simple
+        beq @ok
+        lda #$FF
+        sta wrFailed
+@ok:    rts
 
 ; ClearMap: the drive's dirty map ($2000 bytes) to zeros.
 ClearMap:
@@ -598,3 +623,7 @@ StoreFlags:
         lda #<mapByte
         jmp DmaGo
 
+
+
+wrFailed:       .byte 0         ; module 2: a SEEK or SAVE_REU failed (no
+                                ; nested overlay calls while it is used)

@@ -7,7 +7,7 @@
         .export MainLoopCall
         .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
         .import SleepTick, WakeSleepers, CallRoutine, TimeUpdate, AlarmTick
-        .import HibTick, WbCheck, RtcCheck
+        .import HibTick, RtcCheck
         .import MenuTick, CheckMousePos, IconTick, PromptTick, GetRandom
 
         .segment "DATA"

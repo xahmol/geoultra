@@ -165,7 +165,8 @@ all of `src/` and `tools/`. Checklist for this code:
   duplicated logic that drifted.
 Findings are fixed in their own commits; the sweep is logged in
 docs/DESIGN.md "Code sweeps" (date, scope, findings, what was fixed,
-what stays open). Next sweep: due now (none done yet).
+what stays open). Last sweep: 2026-10-30; next at the end of the
+current phase step, or after about ten feature commits.
 
 ## Conventions
 
