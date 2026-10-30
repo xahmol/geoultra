@@ -387,6 +387,11 @@ Done 2026-10-30: the DirMaster reference DNP, the hibernation power cycle
 
 ## Still open
 
+- Fonts and desk accessories in folders: applications find them only in
+  the current folder (and drive E). Idea for a decision: merge the drive's
+  root folder (or a `System` folder) into `FindFTypes`/`FindFile` like
+  drive E, so one set of fonts serves applications in every folder (the
+  applications DNP keeps them in the root for now).
 - Native folders: inside a folder without a name in its header (DirMaster
   leaves it empty) take the parent entry's name as the disk name.
 - BASIC programs on GeoUltra drives: the GEOS 2.0 deskTop starts a BASIC
