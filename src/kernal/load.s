@@ -27,7 +27,7 @@ JT_COPY         = $1000         ; its copy in REU bank 1
         .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
-        .import WriteBackNow, SysFindFile
+        .import WriteBackNow, SysFindFile, AppGate, RefusedMsg
 
 DA_BANK         = 18
 MAX_SLEEP       = 20
@@ -109,6 +109,9 @@ LdFile: jsr GetFHdrInfo
 ; LdApplic: r9 = entry, r0L / r7 / r2 / r3 as GetFile. Loads and starts
 ; the application; returns only with an error or an own load address.
 LdApplic:
+        jsr AppGate             ; (X <> 0: refused, sysdrive.s; the GEOS
+        txa                     ; 2.0 deskTop calls LdApplic directly)
+        bne @end
         jsr SaveArgs
         jsr LdFile
         txa
@@ -579,6 +582,7 @@ OvEnterDeskTop:
         jsr RepairJumpTab
         jsr InitMachine
         jsr Background
+        jsr RefusedMsg          ; an application refused: why (sysdrive.s)
         lda curDrive
         sta dtDrive
 @try:   lda dtDrive             ; the current drive first, then 8-11

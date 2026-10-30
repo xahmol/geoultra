@@ -455,6 +455,13 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
   - A desk accessory from E loads as any other (`LdDeskAcc` reads the
     high tracks); a font opened with `OpenRecordFile` reads its records
     the same way.
+- Refused applications (same module, `OvAppGate` at the start of
+  `LdApplic`): by permanent name (now only GEOS 2.0's "Configure"); the
+  flag `sysRefused`, then `EnterDeskTop`, which shows the reason
+  (`OvRefused`) after `InitMachine`, before loading the desktop. The
+  dialog is built in the stack page above the stack pointer: neither the
+  overlay slot (`DoDlgBox` calls overlays) nor EnterDeskTop's own dialog
+  (it lives in overlay module 0) can hold it.
 - geoFolder (`src/tools/geofolder.s`, 133 bytes): one `DBGETFILES` dialog
   for a file type no file has, so the kernal lists only `..` and the
   folders; OPEN/RETURN/DEL move through them, DISK goes to the next drive,

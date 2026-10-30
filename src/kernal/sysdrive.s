@@ -22,8 +22,9 @@
         .include "sysdrive.inc"
         .include "hw.inc"
 
-        .export SysFTypes, SysFindFile
+        .export SysFTypes, SysFindFile, AppGate, RefusedMsg
         .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
+        .import GetFHdrInfo, DoDlgBox, EnterDeskTop
 
 F_READONLY      = $02
 HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
@@ -35,6 +36,12 @@ FONT            = 8             ; GEOS file type
 SysFTypes:                      ; FindFTypes's end (files.s)
         jsr OvlCall
         .byte 15, 0
+AppGate:                        ; LdApplic, before an application loads
+        jsr OvlCall
+        .byte 15, 6
+RefusedMsg:                     ; EnterDeskTop: the refusal, if any
+        jsr OvlCall
+        .byte 15, 9
 
 ; SysFindFile: FindFile (r6 = name), then drive E for a desk accessory or
 ; a font that is not on the current drive.
@@ -55,6 +62,7 @@ sysActive:      .byte 0         ; $80: the current slot shows drive E
 sysName:        .word 0         ; SysFindFile's name
 sysR6:          .word 0         ; r6, A, Y after the failed FindFile
 sysA:           .byte 0
+sysRefused:     .byte 0         ; $80: an application was refused
 sysY:           .byte 0
 sysType:        .byte 0         ; the borrowed slot's values
 sysCurType:     .byte 0
@@ -65,6 +73,8 @@ sysFlags:       .byte 0
 
         jmp OvFTypes            ; entry 0
         jmp OvFindFile          ; entry 3
+        jmp OvAppGate           ; entry 6
+        jmp OvRefused           ; entry 9
 
 ; Usable: C clear when drive E can be shown on the current drive (not a
 ; native one with more than SYSDRV_TRACK tracks, and not shown already).
@@ -218,3 +228,102 @@ OvFindFile:
         lda sysA
         ldx #FILE_NOT_FOUND
 @end:   rts
+
+; OvAppGate (LdApplic, r9 = the entry of an application or auto-exec
+; file about to load): applications that cannot work with GeoUltra are
+; refused before they overwrite the caller: the desktop is started anew
+; and shows why (OvRefused). The GEOS 2.0 deskTop does not expect
+; LdApplic to return ("System error near $4D77" followed), and a dialog
+; shown at that moment also left it broken: by then it has dismantled
+; part of itself for the launch. X = 0 to go on. Refused: GEOS 2.0's CONFIGURE (permanent name
+; "Configure"), which loads its own disk drivers over $9000 and crashed
+; GeoUltra (U64, 2026-10-30); GeoUltra Settings does its job.
+; r0-r15 kept (GetFHdrInfo changes r1, r7, which LdApplic still needs).
+OvAppGate:
+        ldx #0
+@save:  lda r0L,x
+        pha
+        inx
+        cpx #32
+        bne @save
+        lda r0L                 ; only loaded, not started (bit 0): fine
+        lsr                     ; (a conformance case loads CONFIGURE's
+        bcs @go                 ; record 0 that way)
+        jsr GetFHdrInfo
+        txa
+        bne @go                 ; (LdApplic reports it again)
+        ldx #REFUSE_LEN - 1
+@cmp:   lda fileHeader + O_GHFNAME,x
+        cmp refuseName,x
+        bne @go
+        dex
+        bpl @cmp
+        lda #$80                ; refused
+        sta sysRefused
+        jmp EnterDeskTop        ; (resets the stack)
+@go:    ldx #0
+        stx sysA
+        ldx #31
+@back:  pla
+        sta r0L,x
+        dex
+        bpl @back
+        ldx sysA
+        rts
+
+; OvRefused (EnterDeskTop, after InitMachine and the background): the
+; refusal dialog when an application was refused. It is built in the
+; stack page, above the stack pointer: the slot cannot hold it (DoDlgBox
+; calls overlays, which replace the slot), the calls it makes stay below
+; it, and DoDlgBox returns with the stack as it was.
+OvRefused:
+        bit sysRefused
+        bpl @end
+        lda #0
+        sta sysRefused
+        tsx                     ; DLG_LEN bytes of stack room
+        txa
+        sec
+        sbc #DLG_LEN
+        tax
+        txs
+        inx
+        stx r0L                 ; r0 = $0100 + SP + 1, the dialog
+        lda #>$0100
+        sta r0H
+        ldy #DLG_LEN - 1
+@copy:  lda dlgTemplate,y
+        sta (r0),y
+        dey
+        bpl @copy
+        clc                     ; the text pointers into the copy (the
+        lda r0L                 ; block ends at most at $01FF: no carry)
+        adc #DLG_TEXT1
+        ldy #4
+        sta (r0),y
+        clc
+        lda r0L
+        adc #DLG_TEXT2
+        ldy #9
+        sta (r0),y
+        jsr DoDlgBox
+        tsx                     ; the room given back
+        txa
+        clc
+        adc #DLG_LEN
+        tax
+        txs
+@end:   rts
+
+refuseName:     .byte "Configure"
+REFUSE_LEN      = * - refuseName
+dlgTemplate:    .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6, 0, >$0100
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6, 0, >$0100
+                .byte OK, DBI_X_2, DBI_Y_2
+                .byte 0
+DLG_TEXT1       = * - dlgTemplate
+                .byte BOLDON, "Configure is not", 0
+DLG_TEXT2       = * - dlgTemplate
+                .byte "for GeoUltra", 0
+DLG_LEN         = * - dlgTemplate

@@ -244,6 +244,8 @@ Smoke tests in `tests/smoke/` (`make smoke-vice`, `make smoke-u64`), run
 | Drive E with the deskTop (2026-10-30) | The deskTop showed drive A as "GEOULTRA SYSTEM" and asked for that disk: searching E's directory replaced `curDirHead`; now kept in REU bank 1 `$1800` meanwhile. geoFolder does not appear in the GEOS 2.0 deskTop's geos menu (it lists 7 desk accessories; to check whether the deskTop uses `FindFTypes` or its own directory read) |
 | DirMaster and native folders (2026-10-30) | DirMaster's DNP (folders TEST/INNER, a file) read by GeoUltra: entering, the file found, up and to the root. GeoUltra's folder with a file opened by DirMaster, Validate clean. Header byte `$26` (entry offset) is the same in both (offset of the type byte). DirMaster leaves `$04-$13` (name), `$24/$25` and "1H" empty; GeoUltra fills them (CMD layout); DirMaster shows our name bytes where the ID should be (cosmetic). Inside a DirMaster folder GeoUltra's disk name is empty (to take the entry's name then) |
 | Turbo (2026-10-30) | Pass on the U64-II: after `TurboInit` the CPU reads `$D031` = `$8F`, and a 64 200-cycle loop (the method of the Ultimate library's `uii_turbo_probe_max`) took 16 raster lines three times: 64 MHz (48 MHz would be about 22, 1 MHz about 1000). Code injected through `appMain` runs with `$01` = `$30`: a measurement must switch I/O on itself (a first try waited on RAM at `$D012` and hung) |
+| Refusing CONFIGURE (2026-10-30) | Pass on the U64 and in VICE: GEOS 2.0's CONFIGURE (it loads its own disk drivers over `$9000` and crashed GeoUltra) is stopped at the start of `LdApplic` (the GEOS 2.0 deskTop calls it directly, not through `GetFile`); the desktop is started anew and shows "Configure is not for GeoUltra" first. Returning to the deskTop instead gave "System error near $4D77", and showing the dialog before the restart also broke it: by the time it calls `LdApplic` the deskTop has dismantled part of itself |
+| GEOS 2.0 system disk survey (2026-10-30, U64, the GEOS 2.0 deskTop) | PAINT DRIVERS and CONVERT V2.5 start and quit cleanly. RBOOT (BASIC type) leaves through `ToBasic`: the deskTop passes `LOAD"RBOOT",8`, which goes to the U64's real IEC drive 8 (not GeoUltra's REU drive A) and finds nothing; the session saved on the way out was resumed by a reboot. GEOS and GEOBOOT (also BASIC) take the same path. CONFIGURE: refused (above) |
 | Writing to a native drive (2026-10-29, test copy of ramapps.DNP as drive B) | Pass: `SaveFile` of a 1000-byte file through GeoUltra's driver; after the write-back the image file on the stick has exactly the directory block, header, 4 data blocks and BAM block 1/5 changed, the entry and data read back from the file are right, the free count went down by 5; the backup was made in `GEOULTRA/BACKUP` first |
 | SETTINGS.INI and the serial number per application (2026-10-29, a temporary SETTINGS.INI, removed again) | Pass: `serial=1234` sets the serial (geoWrite 2.1 then refuses: "Please reboot your system using the same GEOS disk"); with `protection=bypass` added, the same geoWrite 2.1 starts |
 | GeoUltra cartridge boots its own kernal to the GEOS screen (phase 1 milestone) | Pass on the U64 and in VICE 3.10 |
@@ -345,9 +347,13 @@ Done 2026-10-30: the DirMaster reference DNP, the hibernation power cycle
 - Native folders: inside a folder without a name in its header (DirMaster
   leaves it empty) take the parent entry's name as the disk name.
 - geoFolder and fonts of drive E in the GEOS 2.0 deskTop's menus.
-- GEOS 2.0's CONFIGURE crashes GeoUltra (it loads its own disk drivers
-  over `$9000`; seen on the U64 2026-10-30): the kernal should refuse it
-  (by permanent name) with a dialog pointing to GeoUltra Settings.
+- BASIC programs on GeoUltra drives: the GEOS 2.0 deskTop starts a BASIC
+  file with `ToBasic` and the command `LOAD"name",8`, which goes to the
+  real IEC bus. `ToBasic` could recognise that command, load the file
+  from the GeoUltra drive itself (it already can, with r5) and type RUN.
+  Together with that: refuse GEOS 2.0's RBOOT, GEOS and GEOBOOT there
+  (they would restart GEOS 2.0 over GeoUltra; RBOOT from the REU, where
+  GeoUltra's data is), and the boot files of Wheels, MegaPatch3, GDOS64.
 
 - Conformance: in the menu interaction tests GEOS 2.0 shows "System error"
   after a click on the third item of a three-item vertical sub-menu
