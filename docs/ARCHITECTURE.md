@@ -476,10 +476,11 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
   for a file type no file has, so the kernal lists only `..` and the
   folders; OPEN/RETURN/DEL move through them, DISK goes to the next drive,
   OK leaves the chosen folders current.
-- The tool binaries are padded to whole blocks: c1541 writes a short last
-  block full, and a desk accessory's header end address must cover all it
-  loads, or `LdDeskAcc` saves less of the application than `ReadFile`
-  overwrites (geoWrite crashed after geoFolder until this;
+- Desk accessories are padded to whole blocks by geos-oscar64's
+  `geosapp.py` (0.1.2; before that by the Makefile): c1541 writes a short
+  last block full, and a desk accessory's header end address must cover
+  all it loads, or `LdDeskAcc` saves less of the application than
+  `ReadFile` overwrites (geoWrite crashed after geoFolder until this;
   docs/GEOS_REFERENCE.md section 17).
 - Checked in VICE: geoFolder is the last entry of geoWrite 2.0's geos
   menu (the user's DNP as drive B), started from there and closed with
