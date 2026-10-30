@@ -84,7 +84,11 @@ written with AI says so in a `Co-Authored-By: Claude` line.
 How the AI's work is checked: every kernal routine is compared with
 GEOS 2.0's behaviour in VICE by the conformance harness
 (`make conformance`, `make conformance81`), and hardware facts are
-measured on an Ultimate 64 (docs/DESIGN.md, "Verified on hardware").
+measured on an Ultimate 64 (docs/DESIGN.md, "Verified on hardware"). On
+the Ultimate the AI also runs the tests itself through its network
+interface (deploying builds, changing settings, reading memory, taking
+screenshots), while Xander does the physical steps (power cycles, keys)
+and judges what is on the screen.
 Tests reduce the risk of mistakes; they do not exclude them.
 
 Clean-room: the AI reads GEOS reference sources (the reassembled GEOS 2.0
