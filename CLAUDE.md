@@ -143,6 +143,30 @@ the REU RAM-drive layer and the kernal can be tested in VICE (with a VICE REU).
   `~/geos-dev/u64-usb/` (GEOS 64/128 2.0, Wheels, MP3, GDOS64, RAM boot
   sets), `~/geos-dev/finke/` (Klaus Finke collection).
 
+## Code-quality sweeps (user, 2026-10-30)
+
+A full review of the code at fixed moments: at the end of each phase
+step (DESIGN.md "Phases"), before each release, and at the latest after
+about ten feature commits since the previous sweep. Not a diff review:
+all of `src/` and `tools/`. Checklist for this code:
+- **Overflows:** fixed buffers and their longest input (`cmdBuf`, paths,
+  names, `TEXT`, dialog and list buffers), copies bounded by length,
+  stack room taken and given back, stack depth in nested overlay calls.
+- **Leaks:** UCI files and directories left open on error paths, REU
+  banks allocated and not freed, overlay modules or stack frames not
+  unwound, interrupt state (`sei`/`cli`, `php`/`plp`), the CPU port (`$01`),
+  VIC/CIA/sprite state, turbo speed not restored.
+- **Errors:** every UCI status and every `X` error checked or deliberately
+  ignored (with a comment); no path that continues with stale data.
+- **Contract:** registers, zero page and "Destroys" as HG2G; overlay
+  rules (overlay.s); segment budgets (`build/*.map`) and how close each
+  is to full.
+- **Clarity:** dead code, comments that no longer match the code,
+  duplicated logic that drifted.
+Findings are fixed in their own commits; the sweep is logged in
+docs/DESIGN.md "Code sweeps" (date, scope, findings, what was fixed,
+what stays open). Next sweep: due now (none done yet).
+
 ## Conventions
 
 The user's global conventions apply (`~/.claude/CLAUDE.md`): docs in

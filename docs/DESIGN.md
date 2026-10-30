@@ -347,6 +347,16 @@ GEOS memory map, so the cartridge stays a boot and overlay store:
 - C128: the MMU maps the external function ROM only on request, so
   occasional ROM calls are possible there; decided in phase 5.
 
+## Code sweeps
+
+Full code-quality reviews at fixed moments (CLAUDE.md "Code-quality
+sweeps": end of each phase step, before each release, at the latest
+after about ten feature commits). Log:
+
+| Date | Scope | Findings | Fixed | Open |
+| --- | --- | --- | --- | --- |
+| (first sweep due) | | | | |
+
 ## For the user, at the computer
 
 Done 2026-10-30: the DirMaster reference DNP, the hibernation power cycle
