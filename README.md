@@ -29,6 +29,7 @@ decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 | [`docs/FEASIBILITY.md`](docs/FEASIBILITY.md) | Feasibility analysis: Ultimate features, compatibility contract, routes, architecture, storage design, C64/C128, build chain, testing, phases, risks |
 | [`docs/GEOS_REFERENCE.md`](docs/GEOS_REFERENCE.md) | GEOS technical reference (memory and zero page maps, kernal, file formats, GEOS 128, MegaPatch3/GDOS64/Wheels differences) |
 | [`docs/GEOS_API_REFERENCE.md`](docs/GEOS_API_REFERENCE.md) | Per-routine kernal API (from The Hitchhiker's Guide to GEOS v2022) |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Rules for pull requests: clean-room, coding practices, tests, descriptions, use of AI |
 
 ## Related projects
 
