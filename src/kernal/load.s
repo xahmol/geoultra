@@ -363,6 +363,15 @@ InitMachine:
         sta vicSprMulti
         sta $D017
         sta $D01D
+        sta $D01B               ; sprite priority
+        ldx #$10                ; sprite positions and their x bit 8
+@spr:   sta $D000,x
+        dex
+        bpl @spr
+        lda #$01                ; only sprite 0 (the mouse pointer) on, as
+        sta vicSprEnable        ; GEOS 2.0's VIC table (mist64/geos
+                                ; kernal/hw1a.s, behaviour only): geoWrite
+                                ; left its sprite 6 over the deskTop
         lda #<IrqEntry
         sta $FFFE
         lda #>IrqEntry

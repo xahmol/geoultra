@@ -22,7 +22,7 @@
         .include "sysdrive.inc"
         .include "hw.inc"
 
-        .export SysFTypes, SysFindFile, AppGate, RefusedMsg
+        .export SysFTypes, SysFindFile, AppGate, RefusedMsg, turboWant, turboNow
         .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop
 
@@ -68,6 +68,10 @@ sysType:        .byte 0         ; the borrowed slot's values
 sysCurType:     .byte 0
 sysBase:        .byte 0
 sysFlags:       .byte 0
+
+        .segment "DATA"
+turboWant:      .byte $FF       ; $D031 at full speed; $FF: no turbo (speed.s)
+turboNow:       .byte $FF       ; $D031 now (a resumed session: Resumed)
 
         .segment "OVL15"                ; overlay module 15: drive E
 
@@ -255,12 +259,13 @@ OvAppGate:
         ldx #REFUSE_LEN - 1
 @cmp:   lda fileHeader + O_GHFNAME,x
         cmp refuseName,x
-        bne @go
+        bne @speed
         dex
         bpl @cmp
         lda #$80                ; refused
         sta sysRefused
         jmp EnterDeskTop        ; (resets the stack)
+@speed: jsr SpeedFor            ; its turbo speed (speed.s)
 @go:    ldx #0
         stx sysA
         ldx #31
@@ -270,6 +275,10 @@ OvAppGate:
         bpl @back
         ldx sysA
         rts
+
+SpeedFor:                       ; (a stub here: the return goes to the
+        jsr OvlCall             ; caller, back in this module)
+        .byte 16, 0
 
 ; OvRefused (EnterDeskTop, after InitMachine and the background): the
 ; refusal dialog when an application was refused. It is built in the

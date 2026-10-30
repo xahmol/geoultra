@@ -21,7 +21,7 @@
         .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
         .export hibState, RtcClockOvl, hibLimit, RtcCheck
         .import WbTick, wbPending
-        .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck
+        .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck, turboNow
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
 
 WR_VER_ERR      = $25           ; (as the disk driver: write failed)
@@ -87,8 +87,10 @@ RtcCheck:
         plp
 @end:   jmp WbCheck
 
+        .segment "DATA"
 rtcRetry:       .byte 0         ; $80: the Ultimate's clock not set yet
 rtcMinute:      .byte $FF
+        .segment "CODE"
 
         .segment "BFCODE"       ; $BF40 area (not after the RAM copy)
 
@@ -266,7 +268,11 @@ Resumed:
         lda #$0F
         sta $D019               ; no pending VIC interrupt
         jsr TodMode             ; the TOD on again: the Ultimate's time
-        jsr RtcClockOvl         ; (else the session's)
+        lda turboNow            ; the session's turbo speed
+        cmp #$FF
+        beq @speed
+        sta $D031
+@speed: jsr RtcClockOvl         ; (else the session's)
         plp
         pla
         sta CPU_PORT

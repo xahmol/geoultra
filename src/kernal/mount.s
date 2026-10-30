@@ -25,6 +25,7 @@
         .include "kcalls.inc"
 
         .export MountAll, SerialFromDisk, TurboInit
+        .import turboWant, turboNow
 .ifdef BYPASS
         .import bypassOn
 .endif
@@ -414,20 +415,26 @@ ReadSettings:
 :
         jsr GetChar
         cmp #'['
-        beq @section
+        bne :+
+        jmp @section
+:
         cmp #13                 ; (SkipLine stops at CR: LF still to come)
         beq @line
         cmp #10
         beq @line
         ldx inDrives
-        beq @skip
+        bne :+
+        jmp @skip
+:
         and #$DF
 .ifdef BYPASS
         cmp #'P'
         bne @serial
         ldx #protKey - keys     ; "ROTECTION=BYPASS"
         jsr Match
-        bne @skip
+        beq :+
+        jmp @skip
+:
         lda #$80
         sta bypassOn
         jmp @skip
@@ -453,11 +460,36 @@ ReadSettings:
 @limit: stx hibLimit
         jmp @skip
 @serial2:
+        cmp #'T'
+        bne @serial3
+        ldx #turboKey - keys    ; "URBO=OFF"
+        jsr Match
+        bne @skip0
+        lda #$80
+        sta turboOff
+@skip0: jmp @skip
+@serial3:
         cmp #'S'
-        bne @skip
+        bne @skip0
+        lda r1L                 ; (Match reads on: back for the second key)
+        pha
+        lda r1H
+        pha
         ldx #serialKey - keys   ; "ERIAL="
         jsr Match
-        bne @skip
+        beq @isSerial
+        pla
+        sta r1H
+        pla
+        sta r1L
+        ldx #slowKey - keys     ; "LOW=" a permanent name for 1 MHz
+        jsr Match
+        bne @skip0
+        jsr SlowName
+        jmp @skip
+@isSerial:
+        pla
+        pla
         jsr Hex2                ; four hex digits, high byte first
         bcs @skip
         sta serialNumber+1
@@ -485,6 +517,8 @@ keys:
 systemKey:      .byte "SYSTEM]", 0
 serialKey:      .byte "ERIAL=", 0
 hibKey:         .byte "IBERNATE=", 0
+turboKey:       .byte "URBO=OFF", 0
+slowKey:        .byte "LOW=", 0
 .ifdef BYPASS
 protKey:        .byte "ROTECTION=BYPASS", 0
 .endif
@@ -1038,6 +1072,9 @@ zero:   .byte 0
 ; u64-bbcbasic (src/mos/ultctl.s, uc_apply). No turbo on an Ultimate II+
 ; or a C128 ($D031 stays $FF there, so $D030 is not touched).
 TurboInit:
+        jsr SlowList            ; the 1 MHz list to the REU (speed.s)
+        bit turboOff            ; SETTINGS.INI [system] turbo=off
+        bmi @end
         lda $D031
         cmp #$FF
         bne @on
@@ -1052,7 +1089,74 @@ TurboInit:
         sta $D030
         lda #TURBO_FULL
         sta $D031
+        sta turboWant           ; (speed.s sets it per application)
+        sta turboNow
 @end:   rts
+
+; SlowName (ReadSettings, r1 after "slow="): the rest of the line, up to
+; SLOW_NAME characters, as the next name of the 1 MHz list.
+SlowName:
+        lda slowCount
+        cmp #SLOW_MAX
+        bcs @end
+        ldx #0                  ; X: the name's first byte in slowList
+        tay
+        beq @at
+@mul:   txa
+        clc
+        adc #SLOW_NAME
+        tax
+        dey
+        bne @mul
+@at:    ldy #SLOW_NAME
+@char:  jsr AtEnd
+        bcs @done
+        sty r2H
+        ldy #0
+        lda (r1),y
+        ldy r2H
+        cmp #13
+        beq @done
+        cmp #10
+        beq @done
+        jsr GetChar
+        sta slowList,x
+        inx
+        dey
+        bne @char
+@done:  inc slowCount
+@end:   rts
+
+; SlowList: slowList to the REU at SLOW_BANK:SLOW_LIST (all of it: unused
+; names are 0; bank 3 is not hibernated, so a resumed session gets this
+; boot's list).
+SlowList:
+        lda #<slowList
+        sta reuC64
+        lda #>slowList
+        sta reuC64+1
+        lda #<SLOW_LIST
+        sta reuAddr
+        lda #>SLOW_LIST
+        sta reuAddr+1
+        lda #SLOW_BANK
+        sta reuAddr+2
+        lda #SLOW_MAX * SLOW_NAME
+        sta reuLen
+        lda #0
+        sta reuLen+1
+        sta reuCtrl
+        lda #REU_STASH
+        sta reuCmd
+        rts
+
+SLOW_BANK       = 3             ; as speed.s
+SLOW_LIST       = $FF00
+SLOW_MAX        = 6
+SLOW_NAME       = 12
+slowList:       .res SLOW_MAX * SLOW_NAME
+slowCount:      .byte 0
+turboOff:       .byte 0
 
 ApplyCfg:
         ldy #0

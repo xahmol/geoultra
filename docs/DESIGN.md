@@ -128,8 +128,18 @@ CPU Speed=64
   "89" (the C64U line skipped), Turbo Control "U64 Turbo Registers" in
   memory, the saved settings unchanged. Then `$D031` = `$8F` (maximum,
   badline stalls off); `InitForIO`/`DoneWithIO` switch to 1 MHz and back
-  around serial-bus work. Not yet: the per-application 1 MHz list, a
-  settings key, a turbo measurement.
+  around serial-bus work. Per application (overlay module 16,
+  `speed.s`, from the gate at the start of `LdApplic`): 1 MHz for the
+  permanent names listed in SETTINGS.INI `[system] slow=NAME` (one per
+  line, up to 6, matched as the start of the permanent name, case as in
+  the file header), full speed for all others, so the desktop gets full
+  speed back; `turbo=off` switches turbo off. The list lives in REU bank
+  3 at `$FF00` (padding of the cartridge image, filled anew at each boot,
+  not hibernated), so a resumed session follows the current SETTINGS.INI;
+  the speed in use comes back with it (`turboNow`). Measured on the U64-II with `slow=geoWrite`
+  (a test only; geoWrite needs no 1 MHz): deskTop 64 MHz, geoWrite 1 MHz
+  (`$D031` = `$00`), after quitting geoWrite 64 MHz again. No
+  application is known yet that needs the list.
 
 ## REU map (16 MB, 256 banks of 64 KB)
 
