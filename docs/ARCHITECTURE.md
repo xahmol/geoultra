@@ -441,6 +441,9 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
 - Search (`src/kernal/sysdrive.s`, overlay module 15): E's directory is
   read by borrowing the current drive's slot for a moment (driveType and
   curType as a 1541, ramBase = bank 4, F_READONLY), resident saved values.
+  Reading E's directory loads E's header into `curDirHead`: it is kept in
+  REU bank 1 at `$1800` meanwhile (the GEOS 2.0 deskTop otherwise took
+  drive A for "GEOULTRA SYSTEM" and asked for that disk).
   - `FindFTypes` ends in `SysFTypes`: for `DESK_ACC` and `FONT` with room
     left, it runs once more on E into the rest of the caller's buffer.
   - `SysFindFile`: `FindFile`, and when the name is not found, E's
@@ -519,6 +522,16 @@ helpers both modules assemble in `src/inc/hibshared.inc`.
 - Not yet: the Suspend command in the desktop, a hot key, a reset from
   the menu, the "safe to switch off" notice, saving only the banks in use,
   task slots, spooler and clipboard.
+
+- Power-on (U64, 2026-10-30): `FindHome` searches up to 10 s for an
+  existing GEOULTRA folder before creating one (`/USB0` appears seconds
+  after the C64 starts); `KeepDirty` keeps an REU mount table only when
+  every entry is plausible (the U64's REU holds a faded copy after a short
+  power-off); `ClearTable` clears the table and the paths at
+  `$01:0200-$02FF`, so `CheckFile` compares like with like; `RtcClock`
+  takes a year before 2026 as "clock not set yet" (the Ultimate's default
+  until its network time) and `RtcCheck` (MainLoop, before `WbCheck`)
+  asks again once a minute.
 
 ## Serial number per application (optional)
 

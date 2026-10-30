@@ -92,6 +92,7 @@ ioP:            .byte 0         ; InitForIO saves
 ioPort:         .byte 0
 ioIrqMask:      .byte 0
 ioClock:        .byte 0
+ioTurbo:        .byte $FF
 ioSprites:      .byte 0
 
 ; --- I/O and turbo -------------------------------------------------------
@@ -114,6 +115,12 @@ InitForIO:
         sta ioClock
         ldy #0
         sty $D030
+        lda $D031               ; U64 turbo registers ($FF: none): 1 MHz
+        sta ioTurbo             ; for the serial bus (docs/DESIGN.md
+        cmp #$FF                ; "Turbo")
+        beq @slow
+        sty $D031
+@slow:
         sty vicIrqMask
         lda #$7F
         sta vicIrq
@@ -139,6 +146,11 @@ DoneWithIO:
         sei
         lda ioClock
         sta $D030
+        lda ioTurbo
+        cmp #$FF
+        beq @fast
+        sta $D031
+@fast:
         lda ioSprites
         sta vicSprEnable
         lda #$7F

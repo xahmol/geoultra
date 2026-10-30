@@ -37,11 +37,22 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
-all: build/geoultra64.crt
+all: build/geoultra64.crt build/geoultra64.cfg
+
+# The Ultimate settings for the cartridge, applied by firmware 3.15 when
+# the .crt is started from its file browser (docs/DESIGN.md "Ultimate
+# settings"); the kernal's start-up check covers the other ways.
+build/geoultra64.cfg: src/cfg/geoultra64.cfg
+	@mkdir -p build
+	cp $< $@
+
+# Every item and value of the .cfg against the Ultimate in .env.
+checkcfg: check-deploy
+	$(PYTHON) tools/checkcfg.py src/cfg/geoultra64.cfg $(ULTIP1)
 
 # --- System drive (drive E, docs/DESIGN.md "System drive") ------------
 

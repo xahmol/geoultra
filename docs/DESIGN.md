@@ -27,6 +27,7 @@ background analysis.
 | System drive | (User, 2026-10-29.) A read-only drive with GeoUltra's own GEOS files (desk accessories such as geoFolder and the settings DA, fonts, drivers, tools), built by our own tools into the cartridge image and copied to the REU at boot (banks 2-17, "ROM mirror"). It is drive **E** (device 12), outside A-D: GEOS 2.0's variables and existing applications know only A-D, so applications never get E as their drive and all four letters stay free for the user's images; GeoUltra's kernal and the new desktop use it ("E: System"), the kernal switching to it only briefly and invisibly. **Merging**: when an application lists desk accessories or fonts (`FindFTypes` for `DESK_ACC` or `FONT`), the kernal adds those of drive E to the list, and loading one that is not on the application's drive falls back to E, so every application's geos menu and font menu offer them. **Built (2026-10-29)**: E's blocks show as tracks 221-255 of every drive (the image relocated at build time), so applications that keep track/sector pairs (geoWrite's fonts) read them too; checked in VICE with geoFolder and a test font in geoWrite 2.0 (ARCHITECTURE "System drive"). Not on native drives with more than 220 tracks |
 | Directories | Approved by the user 2026-10-29 (design with mock-ups: https://claude.ai/artifact/LuumH5NBYSykn74ByyJYA8). **On disk**: native (DNP) drives get CMD native subdirectories (CBM type DIR entries with their own header and directory chain, as CMD HD/RAMLink, MegaPatch3, Wheels and GDOS64 write them), created, entered, renamed, moved and deleted (with contents after a confirmation); 1581 images: CBM DOS partitions that meet the sub-directory rules (whole tracks, at least 120 blocks, track 40 outside) act as folders, also nested, created (size rounded to tracks), entered and deleted; 1541/1571 stay flat. **Long names** on top: the normal 16-character names stay (a valid disk for every system and application); GeoUltra keeps long names (up to 60 characters, mixed case) in one file per folder, `GU.LONGNAMES` (USR, sequential: per file its directory block and slot, short name and long name), short names made from the long name (first 13 characters, then `~1`, `~2` to stay unique), entries whose short name changed elsewhere repaired; the desktop hides the file; a setting per drive switches long names off. The 18-page directory limit stays for 1541/1581, native folders allow more. **Kernal**: a current folder or partition per drive; `OpenDisk`, `Get/PutDirHead`, the BAM, directory, file and VLIR routines work inside it, so existing applications see it as the whole disk; a change behaves like a disk change (noticed at the next `OpenDisk`); kept in a hibernated session and per task; extended jump table: `GetCurDir`, `SetCurDir`, `DirUp`, `MakeDir`, `RemoveDir`, `GetLongName`, `SetLongName`, `MoveFile` (re-link within a drive). **Existing applications** reach other folders three ways: the `geoFolder` desk accessory (each drive's current folder, links to the mount dialogue), folders listed in `DBGETFILES` (`..` and `/name` before the files; choosing one enters it, only real file names go back to the application; on by default, a setting turns the listing off for an application), and keys in file dialogs (RETURN on a folder enters, DEL goes up). **Ultimate file system**: a full file manager in the desktop (browse USB/SD in the same views and two panes; copy, move, rename, delete with confirmation, new folder; mount into A-D, unmount with write-back, create D64/D71/D81/DNP images; GEOS files leave as `.cvt` and come back as GEOS files, other files plain, folders recursively; mounted images cannot be moved, renamed or deleted). Build order: native folders and the current folder in kernal and driver with the extended jump table, then 1581 partitions; `DBGETFILES` with folders and keys, geoFolder; desktop core with the modern view, the Ultimate file manager and the mount dialogue; long names; classic view |
 | Desktop | New, own design (user, 2026-10-29, replacing the earlier Workbench-style idea; mock-ups: https://claude.ai/artifact/2yrZuKGyDceuaFJ2Do4gsq). One core (drives, directories, sorting, copy, move, delete, rename, mount, starting applications, task bar, hibernation) with interchangeable views, each a VLIR record of the desktop application loaded on demand. **Modern** (default): GEOS menu bar and conventions kept (geos menu with desk accessories, file / view menus); sidebar with drives A-D, Ultimate folders and recent documents; the current directory in a list; an action strip for the selection; a task bar with running applications and Suspend. Views of the list, switched with a key or the view menu: list (names), detailed (name, type, size, date; sortable), icons (from the GEOS file headers). Two panes as an option (key or `view > two panes`) for copying and moving between drives and directories. **Classic** (a setting, `desktop > style`, also by key): GEOS 2.0-like notepad with pages and icons, drive icons on the right, on the same core. Overlapping windows (TopDesk style): possibly later, only on demand. Stays a normal GEOS application towards the kernal (`EnterDeskTop` starts it) |
+| Mouse pointer | Several pointer designs to choose from (user, 2026-10-30, for the roadmap): a set of own sprite shapes (classic arrow and others) chosen on the settings card (desktop page) and in SETTINGS.INI, applied at boot and when changed; applications that set their own pointer keep doing so. Designs and details to work out (phase 3, with the settings application) |
 | Printing | Native support for the Ultimate's virtual printer (the IEC printer emulation, device 4, rendered to PNG on the Ultimate file system): an own GeoUltra driver in Epson FX-80 mode, default when the virtual printer is enabled; the print spooler in the REU feeds every driver. Print to file in a print folder in GEOULTRA: PDF with one 1-bit page image per page (own PDF writer in the driver), and PostScript capture (the stream of LaserWriter-type drivers, so geoWrite/geoPublish text keeps outline fonts) as `.ps`. Network push of finished jobs (firmware 3.15 network commands): HTTP upload to a GeoUltra receiver script on the PC (Python, in this repo) by default, which stores the jobs and runs `ps2pdf` on PostScript ones (real-text PDFs), or FTP upload to any server as the alternative; address, port and method in the settings. Real text directly in a C64-made PDF is not planned (the driver only sees pixel bands; PostScript to PDF needs an interpreter) |
 | System patterns | Own pixel designs, but at each of the 32 numbers the same kind of pattern as GEOS 2.0 (lines, dots, bricks, ...), so application screens (title bars, scroll areas) look as intended |
 | Mount list | `MOUNTS.INI` in the GEOULTRA folder (searched on `/USB0`, `/USB1`, `/SD`), section `[drives]` with `A=/USB0/Geos/GEOS64.D81` and so on; GeoUltra creates the folder with an empty list on the first device present when none exists |
@@ -114,6 +115,21 @@ CPU Speed=64
 - Turbo runs at maximum by default: GeoUltra has no IEC transfers in its own
   drives, and the CIA timers keep real time under turbo (measured in
   u64-bbcbasic), so jiffy and process timing are unaffected.
+- **Built (2026-10-30)**: `src/cfg/geoultra64.cfg` (copied to
+  `build/geoultra64.cfg`; `make checkcfg` checks it against the Ultimate
+  in `.env`: repeated items are per-device alternatives). The start-up
+  check is `TurboInit` in the cold start (after the mounts, before a
+  resume): when `$D031` reads `$FF` it writes only the two Turbo Control
+  lines to `/Temp/uci_config.cfg` and sends control `$50` without payload
+  (a payload is taken as the file name); REU and Command Interface are not
+  touched (they are on already when the boot got this far, and applying
+  REU settings might clear the REU). On the U64-II with Turbo Control
+  saved "Off" and the cartridge started from the flash setting: status
+  "89" (the C64U line skipped), Turbo Control "U64 Turbo Registers" in
+  memory, the saved settings unchanged. Then `$D031` = `$8F` (maximum,
+  badline stalls off); `InitForIO`/`DoneWithIO` switch to 1 MHz and back
+  around serial-bus work. Not yet: the per-application 1 MHz list, a
+  settings key, a turbo measurement.
 
 ## REU map (16 MB, 256 banks of 64 KB)
 
@@ -176,7 +192,7 @@ UCI).
 | --- | --- |
 | 1 | Boot ROM with `.cfg` start-up check, REU manager, REU drive driver, core kernal (memory, math, graphics, processes/IRQ, input driver), turbo control, conformance harness against GEOS 2.0 in VICE |
 | 2 | Text and fonts, menus, icons, dialogs, file system up to VLIR: geoWrite and geoPaint run |
-| 3 | Desktop and tools (settings, mount dialogue, themes), hibernation, swapping (tasks, spooler, clipboard), printing (virtual printer, PDF, PostScript, network push and the PC receiver), clock, palette |
+| 3 | Desktop and tools (settings, mount dialogue, themes, mouse pointer designs), hibernation, swapping (tasks, spooler, clipboard), printing (virtual printer, PDF, PostScript, network push and the PC receiver), clock, palette |
 | 4 | C64 with an Ultimate II+: same `.crt`, without turbo and palette; test UCI unlock and REU on the U2+ |
 | 5 | GEOS 128 cartridge on a C128 with an Ultimate II+, 40/80 columns |
 | 6 | Real IEC drives: slow universal driver, then turbo drivers (1541, 1581, 1571, CMD FD/HD) |
@@ -224,6 +240,9 @@ Smoke tests in `tests/smoke/` (`make smoke-vice`, `make smoke-u64`), run
 | Serial number and applications (2026-10-29, test copies: A = GEOS64.D81, B = ramapps.DNP) | Pass: the cold start read the user's serial (`$58B5`) from GEOBOOT on drive A; geoWrite 2.1 from drive A starts without the "same GEOS disk" refusal, geoWrite 2.0 from the native drive B starts (both to their start dialog, launched with `GetFile` through `appMain`) |
 | Clock from the Ultimate's real-time clock (2026-10-29) | Pass: after the cold start GEOS showed the Ultimate's date and time (`DOS_CMD_GET_TIME`, "2026/10/29 18:44:..."); a first try showed the next day: `ClockInit`'s read of the TOD hours left the TOD latched on 12 AM, so the first `TimeUpdate` saw an afternoon hour on a morning clock (fixed: `TodSet` reads the tenths first) |
 | Hibernation core (2026-10-29) | Pass: `HibSuspend` (called through `appMain`) wrote `GEOULTRA/HIBERNAT.BIN` (720 896 bytes); after a change in RAM and on the screen and a reset, the cold start resumed the session (the change gone, the code after the call running on, the clock continuing from 00:00:53 to 00:01:10), the file deleted. Quiet moment: after a marked change and about 10 s without input the file was written by itself, and resumed after a reset. The power cycle itself not tested yet |
+| Hibernation, real power cycle (2026-10-30) | Pass after three fixes. Boot from the U64's flash (Cartridge = geoultra64.crt, REU and Command Interface saved), drives A/B on test copies, the deskTop with an icon selected, 30 s quiet: `HIBERNAT.BIN` written; power off about 5 s and on: the deskTop came back with the icon still selected, the file deleted, the clock right. With C= held: a fresh start (banner, drives mounted, file kept). Found on the way: (1) at power-on `/USB0` appears seconds after the C64 starts: `FindHome` made a second, empty home on SD; it now searches up to 10 s first. (2) The U64 keeps the REU on the board: after the power-off the old mount table still had its signature, with noise elsewhere and a noise bit as "unsaved changes", and was kept on every boot (no drives); `KeepDirty` now checks every entry. (3) `ClearTable` never cleared the table (`ldx #$9F` / `bpl`), and the paths of unused drives kept old REU contents, so the session's mounts never matched after a power cycle; both cleared now. (4) Right after power-on the Ultimate's clock reads 2025/01/11 until its network time: a year before 2026 is taken as not set, the session's time goes on, asked again each minute (`RtcCheck`). U64 firmware 3.15a has US daylight-saving dates for "Western Europe" (CEST until 1 November); fixed upstream (1541ultimate `cea55764`, issues #659/#660), not in 3.15a |
+| Drive E with the deskTop (2026-10-30) | The deskTop showed drive A as "GEOULTRA SYSTEM" and asked for that disk: searching E's directory replaced `curDirHead`; now kept in REU bank 1 `$1800` meanwhile. geoFolder does not appear in the GEOS 2.0 deskTop's geos menu (it lists 7 desk accessories; to check whether the deskTop uses `FindFTypes` or its own directory read) |
+| DirMaster and native folders (2026-10-30) | DirMaster's DNP (folders TEST/INNER, a file) read by GeoUltra: entering, the file found, up and to the root. GeoUltra's folder with a file opened by DirMaster, Validate clean. Header byte `$26` (entry offset) is the same in both (offset of the type byte). DirMaster leaves `$04-$13` (name), `$24/$25` and "1H" empty; GeoUltra fills them (CMD layout); DirMaster shows our name bytes where the ID should be (cosmetic). Inside a DirMaster folder GeoUltra's disk name is empty (to take the entry's name then) |
 | Writing to a native drive (2026-10-29, test copy of ramapps.DNP as drive B) | Pass: `SaveFile` of a 1000-byte file through GeoUltra's driver; after the write-back the image file on the stick has exactly the directory block, header, 4 data blocks and BAM block 1/5 changed, the entry and data read back from the file are right, the free count went down by 5; the backup was made in `GEOULTRA/BACKUP` first |
 | SETTINGS.INI and the serial number per application (2026-10-29, a temporary SETTINGS.INI, removed again) | Pass: `serial=1234` sets the serial (geoWrite 2.1 then refuses: "Please reboot your system using the same GEOS disk"); with `protection=bypass` added, the same geoWrite 2.1 starts |
 | GeoUltra cartridge boots its own kernal to the GEOS screen (phase 1 milestone) | Pass on the U64 and in VICE 3.10 |
@@ -315,25 +334,21 @@ GEOS memory map, so the cartridge stays a boot and overlay store:
 - C128: the MMU maps the external function ROM only on request, so
   occasional ROM calls are possible there; decided in phase 5.
 
-## For the user, at the computer (2026-10-29)
+## For the user, at the computer
 
-1. DirMaster: File > New > DNP; folder `TEST`, inside it `INNER`; a small
-   file into `TEST`; save as `C:\Users\xande\Downloads\folders.dnp`
-   (reference for the native folder format, see below).
-2. Hibernation on a real power cycle: GeoUltra running with something
-   changed, wait 30 s, switch the U64 off and on: the
-   session should come back; once more with C= held: a fresh start.
-3. Look at `/USB0/GEOULTRA/test` (test copies, some changed by tests) and
-   `/USB0/GEOULTRA/BACKUP`: keep or delete.
+Done 2026-10-30: the DirMaster reference DNP, the hibernation power cycle
+(with and without C=), and the GEOULTRA/test and BACKUP folders (both kept).
 
 ## Still open
 
-- Native folders: compare GeoUltra's folder headers and entries with a
-  DNP made by DirMaster (installed on the user's PC, no command line; VICE
-  3.10's c1541 creates neither DNP nor CMD FD images). Steps for the user:
-  File > New > DNP; folder `TEST`, inside it `INNER`; a small file into
-  `TEST`; save as `Downloads/folders.dnp`. In particular byte `$26` of a
-  header (the entry's offset in the parent block).
+- Native folders: inside a folder without a name in its header (DirMaster
+  leaves it empty) take the parent entry's name as the disk name.
+- geoFolder and fonts of drive E in the GEOS 2.0 deskTop's menus.
+- GEOS 2.0's CONFIGURE crashes GeoUltra (it loads its own disk drivers
+  over `$9000`; seen on the U64 2026-10-30): the kernal should refuse it
+  (by permanent name) with a dialog pointing to GeoUltra Settings.
+- Measure the turbo speed on the hardware (the raster-timed probe of the
+  Ultimate library, `uii_turbo_probe_max`).
 
 - Conformance: in the menu interaction tests GEOS 2.0 shows "System error"
   after a click on the third item of a three-item vertical sub-menu

@@ -19,9 +19,9 @@
         .include "kcalls.inc"
 
         .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
-        .export hibState, RtcClockOvl, hibLimit
+        .export hibState, RtcClockOvl, hibLimit, RtcCheck
         .import WbTick, wbPending
-        .import OvlCall, uciPresent, WriteBackNow, TodMode
+        .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
 
 WR_VER_ERR      = $25           ; (as the disk driver: write failed)
@@ -65,6 +65,30 @@ HibResumeOvl:                   ; returns only when nothing is resumed
 RtcClockOvl:                    ; (module 10)
         jsr OvlCall
         .byte 10, 3
+
+; RtcCheck (MainLoop, then WbCheck): while the Ultimate's clock was not
+; set yet (RtcClock), it is asked again once a minute.
+RtcCheck:
+        bit rtcRetry
+        bpl @end
+        lda $851A               ; minutes
+        cmp rtcMinute
+        beq @end
+        sta rtcMinute
+        php
+        sei
+        lda CPU_PORT
+        pha
+        lda #RAM_IO
+        sta CPU_PORT
+        jsr RtcClockOvl
+        pla
+        sta CPU_PORT
+        plp
+@end:   jmp WbCheck
+
+rtcRetry:       .byte 0         ; $80: the Ultimate's clock not set yet
+rtcMinute:      .byte $FF
 
         .segment "BFCODE"       ; $BF40 area (not after the RAM copy)
 
@@ -304,6 +328,18 @@ RtcClock:
         lda rtcText+4
         cmp #'/'
         bne @none
+        lda rtcText+2           ; before 2026: the clock is not set yet
+        cmp #'2'                ; (the U64 at power-on, until it has the
+        bcc @unset              ; network time: 2025/01/11 seen); the time
+        bne @set                ; already there goes on, asked again later
+        lda rtcText+3           ; (RtcCheck)
+        cmp #'6'
+        bcs @set
+@unset: lda #$80
+        sta rtcRetry
+        bne @none
+@set:   lda #0
+        sta rtcRetry
         ldx #5                  ; yy mm dd hh mm ss -> year .. seconds
 @field: ldy rtcAt,x
         lda rtcText,y

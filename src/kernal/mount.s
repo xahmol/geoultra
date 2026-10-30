@@ -24,7 +24,7 @@
         .include "hw.inc"
         .include "kcalls.inc"
 
-        .export MountAll, SerialFromDisk
+        .export MountAll, SerialFromDisk, TurboInit
 .ifdef BYPASS
         .import bypassOn
 .endif
@@ -37,6 +37,7 @@ uciResp         = $DF1E
 uciStat         = $DF1F
 UCI_ID          = $C9
 TARGET_DOS      = $01
+TARGET_CTRL     = $04
 DOS_OPEN        = $02
 DOS_CLOSE       = $03
 DOS_READ        = $04
@@ -55,10 +56,11 @@ FIRST_BANK      = 31            ; drives: REU banks 31-191
 LAST_BANK       = 191
 SYS_BANK        = 1
 F_DIRTY         = $01
+F_READONLY      = $02
 
         .segment "INIT"
 
-cmdBuf:         .res 80
+cmdBuf:         .res 112        ; (ApplyCfg: 4 + 93 bytes)
 cmdLen:         .byte 0
 statBuf:        .res 32
 path:           .res 64
@@ -118,7 +120,11 @@ MountAll:
 ; --- The REU mount table --------------------------------------------------
 
 ; KeepDirty: C set when the REU's table is valid and a drive has unsaved
-; changes (then it is kept).
+; changes (then it is kept). Valid: signature, version 1, each entry a
+; known type with a bank in the drive range or empty, no unknown flags.
+; The U64 keeps the REU on the board: after a short power-off the old
+; table was found with the signature intact and noise elsewhere, one
+; noise bit as "unsaved changes", and kept on every boot (no drives).
 KeepDirty:
         ldy #REU_FETCH
         jsr TableDma
@@ -128,28 +134,72 @@ KeepDirty:
         bne @no
         dex
         bpl @sig
-        ldx #$20 + 3            ; flags of the four entries
-@flag:  lda TABLE,x
+        lda TABLE+4
+        cmp #1
+        bne @no
+        ldy #0                  ; drives with changes
+        ldx #0
+@entry: lda TABLE+$23,x         ; flags
+        and #$FF ^ (F_DIRTY | F_READONLY)
+        bne @no
+        lda TABLE+$20,x         ; type
+        bne @used
+        lda TABLE+$23,x         ; an empty entry has no flags
+        bne @no
+        beq @next
+@used:  cmp #DRV_NATIVE + 1
+        bcs @no
+        lda TABLE+$21,x         ; first bank
+        cmp #FIRST_BANK
+        bcc @no
+        cmp #LAST_BANK + 1
+        bcs @no
+        lda TABLE+$23,x
         and #F_DIRTY
-        bne @yes
-        txa
+        beq @next
+        iny
+@next:  txa
         clc
         adc #32
         tax
-        cpx #$A0
-        bcc @flag
+        cpx #$80
+        bne @entry
+        tya
+        beq @no
+        sec
+        rts
 @no:    clc
         rts
-@yes:   sec
-        rts
 
-; ClearTable: signature, version, no drives.
+; ClearTable: signature, version, no drives; the paths in REU
+; $01:0200-$02FF zeroed too (unused slots keep nothing from before: the
+; U64's REU holds noise after a power-off, which made a hibernated
+; session's mounts look different from the same mounts after the boot).
 ClearTable:
-        ldx #$9F
+        ldx #0
+        txa
+@clear: sta SCRATCH,x
+        cpx #$A0
+        bcs @rest
+        sta TABLE,x
+@rest:  inx
+        bne @clear
+        lda #<SCRATCH           ; 256 zeros to the paths
+        sta reuC64
+        lda #>SCRATCH
+        sta reuC64+1
         lda #0
-@clear: sta TABLE,x
-        dex
-        bpl @clear
+        sta reuAddr
+        sta reuLen
+        sta reuCtrl
+        lda #2
+        sta reuAddr+1
+        lda #SYS_BANK
+        sta reuAddr+2
+        lda #1
+        sta reuLen+1
+        lda #REU_STASH
+        sta reuCmd
         ldx #3
 @sig:   lda mountSig,x
         sta TABLE,x
@@ -185,14 +235,22 @@ TableDma:
         rts
 
 mountSig:       .byte "GUMT"
+HOME_TRIES      = 40            ; FindHome: 10 s for the devices to appear
+homeTries:      .byte 0
 
 ; --- Home folder ------------------------------------------------------------
 
 ; FindHome: the current directory becomes the GEOULTRA folder on /USB0,
 ; /USB1 or /SD (the first found); without one it is created, with an
 ; empty MOUNTS.INI, on the first of them present. C set when neither.
+; At power-on the Ultimate's USB stick appears seconds after the C64
+; starts (tested on the U64: the SD card was there, /USB0 not yet, and a
+; second, empty home was made on SD), so the search is repeated for up to
+; HOME_TRIES quarter seconds before one is created.
 FindHome:
-        ldx #0
+        lda #HOME_TRIES
+        sta homeTries
+@round: ldx #0
 @try:   stx drive
         jsr HomePath            ; "/USB0/GEOULTRA" etc.
         jsr ChangeDir
@@ -204,7 +262,19 @@ FindHome:
         inx
         cpx #3
         bne @try
-        ldx #0                  ; none: create on the first device present
+        dec homeTries
+        beq @none
+        ldy #12                 ; about a quarter second (raster line
+@frame: lda $D012               ; 248 comes once a frame)
+        cmp #248
+        bne @frame
+@past:  lda $D012
+        cmp #248
+        beq @past
+        dey
+        bne @frame
+        beq @round
+@none:  ldx #0                  ; none: create on the first device present
 @make:  stx drive
         jsr DevicePath          ; "/USB0/" etc.
         jsr ChangeDir
@@ -953,6 +1023,84 @@ ClearMap:
         rts
 
 zero:   .byte 0
+
+; --- Turbo -----------------------------------------------------------------
+
+; TurboInit (cold start, after MountAll, I/O on): the U64's turbo
+; registers at full speed ($D031 = 15, badline stalls off; docs/DESIGN.md
+; "Ultimate settings"). Without them ($D031 reads $FF: the firmware's
+; Turbo Control is not "U64 Turbo Registers", as when the cartridge was
+; not started with geoultra64.cfg) the setting is applied through the UCI
+; first: only that line, written to /Temp/uci_config.cfg and loaded with
+; control command $50 (REU and Command Interface are on already, and
+; applying REU settings again might clear the REU). The ApplyCfg pattern
+; (file in /Temp, control $50, status "89" fine) is from the author's
+; u64-bbcbasic (src/mos/ultctl.s, uc_apply). No turbo on an Ultimate II+
+; or a C128 ($D031 stays $FF there, so $D030 is not touched).
+TurboInit:
+        lda $D031
+        cmp #$FF
+        bne @on
+        lda uciPresent
+        beq @end
+        jsr ApplyCfg
+        lda $D031
+        cmp #$FF
+        beq @end
+@on:    lda $D030
+        ora #$01
+        sta $D030
+        lda #TURBO_FULL
+        sta $D031
+@end:   rts
+
+ApplyCfg:
+        ldy #0
+@name:  lda cfgName,y
+        sta path,y
+        beq @named
+        iny
+        bne @name
+@named: sty pathLen
+        lda #$0A                ; write, create always
+        jsr OpenFile
+        bne @end
+        lda #TARGET_DOS
+        sta cmdBuf
+        lda #DOS_WRITE
+        sta cmdBuf+1
+        lda #0
+        sta cmdBuf+2
+        sta cmdBuf+3
+        ldx #0
+@copy:  lda cfgText,x
+        sta cmdBuf+4,x
+        inx
+        cpx #CFG_TEXT_LEN
+        bne @copy
+        lda #CFG_TEXT_LEN + 4
+        sta cmdLen
+        jsr Simple
+        jsr CloseFile
+        lda #TARGET_CTRL        ; load the default file /Temp/uci_config.cfg
+        sta cmdBuf
+        lda #$50
+        sta cmdBuf+1
+        lda #2                  ; no payload: the firmware's default file
+        sta cmdLen
+        jsr Simple
+        lda statBuf             ; the log: its status ("00", or "89" on a
+        sta LOG+6               ; device without some of the items)
+        lda statBuf+1
+        sta LOG+7
+@end:   rts
+
+TURBO_FULL      = $8F           ; speed index 15, badline stalls off
+cfgName:        .byte "/Temp/uci_config.cfg", 0
+cfgText:        .byte "[U64 Specific Settings]", 10
+                .byte "Turbo Control=U64 Turbo Registers", 10
+                .byte "Turbo Control=C64U Turbo Registers", 10
+CFG_TEXT_LEN    = * - cfgText
 
 ; --- File commands ----------------------------------------------------------
 

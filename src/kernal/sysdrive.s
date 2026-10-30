@@ -7,7 +7,9 @@
 ; current drive, also by applications that keep track/sector pairs
 ; (geoWrite reads fonts by them). Searching E's directory borrows the
 ; current drive's slot for a moment (driveType and curType as a 1541,
-; ramBase = SYSDRV_BANK, the driver's flags with F_READONLY).
+; ramBase = SYSDRV_BANK, the driver's flags with F_READONLY); the
+; current drive's directory header (curDirHead, which reading E's
+; directory replaces) is kept in REU bank 1 meanwhile.
 ; - FindFTypes (files.s) adds E's desk accessories and fonts;
 ; - FindFile through the jump table, GetFile and OpenRecordFile fall back
 ;   to E for a desk accessory or font not found on the current drive;
@@ -18,11 +20,13 @@
 
         .include "geos.inc"
         .include "sysdrive.inc"
+        .include "hw.inc"
 
         .export SysFTypes, SysFindFile
-        .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks
+        .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
 
 F_READONLY      = $02
+HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
 OFF_FNAME       = 3             ; the name in a directory entry
 FONT            = 8             ; GEOS file type
 
@@ -49,7 +53,9 @@ SysFindFile:
 ; Resident: survive nested overlay calls (overlay.s).
 sysActive:      .byte 0         ; $80: the current slot shows drive E
 sysName:        .word 0         ; SysFindFile's name
-sysR6:          .word 0         ; r6 after the failed FindFile
+sysR6:          .word 0         ; r6, A, Y after the failed FindFile
+sysA:           .byte 0
+sysY:           .byte 0
 sysType:        .byte 0         ; the borrowed slot's values
 sysCurType:     .byte 0
 sysBase:        .byte 0
@@ -75,7 +81,9 @@ Usable: sec
 @end:   rts
 
 ; Enter: the current slot shows drive E (a read-only 1541 image).
-Enter:  ldx curDrive
+Enter:  ldy #REU_STASH
+        jsr HeadDma
+        ldx curDrive
         lda driveType-8,x
         sta sysType
         and #$F0                ; (the REU drive bit kept)
@@ -98,9 +106,11 @@ Enter:  ldx curDrive
         sta sysActive
         rts
 
-; Leave: the slot back as it was. X kept.
+; Leave: the slot back as it was, curDirHead too. X kept.
 Leave:  txa
         pha
+        ldy #REU_FETCH
+        jsr HeadDma
         ldx curDrive
         lda sysType
         sta driveType-8,x
@@ -114,6 +124,36 @@ Leave:  txa
         sta sysActive
         pla
         tax
+        rts
+
+; HeadDma: curDirHead to (Y = REU_STASH) or from (REU_FETCH) HEAD_SAVE in
+; REU bank 1; r0-r3 kept (OvFindFile returns r1).
+HeadDma:
+        ldx #7
+@save:  lda r0L,x
+        pha
+        dex
+        bpl @save
+        lda #<curDirHead
+        sta r0L
+        lda #>curDirHead
+        sta r0H
+        lda #<HEAD_SAVE
+        sta r1L
+        lda #>HEAD_SAVE
+        sta r1H
+        lda #0
+        sta r2L
+        lda #1
+        sta r2H
+        sta r3L                 ; bank 1
+        jsr SysRAMOp
+        ldx #0
+@back:  pla
+        sta r0L,x
+        inx
+        cpx #8
+        bne @back
         rts
 
 ; OvFTypes (after FindFTypes, X its error, r6/r7H where it stopped): for
@@ -144,9 +184,12 @@ OvFTypes:
 
 ; OvFindFile (FindFile failed with FILE_NOT_FOUND): the name in drive E's
 ; directory; found there as a desk accessory or font, X = 0 with
-; dirEntryBuf, r1 and r5 as FindFile leaves them (E's tracks), else r6 as
-; the failed FindFile left it and X = FILE_NOT_FOUND.
+; dirEntryBuf, r1 and r5 as FindFile leaves them (E's tracks), else A, Y
+; and r6 as the failed FindFile left them and X = FILE_NOT_FOUND
+; (OpenRecordFile's Y is compared with GEOS 2.0's, tests/conformance).
 OvFindFile:
+        sta sysA
+        sty sysY
         lda r6L
         sta sysR6
         lda r6H
@@ -171,5 +214,7 @@ OvFindFile:
         sta r6L
         lda sysR6+1
         sta r6H
+        ldy sysY
+        lda sysA
         ldx #FILE_NOT_FOUND
 @end:   rts

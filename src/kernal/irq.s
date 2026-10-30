@@ -7,7 +7,7 @@
         .export MainLoopCall
         .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
         .import SleepTick, WakeSleepers, CallRoutine, TimeUpdate, AlarmTick
-        .import HibTick, WbCheck
+        .import HibTick, WbCheck, RtcCheck
         .import MenuTick, CheckMousePos, IconTick, PromptTick, GetRandom
 
         .segment "DATA"
@@ -132,7 +132,7 @@ MainLoop:
         jsr RunProcesses
         jsr WakeSleepers
         jsr TimeUpdate
-        jsr WbCheck
+        jsr RtcCheck            ; (then WbCheck)
         jmp MainLoop
 
 CallApp:
