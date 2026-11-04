@@ -462,7 +462,8 @@ docs/GEOS_REFERENCE.md, "1581 partitions and sub-directories".)
   formatted inside as the real DOS's "N0:" does (header "D"/"3D" with the
   disk's ID, BAM over all 80 tracks with only its own free and its first
   track's sectors 0-3 used, empty directory). `RemoveDir` (module 21)
-  only on an empty partition: its tracks freed in the current BAM, the
+  only on an empty partition that `SetCurDir` would enter (a formatted
+  sub-directory; another CBM partition gives `STRUCT_MISMAT`): its tracks freed in the current BAM, the
   entry's type set to 0. Errors as on native drives (`FILE_EXISTS` $40,
   `DIR_NOT_EMPTY` $41, `INSUFF_SPACE`). `make test-part81` also has the
   real 1581 DOS select a partition GeoUltra made and write and read a
@@ -660,11 +661,13 @@ will take the copy after the auto-exec files have run.
 
 ## Overlays
 
-Rarely used kernal routines live in overlay modules of 640 bytes, linked
-to run at `$9D80` (segments `OVL0`, `OVL1`, ... in `build/overlays64.bin`)
-and stored at the start of the system image, so they sit at REU
-`$020000` after the boot (mkimage's `FILE@REU`: in the image, no load
-table row). A routine keeps a 5-byte resident stub, `jsr OvlCall` and
+Rarely used kernal routines live in overlay modules of at most 496 bytes
+(`$1F0`), linked to run at `$9D80` (segments `OVL0`, `OVL1`, ... in
+`build/overlays64.bin`, spread by the Makefile to a `$200` stride in
+`build/overlays64s.bin`) and stored at the start of the system image, so
+module n sits at REU `$020000 + n * $200` after the boot (mkimage's
+`FILE@REU`: in the image, no load table row; `OvlLoad` computes the
+address). A routine keeps a 5-byte resident stub, `jsr OvlCall` and
 `.byte module, entry`; `OvlCall` fetches the module when another one is
 in the slot (one REU DMA), calls the entry with A, X, Y and the flags as
 at the stub, fetches the previous module back and returns to the stub's
@@ -674,6 +677,27 @@ the IRQ or a BASIC program after `ToBASIC` may reach goes there (`ToBASIC`
 and its NMI routine stay at `$Cxxx`). Module 0: `EnterDeskTop` with its
 dialog, `FirstInit`, Panic's message (Panic takes the BRK address from
 the stack resident, before the overlay call) and `CRC`.
+
+| Module | Holds | Source |
+| --- | --- | --- |
+| 0 | EnterDeskTop, FirstInit, Panic's message, CRC | load.s |
+| 1, 2 | write-back: all drives, one drive | writeback.s |
+| 3 | native allocation | reudrv.s |
+| 4 | serial-number measures (left out with `BYPASS=0`) | bypass.s |
+| 5 | GraphicsString | gstring.s |
+| 6, 7 | native BAM copy and free count; 1571 allocation | reudrv.s |
+| 8, 9, 10 | hibernation: suspend, resume, the clock | hibernate.s, hibresume.s |
+| 11 | dialog state (SaveState, RestoreState), the dialog box drawn and recovered | dialog.s |
+| 12, 13, 14 | folders: the moves; SetGEOSDisk, RemoveDir; MakeDir | folders.s |
+| 15 | drive E, the application gate, the refusal notice | sysdrive.s |
+| 16 | turbo per application | speed.s |
+| 17 | fonts and desk accessories from the root folder | rootmerge.s |
+| 18-21 | 1581 partitions: entered and left, created, formatted, removed | folders.s |
+
+Each module's use is in `build/kernal64.map` (`OVL<n>`); the linker
+refuses one over `$1F0`. Code that several modules need is assembled into
+each from an include (`foldershared.inc`, `part81.inc`, ...), as a module
+cannot call another's code.
 
 ## Loading and starting
 
