@@ -37,7 +37,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-part81 test-engine smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-part81 test-engine test-engine-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -296,6 +296,19 @@ test-part81: all
 test-engine: all
 	$(PYTHON) tests/engine/e1.py
 	$(PYTHON) tests/engine/e2.py
+
+# The file engine on the Ultimate, step E3 (tests/engine/e3u64.py): the
+# cartridge into the U64's flash and a reboot, then the Ultimate's file
+# system and raw copies; only in /USB0/GEOULTRA/test and on the test
+# images (MOUNTS.INI pointing at them), everything removed again.
+test-engine-u64: check-deploy all build/uciprobe.bin
+	$(PYTHON) tests/engine/e3u64.py build/geoultra64.crt
+
+# A UCI probe run inside GeoUltra on the U64 (feu64.py, U64.uci): raw
+# commands while developing.
+build/uciprobe.bin: tests/engine/uciprobe.s tests/engine/uciprobe.cfg src/inc/uci.inc
+	$(CA65) -I src/inc -o build/uciprobe.o $<
+	$(LD65) -C tests/engine/uciprobe.cfg -o $@ build/uciprobe.o
 
 # A font on drive E in geoWrite (the user's own disks: SYSFONT_DISK,
 # GEOS_APPS_DISK); screens in build/harness/sysfont-*.png.

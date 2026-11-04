@@ -1,7 +1,7 @@
 # File engine (design proposal)
 
 Status: **approved by the user, 2026-11-04** (with the `%XX` escape);
-steps E1 and E2 implemented (below, "State of the work"). Decisions it builds
+steps E1-E3 implemented (below, "State of the work"). Decisions it builds
 on: docs/DESIGN.md, "Shell: gush", "Languages" and "gush and file
 engine decisions".
 
@@ -86,7 +86,7 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 0 | `FE_VERSION` | | r0 = version |
 | 1 | `FE_STAT` | r0 = path, r1 = 16-byte info block | info (below); a GEOS file's header in `fileHeader` |
 | 2 | `FE_OPENDIR` | r0 = a folder, a pattern in a folder, one name, or `/` (the drives) | A = handle |
-| 3 | `FE_READDIR` | Y = handle, r1 = info block, r2 = name buffer (17 bytes; 65 from E3) | info, the name zero-ended; X = `FE_END_OF_DIR` at the end |
+| 3 | `FE_READDIR` | Y = handle, r1 = info block, r2 = name buffer (17 bytes; 63 on the Ultimate) | info, the name zero-ended; X = `FE_END_OF_DIR` at the end |
 | 4 | `FE_CLOSE` | Y = handle, `$FF`: all (a program starting afresh) | |
 | 5 | `FE_COPY` | r0 = source, r1 = target (a folder or a new name), r2L = flags | |
 | 6 | `FE_MOVE` | as `FE_COPY` | (same drive and kind: a rename or a moved entry, else copy then delete) |
@@ -138,11 +138,12 @@ power-on).
   header block, then each chain (sequential data or each VLIR record),
   blocks allocated on the target with `SetNextFree`, the directory entry
   written last (so a failed copy leaves no entry; its blocks are freed).
-- **Ultimate to REU and back without the CPU:** a file on the Ultimate
-  is loaded whole into a scratch area of free drive banks (`LOAD_REU`,
-  banks taken from the allocation table for the copy and given back),
-  and written whole from there (`SAVE_REU`). The CPU only walks the
-  blocks between that area and the GEOS drive, through `diskBlkBuf`.
+- **GEOS drive and Ultimate (E3, as built):** through the CPU, block by
+  block: `READ_DATA` of 254 bytes into a block, `WRITE_DATA` in pieces of
+  127 bytes (the command buffer is `fileTrScTab`). Measured on the U64:
+  174848 bytes onto drive A in about 2 s. The REU route (`LOAD_REU` into
+  scratch banks, `SAVE_REU` back) stays the plan for when that is too
+  slow; it needs the allocation table at run time.
 - **CVT:** GEOS files become `name.cvt` on the Ultimate (the format in
   docs/GEOS_REFERENCE.md, "CVT"; the same one as mkappsdnp.py reads),
   and `.cvt` files become GEOS files again on a GEOS drive. Plain CBM
@@ -172,18 +173,32 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 34 | `FE_READ` |
 | 35 | `FE_WRITE` |
 
-Still to come (estimate): the Ultimate's listing and stat; scratch
-banks, Ultimate transfers; CVT out and in; streams; mount
-and umount (sharing the image code with mount.s).
+| 36 | the Ultimate: the exchange (I/O on, `uci.inc`), its status as an error, a listing read into REU slots |
+| 37 | `FE_STAT` on the Ultimate (open + `FILE_INFO`: `FILE_STAT` answers "82" on firmware 3.15a) |
+| 38 | `FE_OPENDIR` on the Ultimate (read whole: no reply stays open between calls) |
+| 39 | `FE_READDIR` on an Ultimate listing |
+| 40 | `FE_READDIR` on `/`: drives A-D, then `usb0`, `usb1`, `sd` that can be entered |
+| 41 | `FE_DELETE`, `FE_MKDIR`, `FE_RMDIR`, `FE_RENAME`, `FE_CD` on the Ultimate |
+| 42 | `FE_COPY`/`FE_MOVE` onto the Ultimate: checks, the name (`%XX`, extension), open, close |
+| 43 | `FE_COPY`/`FE_MOVE` from the Ultimate: the source, the target (module 30), the room, close, delete |
+| 44 | its blocks onto the GEOS drive, the entry |
+| 45 | a GEOS file's blocks onto the Ultimate |
+| 46 | a new entry's fields from an Ultimate file (type from the extension, `%XX` decoded, size in blocks, FAT date) |
+
+Still to come (estimate): CVT out and in; streams on the Ultimate; mount
+and umount (sharing the image code with mount.s); Ultimate to Ultimate
+copies.
 
 Shared code goes into includes assembled into each module that needs it
 (`engine.inc`: constants, the work area, the REU layout; `fereu.inc`:
 REU state and handles; `feresolve.inc`: paths, names, entering folders;
 `feinfo.inc`: info blocks; `fehandle.inc`: a free handle; `fename.inc`:
-a name into a directory entry; `festream.inc`: stream handles; later
-`uci.inc`: send, status, data). The UCI helpers
-now in mount.s, writeback.s and hibernate.s move into `uci.inc` first, so
-there is one copy of them in the source. Mounting at run time needs
+a name into a directory entry; `festream.inc`: stream handles;
+`fematch.inc`: patterns; `fegive.inc`: a listing entry to the caller;
+`feentry.inc`, `feblock.inc`, `feprog.inc`: a copy's entry, blocks and
+progress; `fefat.inc`: FAT dates; `feult.inc`, `fecd.inc`: Ultimate
+commands and folders; `uci.inc`: the UCI handshake, shared with mount.s,
+writeback.s and hibernate.s since E3). Mounting at run time needs
 mount.s's image code, which now lives only in the boot's `INIT`
 segment: it moves into includes used by both.
 
@@ -233,6 +248,26 @@ segment: it moves into includes used by both.
   results. The engine now calls files.s's `FindFile`, not the jump
   table's (which goes on to the root folder and drive E for desk
   accessories and fonts).
+- **E3 (2026-11-04):** the Ultimate's file system (`/usb0`, `/usb1`,
+  `/sd`; paths case-insensitive there, names in listings as stored):
+  `FE_STAT` (files with size, date, read-only; folders; disk images are
+  files), `FE_OPENDIR`/`FE_READDIR` (read whole into REU banks 188-191,
+  one per handle, 64-byte slots: names up to 62 characters, 1024
+  entries), `/` lists the tops that can be entered, `FE_CD`/`FE_PWD`,
+  `FE_MKDIR`, `FE_RMDIR` (`DIR_NOT_EMPTY` from "01,DIRECTORY EMPTY"),
+  `FE_DELETE`, `FE_RENAME`; raw `FE_COPY`/`FE_MOVE` both ways between a
+  GEOS drive and the Ultimate (CBM files; sequential GEOS files with
+  `FC_RAW`). Statuses: "FILE EXISTS" `FILE_EXISTS`, "FILE DOESN'T EXIST",
+  "82", "83", "88" `FILE_NOT_FOUND`, "ACCESS DENIED" `WR_PR_ON`, others
+  `FE_ULTIMATE`. Without a UCI (VICE) `DEV_NOT_FOUND`. Functions not
+  written for Ultimate paths answer `FE_NOT_SUPPORTED` (the walk returns
+  one only when the function sets `feUlt`). Tests: tests/engine/
+  e3u64.py on the U64 (feu64.py calls the engine through `appMain`;
+  uciprobe.s sends raw commands), everything in
+  `/USB0/GEOULTRA/test/engine` and on the test images, removed again.
+  The UCI handshake is now one source, `src/inc/uci.inc` (mount, the
+  write-back, the clock and the engine; checked on the U64: boot mounts,
+  clock, a write-back).
 - Known limits: renaming a folder changes its directory entry, not the
   name in its header (shown as the disk name inside it); native drives
   are covered by the same code but not yet by the test. Copying a folder
@@ -240,4 +275,8 @@ segment: it moves into includes used by both.
   native drive the BAM lives in the image, so a copy that fails half way
   leaves its blocks taken (Validate frees them); on the other drives the
   BAM in memory is dropped. The progress routine must not call the
-  engine.
+  engine. Ultimate: patterns are case-sensitive; a GEOS name from a long
+  Ultimate name is cut to 16 characters; listings show no sizes (each
+  would need an open); copies between two Ultimate paths, CVT and
+  streams there are later steps; the listing keeps interrupts on but
+  runs with I/O on.

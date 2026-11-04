@@ -34,7 +34,7 @@ FE_DF           = 16
 FE_MOUNT        = 17
 FE_UMOUNT       = 18
 FE_COUNT        = 19
-FE_VER          = $0002         ; FE_VERSION's answer (E2)
+FE_VER          = $0003         ; FE_VERSION's answer (E3)
 
 ; FE_COPY, FE_MOVE: flags (r2L)
 FC_OVERWRITE    = $01           ; an existing target file is replaced
@@ -67,7 +67,11 @@ FE_P_ROOT       = 0             ; "/"
 FE_P_GEOS       = 1             ; a GEOS drive A-D (feName: the last
                                 ; part, empty for the drive itself)
 FE_P_DRIVEE     = 2             ; drive E (later)
-FE_P_ULTIMATE   = 3             ; /usb0, /usb1, /sd (E3)
+FE_P_ULTIMATE   = 3             ; /usb0, /usb1, /sd: the walk leaves fePos
+                                ; at the "/" before the last part (feName
+                                ; nonzero) or at the path's end (the top
+                                ; itself, feName 0); only when feUlt is set,
+                                ; else FE_NOT_SUPPORTED
 
 ; Info block (FE_STAT, FE_READDIR), FE_INFO_LEN bytes at the caller's r1
 FE_INFO_LEN     = 16
@@ -116,6 +120,9 @@ HT_DIR          = 1             ; a GEOS directory
 HT_ROOT         = 2             ; "/": the drives (H_BLKT: the next slot)
 HT_READ         = 3             ; a file read (H_BLKT/S, H_OFF)
 HT_WRITE        = 4             ; a file written (and H_DIR*, H_SIZE)
+HT_UDIR         = 5             ; an Ultimate listing in REU bank
+                                ; FE_UBANK + handle (H_UCOUNT, H_UNEXT,
+                                ; H_PAT)
 ; A stream (HT_READ, HT_WRITE): H_BLKT/S the block, H_OFF its next byte
 ; (0: past the block's end); for HT_WRITE also, in H_PAT's place:
 H_DIRT          = 7             ; the directory block with its entry
@@ -123,6 +130,36 @@ H_DIRS          = 8
 H_DIRO          = 9             ; the entry's offset (its type byte)
 H_SIZE          = 10            ; its blocks (word)
         .assert H_SIZE + 2 <= FE_HUSED, error, "engine.inc: stream handle"
+H_UCOUNT        = 2             ; HT_UDIR: entries in the bank (word)
+H_UNEXT         = 4             ; the next one to look at (word)
+
+; The Ultimate (DOS target 2; write-back and hibernation use target 1).
+; A listing: one slot of FE_USLOT bytes per entry (the FAT attribute byte,
+; the name, zero-ended, at most FE_UNAME_MAX characters).
+FE_UBANK        = 188           ; banks 188-191: one per handle (the drives
+                                ; end before, mount.s LAST_BANK)
+FE_USLOT        = 64
+FE_UNAME_MAX    = FE_USLOT - 2
+FE_USLOTS       = $10000 / FE_USLOT
+UA_READONLY     = $01           ; FAT attributes
+UA_DIR          = $10
+U_TARGET        = 2
+U_OPEN          = $02           ; DOS commands
+U_CLOSE         = $03
+U_READ          = $04
+U_WRITE         = $05
+U_INFO          = $07
+U_DELETE        = $09
+U_RENAME        = $0A
+U_CD            = $11
+U_OPENDIR       = $13
+U_READDIR       = $14
+U_MKDIR         = $16
+UO_READ         = $01           ; open attributes
+UO_NEW          = $06           ; write, a new file
+UO_ALWAYS       = $0A           ; write, made or replaced
+uCmd            = fileTrScTab   ; the command (256 bytes; the engine
+                                ; destroys fileTrScTab)
 
 ; Work area: the overlay scratch $9F70-$9FFF (overlay.s), owned by the
 ; engine during a call. No other overlay module uses it; an engine module
@@ -173,6 +210,14 @@ cDone           = FE_WORK + 118 ; blocks copied (word)
 cRec            = FE_WORK + 120 ; VLIR: the index entry being copied
 cMove           = FE_WORK + 121 ; nonzero: FE_MOVE
 cSame           = FE_WORK + 122 ; nonzero: the target folder is the source's
+feUlt           = FE_WORK + 123 ; nonzero: the function takes Ultimate paths
+U_STAT_MAX      = 6             ; status characters kept ("FILE E")
+uStat           = FE_WORK + 124 ; the Ultimate's status, zero-ended
+uLen            = FE_WORK + 124 + U_STAT_MAX + 1 ; uCmd's length
+uEnd            = uLen + 1      ; the reply's data: up to here (a word)
+cToU            = uEnd + 2      ; FE_COPY: nonzero, the target is the Ultimate
+cLeft           = cToU + 1      ; a copy from the Ultimate: bytes still to
+                                ; read (3 bytes)
         .assert cEntry + 30 <= feM, error, "engine.inc: cEntry over feM"
 
 ; Streams (enginestream.s), over the same place
@@ -181,7 +226,7 @@ sLeft           = feInfo + 2    ; bytes still to go (word)
 sGot            = feInfo + 4    ; bytes done (word)
 sNew            = feInfo + 6    ; nonzero: a block was added (FE_WRITE)
         .assert sNew < feHandle, error, "engine.inc: streams over feHandle"
-        .assert cSame < $A000, error, "engine.inc: the work area overflows"
+        .assert cLeft + 2 < $A000, error, "engine.inc: the work area overflows"
 
 ; The path after module 23: absolute, without "." and "..", at fileHeader
 ; (free while the engine runs; GEOS routines that use fileHeader are

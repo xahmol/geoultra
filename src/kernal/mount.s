@@ -33,10 +33,6 @@
         .import uciPresent, wbPending, serialNumber, hibLimit, SetDevice, FindFile
         .import GetFHdrInfo
 
-uciCtrl         = $DF1C         ; write: control; read: status
-uciCmd          = $DF1D         ; write: command bytes; read: identity
-uciResp         = $DF1E
-uciStat         = $DF1F
 UCI_ID          = $C9
 TARGET_DOS      = $01
 TARGET_CTRL     = $04
@@ -54,15 +50,16 @@ TEXT_MAX        = $0C00
 SCRATCH         = $4C00         ; data replies we do not need
 TABLE           = $4D00         ; the mount table being built ($A0 bytes)
 LOG             = $4E00
-FIRST_BANK      = 31            ; drives: REU banks 31-191
-LAST_BANK       = 191
+FIRST_BANK      = 31            ; drives: REU banks 31-187
+LAST_BANK       = 187           ; (188-191: the file engine's listings,
+                                ; engine.inc FE_UBANK)
 SYS_BANK        = 1
 
         .segment "INIT"
 
 cmdBuf:         .res 112        ; (ApplyCfg: 4 + 93 bytes)
 cmdLen:         .byte 0
-dataLimit:      .byte 0         ; UciData: the first page it may not write
+dataEnd:        .word 0         ; UciData: the first address it may not write
 statBuf:        .res 32
 path:           .res 64
 pathLen:        .byte 0
@@ -635,22 +632,24 @@ ReadText:
         sta r0L
         lda #>TEXT
         sta r0H
+        lda #<(TEXT + TEXT_MAX)
+        sta dataEnd
         lda #>(TEXT + TEXT_MAX)
-        sta dataLimit
+        sta dataEnd+1
 @packet:
         jsr UciData
         lda uciCtrl             ; "data more": the next packet after an ack
         and #$30
         cmp #$30
         bne @last
-        jsr Accept
+        jsr UciAccept
         jmp @packet
 @last:  lda r0L
         sta textEnd
         lda r0H
         sta textEnd+1
         jsr UciStatus
-        jsr Accept
+        jsr UciAccept
         jsr CloseFile
         clc
         rts
@@ -1441,107 +1440,20 @@ PathCmdX:
         sta cmdLen
 
 ; Simple: send, data to SCRATCH, status, accept. Z set on "00".
-Simple: jsr UciSend
-        lda #<SCRATCH
+Simple: lda #<SCRATCH
         sta r0L
         lda #>SCRATCH
         sta r0H
-        lda #>SCRATCH + 1       ; (one page)
-        sta dataLimit
-        jsr UciData
-        jsr UciStatus
-        php
-        jsr Accept
-        plp
-        rts
+        lda #<(SCRATCH + $100)  ; (one page)
+        sta dataEnd
+        lda #>(SCRATCH + $100)
+        sta dataEnd+1
+        jmp UciCommand
 
 ; --- UCI ------------------------------------------------------------------------
 
-; UciSend: cmdBuf, cmdLen bytes (the target first).
-UciSend:
-        ldx #0                  ; a pending abort finishes first
-        ldy #0
-@abort: lda uciCtrl
-        and #$04
-        beq @idle
-        dex
-        bne @abort
-        dey
-        bne @abort
-@idle:  lda uciCtrl             ; idle; an old reply is released
-        and #$30
-        beq @write
-        and #$20
-        beq @idle
-        lda #$02
-        sta uciCtrl
-        bne @idle
-@write: ldx #0
-@byte:  lda cmdBuf,x
-        sta uciCmd
-        inx
-        cpx cmdLen
-        bne @byte
-        lda #$01                ; push
-        sta uciCtrl
-        lda uciCtrl
-        and #$08
-        beq @taken
-        lda #$08                ; error: clear it and push again
-        sta uciCtrl
-        jmp @idle
-@taken: lda uciCtrl             ; wait until taken and not busy
-        and #$01
-        bne @taken
-        lda uciCtrl
-        and #$30
-        cmp #$10
-        beq @taken
-        rts
-
-; UciData: the reply's data bytes to (r0), r0 advanced.
-UciData:
-@byte:  bit uciCtrl             ; N: data available
-        bpl @end
-        lda uciResp
-        ldy r0H                 ; the buffer full (dataLimit, a page):
-        cpy dataLimit           ; the rest is dropped (code sweep
-        bcs @byte               ; 2026-10-30: a long reply overran
-        ldy #0                  ; SCRATCH into the mount table)
-        sta (r0),y
-        inc r0L
-        bne @byte
-        inc r0H
-        bne @byte
-@end:   rts
-
-; UciStatus: the status text to statBuf. Z set when it starts with "00".
-UciStatus:
-        ldx #0
-@char:  bit uciCtrl             ; V: status available
-        bvc @end
-        lda uciStat
-        cpx #31
-        bcs @char
-        sta statBuf,x
-        inx
-        bne @char
-@end:   lda #0
-        sta statBuf,x
-        lda statBuf
-        cmp #'0'
-        bne @rts
-        lda statBuf+1
-        cmp #'0'
-@rts:   rts
-
-; Accept: release the reply; wait until done.
-Accept: lda #$02
-        sta uciCtrl
-@wait:  lda uciCtrl
-        and #$02
-        bne @wait
-        rts
+UCI_STAT_MAX    = 31            ; (statBuf: 32 bytes)
+        .include "uci.inc"
 
 ; --- Serial number from the user's own GEOS boot disk -------------------------
 

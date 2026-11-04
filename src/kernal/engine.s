@@ -1,7 +1,7 @@
 ; File engine (docs/FILE_ENGINE.md): files by path over the GEOS drives
 ; and, later, the Ultimate's file system. One resident entry, FileEngine
 ; (extension jump table +30, folders.s); everything else is in overlay
-; modules 22-35:
+; modules 22-46:
 ;   22 engine.s      dispatcher, the caller's state, FE_VERSION, FE_PWD,
 ;                    FE_CLOSE
 ;   23 enginepath.s  path: absolute, "." and ".." (Resolve)
@@ -17,8 +17,22 @@
 ;   33 enginestream.s a new file for FE_OPEN
 ;   34 enginestream.s FE_READ
 ;   35 enginestream.s FE_WRITE
-; Shared: engine.inc (constants, work area, REU layout), fereu.inc,
-; fehandle.inc, feinfo.inc, fename.inc, feresolve.inc, festream.inc.
+;   36 engineult.s   the Ultimate: the exchange, its folders (feult.inc)
+;   37 engineult.s   FE_STAT on the Ultimate
+;   38 engineult.s   FE_OPENDIR on the Ultimate: the listing read whole
+;   39 engineult.s   FE_READDIR on an Ultimate listing
+;   40 engineult.s   FE_READDIR on "/": the drives, the Ultimate's tops
+;   41 engineult.s   FE_DELETE, FE_MKDIR, FE_RMDIR, FE_RENAME, FE_CD on
+;                    the Ultimate
+;   42 enginexfer.s  FE_COPY, FE_MOVE onto the Ultimate (raw)
+;   43 enginexfer.s  FE_COPY, FE_MOVE from the Ultimate: the source, target
+;   44 enginexfer.s  its blocks onto the GEOS drive
+;   45 enginexfer.s  a GEOS file's blocks onto the Ultimate
+;   46 enginexfer.s  a new entry's fields from an Ultimate file
+; Shared: engine.inc (constants, work area, REU layout), feblock.inc,
+; fecd.inc, feentry.inc, fefat.inc, feprog.inc, fereu.inc,
+; fegive.inc, fehandle.inc, feinfo.inc, fematch.inc, fename.inc, feresolve.inc,
+; festream.inc, feult.inc; uci.inc (the UCI handshake).
 ; Own code.
 ;
 ; Calling: A = function, arguments in r0-r4, Y = a handle; returns X = 0
@@ -90,6 +104,7 @@ OvFileEngine:
         bpl @fold
         lda #0
         sta feTouched
+        sta feUlt               ; (a function taking Ultimate paths sets it)
         jsr Setup
         lda feFunc
         cmp #FE_COUNT

@@ -15,13 +15,23 @@
         jmp OvStat              ; entry 0
         jmp OvDf                ; entry 3
 
+UStat:  jsr OvlCall             ; (module 37: FE_STAT on the Ultimate)
+        .byte 37, 0
+
         .include "feresolve.inc"
         .include "feinfo.inc"
 
 ; FE_STAT: r0 = a path, r1 = an info block. A GEOS file's header is left
-; in fileHeader.
-OvStat: jsr Path
+; in fileHeader. On the Ultimate: module 37.
+OvStat: lda #1
+        sta feUlt
+        jsr Path
         bne @end
+        lda feKind
+        cmp #FE_P_ULTIMATE
+        bne :+
+        jmp UStat
+:
         lda feKind              ; "/": the root
         beq @kind
         lda #FE_K_DRIVE         ; "/a": the drive
@@ -92,6 +102,9 @@ Path:   lda argR0
 
         jmp OvOpenDir           ; entry 0
 
+UOpen:  jsr OvlCall             ; (module 38: FE_OPENDIR on the Ultimate)
+        .byte 38, 0
+
         .include "fereu.inc"
         .include "fehandle.inc"
         .include "feresolve.inc"
@@ -107,10 +120,16 @@ OvOpenDir:
         sta r0L
         lda argR0+1
         sta r0H
+        lda #1                  ; (Ultimate paths taken)
+        sta feUlt
         jsr Resolve
         txa
         bne @end
         lda feKind
+        cmp #FE_P_ULTIMATE
+        bne :+
+        jmp UOpen
+:       cmp #FE_P_ROOT
         bne @geos
         sta feH + H_BLKT        ; "/" (FE_P_ROOT): the drives from slot 0
         lda #HT_ROOT
@@ -184,6 +203,13 @@ Wild:   ldx #0
 
         .include "fereu.inc"
         .include "feinfo.inc"
+MATCH_NAME      = feTmp
+        .include "fematch.inc"
+
+UDir:   jsr OvlCall             ; (module 39: an Ultimate listing)
+        .byte 39, 0
+Root:   jsr OvlCall             ; (module 40: "/")
+        .byte 40, 0
 
 ; FE_READDIR: Y = a handle, r1 = an info block, r2 = a buffer for the
 ; name (17 bytes). X = FE_END_OF_DIR after the last one.
@@ -196,7 +222,9 @@ OvReadDir:
         jsr HandleOp
         lda feH + H_TYPE
         cmp #HT_ROOT
-        beq Drives
+        beq Root
+        cmp #HT_UDIR
+        beq UDir
         cmp #HT_DIR
         beq @dir
 @bad:   ldx #FE_BAD_HANDLE
@@ -238,24 +266,6 @@ OvReadDir:
 @eod:   jmp Eod
 @end:   rts
 
-; Drives (FE_READDIR on "/"): the next drive A-D that is there.
-Drives: ldx feH + H_BLKT
-@slot:  cpx #4
-        bcs Eod
-        lda driveType,x
-        bne @drv
-        inx
-        bne @slot
-@drv:   txa                     ; (C clear from the cpx)
-        adc #'a'
-        sta feTmp
-        lda #0
-        sta feTmp+1
-        inx
-        stx feH + H_BLKT
-        lda #FE_K_DRIVE
-        jsr InfoKind
-        jmp Found
 Eod:    ldx #FE_END_OF_DIR
         rts
 
@@ -311,45 +321,5 @@ EntryName:
 
 OFF_FNAME       = 3
         .assert OFF_FNAME = 3, error, "EntryName: three iny"
-
-; Match: C clear when the name in feTmp fits the pattern at H_PAT ("*":
-; any run of characters, "?": one). One way back: to the last "*", one
-; character further in the name each time.
-Match:  ldx #0                  ; X: in the pattern, Y: in the name
-        ldy #0
-        lda #$FF
-        sta feM
-@loop:  lda feTmp,y
-        beq @tail
-        lda feH + H_PAT,x
-        cmp #'*'
-        beq @star
-        cmp #'?'
-        beq @one
-        cmp feTmp,y
-        beq @one
-        lda feM                 ; no fit: back to the last "*"
-        bmi @no
-        tax
-        inx
-        inc feMN
-        ldy feMN                ; (below 128: always)
-        bpl @loop
-@one:   inx
-        iny
-        bne @loop
-@star:  stx feM
-        sty feMN
-        inx
-        bne @loop
-@tail:  lda feH + H_PAT,x       ; the name used up: only "*"s may follow
-        cmp #'*'
-        bne @fin
-        inx
-        bne @tail
-@fin:   cmp #1                  ; (C clear only for the pattern's end)
-        rts
-@no:    sec
-        rts
 
         .endscope

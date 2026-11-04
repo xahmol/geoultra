@@ -26,10 +26,6 @@ path            = $9F70         ; the slot's scratch area (overlay.s; the
                                 ; file engine's work area during its calls,
                                 ; engine.inc: never at the same time)
 cmdBuf          = $9FB0
-uciCtrl         = $DF1C
-uciCmd          = $DF1D
-uciResp         = $DF1E
-uciStat         = $DF1F
 TARGET_DOS      = $01
 DOS_OPEN        = $02
 DOS_CLOSE       = $03
@@ -64,6 +60,51 @@ NatSureOvl:                     ; the working copy is the current drive's
 Ovl1571:                        ; 1571 BAM work (reudrv.s, BamType)
         jsr OvlCall
         .byte 7, 0
+
+; Begin: a DOS command A; Put: one more byte. PutName: the file name.
+; (These and the DMA helpers resident in CODE: DRVEXT holds the UCI
+; handshake, uci.inc.)
+Begin:  pha
+        lda #TARGET_DOS
+        sta cmdBuf
+        pla
+        sta cmdBuf+1
+        lda #2
+        sta cmdLen
+        rts
+Put:    ldy cmdLen
+        sta cmdBuf,y
+        inc cmdLen
+        rts
+PutName:
+        ldx nameAt
+@char:  lda path,x
+        beq @end
+        jsr Put
+        inx
+        bne @char
+@end:   rts
+
+
+; Dma1 / Dma1Fetch: A/X = C64 address, Y = length, reuAddr/+1 set; bank
+; 1, fetch.
+Dma1:
+Dma1Fetch:
+        pha
+        lda #REU_FETCH
+        sta dmaCmd
+        pla
+DmaGo:  sta reuC64
+        stx reuC64+1
+        sty reuLen
+        lda #0
+        sta reuLen+1
+        sta reuCtrl
+        lda #SYS_BANK
+        sta reuAddr+2
+        lda dmaCmd
+        sta reuCmd
+        rts
 
         .segment "DATA"
 
@@ -298,108 +339,18 @@ FetchPath:
 
         .segment "DRVEXT"               ; resident: after the disk driver
 
-; Dma1 / Dma1Fetch: A/X = C64 address, Y = length, reuAddr/+1 set; bank
-; 1, fetch.
-Dma1:
-Dma1Fetch:
-        pha
-        lda #REU_FETCH
-        sta dmaCmd
-        pla
-DmaGo:  sta reuC64
-        stx reuC64+1
-        sty reuLen
-        lda #0
-        sta reuLen+1
-        sta reuCtrl
-        lda #SYS_BANK
-        sta reuAddr+2
-        lda dmaCmd
-        sta reuCmd
-        rts
-
-
 ; --- Commands ---------------------------------------------------------------
 
-; Begin: a DOS command A; Put: one more byte. PutName: the file name.
-Begin:  pha
-        lda #TARGET_DOS
-        sta cmdBuf
-        pla
-        sta cmdBuf+1
-        lda #2
-        sta cmdLen
-        rts
-Put:    ldy cmdLen
-        sta cmdBuf,y
-        inc cmdLen
-        rts
-PutName:
-        ldx nameAt
-@char:  lda path,x
-        beq @end
-        jsr Put
-        inx
-        bne @char
-@end:   rts
+; Simple: cmdBuf sent, the data dropped, the status's first two
+; characters to status; Z set on "00". Destroys A, X, Y.
+Simple: lda #0
+        sta dataEnd
+        sta dataEnd+1
+        jmp UciCommand
 
-; Simple: send, drop the data, status; Z set on "00".
-Simple: ldx #0                  ; idle; an old reply is released
-@idle:  lda uciCtrl
-        and #$30
-        beq @write
-        and #$20
-        beq @idle
-        lda #$02
-        sta uciCtrl
-        bne @idle
-@write: lda cmdBuf,x
-        sta uciCmd
-        inx
-        cpx cmdLen
-        bne @write
-        lda #$01
-        sta uciCtrl
-        lda uciCtrl
-        and #$08
-        beq @taken
-        lda #$08
-        sta uciCtrl
-        ldx #0
-        beq @idle
-@taken: lda uciCtrl
-        and #$01
-        bne @taken
-        lda uciCtrl
-        and #$30
-        cmp #$10
-        beq @taken
-@data:  bit uciCtrl             ; the data is not needed
-        bpl @stat
-        lda uciResp
-        jmp @data
-@stat:  ldx #0                  ; the first two characters
-        stx status
-        stx status+1
-@char:  bit uciCtrl
-        bvc @acc
-        lda uciStat
-        cpx #2
-        bcs @char
-        sta status,x
-        inx
-        bne @char
-@acc:   lda #$02
-        sta uciCtrl
-@wait:  lda uciCtrl
-        and #$02
-        bne @wait
-        lda status
-        cmp #'0'
-        bne @rts
-        lda status+1
-        cmp #'0'
-@rts:   rts
+UCI_STAT_MAX    = 2
+statBuf         = status
+        .include "uci.inc"
 
 ; --- State (resident: modules 1 and 2 share it) ----------------------------
 
@@ -413,8 +364,9 @@ first:  .res 2
 last:   .res 2
 mapByte: .res 1
 dmaCmd: .res 1
-status: .res 2
+status: .res UCI_STAT_MAX + 1
 cmdLen: .res 1
+dataEnd: .res 2
 
 RETRY_DELAY     = 250           ; frames (5 s) before a failed write-back
                                 ; is tried again

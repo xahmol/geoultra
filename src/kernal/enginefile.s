@@ -27,6 +27,10 @@ MakeDir:
 RemoveDir:
         jsr OvlCall             ; (extension table +25)
         .byte 13, 3
+UFile:  jsr OvlCall             ; (module 41: the function on the Ultimate)
+        .byte 41, 0
+UCdAll: jsr OvlCall             ; (module 41: into an Ultimate folder)
+        .byte 41, 3
 
 ; FE_DELETE: r0 = a file (not a folder, not locked).
 OvDelete:
@@ -115,11 +119,21 @@ OvRmDir:
         ldx #FE_NOT_FOLDER
 @end:   rts
 
-; FE_CD: r0 = a folder, a drive or "/": the current directory.
-OvCd:   jsr Path
+; FE_CD: r0 = a folder, a drive or "/": the current directory. On the
+; Ultimate: a folder it can enter.
+OvCd:   lda #1
+        sta feUlt
+        jsr Path
         bne @end
         lda feKind
         beq @set                ; "/"
+        cmp #FE_P_ULTIMATE
+        bne @geos
+        jsr UCdAll              ; (module 41)
+        txa
+        bne @end
+        beq @set
+@geos:
         lda feName
         beq @set                ; a drive
         jsr EnterName
@@ -144,10 +158,20 @@ OvCd:   jsr Path
 
 ; Target: the caller's r0 resolved to something in a folder of a GEOS
 ; drive (C clear); else C set and X = the error (FE_BAD_PATH for "/" or
-; a drive).
-Target: jsr Path
+; a drive). On the Ultimate the whole function is module 41's: Target's
+; return address is dropped, so module 41 returns to the function's
+; caller.
+Target: lda #1
+        sta feUlt
+        jsr Path
         bne @no
-        ldx #FE_BAD_PATH
+        lda feKind
+        cmp #FE_P_ULTIMATE
+        bne :+
+        pla
+        pla
+        jmp UFile
+:       ldx #FE_BAD_PATH
         lda feName
         beq @no
         clc

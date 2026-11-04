@@ -32,7 +32,7 @@ def main():
     try:
         e.start()
         x, _, r = fe(FE_VERSION)
-        check("FE_VERSION", (x, r[0]), (0, 2))
+        check("FE_VERSION", (x, r[0]), (0, 3))
         check("FE_PWD at the start", pwd(), "/")
         check("FE_STAT /", stat("/"), (0, K_ROOT, 0))
         check("FE_STAT /b", stat("/b"), (0, K_DRIVE, 0))
@@ -45,7 +45,7 @@ def main():
         check("FE_STAT through a file", stat("/b/ROOTFILE/X"), (NOT_FOLDER,))
         check("FE_STAT through RAW (no sub-directory)", stat("/b/RAW/X"), (NOT_FOLDER,))
         check("FE_STAT an unknown top", stat("/z"), (FILE_NOT_FOUND,))
-        check("FE_STAT /usb0 (step E3)", stat("/usb0/x"), (NOT_SUPPORTED,))
+        check("FE_STAT /usb0 without an Ultimate", stat("/usb0/x"), (DEV_NOT_FOUND,))
         check("FE_STAT a name too long", stat("/b/ABCDEFGHIJKLMNOPQ"), (BAD_PATH,))
         check("FE_STAT a long path", stat("/b/" + "./" * 55 + "ROOTFILE"), (0, K_CBM, 1))
         check("FE_STAT a path too long", stat("/b/" + "./" * 70 + "ROOTFILE"), (BAD_PATH,))

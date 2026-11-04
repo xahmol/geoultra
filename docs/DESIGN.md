@@ -155,10 +155,11 @@ CPU Speed=64
 | 19-26 | Task slots, one bank each: the whole 64 KB RAM of a suspended task (its chip registers in bank 1); count configurable |
 | 27-28 | Print spooler |
 | 29-30 | Clipboard (text scrap, photo scrap) |
-| 31-191 | Drives, handed out in 64 KB units through the allocation table |
+| 31-187 | Drives, handed out in 64 KB units through the allocation table |
+| 188-191 | File engine: one Ultimate listing per handle (docs/FILE_ENGINE.md; until the allocation table hands out scratch banks at run time) |
 | 192-255 | Applications' legacy REU, one area of 8 banks per task slot (task n: banks 192 + 8n to 199 + 8n; their banks 0-7 as `ramExpSize` = 8 shows them; bank 0 is also MoveData's DMA scratch). `DoRAMOp` translates bank n to the current task's area, so applications never reach system banks, drives, task slots or each other's data |
 
-Fixed system part: 31 banks at the bottom and 64 at the top; 161 banks
+Fixed system part: 31 banks at the bottom and 68 at the top; 157 banks
 (about 10 MB) remain for drives. Fewer task slots or a smaller legacy size
 per task (settings) give the rest back to the drives.
 

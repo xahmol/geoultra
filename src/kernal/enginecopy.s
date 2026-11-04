@@ -33,23 +33,47 @@ Target: jsr OvlCall             ; (module 30: the target, checked)
         .byte 30, 0
 Blocks: jsr OvlCall             ; (module 31: the blocks, the entry)
         .byte 31, 0
+UTo:    jsr OvlCall             ; (module 42: onto the Ultimate)
+        .byte 42, 0
+UFrom:  jsr OvlCall             ; (module 43: the whole copy from it; a
+        .byte 43, 0             ; stub: back to the function's caller)
 
 ; FE_COPY: r0 = a file, r1 = a folder or a new name, r2L = FC_* flags,
 ; r3 = a progress routine or 0 (called after each block with r4 = blocks
 ; done; C set: stop, FE_CANCELLED). The target's name: r1's last part,
-; or the source's when r1 is a folder or a drive.
+; or the source's when r1 is a folder or a drive. Between a GEOS drive
+; and the Ultimate (raw, docs/FILE_ENGINE.md "Copying"): modules 42-44.
 OvCopy: lda #0
         beq Go
 ; FE_MOVE: as FE_COPY; in the same folder a rename, else a copy and the
 ; source deleted.
 OvMove: lda #1
 Go:     sta cMove
-        jsr Source
+        lda #1                  ; (Ultimate paths taken)
+        sta feUlt
+        lsr
+        sta cToU
+        lda argR0
+        sta r0L
+        lda argR0+1
+        sta r0H
+        jsr Resolve
+        txa
+        bne @end
+        lda feKind
+        cmp #FE_P_ULTIMATE
+        bne @geos
+        jmp UFrom
+@geos:  jsr Source
         bne @end
         jsr Target
         txa
         bne @end
-        lda cMove
+        lda cToU
+        beq @here
+        jsr UTo
+        jmp @done
+@here:  lda cMove
         beq @copy
         lda cSame
         beq @copy
@@ -74,7 +98,7 @@ Go:     sta cMove
         sbc cEntry + OFF_SIZE + 1
         bcc @end
         jsr Blocks
-        txa
+@done:  txa
         bne @end
         lda cMove
         beq @end
@@ -172,7 +196,8 @@ Named:  jsr Resolve
 ; one. The target's name in feTmp, the source's in feName (for a rename);
 ; cSame nonzero when it is the source's folder. An existing file of that
 ; name: FILE_EXISTS, or with FC_OVERWRITE deleted (not the source itself,
-; not locked). X = 0 or the error.
+; not locked). On the Ultimate: cToU set, X = 0 (module 42 or 43 goes
+; on). X = 0 or the error.
 OvTarget:
         lda argR1
         sta r0L
@@ -181,7 +206,12 @@ OvTarget:
         jsr Resolve
         txa
         bne @fail
-        ldx #FE_BAD_PATH
+        lda feKind              ; the Ultimate: cToU (X = 0)
+        cmp #FE_P_ULTIMATE
+        bne :+
+        sta cToU
+        rts
+:       ldx #FE_BAD_PATH
         lda feKind              ; ("/": no drive)
         beq @fail
         lda feName
@@ -296,8 +326,6 @@ SrcName:
 
         jmp OvBlocks            ; entry 0
 
-        .include "fename.inc"
-
 ; OvBlocks: the file in cEntry (on cSrcDrv) copied to the target drive
 ; (current, its BAM in curDirHead): the header block, then the data (a
 ; chain, or each VLIR record's chain and the index, kept in fileHeader
@@ -364,30 +392,8 @@ OvBlocks:
         ldx #FE_CANCELLED
 @end:   rts
 
-; Entry: the entry (cEntry, named feTmp) into a free slot of the target
-; folder, then the BAM. X = 0 or an error.
-Entry:  lda #0
-        sta r10L
-        jsr GetFreeDirBlk       ; (diskBlkBuf, r1; Y the slot)
-        txa
-        bne @end
-        ldx #0
-@copy:  lda cEntry,x
-        sta diskBlkBuf,y
-        iny
-        inx
-        cpx #30
-        bne @copy
-        tya                     ; the name, feTmp
-        sec
-        sbc #30 - 3
-        tay
-        jsr PutName
-        jsr WriteBuff
-        txa
-        bne @end
-        jmp PutDirHead
-@end:   rts
+
+        .include "feentry.inc"  ; (Entry: right after OvBlocks's branches)
 
 ; ChainY: the chain starting at cEntry+Y copied; its first target block
 ; back to cEntry+Y. Z set when it worked, else X = the error.
@@ -468,55 +474,8 @@ Chain:  jsr Alloc               ; the first target block
         ldx #FE_CANCELLED
 @ret:   rts
 
-; Alloc: a free target block after cLast (the first one: BlkAlloc's
-; start for the drive type, its table in fileTrScTab) to cLast. Z set
-; when it worked, else X = the error. Destroys r2-r8.
-Alloc:  jsr Dest
-        lda cLastT
-        beq @first
-        sta r3L
-        lda cLastS
-        sta r3H
-        jsr SetNextFree
-        jmp @got
-@first: lda #1                  ; one byte: one block
-        sta r2L
-        lda #0
-        sta r2H
-        lda #<fileTrScTab
-        sta r6L
-        lda #>fileTrScTab
-        sta r6H
-        jsr BlkAlloc
-@got:   txa
-        bne @end
-        lda r3L
-        sta cLastT
-        lda r3H
-        sta cLastS
-        txa
-@end:   rts
-
-; Progress: one more block done; the caller's routine (r3, if not 0)
-; with r4 = blocks done. C set: stop.
-Progress:
-        inc cDone
-        bne :+
-        inc cDone+1
-:       lda argR3+1
-        beq @no
-        lda cDone
-        sta r4L
-        lda cDone+1
-        sta r4H
-        jmp (argR3)
-@no:    clc
-        rts
-
-; Source, Dest: the source's drive, the target's drive selected.
+; Source: the source's drive selected.
 Source: lda cSrcDrv
-        jmp SetDevice
-Dest:   lda cDstDrv
         jmp SetDevice
 
 ; IndexRegs: r4 = fileHeader (the VLIR index).
@@ -526,5 +485,9 @@ IndexRegs:
         lda #>fileHeader
         sta r4H
         rts
+
+        .include "fename.inc"
+        .include "feblock.inc"
+        .include "feprog.inc"
 
         .endscope

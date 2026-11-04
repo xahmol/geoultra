@@ -281,54 +281,46 @@ Resumed:
 
 
         .segment "OVL10"
+        .scope Mod10            ; (its own cmdBuf, cmdLen for uci.inc)
 
         jmp TodSet              ; entry 0
         jmp RtcClock            ; entry 3
 
 ; RtcClock (I/O on): date and time from the Ultimate's real-time clock
 ; (DOS command $26: "yyyy/mm/dd hh:mm:ss"), then the TOD from it; without
-; an answer the TOD from the time already in the variables.
+; an answer the TOD from the time already in the variables. r0 kept (a
+; resumed session goes on after it).
 RtcClock:
         lda uciPresent
         bne @ask
 @none:  jmp TodSet
-@ask:   ldx #0                  ; idle; an old reply is released
-@idle:  lda $DF1C
-        and #$30
-        beq @send
-        and #$20
-        beq @idle
-        lda #$02
-        sta $DF1C
-        bne @idle
-@send:  lda #TARGET_DOS
-        sta $DF1D
+@ask:   lda r0L
+        pha
+        lda r0H
+        pha
+        lda #TARGET_DOS
+        sta cmdBuf
         lda #DOS_GET_TIME
-        sta $DF1D
-        lda #$01                ; push
-        sta $DF1C
-@busy:  lda $DF1C
-        and #$01
-        bne @busy
-        lda $DF1C
-        and #$30
-        cmp #$10
-        beq @busy
-@data:  bit $DF1C               ; the answer, at most 32 characters
-        bpl @status
-        lda $DF1E
-        cpx #32
-        bcs @data
-        sta rtcText,x
-        inx
-        bne @data
-@status:
-        bit $DF1C               ; the status is not needed: the text is
-        bvc @acc                ; checked instead
-        lda $DF1F
-        jmp @status
-@acc:   lda #$02
-        sta $DF1C
+        sta cmdBuf+1
+        lda #2
+        sta cmdLen
+        lda #<rtcText           ; the answer, at most 32 characters (the
+        sta r0L                 ; status is not needed: the text is
+        lda #>rtcText           ; checked instead)
+        sta r0H
+        lda #<(rtcText + 32)
+        sta dataEnd
+        lda #>(rtcText + 32)
+        sta dataEnd+1
+        jsr UciCommand
+        lda r0L                 ; its length
+        sec
+        sbc #<rtcText
+        tax
+        pla
+        sta r0H
+        pla
+        sta r0L
         cpx #19
         bcc @none
         lda rtcText+4
@@ -413,6 +405,13 @@ TodSet: lda $DC08               ; the tenths: releases a latch left by an
 rtcAt:  .byte 2, 5, 8, 11, 14, 17
 rtcText:        .res 32
 
+UCI_STAT_MAX    = 2             ; (module variables: no nested overlay call)
+cmdBuf:         .res 2
+cmdLen:         .res 1
+statBuf:        .res UCI_STAT_MAX + 1
+dataEnd:        .res 2
+        .include "uci.inc"
+
 ; ToBCD: A (0-59) -> BCD. Destroys Y.
 ToBCD:  ldy #$FF
 @ten:   iny
@@ -428,3 +427,5 @@ ToBCD:  ldy #$FF
         asl
 @one:   ora #0
         rts
+
+        .endscope

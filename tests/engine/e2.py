@@ -145,7 +145,7 @@ def main():
     try:
         e.start()
         free = lambda p: fe(FE_DF, s0=p)[2][1]  # noqa: E731
-        check("FE_VERSION", fe(FE_VERSION)[2][0], 2)
+        check("FE_VERSION", fe(FE_VERSION)[2][0], 3)
 
         # --- FE_COPY, a CBM file ---------------------------------------
         check("FE_COPY to a new name", (fe(FE_COPY, s0="/b/ROOTFILE", s1="/b/COPY1")[0], stat("/b/COPY1")),

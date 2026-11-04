@@ -264,8 +264,11 @@ Top:    ldy #1
         sec
         rts
 
-; Ultimate: is the top part one of the Ultimate's (Tops)? Not yet
-; (step E3): C set, X = FE_NOT_SUPPORTED, or FILE_NOT_FOUND.
+; Ultimate: is the top part one of the Ultimate's (Tops)? Then C set
+; and, for a function that takes Ultimate paths (feUlt), X = 0 with
+; fePos at the "/" before the last part and feName nonzero, or at the
+; path's end for the top itself (feName 0); else X = FE_NOT_SUPPORTED.
+; Not one: C set, X = FILE_NOT_FOUND.
 Ultimate:
         ldx #0
 @name:  lda Tops,x
@@ -283,7 +286,26 @@ Ultimate:
         lda #FE_P_ULTIMATE
         sta feKind
         ldx #FE_NOT_SUPPORTED
-        sec
+        lda feUlt
+        beq @ret
+        ldx #$FF                ; the last "/"
+@last:  inx
+        lda fePath,x
+        beq @end
+        cmp #'/'
+        bne @last
+        stx fePos
+        bcs @last
+@end:   ldy fePos               ; the top itself: no name
+        cpy feEnd
+        bcs @named
+        stx fePos
+        lda #0
+        beq @top
+@named: lda #1
+@top:   sta feName
+        ldx #0
+@ret:   sec
         rts
 @skipT: inx
         lda Tops,x
