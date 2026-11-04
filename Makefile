@@ -289,11 +289,13 @@ test-filedialog: all
 test-part81: all
 	$(PYTHON) tests/drives/part81.py
 
-# The file engine, step E1 (tests/engine/e1.py): paths, stat, listings,
-# folders, rename, delete on the part81 reference D81 as drive B (the GEOS
-# 2.0 disk as drive A, only read); the real 1581 DOS reads it back.
+# The file engine, steps E1 (tests/engine/e1.py: paths, stat, listings,
+# folders, rename, delete) and E2 (e2.py: copy, move, streams) on the
+# part81 reference D81 as drive B (the GEOS 2.0 disk as drive A, only
+# read); the real 1581 DOS reads it back.
 test-engine: all
 	$(PYTHON) tests/engine/e1.py
+	$(PYTHON) tests/engine/e2.py
 
 # A font on drive E in geoWrite (the user's own disks: SYSFONT_DISK,
 # GEOS_APPS_DISK); screens in build/harness/sysfont-*.png.

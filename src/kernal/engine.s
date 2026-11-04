@@ -1,7 +1,7 @@
 ; File engine (docs/FILE_ENGINE.md): files by path over the GEOS drives
 ; and, later, the Ultimate's file system. One resident entry, FileEngine
 ; (extension jump table +30, folders.s); everything else is in overlay
-; modules 22-28:
+; modules 22-35:
 ;   22 engine.s      dispatcher, the caller's state, FE_VERSION, FE_PWD,
 ;                    FE_CLOSE
 ;   23 enginepath.s  path: absolute, "." and ".." (Resolve)
@@ -10,8 +10,16 @@
 ;   26 enginedir.s   FE_OPENDIR
 ;   27 enginefile.s  FE_DELETE, FE_RENAME, FE_MKDIR, FE_RMDIR, FE_CD
 ;   28 enginedir.s   FE_READDIR
+;   29 enginecopy.s  FE_COPY, FE_MOVE (the source, a move as a rename)
+;   30 enginecopy.s  the target of a copy, checked
+;   31 enginecopy.s  the blocks of a copy, its directory entry
+;   32 enginestream.s FE_OPEN
+;   33 enginestream.s a new file for FE_OPEN
+;   34 enginestream.s FE_READ
+;   35 enginestream.s FE_WRITE
 ; Shared: engine.inc (constants, work area, REU layout), fereu.inc,
-; feinfo.inc, feresolve.inc. Own code.
+; fehandle.inc, feinfo.inc, fename.inc, feresolve.inc, festream.inc.
+; Own code.
 ;
 ; Calling: A = function, arguments in r0-r4, Y = a handle; returns X = 0
 ; or an error, A = a handle (FE_OPENDIR), results in r0-r4 (r0-r4 kept
@@ -19,7 +27,7 @@
 ; kept; when the engine used a drive, the caller's drive is opened again
 ; at the end (OpenDisk: curDirHead and the BAM read anew, so call it with
 ; your BAM changes written). Destroys r5-r15, diskBlkBuf, fileHeader,
-; dirEntryBuf.
+; fileTrScTab, dirEntryBuf.
 
         .include "geos.inc"
         .include "hw.inc"
@@ -45,17 +53,17 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 26, 0             ; FE_OPENDIR
         .byte 28, 0             ; FE_READDIR
         .byte 22, 9             ; FE_CLOSE
-        .byte 22, 12            ; FE_COPY (E2)
-        .byte 22, 12            ; FE_MOVE (E2)
+        .byte 29, 0             ; FE_COPY
+        .byte 29, 3             ; FE_MOVE
         .byte 27, 0             ; FE_DELETE
         .byte 27, 6             ; FE_MKDIR
         .byte 27, 9             ; FE_RMDIR
         .byte 27, 3             ; FE_RENAME
         .byte 27, 12            ; FE_CD
         .byte 22, 6             ; FE_PWD
-        .byte 22, 12            ; FE_OPEN (E2)
-        .byte 22, 12            ; FE_READ (E2)
-        .byte 22, 12            ; FE_WRITE (E2)
+        .byte 32, 0             ; FE_OPEN
+        .byte 34, 0             ; FE_READ
+        .byte 35, 0             ; FE_WRITE
         .byte 25, 3             ; FE_DF
         .byte 22, 12            ; FE_MOUNT (E4)
         .byte 22, 12            ; FE_UMOUNT (E4)
@@ -218,7 +226,7 @@ OvPwd:  lda argR0
         rts
 
 ; FE_CLOSE: Y = a handle, or $FF for all of them (a program starting
-; afresh).
+; afresh). A stream needs nothing more: FE_WRITE leaves its file whole.
 OvClose:
         cpy #$FF
         beq @all

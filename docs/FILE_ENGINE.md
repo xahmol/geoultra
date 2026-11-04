@@ -1,7 +1,7 @@
 # File engine (design proposal)
 
 Status: **approved by the user, 2026-11-04** (with the `%XX` escape);
-step E1 implemented (below, "State of the work"). Decisions it builds
+steps E1 and E2 implemented (below, "State of the work"). Decisions it builds
 on: docs/DESIGN.md, "Shell: gush", "Languages" and "gush and file
 engine decisions".
 
@@ -55,7 +55,7 @@ at the start; when a drive was used, they are put back and the caller's
 drive is opened again (`OpenDisk`: `curDirHead` and the BAM read anew,
 so call the engine with your BAM changes written). Destroys r5-r15,
 `diskBlkBuf`, `fileHeader` (a GEOS file's header after `FE_STAT`),
-`dirEntryBuf`.
+`fileTrScTab`, `dirEntryBuf`.
 
 C callers (geos-oscar64) get a thin wrapper per function later.
 
@@ -119,7 +119,8 @@ drives), +8 date (year, month, day, hour, minute; GEOS files), +13 flags
 Errors: GEOS's codes where they fit (`FILE_NOT_FOUND`, `STRUCT_MISMAT`,
 `DEV_NOT_FOUND`, `INSUFF_SPACE`, `WR_PR_ON` $26 for a locked file, ...),
 GeoUltra's `FILE_EXISTS` $40 and `DIR_NOT_EMPTY` $41 as for folders, and
-the engine's own: `FE_END_OF_DIR` $48, `FE_BAD_PATH` $49 (too long, a
+the engine's own: `FE_CANCELLED` $47 (the progress routine stopped a
+copy), `FE_END_OF_DIR` $48, `FE_BAD_PATH` $49 (too long, a
 name too long, `/` or a drive where a file is needed), `FE_NOT_FOLDER`
 $4A, `FE_IS_FOLDER` $4B, `FE_BAD_HANDLE` $4C, `FE_NO_HANDLE` $4D,
 `FE_NOT_SUPPORTED` $4E (not yet, or not on this kind of path), and
@@ -151,8 +152,8 @@ power-on).
 
 ## Modules (numbered from 22)
 
-E1 as built (src/kernal/engine.s, enginepath.s, enginedir.s,
-enginefile.s):
+As built (src/kernal/engine.s, enginepath.s, enginedir.s,
+enginefile.s, enginecopy.s, enginestream.s):
 
 | Module | Holds |
 | --- | --- |
@@ -163,15 +164,24 @@ enginefile.s):
 | 26 | `FE_OPENDIR` |
 | 27 | `FE_DELETE`, `FE_RENAME`, `FE_MKDIR`, `FE_RMDIR`, `FE_CD` |
 | 28 | `FE_READDIR` (patterns; nearly full: the Ultimate's listing gets its own module) |
+| 29 | `FE_COPY`, `FE_MOVE`: the source, the order, a move in one folder as a rename |
+| 30 | the target of a copy: folder or name, overwrite, not onto itself |
+| 31 | the blocks of a copy (header, chains, VLIR index), its directory entry, the BAM |
+| 32 | `FE_OPEN` |
+| 33 | a new file for `FE_OPEN` (CBM SEQ, one empty block) |
+| 34 | `FE_READ` |
+| 35 | `FE_WRITE` |
 
-Still to come (estimate): the Ultimate's listing and stat; copy GEOS to
-GEOS, scratch banks, Ultimate transfers; CVT out and in; streams; mount
+Still to come (estimate): the Ultimate's listing and stat; scratch
+banks, Ultimate transfers; CVT out and in; streams; mount
 and umount (sharing the image code with mount.s).
 
 Shared code goes into includes assembled into each module that needs it
 (`engine.inc`: constants, the work area, the REU layout; `fereu.inc`:
 REU state and handles; `feresolve.inc`: paths, names, entering folders;
-`feinfo.inc`: info blocks; later `uci.inc`: send, status, data). The UCI helpers
+`feinfo.inc`: info blocks; `fehandle.inc`: a free handle; `fename.inc`:
+a name into a directory entry; `festream.inc`: stream handles; later
+`uci.inc`: send, status, data). The UCI helpers
 now in mount.s, writeback.s and hibernate.s move into `uci.inc` first, so
 there is one copy of them in the source. Mounting at run time needs
 mount.s's image code, which now lives only in the boot's `INIT`
@@ -210,6 +220,24 @@ segment: it moves into includes used by both.
   state checked after every call, the image read back by the real DOS.
   Drive E and the Ultimate answer `FE_NOT_SUPPORTED`; so do the
   functions of later steps.
+- **E2 (2026-11-04):** `FE_COPY` and `FE_MOVE` between GEOS drives and
+  folders (CBM files, sequential and VLIR GEOS files; the copy keeps the
+  entry's date; overwrite flag; progress routine with cancel; a move in
+  one folder is a rename, else a copy and a delete), streams `FE_OPEN`
+  (read, write, append), `FE_READ`, `FE_WRITE` on one chain (CBM files,
+  sequential GEOS files; VLIR answers `STRUCT_MISMAT`; new files are CBM
+  SEQ). `FE_WRITE` writes its blocks, the BAM and the entry's size before
+  it returns, so `FE_CLOSE` only frees the handle. tests/engine/e2.py:
+  the VLIR copy compared record by record with the original, drive B's
+  root BAM checked against the blocks in use, the real 1581 DOS reads the
+  results. The engine now calls files.s's `FindFile`, not the jump
+  table's (which goes on to the root folder and drive E for desk
+  accessories and fonts).
 - Known limits: renaming a folder changes its directory entry, not the
   name in its header (shown as the disk name inside it); native drives
-  are covered by the same code but not yet by the test.
+  are covered by the same code but not yet by the test. Copying a folder
+  or a REL file is refused (`FE_IS_FOLDER`, `FE_NOT_SUPPORTED`). On a
+  native drive the BAM lives in the image, so a copy that fails half way
+  leaves its blocks taken (Validate frees them); on the other drives the
+  BAM in memory is dropped. The progress routine must not call the
+  engine.

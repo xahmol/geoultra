@@ -7,7 +7,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS
+        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
 
         .segment "OVL25"
         .scope Mod25
@@ -93,6 +93,7 @@ Path:   lda argR0
         jmp OvOpenDir           ; entry 0
 
         .include "fereu.inc"
+        .include "fehandle.inc"
         .include "feresolve.inc"
 
 ; FE_OPENDIR: r0 = a folder, or a pattern ("*" any run of characters,
@@ -158,28 +159,6 @@ OvOpenDir:
         lda feHandle
         ldx #0
 @end:   rts
-
-; NewHandle: feHandle = a free handle (C clear), else C set and X =
-; FE_NO_HANDLE.
-NewHandle:
-        lda #0
-        sta feHandle
-@try:   jsr HandleRegs
-        lda #1                  ; (its type byte only)
-        sta r2L
-        ldy #REU_FETCH
-        jsr ReuOp
-        lda feH + H_TYPE
-        beq @got
-        inc feHandle
-        lda feHandle
-        cmp #FE_HANDLES_N
-        bne @try
-        ldx #FE_NO_HANDLE
-        sec
-        rts
-@got:   clc
-        rts
 
 ; Wild: C clear when feName holds "*" or "?".
 Wild:   ldx #0

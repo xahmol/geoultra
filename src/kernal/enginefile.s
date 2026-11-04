@@ -7,7 +7,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import OvlCall, SysRAMOp
+        .import OvlCall, SysRAMOp, FindFile
 
         .segment "OVL27"
         .scope Mod27

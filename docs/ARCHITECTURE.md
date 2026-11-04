@@ -694,7 +694,7 @@ the stack resident, before the overlay call) and `CRC`.
 | 16 | turbo per application | speed.s |
 | 17 | fonts and desk accessories from the root folder | rootmerge.s |
 | 18-21 | 1581 partitions: entered and left, created, formatted, removed | folders.s |
-| 22-28 | file engine: dispatcher; path made absolute, walked; stat and free space; directory opened; delete, rename, folders, cd; directory read | engine.s, enginepath.s, enginedir.s, enginefile.s ([FILE_ENGINE.md](FILE_ENGINE.md)) |
+| 22-35 | file engine: dispatcher; path made absolute, walked; stat and free space; directory opened; delete, rename, folders, cd; directory read; copy and move (source, target, blocks); stream opened, new file, read, written | engine.s, enginepath.s, enginedir.s, enginefile.s, enginecopy.s, enginestream.s ([FILE_ENGINE.md](FILE_ENGINE.md)) |
 
 The scratch `$9F70-$9FFF` after the slot is shared by write-back and
 hibernation (from MainLoop) and the file engine (its work area during a

@@ -2,13 +2,16 @@
 ; layout shared by its overlay modules (src/kernal/engine*.s). Included by
 ; each engine source; defines symbols only, no code.
 
-; Jump table entries the engine modules call
+; Jump table entries the engine modules call. Not FindFile: the jump
+; table's (SysFindFile, sysdrive.s) goes on to the root folder and drive E
+; for a desk accessory or font; the engine imports files.s's own, which
+; looks in the current folder only.
 SetDevice       = $C2B0
-FindFile        = $C20B
 DeleteFile      = $C238
 RenameFile      = $C259
 GetFHdrInfo     = $C229
 CalcBlksFree    = $C1DB
+SetNextFree     = $C292
 
 ; Function numbers (A at FileEngine; the table in engine.s follows them)
 FE_VERSION      = 0
@@ -31,14 +34,25 @@ FE_DF           = 16
 FE_MOUNT        = 17
 FE_UMOUNT       = 18
 FE_COUNT        = 19
-FE_VER          = $0001         ; FE_VERSION's answer (E1)
+FE_VER          = $0002         ; FE_VERSION's answer (E2)
+
+; FE_COPY, FE_MOVE: flags (r2L)
+FC_OVERWRITE    = $01           ; an existing target file is replaced
+FC_RAW          = $02           ; no CVT conversion (E4; GEOS drives: none)
+
+; FE_OPEN: modes (r2L)
+FO_READ         = 0
+FO_WRITE        = 1             ; a new file (an existing one replaced)
+FO_APPEND       = 2             ; at the end (made when not there)
 
 ; Errors: GEOS's own where they fit (FILE_NOT_FOUND, STRUCT_MISMAT,
 ; DEV_NOT_FOUND from geos.inc), GeoUltra's folder codes, then the
 ; engine's from $48.
+INSUFF_SPACE    = 3
 WR_PR_ON        = $26           ; (a locked file, drive E)
 FILE_EXISTS     = $40           ; (as folders.s)
 DIR_NOT_EMPTY   = $41
+FE_CANCELLED    = $47           ; the progress routine asked to stop
 FE_END_OF_DIR   = $48           ; FE_READDIR: no more entries
 FE_BAD_PATH     = $49           ; too long, a name too long, nothing named
 FE_NOT_FOLDER   = $4A           ; a folder was expected
@@ -100,6 +114,15 @@ FE_HUSED        = H_PAT + FE_NAME_MAX + 1
 HT_FREE         = 0
 HT_DIR          = 1             ; a GEOS directory
 HT_ROOT         = 2             ; "/": the drives (H_BLKT: the next slot)
+HT_READ         = 3             ; a file read (H_BLKT/S, H_OFF)
+HT_WRITE        = 4             ; a file written (and H_DIR*, H_SIZE)
+; A stream (HT_READ, HT_WRITE): H_BLKT/S the block, H_OFF its next byte
+; (0: past the block's end); for HT_WRITE also, in H_PAT's place:
+H_DIRT          = 7             ; the directory block with its entry
+H_DIRS          = 8
+H_DIRO          = 9             ; the entry's offset (its type byte)
+H_SIZE          = 10            ; its blocks (word)
+        .assert H_SIZE + 2 <= FE_HUSED, error, "engine.inc: stream handle"
 
 ; Work area: the overlay scratch $9F70-$9FFF (overlay.s), owned by the
 ; engine during a call. No other overlay module uses it; an engine module
@@ -130,7 +153,35 @@ feHandle        = FE_WORK + 78  ; the handle number being worked on
 feH             = FE_WORK + 79  ; that handle (FE_HUSED = 24 bytes)
 feM             = FE_WORK + 103 ; pattern match: the star's place in the
 feMN            = FE_WORK + 104 ; pattern and in the name
-        .assert feMN < $A000, error, "engine.inc: the work area overflows"
+
+; FE_COPY, FE_MOVE (enginecopy.s), over feInfo..feH, which they do not use
+cEntry          = feInfo        ; the source's directory entry (30 bytes)
+cSrcDrv         = FE_WORK + 105 ; the source's drive, folder, and its entry
+cSrcFT          = FE_WORK + 106 ; (directory block, offset)
+cSrcFS          = FE_WORK + 107
+cSrcET          = FE_WORK + 108
+cSrcES          = FE_WORK + 109
+cSrcEO          = FE_WORK + 110
+cDstDrv         = FE_WORK + 111 ; the target's drive
+cNextT          = FE_WORK + 112 ; the source block read next
+cNextS          = FE_WORK + 113
+cCurT           = FE_WORK + 114 ; the target block being filled
+cCurS           = FE_WORK + 115
+cLastT          = FE_WORK + 116 ; the last block taken (0: none yet)
+cLastS          = FE_WORK + 117
+cDone           = FE_WORK + 118 ; blocks copied (word)
+cRec            = FE_WORK + 120 ; VLIR: the index entry being copied
+cMove           = FE_WORK + 121 ; nonzero: FE_MOVE
+cSame           = FE_WORK + 122 ; nonzero: the target folder is the source's
+        .assert cEntry + 30 <= feM, error, "engine.inc: cEntry over feM"
+
+; Streams (enginestream.s), over the same place
+sPtr            = feInfo        ; the caller's buffer, moving on (word)
+sLeft           = feInfo + 2    ; bytes still to go (word)
+sGot            = feInfo + 4    ; bytes done (word)
+sNew            = feInfo + 6    ; nonzero: a block was added (FE_WRITE)
+        .assert sNew < feHandle, error, "engine.inc: streams over feHandle"
+        .assert cSame < $A000, error, "engine.inc: the work area overflows"
 
 ; The path after module 23: absolute, without "." and "..", at fileHeader
 ; (free while the engine runs; GEOS routines that use fileHeader are

@@ -13,7 +13,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS
+        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
 
         .segment "OVL23"
         .scope Mod23
