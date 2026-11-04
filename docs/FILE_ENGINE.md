@@ -214,15 +214,99 @@ segment: it moves into includes used by both.
   test program run through the U64's REST interface and the results read
   back by FTP. Round trip: GEOS file -> CVT -> GEOS file, byte for byte.
 
+## Long names (step L; approved by the user 2026-11-04)
+
+Built between E3 and gush step 1 (user, 2026-11-04: so that gush, CVT
+and the engine's interface are made once for long names). The design is
+the approved one of docs/DESIGN.md ("Directories", "Long names"); this
+section settles what it leaves open. The desktop, `DBGETFILES`, geoFolder
+and the per-drive switch keep their place in the plan: they only read
+long names through the routines below.
+
+**The file.** `GU.LONGNAMES` in every folder that has long names (the
+root on 1541/1571/1581 flat disks), a USR file of one chain. Records of
+96 bytes: directory block (track, sector), slot (the entry's offset),
+the short name (16 bytes, $A0-padded), the long name (up to 60
+characters, zero-ended, 61 bytes), 16 bytes kept free. A record with
+track 0 is free and taken by the next long name. GeoUltra's listings do
+not show the file; other systems do (a valid USR file, harmless).
+
+**Which file a record belongs to.** The record counts while its slot
+still holds an entry with that short name (as DESIGN.md has it). Also
+keying on the first data block or the date was considered and dropped:
+applications that save by deleting and writing anew (common) would lose
+the long name at every save. The remaining risk, a new file with the
+same generated short name in the same slot inheriting the long name, is
+small, and that is usually the same document anyway.
+
+**Changes behind GeoUltra's back.** No hooks in the kernal (46 resident
+bytes left). Repair is lazy: a record whose slot no longer holds its
+short name is ignored when read and dropped the next time the engine
+writes the file. An application that renames a long-named file through
+`RenameFile` loses the long name; Validate or a move by another system
+does too.
+
+**Short names.** The first 13 characters of the long name, then `~1` to
+`~9` (then 12 characters and `~10` to `~99`), the first one free in the
+folder. A long name of at most 16 characters that is a valid short name
+is its own short name and gets no record.
+
+**Characters.** Long names: printable ASCII ($20-$7E) without `/`, case
+kept; spaces allowed (gush quotes them). Names and patterns stay exact
+and case-sensitive on GEOS drives; on the Ultimate they become
+case-insensitive, as FAT is (a change from E3, where patterns were
+exact there too). On the Ultimate a long name is the FAT name, with
+`%XX` for what FAT cannot hold and the type's extension (`.seq`,
+`.prg`, `.usr`; `.cvt` from E4) as now.
+
+**The engine's interface** (now, while it has no users):
+- `FE_READDIR`: r2 = a buffer of 61 bytes on every drive: the long name,
+  or the short name when there is none; r3 = a buffer of 17 bytes for
+  the short name, or 0. Ultimate names longer than 60 characters are
+  listed cut (info flag `FF_CUT`) and can still be named in full in a
+  path.
+- `FE_STAT`: r2 = 0 or a buffer of 61 bytes for the long name.
+- Paths name files by long or short name. `FE_RENAME` sets a long name
+  (and a new short name if needed); `FE_MKDIR` makes long-named folders;
+  `FE_DELETE`, `FE_RMDIR` drop the record; `FE_COPY`/`FE_MOVE` carry it
+  between GEOS drives and to and from the Ultimate.
+- `GetLongName`/`SetLongName` become engine functions (`FE_GETLONG`,
+  `FE_SETLONG`: r0 = path, r1 = buffer) instead of extension jump table
+  entries: no resident bytes. (DESIGN.md listed them in the extended
+  jump table.)
+- Paths up to 255 bytes (two 60-character levels already reach 127).
+  The current directory in the REU grows to 256 bytes (layout 2: made
+  anew at the first call, as now after power-on).
+
+**Memory.** `fePath` keeps all of `fileHeader` (256 bytes). The names
+(`feName`, `feTmp`: 61 bytes each) move from the work area to
+`fileTrScTab`, with the Ultimate's command buffer (128 bytes) after
+them. A copy's VLIR index stays in `fileHeader`: the path is no longer
+needed while the blocks are copied (a move resolves its source again
+afterwards, as now). Ultimate folders are entered part by part when the
+path does not fit one command (the Ultimate takes relative `CD`);
+`WRITE_DATA` pieces become 120 bytes.
+
+**When the disk is full.** The file operation itself completes; the long
+name that does not fit is dropped (X = 0, the short name stays). Better a
+file without its long name than no file.
+
+**Tests.** VICE on 1541, 1581 (partitions) and native images: listings,
+paths by both names, rename, delete, copy and move carrying the long
+name, a long name lost after `RenameFile` by an application, stale
+records dropped, the real 1581 DOS reading the folder; the U64 for the
+Ultimate side (long FAT names both ways, case-insensitive paths).
+
 ## Order of work
 
 1. **E1:** dispatcher, paths, current directory, stat, directory
    listing, delete, rename, mkdir, rmdir on GEOS drives; tests.
 2. **E2:** copy and move between GEOS drives; streams on GEOS files.
 3. **E3:** the Ultimate's file system: listing, stat, raw copy both ways,
-   delete, mkdir; U64 tests. Then **gush step 1** (decided: it includes
-   the Ultimate's file system).
-4. **E4:** CVT both ways, streams on the Ultimate, mount and umount;
+   delete, mkdir; U64 tests.
+4. **L:** long names in the kernal's files and the engine (above). Then
+   **gush step 1** (decided: it includes the Ultimate's file system).
+5. **E4:** CVT both ways, streams on the Ultimate, mount and umount;
    gush step 2.
 
 ## State of the work
