@@ -91,9 +91,18 @@ MountAll:
         sta $D038               ; (only when it is not mapped yet)
         lda #$CD
         sta $D036
-        lda uciCmd
-        cmp #UCI_ID
-        beq @uci
+        ldy #100                ; and wait for it, up to about 2 s (as the
+@wait:  lda uciCmd              ; Ultimate library's uii_wait_for_uci; one
+        cmp #UCI_ID             ; check right after the unlock found no
+        beq @uci                ; interface on the U64 once, 2026-11-04)
+@frame: lda $D012
+        cmp #248
+        bne @frame
+@past:  lda $D012
+        cmp #248
+        beq @past
+        dey
+        bne @wait
         rts
 @uci:   lda #$04                ; abort whatever an earlier run left
         sta uciCtrl

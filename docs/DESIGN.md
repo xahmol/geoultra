@@ -394,12 +394,11 @@ Done 2026-10-30: the DirMaster reference DNP, the hibernation power cycle
 
 - The Command Interface unlock at boot (`$AB` to `$D038`, `$CD` to `$D036`,
   mount.s) did not bring the UCI up on the U64 on 2026-11-04 after a
-  GDOS64 session had left it disabled in the running settings; the boot
-  then mounted nothing. Check whether it needs a pause before the second
-  test, or whether only some states can be unlocked.
-- geoFolder lists folders only; on a drive without folders (1541/1571,
-  1581 until partitions) its list is empty without explanation: show "No
-  folders on this drive" (user's question, 2026-11-04).
+  GDOS64 session had left it disabled in the running settings (nothing
+  mounted). Retested the same day with the interface disabled after a
+  plain reboot: the unlock worked. `MountAll` now waits up to about 2 s
+  for the interface after the unlock (as the Ultimate library does); the
+  state after a GDOS64 session is still to retest.
 - geoPublish: both unkeyed copies the user has fail on GeoUltra, genuine
   GEOS 2.0 (VICE) and GDOS64 (U64, user's test 2026-11-04): defective
   copies; a working one later, e.g. from the original disks through the

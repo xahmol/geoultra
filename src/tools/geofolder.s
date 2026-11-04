@@ -4,12 +4,19 @@
 ; type that no file has, so no files appear); OPEN, RETURN and DEL move
 ; through them (the kernal does that), DISK goes to the next drive, OK
 ; leaves: the drive's current folder stays as chosen, and the application
-; sees it as the disk at its next OpenDisk. Own code.
+; sees it as the disk at its next OpenDisk. When the list would be empty
+; (a drive without folders, or the root of one with none), it says "No
+; folders" above the drive's name (user's question, 2026-11-04). Own code.
 
 DoDlgBox        = $C256         ; GEOS 2.0 jump table
 RstrAppl        = $C23E
 SetDevice       = $C2B0
 OpenDisk        = $C2A1
+Get1stDirEntry  = $9030         ; disk driver jump table
+GetNxtDirEntry  = $9033
+guExtTable      = $C0E4         ; GeoUltra: the extension jump table
+r1L             = $04
+r1H             = $05
 curDrive        = $8489
 driveType       = $848E
 sysDBData       = $851D
@@ -36,6 +43,7 @@ Start:  lda curDrive
         clc
         adc #'A' - 8
         sta driveText + 6
+        jsr Folders             ; "No folders" or nothing above it
         lda #<nameBuf
         sta r5L
         lda #>nameBuf
@@ -69,15 +77,56 @@ Start:  lda curDrive
         jsr OpenDisk
         jmp RstrAppl
 
+; Folders: noteText = "No folders" when the list would be empty, else "".
+Folders:
+        lda guExtTable          ; GetCurDir (extension table +0): r1 =
+        sta @ext+1              ; the current folder, 0/0 on a drive
+        lda guExtTable+1        ; without folders, 1/1 at the root
+        sta @ext+2
+@ext:   jsr $FFFF
+        lda r1L
+        beq @none               ; (no folders on this kind of drive)
+        cmp #1
+        bne @some               ; in a folder: ".." is listed
+        lda r1H
+        cmp #1
+        bne @some
+        jsr Get1stDirEntry      ; the root: any folder in it?
+        txa
+        bne @none
+@entry: ldy #0
+        lda (r5L),y
+        and #$07
+        cmp #6                  ; CBM type DIR
+        beq @some
+        jsr GetNxtDirEntry
+        txa
+        bne @none
+        tya
+        beq @entry
+@none:  lda #<noFolders
+        ldx #>noFolders
+        bne @set
+@some:  lda #<noText
+        ldx #>noText
+@set:   sta noteWord
+        stx noteWord+1
+        rts
+
 dialog: .byte DEF_DB_POS | 1
         .byte DBGETFILES, 4, 4
         .byte OPEN, 17, 8
         .byte DISK, 17, 30
         .byte OK, 17, 52
+        .byte DBTXTSTR, 136, 76
+noteWord:
+        .word noText
         .byte DBTXTSTR, 136, 86
         .word driveText
         .byte 0
 
 driveText:      .byte "Drive A", 0
+noFolders:      .byte "No folders", 0
+noText:         .byte 0
 home:           .byte 8
 nameBuf:        .res 17

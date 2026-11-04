@@ -605,6 +605,31 @@ round-tripping through `c1541 -geoswrite` and `-geosread`.
 
 ---
 
+### 1581 partitions and sub-directories (verified with the real 1581 DOS)
+
+Checked 2026-11-04 in GeoUltra with VICE's true 1581 emulation (the
+drive's own ROM): a BASIC program on a blank D81. Matches Peter Schepers'
+D81.TXT where it says something; the commands and nesting are from the
+test.
+- Commands (channel 15): create `"/0:name,"+CHR$(track)+CHR$(sector)+
+  CHR$(blocks lo)+CHR$(blocks hi)+",C"`; select `"/0:name"` (status
+  `02,SELECTED PARTITION,first,last`); back to the root `"/"`
+  (`02,...,1,80`); a selected partition becomes a sub-directory with
+  `"N0:name,id"`.
+- Parent entry: type `$85` (CBM), start track/sector, size in blocks at
+  `$1E/$1F`; the parent's BAM has the partition's blocks allocated.
+- A usable sub-directory starts at sector 0, is a multiple of 40 blocks,
+  at least 120, and does not include track 40.
+- Inside (first track t): header `t/0` (link `t/3`, `$02` = "D", name
+  `$04`, ID `$16/$17`, "3D" `$19/$1A`), BAM `t/1` (link `t/2`) and `t/2`
+  (link `00/FF`), same layout as 40/1-40/2 and covering all 80 tracks:
+  tracks outside the partition 0 free; directory from `t/3`.
+- No lower/upper track bytes and no parent pointer on disk: the DOS keeps
+  the selection in its own RAM; a host must find the parent by walking
+  from the root.
+- Nesting works: a partition created inside a selected sub-directory lies
+  in that sub-directory's tracks and is allocated in its BAM.
+
 ## 13. REU and RAM routines
 
 `ramExpSize` (`$88C3`, `sysRAMFlg` `$88C4`): number of 64 KB banks. `StashRAM` (`$C2C8`),
