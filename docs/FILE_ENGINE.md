@@ -1,7 +1,8 @@
 # File engine (design proposal)
 
-Status: **proposal, 2026-11-04, for the user's approval.** Decisions it
-builds on: docs/DESIGN.md, "Shell: gush", "Languages" and "gush and file
+Status: **approved by the user, 2026-11-04** (with the `%XX` escape);
+step E1 implemented (below, "State of the work"). Decisions it builds
+on: docs/DESIGN.md, "Shell: gush", "Languages" and "gush and file
 engine decisions".
 
 The file engine is the part of the kernal that works with files by path,
@@ -19,9 +20,11 @@ desktop and file manager; third-party applications can call it too.
 - **Overlay modules:** at most 496 bytes each, one at a time in the slot
   at `$9D80`; no vectors into the slot; module variables lost across a
   nested overlay call (overlay.s). The engine is about 12-16 modules.
-- **Application memory:** none. Buffers: `diskBlkBuf` and `fileHeader`
-  between disk calls (as GEOS's own routines do), scratch `$9F70-$9FFF`
-  for the running module, state in the REU.
+- **Application memory:** none. Buffers: `diskBlkBuf`, and `fileHeader`
+  for the path (`fePath`) while it is walked; the overlay scratch
+  `$9F70-$9FFF` as the engine's work area during a call (engine.inc;
+  write-back and hibernation use it too, but only from MainLoop, never
+  during an engine call); lasting state in REU bank 1 `$C000-$C2FF`.
 - **UCI:** the engine uses DOS target 2. The write-back and hibernation
   use target 1 from MainLoop; on the same target, a write-back between
   two engine calls would close the engine's open file or directory
@@ -34,16 +37,25 @@ desktop and file manager; third-party applications can call it too.
 ## Calling
 
     lda #FE_COPY            ; function number
-    ...                     ; arguments in r0-r4 (below)
+    ...                     ; arguments in r0-r4 (below), a handle in Y
     jsr FileEngine          ; guExtTable + 30 (extension entry 6)
-                            ; X = 0 or an error; results in r0-r4
+                            ; X = 0 or an error; A = a handle (FE_OPENDIR);
+                            ; results in r0-r4, which are kept otherwise
 
 `FileEngine` is `jsr OvlCall / .byte 22, 0`: module 22 is a dispatcher
 holding a table of (module, entry) per function. It calls the function
-through a `jsr OvlCall` in its own code whose two inline bytes it has
-just written: OvlCall reads them before it fetches the other module and
-brings module 22 back on the way out, so the modified bytes are only
-needed for that moment. Zero further resident bytes per function.
+through a stub in its own code (`Call: jsr OvlCall / .byte m, e`) whose
+two bytes it has just written: OvlCall reads them before it fetches the
+other module and brings module 22 back on the way out, so the modified
+bytes are only needed for that moment. Zero further resident bytes per
+function.
+
+The caller's `curDrive` and the current folder of every drive are saved
+at the start; when a drive was used, they are put back and the caller's
+drive is opened again (`OpenDisk`: `curDirHead` and the BAM read anew,
+so call the engine with your BAM changes written). Destroys r5-r15,
+`diskBlkBuf`, `fileHeader` (a GEOS file's header after `FE_STAT`),
+`dirEntryBuf`.
 
 C callers (geos-oscar64) get a thin wrapper per function later.
 
@@ -56,8 +68,10 @@ C callers (geos-oscar64) get a thin wrapper per function later.
   sub-directory partitions (entered with folders.s's own routines); the
   last component is a file name, at most 16 characters.
 - Relative paths are taken from the engine's current directory (`FE_CD`,
-  `FE_PWD`), one per caller kind (gush; the desktop), kept in the REU.
-  `.` and `..` work everywhere; `..` at a drive's root goes to `/`.
+  `FE_PWD`), kept in the REU; one for now (gush and the desktop do not
+  run at the same time), one per task when task switching comes.
+  `.` and `..` work everywhere; `..` at a drive's root goes to `/`, at
+  `/` it stays there.
 - Names exact and case-sensitive. Wildcards `*` and `?` only in the last
   component of `FE_OPENDIR`'s pattern; gush expands its arguments from
   that listing, so every other call takes exact names.
@@ -70,10 +84,10 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | No. | Name | In | Out |
 | --- | --- | --- | --- |
 | 0 | `FE_VERSION` | | r0 = version |
-| 1 | `FE_STAT` | r0 = path, r1 = 32-byte info block | info: kind (drive, folder, GEOS file, CBM file, Ultimate file or directory), size (blocks or bytes), GEOS class, type and structure, date, read-only |
-| 2 | `FE_OPENDIR` | r0 = path (pattern in the last part allowed) | A = handle |
-| 3 | `FE_READDIR` | A = handle, r1 = info block | info as `FE_STAT` plus the name; X = `END_OF_DIR` (an own code) at the end |
-| 4 | `FE_CLOSE` | A = handle | |
+| 1 | `FE_STAT` | r0 = path, r1 = 16-byte info block | info (below); a GEOS file's header in `fileHeader` |
+| 2 | `FE_OPENDIR` | r0 = a folder, a pattern in a folder, one name, or `/` (the drives) | A = handle |
+| 3 | `FE_READDIR` | Y = handle, r1 = info block, r2 = name buffer (17 bytes; 65 from E3) | info, the name zero-ended; X = `FE_END_OF_DIR` at the end |
+| 4 | `FE_CLOSE` | Y = handle, `$FF`: all (a program starting afresh) | |
 | 5 | `FE_COPY` | r0 = source, r1 = target (a folder or a new name), r2L = flags | |
 | 6 | `FE_MOVE` | as `FE_COPY` | (same drive and kind: a rename or a moved entry, else copy then delete) |
 | 7 | `FE_DELETE` | r0 = path | |
@@ -83,8 +97,8 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 11 | `FE_CD` | r0 = path | |
 | 12 | `FE_PWD` | r0 = buffer (128 bytes) | |
 | 13 | `FE_OPEN` | r0 = path, r2L = mode (read, write, append) | A = handle |
-| 14 | `FE_READ` | A = handle, r1 = buffer, r2 = length | r2 = bytes read |
-| 15 | `FE_WRITE` | A = handle, r1 = buffer, r2 = length | |
+| 14 | `FE_READ` | Y = handle, r1 = buffer, r2 = length | r2 = bytes read |
+| 15 | `FE_WRITE` | Y = handle, r1 = buffer, r2 = length | |
 | 16 | `FE_DF` | r0 = path on a drive | r1 = free, r2 = total (blocks; Ultimate: KB) |
 | 17 | `FE_MOUNT` | r0 = drive path (`/a`), r1 = image path | (step 2) |
 | 18 | `FE_UMOUNT` | r0 = drive path | (step 2) |
@@ -95,15 +109,27 @@ block with r4 = blocks done; the routine returns C set to cancel). The
 engine never asks the user: gush asks before an overwrite or delete
 (decision: always, unless `-f`), the desktop shows its own dialog.
 
-Errors: GEOS's codes where they fit (`FILE_NOT_FOUND`, `FILE_EXISTS`,
-`INSUFF_SPACE`, `WR_PR_ON`, ...), GeoUltra's `$40`/`$41` as for
-folders, new ones from `$48`: end of directory, bad path, not a folder, handle not open,
-too many handles, the Ultimate's error (its status text kept for
+Info block (16 bytes): +0 kind (0 `/`, 1 drive, 2 folder, 3 GEOS file,
+4 CBM file, 5 Ultimate file, 6 Ultimate directory), +1 CBM type byte,
++2 GEOS structure, +3 GEOS file type, +4 size (4 bytes; blocks on GEOS
+drives), +8 date (year, month, day, hour, minute; GEOS files), +13 flags
+(bit 0 read-only, bit 1 GEOS file), +14 reserved. The GEOS class is in
+`fileHeader` after `FE_STAT`.
+
+Errors: GEOS's codes where they fit (`FILE_NOT_FOUND`, `STRUCT_MISMAT`,
+`DEV_NOT_FOUND`, `INSUFF_SPACE`, `WR_PR_ON` $26 for a locked file, ...),
+GeoUltra's `FILE_EXISTS` $40 and `DIR_NOT_EMPTY` $41 as for folders, and
+the engine's own: `FE_END_OF_DIR` $48, `FE_BAD_PATH` $49 (too long, a
+name too long, `/` or a drive where a file is needed), `FE_NOT_FOLDER`
+$4A, `FE_IS_FOLDER` $4B, `FE_BAD_HANDLE` $4C, `FE_NO_HANDLE` $4D,
+`FE_NOT_SUPPORTED` $4E (not yet, or not on this kind of path), and
+`FE_ULTIMATE` $4F (the Ultimate's error; its status text kept for
 `FE_ERRTEXT`, a later function).
 
-Handles: at most 4 open at a time (directories and streams), each about
-64 bytes of state in REU bank 1, with the current directories and the
-path buffers.
+Handles: at most 4 open at a time (directories and streams), 64 bytes of
+state each in REU bank 1 (`$C100`), after the current directory
+(`$C080`) and a layout signature (`$C000`, made at the first call after
+power-on).
 
 ## Copying
 
@@ -123,22 +149,29 @@ path buffers.
   added and taken off. Raw flag: no conversion either way.
 - **Drive E** is read-only: a source only.
 
-## Modules (estimate, numbered from 22)
+## Modules (numbered from 22)
+
+E1 as built (src/kernal/engine.s, enginepath.s, enginedir.s,
+enginefile.s):
 
 | Module | Holds |
 | --- | --- |
-| 22 | dispatcher, save and restore of the caller's state |
-| 23-24 | path parser: drive, folders (entering them), name; current directories |
-| 25-26 | GEOS directory listing and stat (patterns) |
-| 27 | Ultimate directory listing and stat |
-| 28-29 | delete, rename, mkdir, rmdir (GEOS and Ultimate) |
-| 30-32 | copy GEOS to GEOS, scratch banks, Ultimate transfers |
-| 33-34 | CVT out and in |
-| 35-36 | streams: open, read, write, close |
-| 37 | mount, umount (step 2; sharing the image code with mount.s) |
+| 22 | dispatcher, the caller's state, REU setup, `FE_VERSION`, `FE_PWD`, `FE_CLOSE` |
+| 23 | path made absolute (`.`, `..`, the current directory) |
+| 24 | path walked: the top part, the folders, the last part |
+| 25 | `FE_STAT`, `FE_DF` |
+| 26 | `FE_OPENDIR` |
+| 27 | `FE_DELETE`, `FE_RENAME`, `FE_MKDIR`, `FE_RMDIR`, `FE_CD` |
+| 28 | `FE_READDIR` (patterns; nearly full: the Ultimate's listing gets its own module) |
+
+Still to come (estimate): the Ultimate's listing and stat; copy GEOS to
+GEOS, scratch banks, Ultimate transfers; CVT out and in; streams; mount
+and umount (sharing the image code with mount.s).
 
 Shared code goes into includes assembled into each module that needs it
-(`uci.inc`: send, status, data; `path.inc`; `info.inc`). The UCI helpers
+(`engine.inc`: constants, the work area, the REU layout; `fereu.inc`:
+REU state and handles; `feresolve.inc`: paths, names, entering folders;
+`feinfo.inc`: info blocks; later `uci.inc`: send, status, data). The UCI helpers
 now in mount.s, writeback.s and hibernate.s move into `uci.inc` first, so
 there is one copy of them in the source. Mounting at run time needs
 mount.s's image code, which now lives only in the boot's `INIT`
@@ -167,8 +200,16 @@ segment: it moves into includes used by both.
 4. **E4:** CVT both ways, streams on the Ultimate, mount and umount;
    gush step 2.
 
-## Open for the user
+## State of the work
 
-- This proposal as a whole (calling convention, function list, path
-  rules, module plan, order of work).
-- The `%XX` escape for names the Ultimate's file system cannot hold.
+- **E1 (2026-11-04):** dispatcher, paths, current directory, `FE_STAT`,
+  `FE_OPENDIR`/`FE_READDIR`/`FE_CLOSE` with patterns and `/`, `FE_DF`,
+  `FE_DELETE`, `FE_RENAME`, `FE_MKDIR`, `FE_RMDIR`, `FE_CD`, `FE_PWD` on
+  GEOS drives A-D. `make test-engine` (tests/engine/e1.py): 54 checks on
+  a D81 made by the real 1581 DOS (partitions as folders), the caller's
+  state checked after every call, the image read back by the real DOS.
+  Drive E and the Ultimate answer `FE_NOT_SUPPORTED`; so do the
+  functions of later steps.
+- Known limits: renaming a folder changes its directory entry, not the
+  name in its header (shown as the disk name inside it); native drives
+  are covered by the same code but not yet by the test.

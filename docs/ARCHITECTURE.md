@@ -400,7 +400,8 @@ extension table; overlay modules 12-14 with the shared helpers in
   +25 `RemoveDir` (r0 = name of an empty folder; X = `$41` when not
   empty). `MakeDir` takes two blocks near the current folder (header and
   first directory block); `RemoveDir` frees them through the BAM's
-  working copy, so a refused one changes nothing.
+  working copy, so a refused one changes nothing. +30 `FileEngine` (A =
+  function: files by path, [FILE_ENGINE.md](FILE_ENGINE.md)).
 - `SetGEOSDisk` moved to module 13 (driver room), now also on native
   drives (border block from 1/0); `SaveState`/`RestoreState` moved to
   module 11 (room in CODE for the table).
@@ -693,6 +694,11 @@ the stack resident, before the overlay call) and `CRC`.
 | 16 | turbo per application | speed.s |
 | 17 | fonts and desk accessories from the root folder | rootmerge.s |
 | 18-21 | 1581 partitions: entered and left, created, formatted, removed | folders.s |
+| 22-28 | file engine: dispatcher; path made absolute, walked; stat and free space; directory opened; delete, rename, folders, cd; directory read | engine.s, enginepath.s, enginedir.s, enginefile.s ([FILE_ENGINE.md](FILE_ENGINE.md)) |
+
+The scratch `$9F70-$9FFF` after the slot is shared by write-back and
+hibernation (from MainLoop) and the file engine (its work area during a
+call, `engine.inc`); neither runs inside the other.
 
 Each module's use is in `build/kernal64.map` (`OVL<n>`); the linker
 refuses one over `$1F0`. Code that several modules need is assembled into

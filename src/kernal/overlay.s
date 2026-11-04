@@ -1,7 +1,9 @@
 ; Overlays: rarely used kernal routines live in modules of OVL_SIZE bytes
 ; in the REU (at the start of the system image, REU $020000) and run in
 ; the slot at OVL_SLOT ($9D80-$9F6F, the end of the disk driver area);
-; $9F70-$9FFF is scratch for the running module that loads leave alone.
+; $9F70-$9FFF is scratch for the running module that loads leave alone
+; (users: write-back and hibernation from MainLoop; the file engine's
+; work area during a call, engine.inc).
 ; A routine is reached through a resident stub:
 ;
 ;       jsr OvlCall

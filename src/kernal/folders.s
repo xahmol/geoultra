@@ -82,6 +82,8 @@ MakeDir:        jsr OvlCall     ; +20 r0 = name: a new folder in it
         .byte 14, 0
 RemoveDir:      jsr OvlCall     ; +25 r0 = name of an empty folder: removed
         .byte 13, 3
+FileEngine:     jsr OvlCall     ; +30 the file engine: A = function
+        .byte 22, 0             ;     (engine.s, docs/FILE_ENGINE.md)
 
 SetGEOSDiskOvl:                 ; the driver's SetGEOSDisk (module 13)
         jsr OvlCall

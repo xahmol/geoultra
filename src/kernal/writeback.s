@@ -22,7 +22,9 @@
         .import OvlCall, uciPresent, wbPending, wbDelay, drvTracks, drvFlags, hibState, HibSuspend
         .export FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, Ovl1571, natLoaded
 
-path            = $9F70         ; the slot's scratch area (overlay.s)
+path            = $9F70         ; the slot's scratch area (overlay.s; the
+                                ; file engine's work area during its calls,
+                                ; engine.inc: never at the same time)
 cmdBuf          = $9FB0
 uciCtrl         = $DF1C
 uciCmd          = $DF1D
