@@ -75,7 +75,7 @@ Status: lda minutes
         sta r0H
         jmp ConStatus
 
-Hello:  .byte "gush, the GeoUltra shell (step 1.3)", CR, 0
+Hello:  .byte "gush, the GeoUltra shell (step 1)", CR, 0
 
         .segment "DATA"
 

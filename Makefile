@@ -37,7 +37,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-part81 test-engine test-engine-u64 test-gush smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -326,6 +326,13 @@ test-gush: all
 	$(PYTHON) tests/gush/g2.py
 	$(PYTHON) tests/gush/g3.py
 	$(PYTHON) tests/gush/g4.py
+	$(PYTHON) tests/gush/g5.py
+	$(PYTHON) tests/gush/g6.py
+
+# gush on the U64 (tests/gush/gu64.py): the Ultimate's file system, a desk
+# accessory; gush written onto drive A's test copy first.
+test-gush-u64: check-deploy all
+	$(PYTHON) tests/gush/gu64.py build/geoultra64.crt
 
 # The file engine on the Ultimate, step E3 (tests/engine/e3u64.py): the
 # cartridge into the U64's flash and a reboot, then the Ultimate's file

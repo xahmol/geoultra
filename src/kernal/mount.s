@@ -26,6 +26,7 @@
         .include "kcalls.inc"
 
         .export MountAll, SerialFromDisk, TurboInit
+        .export startGush
         .import turboWant, turboNow
 .ifdef BYPASS
         .import bypassOn
@@ -66,6 +67,8 @@ pathLen:        .byte 0
 slashPos:       .byte 0
 drive:          .byte 0
 nextBank:       .byte 0
+keyAt:          .word 0         ; ReadSettings: a key's start
+startGush:      .byte 0         ; $80: [system] start=gush (init.s)
 inDrives:       .byte 0
 type:           .byte 0
 banks:          .byte 0
@@ -479,25 +482,27 @@ ReadSettings:
 @serial3:
         cmp #'S'
         bne @skip0
-        lda r1L                 ; (Match reads on: back for the second key)
-        pha
+        lda r1L                 ; (Match reads on: back for the next key)
+        sta keyAt
         lda r1H
-        pha
+        sta keyAt+1
         ldx #serialKey - keys   ; "ERIAL="
         jsr Match
         beq @isSerial
-        pla
-        sta r1H
-        pla
-        sta r1L
+        jsr KeyBack
         ldx #slowKey - keys     ; "LOW=" a permanent name for 1 MHz
         jsr Match
+        beq @slow
+        jsr KeyBack
+        ldx #startKey - keys    ; "TART=GUSH": gush instead of the banner
+        jsr Match
         bne @skip0
-        jsr SlowName
+        lda #$80
+        sta startGush
+        jmp @skip
+@slow:  jsr SlowName
         jmp @skip
 @isSerial:
-        pla
-        pla
         jsr Hex2                ; four hex digits, high byte first
         bcs @skip
         sta serialNumber+1
@@ -520,6 +525,14 @@ ReadSettings:
         jmp @line
 @end:   rts
 
+; KeyBack: r1 back at the key's start (keyAt).
+KeyBack:
+        lda keyAt
+        sta r1L
+        lda keyAt+1
+        sta r1H
+        rts
+
 settingsName:   .byte "SETTINGS.INI", 0
 keys:
 systemKey:      .byte "SYSTEM]", 0
@@ -527,6 +540,7 @@ serialKey:      .byte "ERIAL=", 0
 hibKey:         .byte "IBERNATE=", 0
 turboKey:       .byte "URBO=OFF", 0
 slowKey:        .byte "LOW=", 0
+startKey:       .byte "TART=GUSH", 0
 .ifdef BYPASS
 protKey:        .byte "ROTECTION=BYPASS", 0
 .endif

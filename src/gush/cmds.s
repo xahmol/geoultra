@@ -10,6 +10,7 @@
         .import Parse, argc, argLo, argHi
         .export Run, ArgR0, PutArg, Print, Say, Fail, Decimal, num
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
+        .import StartProgram
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -74,7 +75,22 @@ Run:    jsr Parse
         sta @go+2
 @go:    jmp $FFFF
 @unknown:
-        jsr Gush
+        jsr StartProgram        ; a program's name?
+        txa
+        beq @end
+        cpx #STRUCT_MISMAT
+        bne @nf
+        jsr Gush                ; there, but no program
+        ldx #0
+        jsr PutArg
+        lda #<NoProgram
+        ldy #>NoProgram
+        jmp Say
+@nf:    cpx #FILE_NOT_FOUND
+        beq @none
+        ldy #$FF
+        jmp Fail
+@none:  jsr Gush
         ldx #0
         jsr PutArg
         lda #<NotFound
@@ -112,10 +128,82 @@ Commands:
         .word CmdMore
         .byte "df", 0
         .word CmdDf
+        .byte "help", 0
+        .word CmdHelp
         .byte 0
 
 CmdExit:
         jmp EnterDeskTop
+
+; help [command]: the commands, or one command's use.
+CmdHelp:
+        lda argc
+        cmp #2
+        bcs @one
+        lda #<HelpAll
+        ldy #>HelpAll
+        jmp Say
+@one:   ldx #1
+        jsr ArgStr
+        ldx #0                  ; the usage lines: "name text", zero
+@line:  lda Usage,x
+        beq @none
+        stx cmdAt
+        ldy #0
+@cmp:   lda Usage,x
+        cmp #' '
+        beq @end_name
+        cmp (str),y
+        bne @skip
+        inx
+        iny
+        bne @cmp
+@end_name:
+        lda (str),y
+        bne @skip
+        lda cmdAt               ; this one: printed
+        clc
+        adc #<Usage
+        tax
+        lda #>Usage
+        adc #0
+        tay
+        txa
+        jmp Say
+@skip:  ldx cmdAt               ; the next line
+@past:  inx
+        lda Usage-1,x
+        bne @past
+        jmp @line
+@none:  jsr Gush
+        lda #<NoHelp
+        ldy #>NoHelp
+        jsr Print
+        ldx #1
+        jsr PutArg
+        jmp ConNewLine
+
+HelpAll:                        ; (lines within COLS)
+        .byte "commands: cd clear cp df echo exit help ls mkdir", CR
+        .byte "more mv pwd rm rmdir; a program's name starts it.", CR
+        .byte "help NAME: a command's use.", 0
+Usage:  .byte "cd [path]", 0
+        .byte "clear", 0
+        .byte "cp [-f] source... target", 0
+        .byte "df [path]", 0
+        .byte "echo words...", 0
+        .byte "exit", 0
+        .byte "help [command]", 0
+        .byte "ls [-l] [path...]", 0
+        .byte "mkdir [-t tracks] path...", 0
+        .byte "more path...", 0
+        .byte "mv [-f] source... target", 0
+        .byte "pwd", 0
+        .byte "rm [-f] path...", 0
+        .byte "rmdir path...", 0
+        .byte 0
+NoHelp: .byte "no help for ", 0
+        .assert * - Usage < 256, error, "help: the usage lines in one page"
 
 ; echo: the words, one space between.
 CmdEcho:
@@ -578,6 +666,7 @@ GushColon:      .byte "gush: ", 0
 Colon:          .byte ": ", 0
 NotFound:       .byte ": not found", 0
 TooMany:        .byte "gush: too many words", 0
+NoProgram:      .byte ": no program", 0
 Dot:            .byte ".", 0
 
         .segment "DATA"

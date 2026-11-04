@@ -35,7 +35,9 @@ FE_MOUNT        = 17
 FE_UMOUNT       = 18
 FE_GETLONG      = 19
 FE_SETLONG      = 20            ; (the same as FE_RENAME)
-FE_COUNT        = 21
+FE_SELECT       = 21            ; a file's drive and folder made current
+FE_RUNSYS       = 22            ; an application on drive E started
+FE_COUNT        = 23
 FE_VER          = $0003         ; FE_VERSION's answer (E3)
 
 ; FE_COPY, FE_MOVE: flags (r2L)

@@ -79,95 +79,7 @@ turboNow:       .byte $FF       ; $D031 now (a resumed session: Resumed)
         jmp OvAppGate           ; entry 6
         jmp OvRefused           ; entry 9
 
-; Usable: C clear when drive E can be shown on the current drive (not a
-; native one with more than SYSDRV_TRACK tracks, and not shown already).
-Usable: sec
-        bit sysActive
-        bmi @end
-        ldx curDrive
-        lda driveType-8,x
-        and #$0F
-        cmp #DRV_NATIVE
-        bcc @end
-        lda drvTracks-8,x
-        cmp #SYSDRV_TRACK + 1
-@end:   rts
-
-; Enter: the current slot shows drive E (a read-only 1541 image).
-Enter:  ldy #REU_STASH
-        jsr HeadDma
-        ldx curDrive
-        lda driveType-8,x
-        sta sysType
-        and #$F0                ; (the REU drive bit kept)
-        ora #DRV_1541
-        sta driveType-8,x
-        lda curType
-        sta sysCurType
-        and #$F0
-        ora #DRV_1541
-        sta curType
-        lda ramBase-8,x
-        sta sysBase
-        lda #SYSDRV_BANK
-        sta ramBase-8,x
-        lda drvFlags-8,x
-        sta sysFlags
-        ora #F_READONLY
-        sta drvFlags-8,x
-        lda #$80
-        sta sysActive
-        rts
-
-; Leave: the slot back as it was, curDirHead too. X kept.
-Leave:  txa
-        pha
-        ldy #REU_FETCH
-        jsr HeadDma
-        ldx curDrive
-        lda sysType
-        sta driveType-8,x
-        lda sysCurType
-        sta curType
-        lda sysBase
-        sta ramBase-8,x
-        lda sysFlags
-        sta drvFlags-8,x
-        lda #0
-        sta sysActive
-        pla
-        tax
-        rts
-
-; HeadDma: curDirHead to (Y = REU_STASH) or from (REU_FETCH) HEAD_SAVE in
-; REU bank 1; r0-r3 kept (OvFindFile returns r1).
-HeadDma:
-        ldx #7
-@save:  lda r0L,x
-        pha
-        dex
-        bpl @save
-        lda #<curDirHead
-        sta r0L
-        lda #>curDirHead
-        sta r0H
-        lda #<HEAD_SAVE
-        sta r1L
-        lda #>HEAD_SAVE
-        sta r1H
-        lda #0
-        sta r2L
-        lda #1
-        sta r2H
-        sta r3L                 ; bank 1
-        jsr SysRAMOp
-        ldx #0
-@back:  pla
-        sta r0L,x
-        inx
-        cpx #8
-        bne @back
-        rts
+        .include "sysenter.inc" ; Enter, Leave, HeadDma (also module 55)
 
 ; OvFTypes (after FindFTypes, X its error, r6/r7H where it stopped): for
 ; desk accessories and fonts with room left, drive E's are added.
@@ -335,3 +247,48 @@ DLG_TEXT1       = * - dlgTemplate
 DLG_TEXT2       = * - dlgTemplate
                 .byte "for GeoUltra", 0
 DLG_LEN         = * - dlgTemplate
+
+        .segment "OVL55"                ; overlay module 55: FE_RUNSYS
+        .scope Mod55
+
+        .include "engine.inc"
+
+        jmp OvRunSys            ; entry 0
+
+        .include "sysenter.inc"
+
+LdApplic        = $C21D         ; GEOS jump table
+
+; OvRunSys (FE_RUNSYS, from the file engine's dispatcher; gush at the cold
+; start and from geoFolder): r0 = the name of an application on drive E,
+; started (LdApplic from E's entry; its blocks show as tracks 221-255 of
+; every drive, so they load from the current one). Back only with X =
+; FILE_NOT_FOUND, STRUCT_MISMAT (no application), DEV_NOT_FOUND (E cannot
+; be shown on this drive) or LdApplic's error.
+OvRunSys:
+        ldx #DEV_NOT_FOUND
+        jsr Usable
+        bcs @end
+        lda argR0
+        sta r6L
+        lda argR0+1
+        sta r6H
+        jsr Enter
+        jsr FindFile
+        jsr Leave
+        txa
+        bne @end
+        ldx #STRUCT_MISMAT
+        lda dirEntryBuf + OFF_GFILE_TYPE
+        cmp #APPLICATION
+        bne @end
+        lda #<dirEntryBuf
+        sta r9L
+        lda #>dirEntryBuf
+        sta r9H
+        lda #0                  ; (no data file)
+        sta r0L
+        jmp LdApplic
+@end:   rts
+
+        .endscope

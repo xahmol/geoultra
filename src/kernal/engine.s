@@ -1,14 +1,15 @@
 ; File engine (docs/FILE_ENGINE.md): files by path over the GEOS drives
 ; and, later, the Ultimate's file system. One resident entry, FileEngine
 ; (extension jump table +30, folders.s); everything else is in overlay
-; modules 22-54:
+; modules 22-55:
 ;   22 engine.s      dispatcher, the caller's state, FE_VERSION, FE_PWD,
 ;                    FE_CLOSE
 ;   23 enginepath.s  path: absolute, "." and ".." (Resolve)
 ;   24 enginepath.s  path: the walk to the folder holding the last part
 ;   25 enginedir.s   FE_STAT, FE_DF
 ;   26 enginedir.s   FE_OPENDIR
-;   27 enginefile.s  FE_DELETE, FE_RENAME, FE_MKDIR, FE_RMDIR, FE_CD
+;   27 enginefile.s  FE_DELETE, FE_RENAME, FE_MKDIR, FE_RMDIR, FE_CD,
+;                    FE_SELECT
 ;   28 enginedir.s   FE_READDIR
 ;   29 enginecopy.s  FE_COPY, FE_MOVE (the source, a move as a rename)
 ;   30 enginecopy.s  the target of a copy, checked
@@ -36,6 +37,7 @@
 ;   50 enginelong.s  short names made
 ;   51 enginelong.s  names: a listing's entries, dropped, FE_GETLONG
 ;   54 enginelong.s  rename and mkdir with long names
+;   55 sysdrive.s    FE_RUNSYS: an application on drive E started
 ;   52 enginelong.s  a copy's new entry (and its long name)
 ;   53 enginelong.s  GU.LONGNAMES made
 ; Shared: engine.inc (constants, work area, REU layout), feblock.inc,
@@ -92,6 +94,8 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 22, 12            ; FE_UMOUNT (E4)
         .byte 51, 6             ; FE_GETLONG
         .byte 27, 3             ; FE_SETLONG (= FE_RENAME)
+        .byte 27, 15            ; FE_SELECT
+        .byte 55, 0             ; FE_RUNSYS (sysdrive.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),

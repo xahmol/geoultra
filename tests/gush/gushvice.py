@@ -89,12 +89,52 @@ class Gush:
         time.sleep(wait)
         v.ping()
 
+    def runsys(self, name, wait=5):
+        """Up to MainLoop, then FE_RUNSYS NAME (an application on drive E);
+        returns X when it came back (an error), None when it did not."""
+        v = self.v
+        v.resume()
+        time.sleep(5)
+        v.ping()
+        jt = v.mem_get(0xC1C3, 0xC1C5)
+        cid = v.checkpoint(jt[1] | jt[2] << 8, temporary=False)
+        v.resume()
+        v.wait_event(RESP_CHECKPOINT)
+        v.delete_checkpoint(cid)
+        k = {}
+        for line in open(os.path.join(ROOT, "build", "kernal64.lbl")):
+            parts = line.split()
+            k[parts[2].lstrip(".")] = int(parts[1], 16)
+        fe = k["ExtTable"] + 30
+        start = harness.TRAMPOLINE
+        code = [0x78, 0xA9, 0x30, 0x85, 0x01,
+                0xA9, NAME & 0xFF, 0x85, 0x02, 0xA9, NAME >> 8, 0x85, 0x03,
+                0xA9, 22, 0x20, fe & 0xFF, fe >> 8, 0x8E, 0xF0, 0x02]
+        end = start + len(code)
+        code += [0x4C, end & 0xFF, end >> 8]
+        v.mem_set(start, bytes(code))
+        v.mem_set(NAME, name.encode("latin1") + b"\0")
+        v.mem_set(0x02F0, b"\xEE")
+        v.regs_set({"PC": start})
+        v.resume()
+        time.sleep(wait)
+        v.ping()
+        x = v.mem_get(0x02F0, 0x02F0)[0]
+        return None if x == 0xEE else x
+
     def keys(self, text, settle=0.25):
         """Keys to gush (a str; "\\r" is RETURN; or a list of codes)."""
         v = self.v
         codes = [ord(c) for c in text] if isinstance(text, str) else text
         for c in codes:
             old = v.mem_get(0x849B, 0x849C)
+            for _ in range(40):             # the previous key taken first
+                if (old[0] | old[1] << 8) != KEY_STUB:
+                    break
+                v.resume()
+                time.sleep(0.25)
+                v.ping()
+                old = v.mem_get(0x849B, 0x849C)
             stub = [0xA9, c, 0x8D, 0x04, 0x85,            # keyData
                     0xA9, old[0], 0x8D, 0x9B, 0x84,       # appMain back
                     0xA9, old[1], 0x8D, 0x9C, 0x84,

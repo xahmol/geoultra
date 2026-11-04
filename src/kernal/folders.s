@@ -26,7 +26,7 @@
         .include "geos.inc"
         .include "kcalls.inc"
 
-        .export folderT, folderS, ExtTable, SetGEOSDiskOvl, Dir81, Patch81
+        .export folderT, folderS, ExtTable, SetGEOSDiskOvl, Dir81, Patch81, FileEngine
         .import t1581
         .import OvlCall
         .import DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite

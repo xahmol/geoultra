@@ -161,9 +161,21 @@ GeoUltra's own desktop.
   a progress line, `rm`, `mkdir -t`, `rmdir`, `cat`, `more`, `df`).
   Tests: tests/gush/g1-g4.py (`make test-gush`). gush is on drive E
   (`SYSFILES`). Code about 5.5 KB, buffers 3.8 KB.
-- Still to come in step 1: `cp -r`, `help`, starting applications, the
-  boot setting and geoFolder's button, the U64 run, `--:--` for the time
-  when there is no clock (VICE: no Ultimate, the clock counts from 00:00).
+- **1.5 (2026-11-04):** `help`, starting programs (prog.s: an
+  application or desk accessory by path, or by name in the current
+  directory and then the roots of drives A-D; the engine's `FE_SELECT`
+  makes its folder current, `GetFile` starts it; after a desk accessory
+  gush redraws its screen from the shadow), the boot setting
+  (`SETTINGS.INI` `[system] start=gush`: the cold start calls the
+  engine's `FE_RUNSYS`, which starts an application from drive E).
+  Tests: g5.py, g6.py in VICE; tests/gush/gu64.py on the U64 (the
+  Ultimate's file system through gush, geoFolder started and closed;
+  `make test-gush-u64`); the boot setting checked on the U64 by hand.
+- Still to come in step 1: geoFolder's gush button, `cp -r`, `--:--` for
+  the time when there is no clock (VICE: no Ultimate, the clock counts
+  from 00:00), a document after a program's name.
+- Drive E is not yet in the file engine's tree: programs on it are not
+  found by name (`/e/bin` in the design); `FE_RUNSYS` starts them by name.
 - A test hook: `testCtrl` (edit.s) makes the editor take CTRL as held
   (VICE's monitor cannot hold a key); `keyQueue`, `qHead`, `qTail` are
   exported from the kernal for the tests' answers.

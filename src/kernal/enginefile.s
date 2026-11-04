@@ -17,6 +17,7 @@
         jmp OvMkDir             ; entry 6
         jmp OvRmDir             ; entry 9
         jmp OvCd                ; entry 12
+        jmp OvSelect            ; entry 15
 
         .include "fereu.inc"
         .include "feresolve.inc"
@@ -154,6 +155,31 @@ OvCd:   lda #1
         ldy #REU_STASH
         jsr ReuOp
         ldx #0
+@end:   rts
+
+; FE_SELECT: r0 = a file on a GEOS drive, r1 = a buffer of 17 bytes:
+; its drive and folder become the caller's current ones (not put back, as
+; after every other function; the disk is open), its short name to r1:
+; ready for GetFile (gush starts programs so).
+OvSelect:
+        jsr Path                ; (feUlt 0: an Ultimate path not taken)
+        bne @end
+        ldx #FE_BAD_PATH
+        lda feName              ; ("/" or a drive)
+        beq @end
+        jsr FindName
+        txa
+        bne @end
+        stx feTouched           ; (0: the dispatcher leaves the drive)
+        lda argR1
+        sta r1L
+        lda argR1+1
+        sta r1H
+        ldy #FE_NAME_MAX
+@copy:  lda feShort,y
+        sta (r1),y
+        dey
+        bpl @copy
 @end:   rts
 
 ; Target: the caller's r0 resolved to something in a folder of a GEOS

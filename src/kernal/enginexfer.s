@@ -204,7 +204,14 @@ OvUFrom:
         ldx #FE_BAD_PATH
         lda feName
         beq @end                ; (the top)
-        jsr UCd
+        lda cMove               ; FE_MOVE in one Ultimate folder: a rename
+        beq @copy
+        jsr Rename
+        bcc @end                ; (done, or its error)
+        jsr Resolve             ; else the source again (a copy)
+        txa
+        bne @end
+@copy:  jsr UCd
         txa
         bne @end
         lda #U_OPEN
@@ -287,6 +294,75 @@ OvUFrom:
 Resolve:
         jsr OvlCall
         .byte 23, 0
+
+; Rename (FE_MOVE, the source resolved): when the target is a new name in
+; the source's folder on the Ultimate, RENAME there: C clear, X its
+; result. Else C set (r0 = the caller's r0 again, for Resolve). The
+; source's path kept in diskBlkBuf meanwhile.
+Rename: ldx #0                  ; the source's path aside
+@save:  lda fePath,x
+        sta diskBlkBuf,x
+        beq @saved
+        inx
+        bne @save
+@saved: lda fePos
+        sta cSrcFT              ; (its folder's length; no GEOS source)
+        lda argR1
+        sta r0L
+        lda argR1+1
+        sta r0H
+        jsr Resolve
+        txa
+        bne @no
+        lda feKind
+        cmp #FE_P_ULTIMATE
+        bne @no
+        lda feName              ; (a top: no)
+        beq @no
+        lda fePos               ; the same folder?
+        cmp cSrcFT
+        bne @no
+        ldy #0
+@same:  cpy fePos
+        beq @folder
+        lda fePath,y
+        cmp diskBlkBuf,y
+        bne @no
+        iny
+        bne @same
+@folder:
+        jsr UCdAll              ; the target an existing folder: no
+        txa
+        beq @no
+        jsr UCd
+        txa
+        bne @done
+        lda #U_RENAME           ; RENAME old, new
+        jsr UBegin
+        ldx cSrcFT
+@old:   inx
+        lda diskBlkBuf,x
+        beq @new
+        stx cSrcFS
+        jsr UPut
+        ldx cSrcFS
+        bne @old
+@new:   jsr UPut                ; (the zero between them)
+        jsr UPutName
+        ldx #FE_BAD_PATH        ; both in one command, or none
+        lda uLen
+        cmp #U_CMD_MAX + 1
+        bcs @done
+        jsr UNoData
+        jsr UExec
+@done:  clc
+        rts
+@no:    lda argR0               ; (for the copy: the source again)
+        sta r0L
+        lda argR0+1
+        sta r0H
+        sec
+        rts
 
         .endscope
 

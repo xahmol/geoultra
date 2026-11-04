@@ -104,6 +104,8 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 18 | `FE_UMOUNT` | r0 = drive path | (step 2) |
 | 19 | `FE_GETLONG` | r0 = path, r1 = 61-byte buffer | the long name, else the short one |
 | 20 | `FE_SETLONG` | as `FE_RENAME` | (the same function) |
+| 21 | `FE_SELECT` | r0 = a file on a GEOS drive, r1 = 17-byte buffer | its drive and folder made the caller's current ones (not put back); its short name in r1's buffer (for `GetFile`) |
+| 22 | `FE_RUNSYS` | r0 = an application's name on drive E | started (`LdApplic`; module 55 in sysdrive.s); back only with an error |
 
 Flags for `FE_COPY` and `FE_MOVE`: overwrite (else `FILE_EXISTS`),
 raw (no CVT conversion), and a progress vector in r3 (called after every
@@ -194,6 +196,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 52 | a copy's new entry and its long name |
 | 53 | `GU.LONGNAMES` made |
 | 54 | `FE_RENAME`/`FE_SETLONG`, `FE_MKDIR` with long names |
+| 55 | `FE_RUNSYS` (sysdrive.s: drive E shown for a moment, `sysenter.inc`) |
 
 Still to come (estimate): CVT out and in; streams on the Ultimate; mount
 and umount (sharing the image code with mount.s); Ultimate to Ultimate
@@ -388,6 +391,9 @@ Ultimate side (long FAT names both ways, case-insensitive paths).
   `/usb0`, `/usb1`, `/sd` in either case; and after the copy's progress
   routine X is 0 again (found by gush, whose routine reads the key queue:
   copies reported its index as an error; e2.py's routine now changes X).
+- **Since (2026-11-04):** `FE_SELECT` and `FE_RUNSYS` (for gush);
+  `FE_MOVE` within one Ultimate folder is a rename (other Ultimate to
+  Ultimate copies and moves still `FE_NOT_SUPPORTED`).
 - Known limits: renaming a folder changes its directory entry, not the
   name in its header (shown as the disk name inside it); native drives
   are covered by the same code but not yet by the test. Copying a folder

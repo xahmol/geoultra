@@ -8,6 +8,7 @@
         .include "gush.inc"
 
         .export ConInit, ConPut, ConPuts, ConNewLine, ConClear, ConCell, ConSet
+        .export ConRedraw
         .export ConCursor, ConStatus, conCol, conRow, shadow
 
 MoveData        = $C17E         ; GEOS jump table
@@ -75,6 +76,30 @@ ConClear:
         sta conCol
         lda #1
         sta conRow
+        rts
+
+; ConRedraw: rows 1-24 drawn again from the shadow (after a desk
+; accessory used the screen). Destroys A, X, Y.
+ConRedraw:
+        lda #1
+        sta setRow
+@row:   ldx setRow
+        jsr ShadowAt
+        lda #0
+        sta setCol
+@col:   ldy setCol
+        lda (shPtr),y
+        ldx setCol
+        ldy setRow
+        jsr ConCellA
+        inc setCol
+        lda setCol
+        cmp #COLS
+        bne @col
+        inc setRow
+        lda setRow
+        cmp #ROWS_LAST + 1
+        bne @row
         rts
 
 ; ConPuts: the zero-ended text at (r0) (CR: a new line). Destroys A, X,
