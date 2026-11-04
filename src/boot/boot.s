@@ -15,7 +15,7 @@
         .import __LOADER_LOAD__, __LOADER_RUN__
 
 IOINIT  = $FDA3
-KERNAL  = $5000                 ; ColdStart, loaded with the system (segment
+KERNAL  = $4F00                 ; ColdStart, loaded with the system (segment
                                 ; INIT; BootGEOS / ResetHandle reboot from ROM)
 IMG_ROW = 7                     ; table row: REU address, C64 address, length
 SCREEN  = $A000

@@ -23,8 +23,9 @@
         .include "hw.inc"
 
         .export SysFTypes, SysFindFile, AppGate, RefusedMsg, turboWant, turboNow
+        .export sysName
         .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
-        .import GetFHdrInfo, DoDlgBox, EnterDeskTop
+        .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
 F_READONLY      = $02
 HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
@@ -33,9 +34,8 @@ FONT            = 8             ; GEOS file type
 
         .segment "CODE"
 
-SysFTypes:                      ; FindFTypes's end (files.s)
-        jsr OvlCall
-        .byte 15, 0
+SysFTypes:                      ; FindFTypes's end (files.s): the root
+        jmp RootFTypes          ; folder's (rootmerge.s), then drive E's
 AppGate:                        ; LdApplic, before an application loads
         jsr OvlCall
         .byte 15, 6
@@ -54,8 +54,7 @@ SysFindFile:
         cpx #FILE_NOT_FOUND
         beq @e
         rts
-@e:     jsr OvlCall
-        .byte 15, 3
+@e:     jmp RootFind            ; the root folder, then drive E
 
 ; Resident: survive nested overlay calls (overlay.s).
 sysActive:      .byte 0         ; $80: the current slot shows drive E

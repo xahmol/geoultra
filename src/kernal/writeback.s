@@ -39,6 +39,7 @@ DOS_SAVE_REU    = $22
 SYS_BANK        = 1
 F_DIRTY         = $01
 F_BACKUP        = $04
+F_RESIZED       = $08           ; (mount.s) another size than its file
 
         .segment "CODE"
 
@@ -151,7 +152,13 @@ Drive:  jsr FetchPath
         sta drvFlags,x
 @open:  lda #DOS_OPEN
         jsr Begin
-        lda #$03                ; read/write, existing
+        ldx slot
+        lda drvFlags,x
+        and #F_RESIZED
+        beq @exist
+        lda #$0A                ; resized: written anew, whole (module 2)
+        .byte $2C               ; (bit abs: skips the next lda)
+@exist: lda #$03                ; read/write, existing
         jsr Put
         jsr PutName
         jsr Simple
@@ -426,6 +433,19 @@ WriteDrive2:
         sta mapIdx
         sta mapIdx+1
         sta wrFailed
+        ldx slot                ; a resized drive (its file opened anew):
+        lda drvFlags,x          ; the whole image as one run, so file
+        and #F_RESIZED          ; length and BAM agree
+        beq @scan
+        lda #0
+        sta runStart
+        sta runStart+1
+        lda mapLen
+        sta mapIdx
+        lda mapLen+1
+        sta mapIdx+1
+        jsr WriteRun
+        jmp @done
 @scan:  jsr MapEnd
         bcs @done
         jsr MapByte
@@ -451,7 +471,7 @@ WriteDrive2:
         jsr ClearMap
         ldx slot
         lda drvFlags,x
-        and #<~F_DIRTY
+        and #<~(F_DIRTY | F_RESIZED)
         sta drvFlags,x
         jsr StoreFlags
 @end:   rts

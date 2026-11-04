@@ -58,6 +58,9 @@ LAST_BANK       = 191
 SYS_BANK        = 1
 F_DIRTY         = $01
 F_READONLY      = $02
+F_BACKUP        = $04           ; (writeback.s: a backup copy was made)
+F_RESIZED       = $08           ; a native drive of another size than its file
+F_KNOWN         = F_DIRTY | F_READONLY | F_BACKUP | F_RESIZED
 
         .segment "INIT"
 
@@ -142,7 +145,9 @@ KeepDirty:
         ldy #0                  ; drives with changes
         ldx #0
 @entry: lda TABLE+$23,x         ; flags
-        and #$FF ^ (F_DIRTY | F_READONLY)
+        and #$FF ^ F_KNOWN      ; (F_BACKUP was missing until 2026-11-04:
+                                ; a written drive's unsaved changes were
+                                ; dropped at the next reset)
         bne @no
         lda TABLE+$20,x         ; type
         bne @used
@@ -676,6 +681,7 @@ ParseList:
         cmp #'='
         bne @skip
         jsr ReadPath
+        jsr SizeOption          ; ",tracks=N" after a DNP's path
         jsr Mount
         jmp @line
 @section:
@@ -806,6 +812,7 @@ Mount:  lda drive
         plp
         bne @end
         jsr ImageSize           ; banks, tracks (native: FILE_INFO)
+        jsr ResizeFirst         ; another size wanted: what to load
         lda nextBank            ; room left?
         clc
         adc banks
@@ -818,6 +825,8 @@ Mount:  lda drive
         jsr LogStatus
         plp
         bne @close
+        jsr ResizeThen          ; the BAM to the wanted size (C: refused)
+        bcs @close
         jsr Enter               ; the mount table entry
         jsr ClearMap
         lda nextBank
@@ -826,6 +835,177 @@ Mount:  lda drive
         sta nextBank
 @close: jsr CloseFile
 @end:   rts
+
+; --- A native drive of another size than its DNP (docs/DESIGN.md "DNP
+; of another size than the drive", user 2026-11-04) ---------------------
+
+; SizeOption (after ReadPath): ",tracks=N" at the end of the path gives
+; wantTracks = N (0: none); the path ends before the comma.
+SizeOption:
+        lda #0
+        sta wantTracks
+        ldx #0
+@find:  lda path,x
+        beq @end
+        cmp #','
+        beq @comma
+        inx
+        bne @find
+@end:   rts
+@comma: lda #0
+        sta path,x
+        stx pathLen
+@eq:    inx
+        lda path,x
+        beq @end
+        cmp #'='
+        bne @eq
+@digit: inx
+        lda path,x
+        sec
+        sbc #'0'
+        cmp #10
+        bcs @end
+        sta r2H
+        lda wantTracks          ; wantTracks * 10 + digit
+        asl
+        asl
+        clc
+        adc wantTracks
+        asl
+        clc
+        adc r2H
+        sta wantTracks
+        jmp @digit
+
+; ResizeFirst (after ImageSize): with a wanted size for a native image,
+; the drive gets that many banks; a smaller drive loads only its tracks.
+ResizeFirst:
+        lda #0
+        sta resized
+        lda tracks
+        sta fileTracks
+        lda type
+        cmp #DRV_NATIVE
+        bne @end
+        lda wantTracks
+        beq @end
+        cmp tracks
+        beq @end                ; (the same size: nothing to do)
+        sta banks
+        bcs @end                ; larger: the whole file is loaded
+        sta tracks              ; smaller: only the first wantTracks
+@end:   rts
+
+; ResizeThen (after LoadReu, drive at nextBank): smaller: refused (C set)
+; when the BAM shows a used block after the last track; larger: the new
+; tracks' blocks set free. Then the BAM's last track (1/2 $08) = the
+; size, the drive F_RESIZED. C clear when the drive can be mounted.
+ResizeThen:
+        lda banks
+        cmp fileTracks
+        beq @out                ; (no resize, or the same size)
+        lda type
+        cmp #DRV_NATIVE
+        beq @go
+@out:   clc
+        rts
+@go:    lda banks
+        cmp fileTracks
+        bcs @grow
+        tax                     ; smaller: tracks banks+1 .. fileTracks
+@check: inx                     ; must be free
+        txa
+        pha
+        ldy #REU_FETCH
+        jsr BamDma
+        pla
+        tax
+        ldy #31
+@free:  lda SCRATCH,y
+        cmp #$FF
+        bne @used
+        dey
+        bpl @free
+        cpx fileTracks
+        bne @check
+        beq @size
+@used:  sec                     ; files after the last track: not mounted
+        rts
+@grow:  ldy #31                 ; larger: tracks fileTracks+1 .. banks free
+        lda #$FF
+@ff:    sta SCRATCH,y
+        dey
+        bpl @ff
+        ldx fileTracks
+@new:   inx
+        txa
+        pha
+        ldy #REU_STASH
+        jsr BamDma
+        pla
+        tax
+        cpx banks
+        bne @new
+@size:  lda banks               ; the BAM's last track, in the REU
+        sta tracks
+        sta wantTracks
+        lda #<wantTracks
+        sta reuC64
+        lda #>wantTracks
+        sta reuC64+1
+        lda #$08
+        sta reuAddr
+        lda #$02
+        sta reuAddr+1
+        lda #1
+        sta reuLen
+        lda #0
+        sta reuLen+1
+        lda nextBank
+        sta reuAddr+2
+        lda #0
+        sta reuCtrl
+        lda #REU_STASH
+        sta reuCmd
+        lda #F_RESIZED
+        sta resized
+@done:  clc
+        rts
+
+; BamDma: A = track, Y = REU command: its 32 BAM bytes (from 1/2: offset
+; $0200 + track * 32 in the drive's first bank) <-> SCRATCH.
+BamDma: pha
+        asl
+        asl
+        asl
+        asl
+        asl
+        sta reuAddr
+        pla
+        lsr
+        lsr
+        lsr
+        clc
+        adc #$02
+        sta reuAddr+1
+        lda nextBank
+        sta reuAddr+2
+        lda #<SCRATCH
+        sta reuC64
+        lda #>SCRATCH
+        sta reuC64+1
+        lda #32
+        sta reuLen
+        lda #0
+        sta reuLen+1
+        sta reuCtrl
+        sty reuCmd
+        rts
+
+wantTracks:     .byte 0         ; MOUNTS.INI ",tracks=N" (0: the file's)
+fileTracks:     .byte 0         ; the DNP's own track count
+resized:        .byte 0         ; F_RESIZED for the mount table, or 0
 
 ; LogStatus: the status's two characters to LOG + 16 * drive + Y.
 LogStatus:
@@ -972,7 +1152,7 @@ Enter:  lda drive
         sta TABLE+$21,x
         lda tracks
         sta TABLE+$22,x
-        lda #0
+        lda resized             ; F_RESIZED or 0
         sta TABLE+$23,x
         lda drive               ; the log: type and bank
         asl

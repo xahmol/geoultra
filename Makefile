@@ -177,7 +177,7 @@ $(GEN)/image.bin $(GEN)/image.inc: build/kernal64.bin build/reudrv64.bin build/i
 	@mkdir -p $(GEN)
 	$(PYTHON) tools/mkimage.py --cpu 2 $(GEN)/image.bin $(GEN)/image.inc build/overlays64s.bin@REU \
 		$(GEN)/splash.bin@A000 $(GEN)/splash_col.bin@8C00 build/kbf64.bin@BF40 build/kernal64.bin@C000 \
-		build/reudrv64.bin@9000 build/init64.bin@5000 build/sysdrive.d64@BANK4
+		build/reudrv64.bin@9000 build/init64.bin@4F00 build/sysdrive.d64@BANK4
 
 build/boot.o: src/boot/boot.s $(GEN)/image.inc $(SPLASH) $(INCS)
 	$(CA65) -I src/inc -I $(GEN) --bin-include-dir $(GEN) -o $@ $<

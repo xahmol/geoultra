@@ -29,8 +29,12 @@ analysis; its route and phase recommendations are superseded.
   `Co-Authored-By` line in every commit, and a mention in release notes,
   Facebook posts and blog texts. Standing rule for every update: keep the
   README section current with what the AI does in the project.
-- Kernal, drivers and the new desktop in assembler (ca65/ld65); tools may
-  be C (Oscar64 with the geos-oscar64 library, see below).
+- Kernal, drivers and the core OS applications (desktop, gush the shell,
+  file manager, settings, mount dialogue, geoFolder) in assembler
+  (ca65/ld65), the shared file engine as a kernal extension (overlay
+  modules, extension jump table); C (Oscar64 with the geos-oscar64
+  library, see below) only for other tools and tests (user, 2026-11-04:
+  speed and above all size, and no C runtime or compiler quirks).
 - Free-standing clean-room kernal from the start (no patch release); the
   user's GEOS 2.0 is only the test oracle.
 - Boot from cartridge: C64 Megabyter (type 86, at most 1 MiB, runs in VICE

@@ -68,4 +68,13 @@ CASES = [
     dict(name="FindFTypes no match", routine="FindFTypes",
          r={"r6": BUF, "r7L": 10, "r7H": 5, "r10": NAME},
          mem={BUF: [0xEE] * 0x60, **name("Zzz")}, compare=["X", "r7H", "mem:$4000-$405F"]),
+    # fonts and desk accessories pass GeoUltra's root folder and drive E
+    # merges (rootmerge.s, sysdrive.s); a wrong carry once made a 1541
+    # drive count as a folder and the search recursed without end
+    dict(name="FindFTypes fonts, none on the disk", routine="FindFTypes",
+         r={"r6": BUF, "r7L": 8, "r7H": 5, "r10": 0},
+         mem={BUF: [0xEE] * 0x60}, compare=["X", "r7H", "mem:$4000-$405F"]),
+    dict(name="FindFTypes fonts by permanent name, none", routine="FindFTypes",
+         r={"r6": BUF, "r7L": 8, "r7H": 5, "r10": NAME},
+         mem={BUF: [0xEE] * 0x60, **name("Zzz")}, compare=["X", "r7H", "mem:$4000-$405F"]),
 ]

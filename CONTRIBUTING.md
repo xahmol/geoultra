@@ -57,8 +57,10 @@ PR.
 
 ## 4. Coding practices
 
-- **Languages:** kernal, drivers, boot code and the desktop in 6502
-  assembler for ca65/ld65; tools may be C with Oscar64 and the
+- **Languages:** kernal, drivers, boot code and the core OS applications
+  (desktop, gush, file manager, settings, mount dialogue, geoFolder) in
+  6502 assembler for ca65/ld65, the shared file engine as a kernal
+  extension; other tools and tests may be C with Oscar64 and the
   geos-oscar64 library; host tools in Python 3 (standard library where
   possible).
 - **Match the surrounding code:** naming, comment density, layout,

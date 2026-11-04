@@ -63,7 +63,7 @@ section 2). GeoUltra's own use of the system areas:
 
 | Range | GeoUltra |
 | --- | --- |
-| `$5000-$5FFF` | at boot only: the cold start (`INIT`, `build/init64.bin`: `ColdStart`, banner, `DiskInit`, `ClockInit`), loaded by the boot ROM and started at `$5000`; applications overwrite it later |
+| `$4F00-$5FFF` | at boot only: the cold start (`INIT`, `build/init64.bin`: `ColdStart`, banner, `DiskInit`, `ClockInit`), loaded by the boot ROM and started at `$4F00` (moved down from `$5000` on 2026-11-04 when it had grown; `$4000-$4E7F` holds mount.s's buffers); applications overwrite it later |
 | `$9000-$9A7F` | disk driver: vectors `$9000-$902F`, jump table `$9030-$904D`, REU image driver (now to about `$97EB`); planned: the **overlay slot**, rarely used kernal code fetched from the REU on demand |
 | `$9A80-$9C7F` | `KEXT`: resident kernal code that no longer fits at `$C000-$FFFF` (the clock, the file list's click and arrow routines) |
 | `$9D80-$9FFF` | the **overlay slot**: one overlay module at a time (src/kernal/overlay.s) |
@@ -465,6 +465,16 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
   - A desk accessory from E loads as any other (`LdDeskAcc` reads the
     high tracks); a font opened with `OpenRecordFile` reads its records
     the same way.
+- The drive's root folder comes first (overlay module 17,
+  `src/kernal/rootmerge.s`, user's decision 2026-11-04): on a native drive
+  inside a folder, `FindFTypes` for desk accessories and fonts adds the
+  root's after the folder's, and the `FindFile` fallback looks in the root
+  before drive E. A root file's track/sector pairs are valid from any
+  folder, so only the search changes: curDirHead's directory link (which
+  `FirstDirBlock` reads on native drives) points at the root's directory
+  (from its header, 1/1) for the search and is put back. Order: the
+  current folder, the root, drive E. Checked in VICE with the applications
+  DNP: geoWrite started from "Writing" lists the root's fonts.
 - Refused applications (same module, `OvAppGate` at the start of
   `LdApplic`): by permanent name (now only GEOS 2.0's "Configure"); the
   flag `sysRefused`, then `EnterDeskTop`, which shows the reason
@@ -541,6 +551,16 @@ helpers both modules assemble in `src/inc/hibshared.inc`.
   the menu, the "safe to switch off" notice, saving only the banks in use,
   task slots, spooler and clipboard.
 
+- Resized native drives (2026-11-04): MOUNTS.INI `A=path,tracks=N`
+  (`SizeOption`); `ResizeFirst` gives the drive N banks and, when smaller,
+  loads only N tracks; `ResizeThen` refuses a smaller drive whose BAM
+  shows a used block after track N, sets the new tracks free when larger,
+  and writes the BAM's last track (1/2 `$08`); the mount table flag
+  `F_RESIZED` makes the first write-back open the file "create always"
+  and save the whole image (module 2), so file length and BAM agree.
+  `KeepDirty` accepts every known flag (`F_KNOWN`: dirty, read-only,
+  backup made, resized); until 2026-11-04 it rejected `F_BACKUP`, so a
+  written drive's unsaved changes were dropped at the next reset.
 - Power-on (U64, 2026-10-30): `FindHome` searches up to 10 s for an
   existing GEOULTRA folder before creating one (`/USB0` appears seconds
   after the C64 starts); `KeepDirty` keeps an REU mount table only when
