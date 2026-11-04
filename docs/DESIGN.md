@@ -379,7 +379,12 @@ GEOS memory map, so the cartridge stays a boot and overlay store:
 
 Full code-quality reviews at fixed moments (CLAUDE.md "Code-quality
 sweeps": end of each phase step, before each release, at the latest
-after about ten feature commits). Log:
+after about ten feature commits). Criteria: overflows, leaks, error
+handling, the GEOS contract, clarity, and since 2026-11-04 (user)
+maintainability: short single-purpose routines with header comments,
+named constants, no undocumented coupling across modules, overlay
+modules split by function, shared code in includes, tests per routine.
+Log:
 
 | Date | Scope | Findings | Fixed | Open |
 | --- | --- | --- | --- | --- |

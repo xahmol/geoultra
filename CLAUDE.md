@@ -167,6 +167,14 @@ all of `src/` and `tools/`. Checklist for this code:
   is to full.
 - **Clarity:** dead code, comments that no longer match the code,
   duplicated logic that drifted.
+- **Maintainability (user, 2026-11-04):** can someone new change this
+  safely? Routines short and with one job, each with a header comment
+  (input, output, what it destroys); named constants instead of magic
+  numbers; no hidden coupling (shared variables, register or flag
+  assumptions across modules and overlay boundaries) without a comment
+  at both ends; overlay modules split by function, not by whatever
+  fitted; shared code in includes rather than copies; tests that cover
+  the routine so a change can be checked.
 Findings are fixed in their own commits; the sweep is logged in
 docs/DESIGN.md "Code sweeps" (date, scope, findings, what was fixed,
 what stays open). Last sweep: 2026-10-30; next at the end of the
