@@ -18,7 +18,7 @@
         .scope Mod36
 
         jmp OvExec              ; entry 0
-        jmp OvList              ; entry 3
+        jmp OvCdX               ; entry 3
 
 UCI_STAT_MAX    = U_STAT_MAX
 cmdBuf          = uCmd
@@ -90,88 +90,57 @@ Statuses:
         .byte "FID", FILE_NOT_FOUND     ; FILE DOESN'T EXIST
         .byte "AC", 0, WR_PR_ON         ; ACCESS DENIED
         .byte $FF
-; OvList: READ_DIR (after OPEN_DIR), one packet per entry (the attribute
-; byte, the name), each into its slot of REU bank FE_UBANK + feHandle (to
-; FE_USLOTS; a longer name cut to FE_UNAME_MAX); feH's H_UCOUNT the
-; number, H_UNEXT 0. I/O on meanwhile. Destroys A, X, Y, r0-r3L.
-OvList: lda #0
-        sta feH + H_UCOUNT
-        sta feH + H_UCOUNT+1
-        sta feH + H_UNEXT
-        sta feH + H_UNEXT+1
+; OvCdX: into fePath's first X characters (at least 1), as few CD
+; commands as fit uCmd: the first absolute, the rest relative, each ending
+; at a "/". X = 0 or the error (FE_BAD_PATH: one part longer than a
+; command takes).
+OvCdX:  stx uCdEnd
+        lda #0
+        sta uCdPos
+@piece: lda uCdPos              ; this piece's end: all, or the last "/"
+        clc                     ; that fits
+        adc #U_CMD_MAX - 3
+        bcs @all
+        cmp uCdEnd
+        bcs @all
+        tax
+@back:  lda fePath,x
+        cmp #'/'
+        beq @send
+        dex
+        cpx uCdPos
+        bne @back
+        ldx #FE_BAD_PATH
+        rts
+@all:   ldx uCdEnd
+@send:  stx uCdNext
         lda #U_TARGET
         sta uCmd
-        lda #U_READDIR
+        lda #U_CD
         sta uCmd+1
-        lda #2
-        sta uLen
-        lda CPU_PORT
-        pha
-        lda #RAM_IO
-        sta CPU_PORT
-        jsr UciSend
-@packet:
-        lda #<diskBlkBuf
-        sta r0L
+        ldx uCdPos              ; (after the first: past its "/", relative)
+        beq :+
+        inx
+:       ldy #2
+@copy:  cpx uCdNext
+        beq @go
+        lda fePath,x
+        sta uCmd,y
+        inx
+        iny
+        bne @copy
+@go:    sty uLen
+        lda #0
         sta uEnd
-        lda #>diskBlkBuf
-        sta r0H
         sta uEnd+1
-        lda #FE_USLOT - 1
-        sta uEnd
-        jsr UciData
-        lda r0L                 ; (diskBlkBuf: r0L the length)
-        beq @next
-        lda #0
-        tay
-        sta (r0),y
-        jsr Slot
-@next:  lda uciCtrl             ; "data more": the next after an ack
-        and #$30
-        cmp #$30
-        bne @last
-        jsr UciAccept
-        jmp @packet
-@last:  jsr UciStatus
-        jsr UciAccept
-        pla
-        sta CPU_PORT
-        rts
-        .assert <diskBlkBuf = 0, error, "Read: the length from r0L"
-
-; Slot: diskBlkBuf (FE_USLOT bytes) into the next slot, if there is one.
-; Destroys A, X, Y, r0-r3L.
-Slot:   lda feH + H_UCOUNT+1
-        cmp #>FE_USLOTS
-        bcs @full
-        lda feH + H_UCOUNT      ; slot * FE_USLOT
-        sta r1L
-        lda feH + H_UCOUNT+1
-        sta r1H
-        ldx #6
-@mul:   asl r1L
-        rol r1H
-        dex
-        bne @mul
-        lda #<diskBlkBuf
-        sta r0L
-        lda #>diskBlkBuf
-        sta r0H
-        lda #FE_USLOT
-        sta r2L
-        lda #0
-        sta r2H
-        lda feHandle
-        clc
-        adc #FE_UBANK
-        sta r3L
-        ldy #REU_STASH
-        jsr SysRAMOp
-        inc feH + H_UCOUNT
-        bne @full
-        inc feH + H_UCOUNT+1
-@full:  rts
-        .assert FE_USLOT = 64, error, "Slot: 64 bytes a slot"
+        jsr OvExec
+        txa
+        bne @end
+        lda uCdNext
+        sta uCdPos
+        cmp uCdEnd
+        bcc @piece
+@end:   rts
 
         .endscope
 
@@ -226,7 +195,7 @@ OvUStat:
         lda #FE_K_UFILE
         jsr InfoKind
         jsr FileInfo
-        jmp PutInfo
+        jmp Put
 @folder:
         lda #U_CD               ; not a file: a folder?
         jsr UBegin
@@ -237,8 +206,33 @@ OvUStat:
         bne @end
 @dir:   lda #FE_K_UDIR
         jsr InfoKind
-        jmp PutInfo
+        jmp Put
 @end:   rts
+
+; Put: the info block to the caller; the name (the path's last part, the
+; top's own name for a top; cut to FE_LONG_MAX) to r2 when not 0.
+Put:    jsr PutInfo
+        lda argR2+1
+        beq @end
+        sta r0H
+        lda argR2
+        sta r0L
+        ldx fePos               ; (the top: from its "/")
+        lda feName
+        bne :+
+        ldx #0
+:       ldy #0
+@copy:  inx
+        lda fePath,x
+        sta (r0),y
+        beq @end
+        iny
+        cpy #FE_LONG_MAX
+        bne @copy
+        lda #0
+        sta (r0),y
+@end:   ldx #0
+        rts
 
 ; FileInfo: FILE_INFO's reply (diskBlkBuf: size, FAT date and time,
 ; extension, attributes) into feInfo. Destroys A, X, feM.
@@ -269,8 +263,8 @@ FAT_OUT         = feInfo + FI_DATE
         .include "fecd.inc"
         .include "fereu.inc"
 
-UList:  jsr OvlCall             ; (module 36: READ_DIR into the slots)
-        .byte 36, 3
+UList:  jsr OvlCall             ; (module 47: READ_DIR into the slots)
+        .byte 47, 0
 
 ; OvUOpen (FE_OPENDIR on the Ultimate; handle feHandle chosen): the
 ; folder's entries read whole into REU bank FE_UBANK + handle, one slot
@@ -346,6 +340,7 @@ Wild:   ldx fePos
         .include "feinfo.inc"
         .include "fegive.inc"
 MATCH_NAME      = fileHeader + 1
+MATCH_FOLD      = uCdPos        ; (free while listing)
         .include "fematch.inc"
 
 ; OvUReadDir (FE_READDIR on an Ultimate listing, the handle in feH): the
@@ -535,8 +530,9 @@ RmDir:  jsr CdName
         jsr UCd                 ; (back)
         jmp Del
 
-; Rename: to the name at the caller's r1 (no "/", 1 to FE_UNAME_MAX
-; characters; an existing one: FILE_EXISTS).
+; Rename: to the name at the caller's r1 (no "/", at least 1 character;
+; the old and the new name together within one command, U_CMD_MAX; an
+; existing one: FILE_EXISTS).
 Rename: lda #U_RENAME
         jsr UBegin
         jsr UPutName
@@ -555,8 +551,9 @@ Rename: lda #U_RENAME
         jsr UPut
         ldy feM
         iny
-        cpy #FE_UNAME_MAX + 1
-        bne @ch
+        lda uLen                ; (both names in one command)
+        cmp #U_CMD_MAX
+        bcc @ch
 @bad:   ldx #FE_BAD_PATH
         rts
 @got:   tya
@@ -572,5 +569,102 @@ CdName: lda #U_CD
         jsr UExec
         cpx #1                  ; (X = 0: C clear)
         rts
+
+        .endscope
+
+        .segment "OVL47"
+        .scope Mod47
+
+        jmp OvList              ; entry 0
+
+UCI_STAT_MAX    = U_STAT_MAX
+cmdBuf          = uCmd
+cmdLen          = uLen
+statBuf         = uStat
+dataEnd         = uEnd
+        .include "uci.inc"
+
+; OvList: READ_DIR (after OPEN_DIR), one packet per entry (the attribute
+; byte, the name), each into its slot of REU bank FE_UBANK + feHandle (to
+; FE_USLOTS; a longer name cut to FE_UNAME_MAX); feH's H_UCOUNT the
+; number, H_UNEXT 0. I/O on meanwhile. Destroys A, X, Y, r0-r3L.
+OvList: lda #0
+        sta feH + H_UCOUNT
+        sta feH + H_UCOUNT+1
+        sta feH + H_UNEXT
+        sta feH + H_UNEXT+1
+        lda #U_TARGET
+        sta uCmd
+        lda #U_READDIR
+        sta uCmd+1
+        lda #2
+        sta uLen
+        lda CPU_PORT
+        pha
+        lda #RAM_IO
+        sta CPU_PORT
+        jsr UciSend
+@packet:
+        lda #<diskBlkBuf
+        sta r0L
+        sta uEnd
+        lda #>diskBlkBuf
+        sta r0H
+        sta uEnd+1
+        lda #FE_USLOT - 1
+        sta uEnd
+        jsr UciData
+        lda r0L                 ; (diskBlkBuf: r0L the length)
+        beq @next
+        lda #0
+        tay
+        sta (r0),y
+        jsr Slot
+@next:  lda uciCtrl             ; "data more": the next after an ack
+        and #$30
+        cmp #$30
+        bne @last
+        jsr UciAccept
+        jmp @packet
+@last:  jsr UciStatus
+        jsr UciAccept
+        pla
+        sta CPU_PORT
+        rts
+        .assert <diskBlkBuf = 0, error, "Read: the length from r0L"
+
+; Slot: diskBlkBuf (FE_USLOT bytes) into the next slot, if there is one.
+; Destroys A, X, Y, r0-r3L.
+Slot:   lda feH + H_UCOUNT+1
+        cmp #>FE_USLOTS
+        bcs @full
+        lda feH + H_UCOUNT      ; slot * FE_USLOT
+        sta r1L
+        lda feH + H_UCOUNT+1
+        sta r1H
+        ldx #6
+@mul:   asl r1L
+        rol r1H
+        dex
+        bne @mul
+        lda #<diskBlkBuf
+        sta r0L
+        lda #>diskBlkBuf
+        sta r0H
+        lda #FE_USLOT
+        sta r2L
+        lda #0
+        sta r2H
+        lda feHandle
+        clc
+        adc #FE_UBANK
+        sta r3L
+        ldy #REU_STASH
+        jsr SysRAMOp
+        inc feH + H_UCOUNT
+        bne @full
+        inc feH + H_UCOUNT+1
+@full:  rts
+        .assert FE_USLOT = 64, error, "Slot: 64 bytes a slot"
 
         .endscope

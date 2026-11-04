@@ -21,14 +21,18 @@
         .include "fereu.inc"
         .include "feresolve.inc"
 
-MakeDir:
-        jsr OvlCall             ; (extension table +20, folders.s)
-        .byte 14, 0
 RemoveDir:
         jsr OvlCall             ; (extension table +25)
         .byte 13, 3
 UFile:  jsr OvlCall             ; (module 41: the function on the Ultimate)
         .byte 41, 0
+LRename:
+        jsr OvlCall             ; (module 54: rename, long names)
+        .byte 54, 0
+LMkDir: jsr OvlCall             ; (module 54: a folder, long names)
+        .byte 54, 3
+Drop:   jsr OvlCall             ; (module 51: a deleted file's record)
+        .byte 51, 3
 UCdAll: jsr OvlCall             ; (module 41: into an Ultimate folder)
         .byte 41, 3
 
@@ -46,12 +50,17 @@ OvDelete:
         lda dirEntryBuf
         and #$40                ; locked
         bne @end
+        jsr Key
         jsr NameR0
-        jmp DeleteFile
+        jsr DeleteFile
+        txa
+        bne @end
+        jmp Drop                ; (its long name's record)
 @end:   rts
 
-; FE_RENAME: r0 = a file or folder, r1 = its new name (no "/", at most
-; FE_NAME_MAX characters, not there yet).
+; FE_RENAME, FE_SETLONG: r0 = a file or folder, r1 = its new name (no
+; "/", 1 to FE_LONG_MAX characters; a long one gets a short name made
+; for it, module 54; another file of that name: FILE_EXISTS).
 OvRename:
         jsr Target
         bcs @end
@@ -66,55 +75,46 @@ OvRename:
         cmp #'/'
         beq @bad
         iny
-        cpy #FE_NAME_MAX + 1
+        cpy #FE_LONG_MAX + 1
         bne @ch
 @bad:   ldx #FE_BAD_PATH
 @end:   rts
 @got:   tya
         beq @bad
-        jsr FindName            ; the old one there
+        jsr FindName            ; the old one there: its key
         txa
         bne @end
-        lda #<feTmp             ; the new one not
-        sta r6L
-        lda #>feTmp
-        sta r6H
-        jsr FindFile
-        txa
-        beq @exists
-        cpx #FILE_NOT_FOUND
-        bne @end
-        lda #<feName
-        sta r6L
-        lda #>feName
-        sta r6H
-        lda #<feTmp
-        sta r0L
-        lda #>feTmp
-        sta r0H
-        jmp RenameFile
-@exists:
-        ldx #FILE_EXISTS
-        rts
+        lda r1L
+        sta cSrcET
+        lda r1H
+        sta cSrcES
+        lda r5L
+        sta cSrcEO
+        jmp LRename
 
 ; FE_MKDIR: r0 = a new folder, r2L = tracks (1581 partitions; 0: the
 ; default). MakeDir's errors (STRUCT_MISMAT: no folders on this drive).
+; Module 54 (long names).
 OvMkDir:
         jsr Target
         bcs @end
-        jsr NameR0
-        lda argR2
-        sta r2L
-        jmp MakeDir
+        jmp LMkDir
 @end:   rts
 
 ; FE_RMDIR: r0 = an empty folder.
 OvRmDir:
         jsr Target
         bcs @end
+        jsr FindName            ; (its key, for its long name)
+        txa
+        bne @end
+        jsr Key
         jsr NameR0
         jsr RemoveDir
-        cpx #STRUCT_MISMAT
+        txa
+        bne :+
+        jmp Drop
+:       cpx #STRUCT_MISMAT
         bne @end
         ldx #FE_NOT_FOLDER
 @end:   rts
@@ -147,9 +147,9 @@ OvCd:   lda #1
         sta r1L
         lda #>FE_CWD
         sta r1H
-        lda #FE_PATH_MAX + 1
+        lda #<(FE_PATH_MAX + 1)
         sta r2L
-        lda #0
+        lda #>(FE_PATH_MAX + 1)
         sta r2H
         ldy #REU_STASH
         jsr ReuOp
@@ -188,10 +188,19 @@ Path:   lda argR0
         txa
         rts
 
-; NameR0: r0 = feName.
-NameR0: lda #<feName
+; Key: lnKey* = the file FindName found (r1, r5).
+Key:    lda r1L
+        sta lnKeyT
+        lda r1H
+        sta lnKeyS
+        lda r5L
+        sta lnKeyO
+        rts
+
+; NameR0: r0 = feShort (the name on disk).
+NameR0: lda #<feShort
         sta r0L
-        lda #>feName
+        lda #>feShort
         sta r0H
         rts
 

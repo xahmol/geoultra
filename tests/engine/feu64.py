@@ -14,7 +14,7 @@ import time
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-STUB, PATH, PATH2, BUF, RES, DONE = 0x5000, 0x5100, 0x5180, 0x5200, 0x50E0, 0x50FF
+STUB, PATH, PATH2, BUF, RES, DONE = 0x5000, 0x5E00, 0x5F00, 0x5200, 0x50E0, 0x50FF
 APP_MAIN = 0x849B
 FILE_ENGINE = 6                     # extension table entry
 
@@ -73,6 +73,10 @@ class U64:
         if s1 is not None:
             self.text(PATH2, s1)
             r1 = PATH2
+        if func == 1 and r2 is None:                # FE_STAT: no long name wanted
+            r2 = 0
+        if func == 3 and r3 is None:                # FE_READDIR: no short name wanted
+            r3 = 0
         if func in (5, 6):                          # FE_COPY, FE_MOVE
             r2 = 0 if r2 is None else r2
             r3 = 0 if r3 is None else r3

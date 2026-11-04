@@ -30,13 +30,16 @@ CBM_SEQ         = $81           ; a closed SEQ file
 
 New:    jsr OvlCall             ; (module 33: a new file)
         .byte 33, 0
+Drop:   jsr OvlCall             ; (module 51: a deleted file's record)
+        .byte 51, 3
 
 ; FE_OPEN: r0 = a file, r2L = FO_READ, FO_WRITE (a new file; an existing
 ; one is replaced) or FO_APPEND (at its end; made when not there).
 ; A = the handle.
 OvOpen: jsr NewHandle
-        bcs @ret
-        lda argR0
+        bcc :+
+        rts
+:       lda argR0
         sta r0L
         lda argR0+1
         sta r0H
@@ -78,13 +81,20 @@ OvOpen: jsr NewHandle
         lda argR2
         cmp #FO_APPEND
         beq Append
-        lda #<feName            ; FO_WRITE: the old one deleted
+        lda r1L                 ; FO_WRITE: the old one deleted (its key:
+        sta lnKeyT              ; its long name's record dropped after)
+        lda r1H
+        sta lnKeyS
+        lda r5L
+        sta lnKeyO
+        lda #<feShort
         sta r0L
-        lda #>feName
+        lda #>feShort
         sta r0H
         jsr DeleteFile
         txa
         bne @ret
+        jsr Drop
 @made:  jsr New
         txa
         beq Write
@@ -147,18 +157,36 @@ Save:   sta feH + H_TYPE
         jmp OvCreate            ; entry 0
 
         .include "fename.inc"
+        .include "felen.inc"
 
-; OvCreate: a new CBM SEQ file, feName, of one empty block, in the
-; current folder; its entry and the BAM written. The handle's H_BLK*,
+Short:  jsr OvlCall             ; (module 50: a short name made)
+        .byte 50, 0
+LnSet:  jsr OvlCall             ; (module 49: its long name's record)
+        .byte 49, 0
+
+; OvCreate: a new CBM SEQ file, feName (a long name: with a short name
+; made and its record), of one empty block, in the current folder; its
+; entry and the BAM written. The handle's H_BLK*,
 ; H_OFF, H_DIR*, H_SIZE set. X = 0 or an error.
 OvCreate:
-        lda #1                  ; one byte: one block
+        ldx #FE_LONG_MAX        ; its name: feName; a long one gets a
+@name:  lda feName,x            ; short name made (module 50; a short one:
+        sta feTmp,x             ; feShort from the walk)
+        dex
+        bpl @name
+        jsr IsLongT
+        beq @block
+        jsr Short
+        txa
+        beq @block
+        rts
+@block: lda #1                  ; one byte: one block
         sta r2L
         lda #0
         sta r2H
-        lda #<fileTrScTab
+        lda #<dirEntryBuf
         sta r6L
-        lda #>fileTrScTab
+        lda #>dirEntryBuf
         sta r6H
         jsr BlkAlloc
         txa
@@ -194,7 +222,16 @@ OvCreate:
         jsr PutDirHead
         txa
         bne Fail
-        lda #1
+        jsr IsLongT             ; a long name: its record (best effort)
+        beq @size
+        lda feH + H_DIRT
+        sta lnKeyT
+        lda feH + H_DIRS
+        sta lnKeyS
+        lda feH + H_DIRO
+        sta lnKeyO
+        jsr LnSet
+@size:  lda #1
         sta feH + H_SIZE
         lda #0
         sta feH + H_SIZE + 1
@@ -228,12 +265,7 @@ NewEntry:
         inx
         cpx #5
         bne @date
-        ldx #FE_NAME_MAX        ; the name: feName via feTmp
-@copy:  lda feName,x
-        sta feTmp,x
-        dex
-        bpl @copy
-        lda feH + H_DIRO
+        lda feH + H_DIRO        ; the name: feShort
         clc
         adc #OFF_FNAME
         tay

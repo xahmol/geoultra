@@ -17,12 +17,15 @@
 
 UStat:  jsr OvlCall             ; (module 37: FE_STAT on the Ultimate)
         .byte 37, 0
+LongOf: jsr OvlCall             ; (module 51: a file's long name to feTmp)
+        .byte 51, 9
 
         .include "feresolve.inc"
         .include "feinfo.inc"
 
-; FE_STAT: r0 = a path, r1 = an info block. A GEOS file's header is left
-; in fileHeader. On the Ultimate: module 37.
+; FE_STAT: r0 = a path, r1 = an info block, r2 = 0 or a buffer of
+; FE_LONG_MAX + 1 bytes for its long name (else its short one). A GEOS
+; file's header is left in fileHeader. On the Ultimate: module 37.
 OvStat: lda #1
         sta feUlt
         jsr Path
@@ -40,6 +43,12 @@ OvStat: lda #1
         jsr FindName
         txa
         bne @end
+        lda r1L                 ; (its key, for its long name)
+        sta lnKeyT
+        lda r1H
+        sta lnKeyS
+        lda r5L
+        sta lnKeyO
         lda #<dirEntryBuf
         sta r5L
         sta r9L
@@ -50,8 +59,24 @@ OvStat: lda #1
         jsr PutInfo
         lda feInfo + FI_KIND
         cmp #FE_K_GEOS
+        bne @long
+        jsr GetFHdrInfo         ; (r9: the entry; X its error)
+        txa
         bne @end
-        jmp GetFHdrInfo         ; (r9: the entry; X its error)
+@long:  lda argR2+1             ; the long name (else the short one) to r2
+        beq @ok                 ; (after the header: it reads GU.LONGNAMES,
+        jsr LongOf              ; dirEntryBuf changes)
+        lda argR2
+        sta r0L
+        lda argR2+1
+        sta r0H
+        ldy #$FF
+@copy:  iny
+        lda feTmp,y
+        sta (r0),y
+        bne @copy
+@ok:    ldx #0
+        rts
 @kind:  jsr InfoKind
         jmp PutInfo
 @end:   rts
@@ -108,6 +133,7 @@ UOpen:  jsr OvlCall             ; (module 38: FE_OPENDIR on the Ultimate)
         .include "fereu.inc"
         .include "fehandle.inc"
         .include "feresolve.inc"
+        .include "felen.inc"
 
 ; FE_OPENDIR: r0 = a folder, or a pattern ("*" any run of characters,
 ; "?" one) or one name in a folder. A = the handle. "/": the drives.
@@ -124,8 +150,9 @@ OvOpenDir:
         sta feUlt
         jsr Resolve
         txa
-        bne @end
-        lda feKind
+        beq :+
+        rts
+:       lda feKind
         cmp #FE_P_ULTIMATE
         bne :+
         jmp UOpen
@@ -142,7 +169,7 @@ OvOpenDir:
         txa
         bne @end
         jsr IsDir
-        bcs @pat
+        bcs @one
         jsr EnterName
         txa
         bne @end
@@ -150,11 +177,30 @@ OvOpenDir:
         sta feName
         lda #0
         sta feName+1
-@pat:   ldx #FE_NAME_MAX
+@pat:   jsr IsLongN             ; a pattern: at most FE_NAME_MAX characters
+        beq :+
+        ldx #FE_BAD_PATH
+        rts
+:       ldx #FE_NAME_MAX
 @copy:  lda feName,x
         sta feH + H_PAT,x
         dex
         bpl @copy
+        bmi @where
+@one:   lda #LN_EXACT           ; one file: by its short name, $A0-padded
+        sta feH + H_PAT         ; (its long name may be longer than a
+        ldx #0                  ; pattern)
+        ldy #0
+@exact: lda feShort,y
+        beq @pad
+        iny
+        bne @put
+@pad:   lda #$A0
+@put:   sta feH + H_PAT + 1,x
+        inx
+        cpx #FE_NAME_MAX
+        bne @exact
+@where:
         lda feDrive
         sta feH + H_DRIVE
         tax
@@ -203,16 +249,18 @@ Wild:   ldx #0
 
         .include "fereu.inc"
         .include "feinfo.inc"
-MATCH_NAME      = feTmp
-        .include "fematch.inc"
 
 UDir:   jsr OvlCall             ; (module 39: an Ultimate listing)
         .byte 39, 0
 Root:   jsr OvlCall             ; (module 40: "/")
         .byte 40, 0
+Pick:   jsr OvlCall             ; (module 51: the entry's long name, the
+        .byte 51, 0             ; pattern; C clear: listed)
 
 ; FE_READDIR: Y = a handle, r1 = an info block, r2 = a buffer for the
-; name (17 bytes). X = FE_END_OF_DIR after the last one.
+; name (FE_LONG_MAX + 1 bytes: the long name, else the short one), r3 =
+; 0 or a buffer of 17 bytes for the short name. X = FE_END_OF_DIR after
+; the last one. GU.LONGNAMES is not listed.
 OvReadDir:
         ldy feY
         cpy #FE_HANDLES_N
@@ -237,6 +285,9 @@ OvReadDir:
         sta folderS-8,x
         txa
         jsr SetDevice
+        jsr GetDirHead          ; (its header: GU.LONGNAMES is found from it)
+        txa
+        bne @end
 @block: lda feH + H_BLKT        ; the block holding the next entry
         beq @eod
         sta r1L
@@ -248,17 +299,22 @@ OvReadDir:
 @entry: ldy feH + H_OFF
         lda diskBlkBuf,y
         beq @skip               ; (deleted or unused)
-        jsr EntryName
-        jsr Match
-        bcs @skip
+        jsr EntryName           ; (its short name to feTmp)
         lda feH + H_OFF
+        sta lnKeyO              ; (its key, for its long name)
         clc
         adc #<diskBlkBuf
         sta r5L
         lda #>diskBlkBuf
         sta r5H
         jsr FillInfo
+        lda feH + H_BLKT
+        sta lnKeyT
+        lda feH + H_BLKS
+        sta lnKeyS
         jsr Advance
+        jsr Pick                ; (module 51: diskBlkBuf read anew after)
+        bcs @block
         jmp Found
 @skip:  jsr Advance
         bcs @block

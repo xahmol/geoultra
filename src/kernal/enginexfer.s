@@ -24,7 +24,9 @@ CBM_USR         = 3
 CLOSED          = $80           ; (the type byte of a closed file)
 OFF_FNAME       = 3
 OFF_DATE        = 23
-U_PIECE         = 127           ; data bytes per WRITE_DATA (uCmd: 256)
+U_PIECE         = 120           ; data bytes per WRITE_DATA (uCmd: 128)
+
+        .assert 4 + U_PIECE <= U_CMD_MAX, error, "U_PIECE: one piece in uCmd"
 
         .segment "OVL42"
         .scope Mod42
@@ -67,6 +69,8 @@ OvUTo:  ldx #FE_NOT_SUPPORTED   ; a GEOS file: only sequential, only raw
 @folder:
         jsr Open
         jsr PutSrc
+        ldx #FE_BAD_PATH
+        bcs @end
 @go:    jsr UNoData
         jsr UExec
         txa
@@ -93,12 +97,15 @@ Open:   lda #U_OPEN
 :       jmp UPut
         .assert FC_OVERWRITE = 1, error, "Open: FC_OVERWRITE in bit 0"
 
-; PutSrc: the source's name (cEntry, $A0-padded) to uCmd, with "%XX" for
-; what FAT cannot hold and, without FC_RAW, its type's extension.
+; PutSrc: the source's name (feTmp: its long name, else its short one)
+; to uCmd, with "%XX" for what FAT cannot hold and, without FC_RAW, its
+; type's extension. C set when it does not fit one command.
 PutSrc: ldx #0
 @ch:    stx cCurS
-        lda cEntry + OFF_FNAME,x
-        cmp #$A0
+        lda uLen                ; room for "%XX" and an extension
+        cmp #U_CMD_MAX - 7
+        bcs @end
+        lda feTmp,x
         beq @ext
         jsr Escaped
         bcc @plain
@@ -119,17 +126,16 @@ PutSrc: ldx #0
 @plain: jsr UPut
 @more:  ldx cCurS
         inx
-        cpx #FE_NAME_MAX
         bne @ch
 @ext:   lda argR2
         and #FC_RAW
-        bne @end
+        bne @fits
         lda cEntry
         and #$07
         tax
         dex
         cpx #3
-        bcs @end                ; (no SEQ, PRG, USR: none)
+        bcs @fits               ; (no SEQ, PRG, USR: none)
         lda #'.'
         jsr UPut
         lda Ext1,x
@@ -137,7 +143,8 @@ PutSrc: ldx #0
         lda Ext2,x
         jsr UPut
         lda Ext3,x
-        jmp UPut
+        jsr UPut
+@fits:  clc
 @end:   rts
 
 Ext1:   .byte "spu"
@@ -292,7 +299,8 @@ Resolve:
 
 ; OvUBlocks: the open Ultimate file's bytes (cLeft of them) onto the
 ; target drive (current, its BAM in curDirHead), 254 a block, each block
-; taken with SetNextFree; then the entry (cEntry, named feTmp) and the
+; taken with SetNextFree; then the entry (cEntry, named feShort; module
+; 52) and the
 ; BAM. X = 0 or the error (FE_ULTIMATE: fewer bytes than its size).
 OvUBlocks:
         lda #0
@@ -385,10 +393,10 @@ OvUBlocks:
         jmp @block
 @end:   rts
 Done:   jmp Entry
+Entry:  jsr OvlCall             ; (module 52: the new entry, its long name)
+        .byte 52, 0
         .assert <diskBlkBuf = 0, error, "OvUBlocks: the count from r0L"
 
-        .include "fename.inc"
-        .include "feentry.inc"
         .include "feblock.inc"
         .include "feprog.inc"
 
@@ -478,8 +486,8 @@ FAT_OUT         = cEntry + OFF_DATE
         .include "fefat.inc"
 
 ; OvFields: the new entry in cEntry (and cLeft) from the open file:
-; FILE_INFO's reply in diskBlkBuf, the name in the path (also to feTmp,
-; zero-ended, as module 29's Source does for a GEOS file). C set and X =
+; FILE_INFO's reply in diskBlkBuf, the name in the path to feTmp (as
+; module 29's Source does for a GEOS file). C set and X =
 ; INSUFF_SPACE for more than 65535 blocks.
 OvFields:
         ldx #29
@@ -496,22 +504,14 @@ OvFields:
         sta cLeft+2
         jsr FatDate
         jsr Name
-        ldx #0                  ; the name to feTmp too (module 30 names
-@tmp:   lda cEntry + OFF_FNAME,x ; the target after the source)
-        cmp #$A0
-        beq @end
-        sta feTmp,x
-        inx
-        cpx #FE_NAME_MAX
-        bne @tmp
-@end:   lda #0
-        sta feTmp,x
         jsr Count
         ldx #INSUFF_SPACE
         rts
 
-; Name: the last part as a GEOS name in cEntry (type from the extension,
-; else PRG; "%XX" decoded; cut to FE_NAME_MAX), $A0-padded.
+; Name: the last part as a GEOS name: the type from the extension (else
+; PRG) to cEntry; the name ("%XX" decoded, the extension off, cut to
+; FE_LONG_MAX) to feTmp, zero-ended: a long one gets its short name in the
+; target folder (module 30).
 Name:   ldx fePos               ; the end, and the last "."
         ldy #0
 @end:   inx
@@ -579,16 +579,12 @@ Name:   ldx fePos               ; the end, and the last "."
         inx
         bne @put
 @lit:   lda #'%'
-@put:   sta cEntry + OFF_FNAME,y
+@put:   sta feTmp,y
         iny
-        cpy #FE_NAME_MAX
+        cpy #FE_LONG_MAX
         bne @ch
-        rts
-@pad:   lda #$A0
-@fill:  sta cEntry + OFF_FNAME,y
-        iny
-        cpy #FE_NAME_MAX
-        bne @fill
+@pad:   lda #0
+        sta feTmp,y
         rts
 
 Ext1:   .byte "spu"

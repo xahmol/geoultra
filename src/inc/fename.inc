@@ -1,11 +1,13 @@
 ; File engine: a name into a directory entry, for the functions that make
-; one (FE_COPY, FE_OPEN). Assembled into each module that needs it.
+; one (the new entry of a copy, module 52; FE_OPEN's new file, module 33).
+; Assembled into each module that needs it.
 
-; PutName: feTmp (zero-ended) to diskBlkBuf+Y, $A0-padded to FE_NAME_MAX.
+; PutName: feShort (zero-ended) to diskBlkBuf+Y, $A0-padded to
+; FE_NAME_MAX.
 ; Destroys A, X, Y.
 PutName:
         ldx #0
-@name:  lda feTmp,x
+@name:  lda feShort,x
         beq @pad
         sta diskBlkBuf,y
         iny

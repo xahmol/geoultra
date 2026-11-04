@@ -84,9 +84,9 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | No. | Name | In | Out |
 | --- | --- | --- | --- |
 | 0 | `FE_VERSION` | | r0 = version |
-| 1 | `FE_STAT` | r0 = path, r1 = 16-byte info block | info (below); a GEOS file's header in `fileHeader` |
+| 1 | `FE_STAT` | r0 = path, r1 = 16-byte info block, r2 = 0 or a 61-byte buffer | info (below); its long name (else its name) in r2's buffer; a GEOS file's header in `fileHeader` |
 | 2 | `FE_OPENDIR` | r0 = a folder, a pattern in a folder, one name, or `/` (the drives) | A = handle |
-| 3 | `FE_READDIR` | Y = handle, r1 = info block, r2 = name buffer (17 bytes; 63 on the Ultimate) | info, the name zero-ended; X = `FE_END_OF_DIR` at the end |
+| 3 | `FE_READDIR` | Y = handle, r1 = info block, r2 = name buffer (61 bytes), r3 = 0 or a 17-byte buffer | info, the long name (else the short one) zero-ended, the short name in r3's buffer; X = `FE_END_OF_DIR` at the end |
 | 4 | `FE_CLOSE` | Y = handle, `$FF`: all (a program starting afresh) | |
 | 5 | `FE_COPY` | r0 = source, r1 = target (a folder or a new name), r2L = flags | |
 | 6 | `FE_MOVE` | as `FE_COPY` | (same drive and kind: a rename or a moved entry, else copy then delete) |
@@ -95,13 +95,15 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 9 | `FE_RMDIR` | r0 = path of an empty folder | |
 | 10 | `FE_RENAME` | r0 = path, r1 = new name | |
 | 11 | `FE_CD` | r0 = path | |
-| 12 | `FE_PWD` | r0 = buffer (128 bytes) | |
+| 12 | `FE_PWD` | r0 = buffer (256 bytes) | |
 | 13 | `FE_OPEN` | r0 = path, r2L = mode (read, write, append) | A = handle |
 | 14 | `FE_READ` | Y = handle, r1 = buffer, r2 = length | r2 = bytes read |
 | 15 | `FE_WRITE` | Y = handle, r1 = buffer, r2 = length | |
 | 16 | `FE_DF` | r0 = path on a drive | r1 = free, r2 = total (blocks; Ultimate: KB) |
 | 17 | `FE_MOUNT` | r0 = drive path (`/a`), r1 = image path | (step 2) |
 | 18 | `FE_UMOUNT` | r0 = drive path | (step 2) |
+| 19 | `FE_GETLONG` | r0 = path, r1 = 61-byte buffer | the long name, else the short one |
+| 20 | `FE_SETLONG` | as `FE_RENAME` | (the same function) |
 
 Flags for `FE_COPY` and `FE_MOVE`: overwrite (else `FILE_EXISTS`),
 raw (no CVT conversion), and a progress vector in r3 (called after every
@@ -173,7 +175,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 34 | `FE_READ` |
 | 35 | `FE_WRITE` |
 
-| 36 | the Ultimate: the exchange (I/O on, `uci.inc`), its status as an error, a listing read into REU slots |
+| 36 | the Ultimate: the exchange (I/O on, `uci.inc`), its status as an error, folders entered (in pieces when long) |
 | 37 | `FE_STAT` on the Ultimate (open + `FILE_INFO`: `FILE_STAT` answers "82" on firmware 3.15a) |
 | 38 | `FE_OPENDIR` on the Ultimate (read whole: no reply stays open between calls) |
 | 39 | `FE_READDIR` on an Ultimate listing |
@@ -183,7 +185,15 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 43 | `FE_COPY`/`FE_MOVE` from the Ultimate: the source, the target (module 30), the room, close, delete |
 | 44 | its blocks onto the GEOS drive, the entry |
 | 45 | a GEOS file's blocks onto the Ultimate |
-| 46 | a new entry's fields from an Ultimate file (type from the extension, `%XX` decoded, size in blocks, FAT date) |
+| 46 | a new entry's fields from an Ultimate file (type from the extension, `%XX` decoded, the long name, size in blocks, FAT date) |
+| 47 | an Ultimate listing read whole (`READ_DIR` into REU slots) |
+| 48 | long names looked up: a long name to its file (checked in its slot), a file to its long name |
+| 49 | `GU.LONGNAMES` kept: a record set (replaced, a free one, the file grown), dropped |
+| 50 | short names made (13 characters and `~n`) |
+| 51 | names: a listing's entries (long name, pattern, the file hidden), records dropped, `FE_GETLONG` |
+| 52 | a copy's new entry and its long name |
+| 53 | `GU.LONGNAMES` made |
+| 54 | `FE_RENAME`/`FE_SETLONG`, `FE_MKDIR` with long names |
 
 Still to come (estimate): CVT out and in; streams on the Ultimate; mount
 and umount (sharing the image code with mount.s); Ultimate to Ultimate
@@ -225,10 +235,12 @@ long names through the routines below.
 
 **The file.** `GU.LONGNAMES` in every folder that has long names (the
 root on 1541/1571/1581 flat disks), a USR file of one chain. Records of
-96 bytes: directory block (track, sector), slot (the entry's offset),
-the short name (16 bytes, $A0-padded), the long name (up to 60
-characters, zero-ended, 61 bytes), 16 bytes kept free. A record with
-track 0 is free and taken by the next long name. GeoUltra's listings do
+127 bytes, two in each block's 254 data bytes (never across blocks; the
+design first had 96): directory block (track, sector), slot (the
+entry's offset), the short name (16 bytes, $A0-padded), the long name
+(up to 60 characters, zero-ended, 61 bytes), the rest free. A record with
+track 0 is free and taken by the next long name; a record with the same
+key is replaced. GeoUltra's listings do
 not show the file; other systems do (a valid USR file, harmless).
 
 **Which file a record belongs to.** The record counts while its slot
@@ -263,8 +275,10 @@ exact there too). On the Ultimate a long name is the FAT name, with
 - `FE_READDIR`: r2 = a buffer of 61 bytes on every drive: the long name,
   or the short name when there is none; r3 = a buffer of 17 bytes for
   the short name, or 0. Ultimate names longer than 60 characters are
-  listed cut (info flag `FF_CUT`) and can still be named in full in a
-  path.
+  listed cut (info flag `FF_CUT`); in a path the last part may have up
+  to 120 characters (it goes into one 128-byte command; a rename's two
+  names together must fit one), folders longer go to the Ultimate in
+  pieces.
 - `FE_STAT`: r2 = 0 or a buffer of 61 bytes for the long name.
 - Paths name files by long or short name. `FE_RENAME` sets a long name
   (and a new short name if needed); `FE_MKDIR` makes long-named folders;
@@ -352,6 +366,24 @@ Ultimate side (long FAT names both ways, case-insensitive paths).
   The UCI handshake is now one source, `src/inc/uci.inc` (mount, the
   write-back, the clock and the engine; checked on the U64: boot mounts,
   clock, a write-back).
+- **L (2026-11-04):** long names on GEOS drives (modules 48-54,
+  enginelong.s; `GU.LONGNAMES` per folder): paths by long or short name
+  (the walk looks long ones up, module 48), listings with long names and
+  the short ones in r3, patterns on long names, `GU.LONGNAMES` hidden,
+  `FE_STAT` and `FE_GETLONG`, `FE_RENAME`/`FE_SETLONG` (module 54),
+  `FE_MKDIR`, new files (`FE_OPEN`, copies: module 52's entry, from GEOS
+  drives and from the Ultimate), delete and rmdir drop the record after
+  the file goes; copies to the Ultimate name the file by its long name.
+  Short names: 13 characters and `~1`-`~9`, then 12 and `~10`-`~99`,
+  the first free (module 50). Paths up to 255 bytes, the current
+  directory 256 (REU layout 2), the names (61 bytes) in `fileTrScTab`
+  with the Ultimate's command buffer (128 bytes) after them. On the
+  Ultimate names and patterns case-insensitive. API: `FE_STAT` r2,
+  `FE_READDIR` r3 (0 when not wanted), `FE_PWD` 256 bytes. Tests:
+  tests/engine/long.py (VICE: the cases above, a stale record after an
+  application's `RenameFile`, a path of 133 bytes, the records and the
+  BAM read from the image, the real 1581 DOS reading `GU.LONGNAMES`);
+  e3u64.py on the U64 (case, a folder path longer than one command).
 - Known limits: renaming a folder changes its directory entry, not the
   name in its header (shown as the disk name inside it); native drives
   are covered by the same code but not yet by the test. Copying a folder

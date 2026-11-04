@@ -290,12 +290,14 @@ test-part81: all
 	$(PYTHON) tests/drives/part81.py
 
 # The file engine, steps E1 (tests/engine/e1.py: paths, stat, listings,
-# folders, rename, delete) and E2 (e2.py: copy, move, streams) on the
+# folders, rename, delete), E2 (e2.py: copy, move, streams) and L
+# (long.py: long names) on the
 # part81 reference D81 as drive B (the GEOS 2.0 disk as drive A, only
 # read); the real 1581 DOS reads it back.
 test-engine: all
 	$(PYTHON) tests/engine/e1.py
 	$(PYTHON) tests/engine/e2.py
+	$(PYTHON) tests/engine/long.py
 
 # The file engine on the Ultimate, step E3 (tests/engine/e3u64.py): the
 # cartridge into the U64's flash and a reboot, then the Ultimate's file

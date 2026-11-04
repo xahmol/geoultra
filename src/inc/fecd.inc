@@ -11,21 +11,7 @@ UCdAll: ldx #$FF
 @end:   inx
         lda fePath,x
         bne @end
-; UCdX: into fePath's first X characters.
-UCdX:   stx uLen                ; (the count, then the command's length)
-        lda #U_TARGET
-        sta uCmd
-        lda #U_CD
-        sta uCmd+1
-        ldy #0
-@copy:  cpy uLen
-        beq @sent
-        lda fePath,y
-        sta uCmd+2,y
-        iny
-        bne @copy
-@sent:  iny
-        iny
-        sty uLen
-        jsr UNoData
-        jmp UExec
+; UCdX: into fePath's first X characters (module 36, in pieces when
+; they do not fit one command).
+UCdX:   jsr OvlCall
+        .byte 36, 3

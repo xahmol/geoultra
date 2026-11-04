@@ -24,7 +24,7 @@ from e2 import Image  # noqa: E402
 K_ROOT, K_DRIVE, K_FOLDER, K_GEOS, K_CBM, K_UFILE, K_UDIR = range(7)
 FILE_NOT_FOUND, WR_PR_ON, FILE_EXISTS, DIR_NOT_EMPTY = 5, 0x26, 0x40, 0x41
 END_OF_DIR, BAD_PATH, NOT_FOLDER, IS_FOLDER = 0x48, 0x49, 0x4A, 0x4B
-INFO, NAME, PROG, DATA = 0x5300, 0x5320, 0x5400, 0x6000
+INFO, NAME, PROG, PWD, DATA = 0x5300, 0x5320, 0x5400, 0x5500, 0x6000
 HOME = "/usb0/geoultra/test/engine"
 FC_OVERWRITE, FC_RAW = 1, 2
 FO_READ, FO_WRITE = 0, 1
@@ -104,8 +104,8 @@ class Test:
         return open(dest, "rb").read() if os.path.exists(dest) else None
 
     def pwd(self):
-        self.fe(FE_PWD, r0=NAME)
-        return self.u.read(NAME, 128).split(b"\0")[0].decode("latin1")
+        self.fe(FE_PWD, r0=PWD)
+        return self.u.read(PWD, 256).split(b"\0")[0].decode("latin1")
 
     def run(self):
         fe, check, stat, listing = self.fe, self.check, self.stat, self.listing
@@ -117,6 +117,8 @@ class Test:
         check("FE_STAT a disk image is a file", stat("/usb0/geoultra/test/GEOS64.D81"), (0, K_UFILE, 819200))
         check("FE_STAT a missing file", stat("/usb0/geoultra/nope"), (FILE_NOT_FOUND,))
         check("FE_OPENDIR a pattern", listing("/usb0/geoultra/test/*.d64"), ["geopub.d64", "neos.d64"])
+        check("names and patterns in either case", listing("/USB0/GeoUltra/TEST/*.D64"),
+              ["geopub.d64", "neos.d64"])
         if stat(HOME)[0] == 0:                  # left over from an aborted run
             for n in listing(HOME):
                 fe(FE_DELETE, s0=HOME + "/" + n)
@@ -135,6 +137,12 @@ class Test:
         check("FE_DELETE a folder", fe(FE_DELETE, s0="sub2/inner")[0], IS_FOLDER)
         check("FE_RMDIR", (fe(FE_RMDIR, s0="sub2/inner")[0], fe(FE_RMDIR, s0="sub2")[0], listing(".")),
               (0, 0, []))
+        deep = HOME + "/" + "a" * 50 + "/" + "b" * 50
+        check("a path longer than one command (%d bytes)" % len(deep + "/c" * 10),
+              (fe(FE_MKDIR, s0=HOME + "/" + "a" * 50)[0], fe(FE_MKDIR, s0=deep)[0],
+               fe(FE_CD, s0=deep)[0], fe(FE_MKDIR, s0="inner")[0], listing(deep), fe(FE_RMDIR, s0="inner")[0],
+               fe(FE_CD, s0="/")[0], fe(FE_RMDIR, s0=deep)[0], fe(FE_RMDIR, s0=HOME + "/" + "a" * 50)[0]),
+              (0, 0, 0, 0, ["inner"], 0, 0, 0, 0))
         check("FE_DELETE a missing file", fe(FE_DELETE, s0="nope")[0], FILE_NOT_FOUND)
         check("FE_RMDIR a missing folder", fe(FE_RMDIR, s0="nope")[0], FILE_NOT_FOUND)
         check("FE_DELETE the top refused", fe(FE_DELETE, s0="/usb0")[0], BAD_PATH)

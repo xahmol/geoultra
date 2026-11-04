@@ -33,7 +33,9 @@ FE_WRITE        = 15
 FE_DF           = 16
 FE_MOUNT        = 17
 FE_UMOUNT       = 18
-FE_COUNT        = 19
+FE_GETLONG      = 19
+FE_SETLONG      = 20            ; (the same as FE_RENAME)
+FE_COUNT        = 21
 FE_VER          = $0003         ; FE_VERSION's answer (E3)
 
 ; FE_COPY, FE_MOVE: flags (r2L)
@@ -91,17 +93,21 @@ FE_K_UFILE      = 5
 FE_K_UDIR       = 6
 FF_READONLY     = $01
 FF_GEOS         = $02
+FF_CUT          = $04           ; an Ultimate name cut to FE_LONG_MAX
 
 FRST_ENTRY      = 2             ; a directory block's first entry (type byte)
-FE_PATH_MAX     = 127           ; bytes of a path, without its zero
-FE_NAME_MAX     = 16            ; a name on a GEOS drive
+FE_PATH_MAX     = 255           ; bytes of a path, without its zero
+FE_NAME_MAX     = 16            ; a name in a GEOS directory entry
+FE_LONG_MAX     = 60            ; a long name (feName, feTmp: + its zero)
+FE_UPART_MAX    = 120           ; the last part of an Ultimate path (it
+                                ; goes into uCmd with a command)
 
 ; REU bank 1, $C000-$C2FF: the engine's lasting state
 FE_BANK         = 1
 FE_MAGIC        = $C000         ; "FE", FE_LAYOUT: the area is set up
-FE_LAYOUT       = 1
-FE_CWD          = $C080         ; the current directory (128 bytes)
-FE_HANDLES      = $C100         ; FE_HANDLES_N handles of FE_HSIZE bytes
+FE_LAYOUT       = 2             ; (1: E1-E3, the directory in 128 bytes)
+FE_CWD          = $C100         ; the current directory (256 bytes)
+FE_HANDLES      = $C200         ; FE_HANDLES_N handles of FE_HSIZE bytes
 FE_HANDLES_N    = 4
 FE_HSIZE        = 64
 
@@ -158,8 +164,9 @@ U_MKDIR         = $16
 UO_READ         = $01           ; open attributes
 UO_NEW          = $06           ; write, a new file
 UO_ALWAYS       = $0A           ; write, made or replaced
-uCmd            = fileTrScTab   ; the command (256 bytes; the engine
-                                ; destroys fileTrScTab)
+U_CMD_MAX       = 128
+uCmd            = fileTrScTab + $80 ; the command (U_CMD_MAX bytes; the
+                                ; engine destroys fileTrScTab)
 
 ; Work area: the overlay scratch $9F70-$9FFF (overlay.s), owned by the
 ; engine during a call. No other overlay module uses it; an engine module
@@ -183,8 +190,20 @@ feKind          = FE_WORK + 24  ; FE_P_* of the resolved path
 feDrive         = FE_WORK + 25  ; its device (FE_P_GEOS)
 fePos           = FE_WORK + 26  ; the walk's place in fePath
 feEnd           = FE_WORK + 27
-feName          = FE_WORK + 28  ; the last part of the path (17 bytes)
-feTmp           = FE_WORK + 45  ; a second name (17 bytes)
+feShort         = FE_WORK + 28  ; the short name a path's last part has on
+                                ; disk (17 bytes; 0 first: none found)
+lnKeyT          = FE_WORK + 45  ; long names (enginelong.s): a file's key,
+lnKeyS          = FE_WORK + 46  ; its directory block and the entry's
+lnKeyO          = FE_WORK + 47  ; offset (its type byte)
+lnBlkT          = FE_WORK + 48  ; GU.LONGNAMES: the block in diskBlkBuf
+lnBlkS          = FE_WORK + 49
+lnOff           = FE_WORK + 50  ; the record's offset in it (2 or 129)
+lnDirT          = FE_WORK + 51  ; its own entry's place (to grow it)
+lnDirS          = FE_WORK + 52
+lnDirO          = FE_WORK + 53
+lnFreeT         = FE_WORK + 54  ; a free record found while looking
+lnFreeS         = FE_WORK + 55  ; (0: none)
+lnFreeO         = FE_WORK + 56
 feInfo          = FE_WORK + 62  ; an info block being built (16 bytes)
 feHandle        = FE_WORK + 78  ; the handle number being worked on
 feH             = FE_WORK + 79  ; that handle (FE_HUSED = 24 bytes)
@@ -218,6 +237,9 @@ uEnd            = uLen + 1      ; the reply's data: up to here (a word)
 cToU            = uEnd + 2      ; FE_COPY: nonzero, the target is the Ultimate
 cLeft           = cToU + 1      ; a copy from the Ultimate: bytes still to
                                 ; read (3 bytes)
+uCdEnd          = cLeft + 3     ; module 36's folder change: fePath up to
+uCdPos          = cLeft + 4     ; here, the piece now, the next one
+uCdNext         = cLeft + 5
         .assert cEntry + 30 <= feM, error, "engine.inc: cEntry over feM"
 
 ; Streams (enginestream.s), over the same place
@@ -226,7 +248,28 @@ sLeft           = feInfo + 2    ; bytes still to go (word)
 sGot            = feInfo + 4    ; bytes done (word)
 sNew            = feInfo + 6    ; nonzero: a block was added (FE_WRITE)
         .assert sNew < feHandle, error, "engine.inc: streams over feHandle"
-        .assert cLeft + 2 < $A000, error, "engine.inc: the work area overflows"
+        .assert uCdNext < $A000, error, "engine.inc: the work area overflows"
+
+.define LN_NAME "GU.LONGNAMES"  ; its name (felong.inc, enginelong.s)
+LN_EXACT        = $01           ; H_PAT's first byte: an exact short name
+                                ; follows (FE_OPENDIR on one file)
+; GU.LONGNAMES (docs/FILE_ENGINE.md, "Long names"): records of LN_REC
+; bytes, two in each block's data, never across blocks.
+LN_REC          = 127
+LN_T            = 0             ; the file's directory block (0: free)
+LN_S            = 1
+LN_O            = 2             ; its entry's offset in the block
+LN_SHORT        = 3             ; its short name, $A0-padded
+LN_LONG         = 19            ; its long name, zero-ended
+        .assert LN_LONG + FE_LONG_MAX + 1 <= LN_REC && 2 * LN_REC = 254, error, "engine.inc: records"
+
+; Names (FE_LONG_MAX + 1 bytes each), in fileTrScTab before uCmd: the
+; path's last part, and a second name (a copy's target, a new name).
+feName          = fileTrScTab
+feTmp           = fileTrScTab + $40
+feOld           = uCmd          ; a rename's old short name (17 bytes;
+                                ; uCmd is free on GEOS drives)
+        .assert feTmp + FE_LONG_MAX + 1 <= uCmd, error, "engine.inc: names over uCmd"
 
 ; The path after module 23: absolute, without "." and "..", at fileHeader
 ; (free while the engine runs; GEOS routines that use fileHeader are

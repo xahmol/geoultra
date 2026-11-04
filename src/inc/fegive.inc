@@ -4,7 +4,7 @@
 ; fereu.inc and feinfo.inc.
 
 ; Give: the handle kept, feInfo and the name at fileHeader + 1 to the
-; caller (r1, r2).
+; caller (r1, r2; a name longer than FE_LONG_MAX cut, with FF_CUT).
 Give:   ldy #REU_STASH
         jsr HandleOp
         lda argR2
@@ -15,7 +15,17 @@ Give:   ldy #REU_STASH
 @name:  iny
         lda fileHeader+1,y
         sta (r0),y
+        beq @put
+        cpy #FE_LONG_MAX - 1
         bne @name
-        jmp PutInfo
+        iny                     ; longer: cut, FF_CUT
+        lda fileHeader+1,y
+        beq @put
+        lda #0
+        sta (r0),y
+        lda feInfo + FI_FLAGS
+        ora #FF_CUT
+        sta feInfo + FI_FLAGS
+@put:   jmp PutInfo
 Eod:    ldx #FE_END_OF_DIR
         rts

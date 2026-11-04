@@ -1,7 +1,7 @@
 ; File engine (docs/FILE_ENGINE.md): files by path over the GEOS drives
 ; and, later, the Ultimate's file system. One resident entry, FileEngine
 ; (extension jump table +30, folders.s); everything else is in overlay
-; modules 22-46:
+; modules 22-54:
 ;   22 engine.s      dispatcher, the caller's state, FE_VERSION, FE_PWD,
 ;                    FE_CLOSE
 ;   23 enginepath.s  path: absolute, "." and ".." (Resolve)
@@ -17,7 +17,8 @@
 ;   33 enginestream.s a new file for FE_OPEN
 ;   34 enginestream.s FE_READ
 ;   35 enginestream.s FE_WRITE
-;   36 engineult.s   the Ultimate: the exchange, its folders (feult.inc)
+;   36 engineult.s   the Ultimate: the exchange, its folders (feult.inc,
+;                    fecd.inc)
 ;   37 engineult.s   FE_STAT on the Ultimate
 ;   38 engineult.s   FE_OPENDIR on the Ultimate: the listing read whole
 ;   39 engineult.s   FE_READDIR on an Ultimate listing
@@ -29,8 +30,16 @@
 ;   44 enginexfer.s  its blocks onto the GEOS drive
 ;   45 enginexfer.s  a GEOS file's blocks onto the Ultimate
 ;   46 enginexfer.s  a new entry's fields from an Ultimate file
+;   47 engineult.s   an Ultimate listing read whole (READ_DIR)
+;   48 enginelong.s  long names looked up
+;   49 enginelong.s  GU.LONGNAMES kept (a record set, dropped)
+;   50 enginelong.s  short names made
+;   51 enginelong.s  names: a listing's entries, dropped, FE_GETLONG
+;   54 enginelong.s  rename and mkdir with long names
+;   52 enginelong.s  a copy's new entry (and its long name)
+;   53 enginelong.s  GU.LONGNAMES made
 ; Shared: engine.inc (constants, work area, REU layout), feblock.inc,
-; fecd.inc, feentry.inc, fefat.inc, feprog.inc, fereu.inc,
+; fecd.inc, fefat.inc, felong.inc, feprog.inc, fereu.inc,
 ; fegive.inc, fehandle.inc, feinfo.inc, fematch.inc, fename.inc, feresolve.inc,
 ; festream.inc, feult.inc; uci.inc (the UCI handshake).
 ; Own code.
@@ -81,6 +90,8 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 25, 3             ; FE_DF
         .byte 22, 12            ; FE_MOUNT (E4)
         .byte 22, 12            ; FE_UMOUNT (E4)
+        .byte 51, 6             ; FE_GETLONG
+        .byte 27, 3             ; FE_SETLONG (= FE_RENAME)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),
@@ -222,7 +233,7 @@ OvVersion:
         ldx #0
         rts
 
-; FE_PWD: r0 = a buffer of 128 bytes: the current directory, zero-ended.
+; FE_PWD: r0 = a buffer of 256 bytes: the current directory, zero-ended.
 OvPwd:  lda argR0
         sta r0L
         lda argR0+1
@@ -231,9 +242,9 @@ OvPwd:  lda argR0
         sta r1L
         lda #>FE_CWD
         sta r1H
-        lda #FE_PATH_MAX + 1
+        lda #<(FE_PATH_MAX + 1)
         sta r2L
-        lda #0
+        lda #>(FE_PATH_MAX + 1)
         sta r2H
         ldy #REU_FETCH
         jsr ReuOp

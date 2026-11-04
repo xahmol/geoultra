@@ -19,7 +19,7 @@ import harness  # noqa: E402
 from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "harness", "engine")
-PATH, PATH2, FOLDER, INFO, NAMEBUF, PWDBUF, RES = 0x4F00, 0x4F80, 0x4E00, 0x5000, 0x5020, 0x5100, 0x02F0
+PATH, PATH2, FOLDER, INFO, NAMEBUF, PWDBUF, RES = 0x4C00, 0x4D00, 0x4E00, 0x5000, 0x5020, 0x5100, 0x02F0
 SET_CUR_DIR, DIR_ROOT, FILE_ENGINE = 1, 3, 6
 D81_BANK, D81_SIZE = 40, 819200             # drive B in the REU (apprun)
 
@@ -123,6 +123,10 @@ class Engine:
         """One engine call (strings s0, s1 to PATH, PATH2 as r0, r1);
         returns X, A, r0-r4 as words, and checks the caller's state."""
         code = []
+        if func == 1 and r2 is None:                # FE_STAT: no long name wanted
+            r2 = 0
+        if func == 3 and r3 is None:                # FE_READDIR: no short name wanted
+            r3 = 0
         if func in (FE_COPY, FE_MOVE):          # flags and progress: 0 unless given
             r2 = 0 if r2 is None else r2
             r3 = 0 if r3 is None else r3
@@ -175,7 +179,7 @@ class Engine:
 
     def pwd(self):
         self.fe(FE_PWD, r0=PWDBUF)
-        return self.v.mem_get(PWDBUF, PWDBUF + 127).split(b"\0")[0].decode("latin1")
+        return self.v.mem_get(PWDBUF, PWDBUF + 255).split(b"\0")[0].decode("latin1")
 
     def check(self, title, got, want):
         good = got == want

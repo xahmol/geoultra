@@ -37,6 +37,13 @@ UTo:    jsr OvlCall             ; (module 42: onto the Ultimate)
         .byte 42, 0
 UFrom:  jsr OvlCall             ; (module 43: the whole copy from it; a
         .byte 43, 0             ; stub: back to the function's caller)
+LRename:
+        jsr OvlCall             ; (module 54: a rename; a stub, as UFrom)
+        .byte 54, 0
+LongOf: jsr OvlCall             ; (module 51: a file's long name to feTmp)
+        .byte 51, 9
+Drop:   jsr OvlCall             ; (module 51: a deleted file's record)
+        .byte 51, 3
 
 ; FE_COPY: r0 = a file, r1 = a folder or a new name, r2L = FC_* flags,
 ; r3 = a progress routine or 0 (called after each block with r4 = blocks
@@ -59,8 +66,9 @@ Go:     sta cMove
         sta r0H
         jsr Resolve
         txa
-        bne @end
-        lda feKind
+        beq :+
+        rts
+:       lda feKind
         cmp #FE_P_ULTIMATE
         bne @geos
         jmp UFrom
@@ -77,15 +85,17 @@ Go:     sta cMove
         beq @copy
         lda cSame
         beq @copy
-        lda #<feTmp             ; a move in one folder: a rename
-        sta r0L
-        lda #>feTmp
-        sta r0H
-        lda #<feName            ; (the source's name, from Target)
-        sta r6L
-        lda #>feName
-        sta r6H
-        jmp RenameFile
+        ldx #0                  ; a move in one folder: a rename (module
+@old:   lda cEntry + 3,x        ; 54) of feShort, the source's short name
+        cmp #$A0
+        beq @to
+        sta feShort,x
+        inx
+        cpx #FE_NAME_MAX
+        bne @old
+@to:    lda #0
+        sta feShort,x
+        jmp LRename
 @copy:  lda #<curDirHead        ; room for all its blocks
         sta r5L
         lda #>curDirHead
@@ -102,18 +112,28 @@ Go:     sta cMove
         bne @end
         lda cMove
         beq @end
-        jsr SrcPath             ; the source deleted
-        bne @end
-        lda #<feName
+        jsr SrcPath             ; the source deleted, its long name's
+        bne @end                ; record dropped
+        lda r1L
+        sta lnKeyT
+        lda r1H
+        sta lnKeyS
+        lda r5L
+        sta lnKeyO
+        lda #<feShort
         sta r0L
-        lda #>feName
+        lda #>feShort
         sta r0H
-        jmp DeleteFile
+        jsr DeleteFile
+        txa
+        bne @end
+        jmp Drop
 @end:   rts
 
 ; Source: the caller's r0 to a file (not a folder; for a move not
 ; locked): its entry to cEntry, its drive, folder and entry's place to
-; cSrc*, its name to feTmp. Z clear and X = the error when it fails.
+; cSrc*, its long name (else its short one) to feTmp. Z clear and X =
+; the error when it fails.
 Source: jsr SrcPath
         bne @end
         ldy #29
@@ -147,11 +167,13 @@ Source: jsr SrcPath
         lda cEntry
         and #$40                ; locked
         bne @err
-@name:  ldx #FE_NAME_MAX
-@copy:  lda feName,x
-        sta feTmp,x
-        dex
-        bpl @copy
+@name:  lda cSrcET               ; its long name (else its short one) to
+        sta lnKeyT              ; feTmp: the target's name in a folder
+        lda cSrcES
+        sta lnKeyS
+        lda cSrcEO
+        sta lnKeyO
+        jsr LongOf
         ldx #0
 @end:   rts
 @err:   txa
@@ -191,10 +213,18 @@ Named:  jsr Resolve
         jmp OvTarget            ; entry 0
 
         .include "feresolve.inc"
+        .include "felen.inc"
+
+LnFind: jsr OvlCall             ; (module 48: a long name looked up)
+        .byte 48, 0
+Short:  jsr OvlCall             ; (module 50: a short name made)
+        .byte 50, 0
+Drop:   jsr OvlCall             ; (module 51: a deleted file's record)
+        .byte 51, 3
 
 ; OvTarget: the caller's r1 resolved; its folder entered when it names
-; one. The target's name in feTmp, the source's in feName (for a rename);
-; cSame nonzero when it is the source's folder. An existing file of that
+; one. The target's name in feTmp (a long one, or short), its short name
+; on disk in feShort; cSame nonzero when it is the source's folder. An existing file of that
 ; name: FILE_EXISTS, or with FC_OVERWRITE deleted (not the source itself,
 ; not locked). On the Ultimate: cToU set, X = 0 (module 42 or 43 goes
 ; on). X = 0 or the error.
@@ -221,7 +251,7 @@ OvTarget:
         beq @found
         cpx #FILE_NOT_FOUND
         bne @fail
-@new:   ldx #FE_NAME_MAX        ; a new name
+@new:   ldx #FE_LONG_MAX        ; a new name (short or long)
 @copy:  lda feName,x
         sta feTmp,x
         dex
@@ -239,24 +269,39 @@ OvTarget:
         bcs :+
         lda #1
 :       sta cSame
-        jsr SrcName
         jmp Exists
 @fail:  rts
 
-; Exists: an existing target file feTmp (in the target folder, current)
-; replaced when FC_OVERWRITE allows. X = 0 or the error (OvTarget's
-; end).
-Exists: lda #<feTmp
+; Exists: an existing target file named feTmp (its short or its long
+; name; in the target folder, current) replaced when FC_OVERWRITE allows;
+; then the new file's short name to feShort (module 50). X = 0 or the
+; error (OvTarget's end).
+Exists: ldx #FE_LONG_MAX        ; (feName, feShort as the walk makes them)
+@name:  lda feTmp,x
+        sta feName,x
+        dex
+        bpl @name
+        jsr IsLongT
+        bne @long
+        ldx #FE_NAME_MAX
+@short: lda feTmp,x
+        sta feShort,x
+        dex
+        bpl @short
+        bmi @find
+@long:  jsr LnFind
+        txa
+        bne @new
+@find:  lda #<feShort
         sta r6L
-        lda #>feTmp
+        lda #>feShort
         sta r6H
         jsr FindFile
         txa
         beq @exists
         cpx #FILE_NOT_FOUND
         bne @fail
-        ldx #0                  ; free
-        rts
+@new:   jmp Short
 @exists:
         ldx #FE_IS_FOLDER
         jsr IsDir
@@ -280,11 +325,21 @@ Exists: lda #<feTmp
         lda dirEntryBuf
         and #$40                ; locked
         bne @fail
-        lda #<feTmp
+        lda r1L                 ; (its key: its record dropped after)
+        sta lnKeyT
+        lda r1H
+        sta lnKeyS
+        lda r5L
+        sta lnKeyO
+        lda #<feShort
         sta r0L
-        lda #>feTmp
+        lda #>feShort
         sta r0H
-        jmp DeleteFile
+        jsr DeleteFile
+        txa
+        bne @fail
+        jsr Drop
+        jmp @new
 @fail:  rts
 
 ; SameFolder: C clear when the target (cDstDrv, its current folder) is
@@ -302,21 +357,6 @@ SameFolder:
         clc
         rts
 @no:    sec
-        rts
-
-; SrcName: the source's name from cEntry ($A0-padded) to feName,
-; zero-ended. Destroys A, X.
-SrcName:
-        ldx #0
-@ch:    lda cEntry + 3,x
-        cmp #$A0
-        beq @end
-        sta feName,x
-        inx
-        cpx #FE_NAME_MAX
-        bne @ch
-@end:   lda #0
-        sta feName,x
         rts
 
         .endscope
@@ -393,7 +433,8 @@ OvBlocks:
 @end:   rts
 
 
-        .include "feentry.inc"  ; (Entry: right after OvBlocks's branches)
+Entry:  jsr OvlCall             ; (module 52: the new entry, its long name)
+        .byte 52, 0
 
 ; ChainY: the chain starting at cEntry+Y copied; its first target block
 ; back to cEntry+Y. Z set when it worked, else X = the error.
@@ -486,7 +527,6 @@ IndexRegs:
         sta r4H
         rts
 
-        .include "fename.inc"
         .include "feblock.inc"
         .include "feprog.inc"
 

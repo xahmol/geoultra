@@ -3,7 +3,8 @@
 ; cLast, cDstDrv.
 
 ; Alloc: a free target block after cLast (the first one: BlkAlloc's
-; start for the drive type, its table in fileTrScTab) to cLast. Z set
+; start for the drive type, its table in dirEntryBuf: fileTrScTab
+; holds feName) to cLast. Z set
 ; when it worked, else X = the error. Destroys r2-r8.
 Alloc:  jsr Dest
         lda cLastT
@@ -17,9 +18,9 @@ Alloc:  jsr Dest
         sta r2L
         lda #0
         sta r2H
-        lda #<fileTrScTab
+        lda #<dirEntryBuf
         sta r6L
-        lda #>fileTrScTab
+        lda #>dirEntryBuf
         sta r6H
         jsr BlkAlloc
 @got:   txa

@@ -48,11 +48,11 @@ OvResolve:
         cmp #'/'
         bne @start
         iny
-        bpl @skip
-        bmi @long
+        bne @skip
+        beq @long
 @start: sty r6L
 @scan:  iny                     ; to its end
-        bmi @long
+        beq @long
         lda (r4),y
         beq @eoc
         cmp #'/'
@@ -83,10 +83,9 @@ OvResolve:
         bne @up
         stx r5L
         jmp @part
-@add:   lda r5L                 ; "/" and the part, if they fit
-        sec
+@add:   lda r5L                 ; "/" and the part, if they fit (the
+        sec                     ; new length: at most FE_PATH_MAX)
         adc r6H
-        cmp #FE_PATH_MAX + 1
         bcs @long
         ldx r5L
         lda #'/'
@@ -111,6 +110,7 @@ OvResolve:
         jmp Walk
 @long:  ldx #FE_BAD_PATH
         rts
+        .assert FE_PATH_MAX = 255, error, "OvResolve: lengths by the carry"
 
 ; Cwd: the current directory to fePath; X = its length, 0 for "/" (the
 ; parts are added after it). Destroys A, Y, r0-r3L.
@@ -122,9 +122,9 @@ Cwd:    lda #<fePath
         sta r1L
         lda #>FE_CWD
         sta r1H
-        lda #FE_PATH_MAX + 1
+        lda #<(FE_PATH_MAX + 1)
         sta r2L
-        lda #0
+        lda #>(FE_PATH_MAX + 1)
         sta r2H
         ldy #REU_FETCH
         jsr ReuOp
@@ -132,8 +132,7 @@ Cwd:    lda #<fePath
 @len:   lda fePath,x
         beq @got
         inx
-        bpl @len
-        ldx #0                  ; (no end: taken as "/")
+        bne @len                ; (no end: taken as "/")
 @got:   cpx #1
         bne @end
         dex
@@ -173,47 +172,57 @@ OvWalk: lda #0
         beq @mid
         inx
         bne @scan
-@mid:   stx feEnd               ; a folder on the way: entered
-        txa
-        sec
-        sbc fePos
-        cmp #FE_NAME_MAX + 1
-        ldx #FILE_NOT_FOUND
-        bcs @ret
-        ldx feEnd
-        lda #0
+@mid:   stx feEnd               ; a folder on the way: entered (by its
+        lda #0                  ; short name; the part ends here meanwhile)
         sta fePath,x
-        lda fePos
-        clc
-        adc #<fePath
-        sta r0L
-        lda #>fePath
-        adc #0
-        sta r0H
-        jsr EnterR0
+        jsr Part
         ldy feEnd
         lda #'/'
         sta fePath,y
         txa
         bne @ret
-        sty fePos
+        lda #<feShort
+        sta r0L
+        lda #>feShort
+        sta r0H
+        jsr EnterR0
+        txa
+        bne @ret
+        lda feEnd
+        sta fePos
         jmp @next
-@last:  txa                     ; the last part to feName
-        sec
-        sbc fePos
-        cmp #FE_NAME_MAX + 1
-        ldx #FE_BAD_PATH
-        bcs @ret
-        ldx fePos
+@last:  jsr Part                ; the last part: feName, feShort (none
+        cpx #FE_BAD_PATH        ; found: feShort 0, for a new name)
+        beq @ret
+@ok:    ldx #0
+@ret:   rts
+
+; Part: the part from fePos (zero-ended) to feName; its short name to
+; feShort: itself (at most FE_NAME_MAX characters), else the file with
+; that long name (module 48; none: feShort 0, X = FILE_NOT_FOUND). X = 0,
+; FILE_NOT_FOUND or FE_BAD_PATH (more than FE_LONG_MAX characters).
+Part:   ldx fePos
         ldy #0
 @copy:  lda fePath,x
         sta feName,y
-        beq @ok
+        beq @len
         inx
         iny
+        cpy #FE_LONG_MAX + 1
         bne @copy
-@ok:    ldx #0
-@ret:   rts
+        ldx #FE_BAD_PATH
+        rts
+@len:   cpy #FE_NAME_MAX + 1
+        bcs LnFind
+@short: lda feName,y
+        sta feShort,y
+        dey
+        bpl @short
+        ldx #0
+        rts
+
+LnFind: jsr OvlCall             ; (module 48: a long name looked up)
+        .byte 48, 0
 
 ; Top: the path's top part (fePath+1 up to feEnd). A GEOS drive: made
 ; current at its root (C clear). Else C set and X = the error.
@@ -302,7 +311,13 @@ Ultimate:
         stx fePos
         lda #0
         beq @top
-@named: lda #1
+@named: txa                     ; the last part: at most FE_UPART_MAX
+        clc
+        sbc fePos
+        cmp #FE_UPART_MAX + 1
+        ldx #FE_BAD_PATH
+        bcs @ret
+        lda #1
 @top:   sta feName
         ldx #0
 @ret:   sec
