@@ -455,8 +455,18 @@ docs/GEOS_REFERENCE.md, "1581 partitions and sub-directories".)
 - `make test-part81`: a D81 made by the real 1581 DOS in VICE (nested
   partitions), entered, left and written by GeoUltra, then read back by
   the real 1581 DOS.
-- Not yet: `MakeDir`/`RemoveDir` on 1581 (creating and formatting a
-  partition from free whole tracks, removing an empty one).
+- `MakeDir` on a 1581 (modules 19 and 20): r0 = name, **r2L = size in
+  tracks** (0: 10, at least 3); the first run of that many fully free
+  tracks of the current directory's BAM that does not include track 40;
+  they are allocated there, the CBM entry written, and the partition
+  formatted inside as the real DOS's "N0:" does (header "D"/"3D" with the
+  disk's ID, BAM over all 80 tracks with only its own free and its first
+  track's sectors 0-3 used, empty directory). `RemoveDir` (module 21)
+  only on an empty partition: its tracks freed in the current BAM, the
+  entry's type set to 0. Errors as on native drives (`FILE_EXISTS` $40,
+  `DIR_NOT_EMPTY` $41, `INSUFF_SPACE`). `make test-part81` also has the
+  real 1581 DOS select a partition GeoUltra made and write and read a
+  file in it.
 
 ## System drive (drive E)
 

@@ -614,10 +614,9 @@ DirHead:
         ldx #DEV_NOT_FOUND
         bne @ptr
 @type:  tay
-        cpy #DRV_1581           ; 1581: the current partition's first
-        bne @nat                ; track (Patch81, folders.s; Y kept)
-        jsr Patch81
-@nat:   cpy #DRV_NATIVE         ; native: the current folder's header
+        jsr Patch81             ; 1581: the current partition's first
+                                ; track (folders.s; Y = type, kept)
+        cpy #DRV_NATIVE         ; native: the current folder's header
         bne @start
         ldx curDrive
         lda folderT-8,x
@@ -1295,7 +1294,15 @@ AddDirBlock:
 DirTrackFree:
         jsr BamType
 dtfBam: bne @t1541
-        lda dir2Head + $10 + 6 * 39
+        jsr Dir81               ; the directory track: 40, or the current
+        sta r6L                 ; partition's first (AddDirBlock keeps r6)
+        jsr Off81
+        lda r6L
+        cmp #41
+        bcs @hi
+        lda dir2Head + $10,x
+        rts
+@hi:    lda dir3Head + $10,x
         rts
 @t1541: lda curDirHead + 4 * DIR_TRACK
         rts

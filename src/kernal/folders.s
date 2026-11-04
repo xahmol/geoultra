@@ -48,14 +48,16 @@ Dir81:  ldx curDrive
 @root:  lda #40
         rts
 
-; Patch81 (DirHead): the 1581 header blocks (header, BAM 1 and 2) on the
-; directory track. Y kept.
+; Patch81 (DirHead, Y = drive type): on a 1581, the header blocks
+; (header, BAM 1 and 2) on the directory track. Y kept.
 Patch81:
+        cpy #DRV_1581
+        bne @end
         jsr Dir81
         sta t1581
         sta t1581+4
         sta t1581+8
-        rts
+@end:   rts
 
 ; Extension jump table (guExtTable): one entry of 5 bytes per call, in
 ; this order; each returns X = 0 or an error.
@@ -88,6 +90,11 @@ entS:   .byte 0
 entOff: .byte 0                 ; the entry's type byte in that block
 nameLo: .byte 0
 nameHi: .byte 0
+want19: .byte 0                 ; 1581 partitions (modules 19-21): its
+first19:.byte 0                 ; tracks, first track, and loop state,
+run19:  .byte 0                 ; resident across the call from 19 to 20
+sec19:  .byte 0
+trk19:  .byte 0
 
 
         .segment "OVL12"                ; overlay module 12: folders
@@ -193,10 +200,20 @@ Up81:   jsr OvlCall
         jmp OvSetGEOSDisk       ; entry 0
         jmp OvRemoveDir         ; entry 3
 
+Remove81:
+        jsr OvlCall             ; module 21 (the return goes to the caller)
+        .byte 21, 0
+
         .include "foldershared.inc"
 
 OvRemoveDir:
-        jsr Native
+        ldx curDrive            ; a 1581: a partition (module 19)
+        lda driveType-8,x
+        and #$0F
+        cmp #DRV_1581
+        bne :+
+        jmp Remove81
+:       jsr Native
         bcc :+
         rts
 :       jsr FindDir
@@ -370,10 +387,19 @@ OvSetGEOSDisk:
 
         jmp OvMakeDir           ; entry 0
 
+Make81: jsr OvlCall             ; module 19 (the return goes to the caller)
+        .byte 19, 0
+
         .include "foldershared.inc"
 
 OvMakeDir:
-        jsr Native
+        ldx curDrive            ; a 1581: a partition (module 19)
+        lda driveType-8,x
+        and #$0F
+        cmp #DRV_1581
+        bne :+
+        jmp Make81
+:       jsr Native
         bcs @end
         lda r0L
         sta nameLo
@@ -701,5 +727,475 @@ Up81:   stx slot81
 slot81: .byte 0                 ; (module bytes: no nested overlay calls
 want81: .byte 0                 ; while they are used)
 cur81:  .byte 0
+
+        .endscope
+
+        .segment "OVL19"                ; overlay module 19: a 1581
+        .scope Mod19                    ; partition created (allocation)
+
+        jmp OvMake81            ; entry 0
+
+        .include "foldername.inc"
+
+DEF_TRACKS      = 10            ; MakeDir on a 1581 without a size (r2L = 0)
+dir3Head        = $9C80         ; the 1581's second BAM block (reudrv.s)
+
+; Bam: A = track (1-80) -> r5 = its 6-byte entry in dir2Head/dir3Head.
+Bam:    sec
+        sbc #1
+        cmp #40
+        bcc @low
+        sbc #40
+        ldy #>(dir3Head + $10)
+        ldx #<(dir3Head + $10)
+        bne @mul
+@low:   ldy #>(dir2Head + $10)
+        ldx #<(dir2Head + $10)
+@mul:   stx r5L
+        sty r5H
+        sta r6L                 ; r5 += 6 * (track - 1 within the block)
+        asl
+        clc
+        adc r6L
+        asl
+        clc
+        adc r5L
+        sta r5L
+        bcc @end
+        inc r5H
+@end:   rts
+
+; OvMake81 (MakeDir on a 1581, r0 = name, r2L = tracks, 0: DEF_TRACKS):
+; a partition of r2L whole free tracks of the current directory (never
+; track 40), allocated there, its entry written, formatted inside as the
+; real 1581 DOS does ("N0:" in a selected partition: header, BAM with
+; only its own tracks free, an empty directory). X = 0, FILE_EXISTS,
+; INSUFF_SPACE or a disk error.
+OvMake81:
+        lda r2L
+        bne :+
+        lda #DEF_TRACKS
+:       cmp #3
+        bcs :+
+        lda #3
+:       sta want19
+        lda r0L
+        sta nameLo
+        sta r6L
+        lda r0H
+        sta nameHi
+        sta r6H
+        jsr FindFile            ; the name must be new
+        cpx #FILE_NOT_FOUND
+        beq @new
+        ldx #FILE_EXISTS
+        rts
+@new:   jsr GetDirHead
+        txa
+        beq :+
+        rts
+:       lda #1                  ; first fit: want19 fully free tracks in a
+        sta first19             ; row, not crossing 40
+@try:   lda #0
+        sta run19
+@track: lda first19
+        clc
+        adc run19
+        cmp #40
+        beq @skip               ; (40 never: start after it)
+        cmp #81
+        bcs @full
+        jsr Bam
+        ldy #0
+        lda (r5L),y
+        cmp #40                 ; all 40 sectors free?
+        bne @skip
+        inc run19
+        lda run19
+        cmp want19
+        bne @track
+        beq @alloc
+@skip:  lda first19             ; start again after this track
+        clc
+        adc run19
+        adc #1
+        sta first19
+        jmp @try
+@full:  ldx #INSUFF_SPACE
+        rts
+@alloc: lda #0                  ; its tracks used in the current BAM
+        sta run19
+@used:  lda first19
+        clc
+        adc run19
+        jsr Bam
+        ldy #5
+        lda #0
+@zero:  sta (r5L),y
+        dey
+        bpl @zero
+        inc run19
+        lda run19
+        cmp want19
+        bne @used
+        jsr PutDirHead
+        txa
+        beq :+
+        rts
+:       lda #0                  ; the entry: CBM, first/0, name, size
+        sta r10L
+        jsr GetFreeDirBlk
+        txa
+        beq :+
+        rts
+:       lda #$85
+        sta diskBlkBuf,y
+        lda first19
+        sta diskBlkBuf+1,y
+        lda #0
+        sta diskBlkBuf+2,y
+        tya
+        pha
+        lda #<diskBlkBuf
+        sta r4L
+        lda #>diskBlkBuf
+        sta r4H
+        iny
+        iny
+        iny
+        jsr Name
+        pla
+        tay
+        lda #0                  ; size = tracks * 40 (lo at +$1C)
+        sta r6L
+        sta r6H
+        ldx want19
+@size:  clc
+        lda r6L
+        adc #40
+        sta r6L
+        bcc :+
+        inc r6H
+:       dex
+        bne @size
+        lda r6L
+        sta diskBlkBuf+$1C,y
+        lda r6H
+        sta diskBlkBuf+$1D,y
+        jsr PutBlock            ; r1 = the entry's block
+        txa
+        beq :+
+        rts
+:       jmp Format              ; inside it (module 20)
+
+Format: jsr OvlCall             ; (a stub here: the return goes to the
+        .byte 20, 0             ; caller of OvMake81)
+
+        .endscope
+
+        .segment "OVL20"                ; overlay module 20: a new 1581
+        .scope Mod20                    ; partition formatted inside
+
+        jmp Format              ; entry 0
+
+        .include "foldername.inc"
+
+; Format (module 20): the new partition first19 of want19 tracks inside:
+; header t/0, BAM t/1 (tracks 1-40) and t/2 (41-80), the empty directory
+; t/3. X = 0 or an error.
+Format: jsr Header
+        txa
+        bne @end
+        lda #1
+        jsr BamBlock
+        txa
+        bne @end
+        lda #2
+        jsr BamBlock
+        txa
+        bne @end
+        ldy #0                  ; t/3: the empty directory
+        tya
+@dclr:  sta fileHeader,y
+        iny
+        bne @dclr
+        lda #$FF
+        sta fileHeader+1
+        lda #3
+        jmp WriteT
+@end:   rts
+
+; Header: the partition's header block t/0.
+Header: ldy #0
+        tya
+@clr:   sta fileHeader,y
+        iny
+        bne @clr
+        lda first19
+        sta fileHeader
+        lda #3
+        sta fileHeader+1
+        lda #'D'
+        sta fileHeader+2
+        lda #<fileHeader
+        sta r4L
+        lda #>fileHeader
+        sta r4H
+        ldy #4
+        jsr Name
+        lda #$A0
+        sta fileHeader+$14
+        sta fileHeader+$15
+        sta fileHeader+$18
+        sta fileHeader+$1B
+        sta fileHeader+$1C
+        jsr Ids
+        lda #'3'
+        sta fileHeader+$19
+        lda #'D'
+        sta fileHeader+$1A
+        lda #0
+        jmp WriteT
+
+; Ids: the disk ID (curDirHead holds the header with $04-$1C at
+; $90-$A8, as GEOS 2.0) to fileHeader $16/$17 and r7 (for the BAM).
+Ids:    lda curDirHead+$A2
+        sta fileHeader+$16
+        sta r7L
+        lda curDirHead+$A3
+        sta fileHeader+$17
+        sta r7H
+        rts
+
+; BamBlock: A = 1 or 2: the partition's BAM block t/A (its 40 tracks:
+; the partition's own free, its first track minus 4 sectors, the rest
+; used).
+BamBlock:
+        sta sec19
+        ldy #0
+        tya
+@clr:   sta fileHeader,y
+        iny
+        bne @clr
+        lda sec19               ; link: t/2 from the first, 00/FF after
+        cmp #1
+        bne @last
+        lda first19
+        sta fileHeader
+        lda #2
+        sta fileHeader+1
+        bne @head
+@last:  lda #$FF
+        sta fileHeader+1
+@head:  lda #'D'
+        sta fileHeader+2
+        lda #'D' ^ $FF
+        sta fileHeader+3
+        lda r7L
+        sta fileHeader+4
+        lda r7H
+        sta fileHeader+5
+        lda #$C0
+        sta fileHeader+6
+        ldx #1                  ; tracks of this block: 1-40 or 41-80
+        lda sec19
+        cmp #1
+        beq :+
+        ldx #41
+:       stx trk19
+        ldy #$10
+@entry: lda trk19               ; inside the partition?
+        sec
+        sbc first19
+        bcc @next
+        cmp want19
+        bcs @next
+        tax                     ; its first track: 36 free, sectors 0-3
+        bne @whole              ; used
+        lda #36
+        sta fileHeader,y
+        lda #$F0
+        sta fileHeader+1,y
+        lda #$FF
+        bne @rest
+@whole: lda #40
+        sta fileHeader,y
+        lda #$FF
+        sta fileHeader+1,y
+@rest:  sta fileHeader+2,y
+        sta fileHeader+3,y
+        sta fileHeader+4,y
+        sta fileHeader+5,y
+@next:  inc trk19
+        tya                     ; 40 entries from $10: Y wraps to 0
+        clc
+        adc #6
+        tay
+        bne @entry
+        lda sec19
+
+; WriteT: fileHeader to the partition's block first19/A. X = error.
+WriteT: sta r1H
+        lda first19
+        sta r1L
+        lda #<fileHeader
+        sta r4L
+        lda #>fileHeader
+        sta r4H
+        jmp PutBlock
+
+        .endscope
+
+        .segment "OVL21"                ; overlay module 21: a 1581
+        .scope Mod21                    ; partition removed
+
+        jmp OvRemove81          ; entry 0
+
+dir3Head        = $9C80
+
+; Bam: A = track (1-80) -> r5 = its 6-byte entry in dir2Head/dir3Head.
+Bam:    sec
+        sbc #1
+        cmp #40
+        bcc @low
+        sbc #40
+        ldy #>(dir3Head + $10)
+        ldx #<(dir3Head + $10)
+        bne @mul
+@low:   ldy #>(dir2Head + $10)
+        ldx #<(dir2Head + $10)
+@mul:   stx r5L
+        sty r5H
+        sta r6L                 ; r5 += 6 * (track - 1 within the block)
+        asl
+        clc
+        adc r6L
+        asl
+        clc
+        adc r5L
+        sta r5L
+        bcc @end
+        inc r5H
+@end:   rts
+
+; OvRemove81 (RemoveDir on a 1581, r0 = name): an empty sub-directory
+; partition: its tracks freed in the current BAM, its entry removed.
+; X = 0, DIR_NOT_EMPTY, STRUCT_MISMAT or an error.
+OvRemove81:
+        lda r0L
+        sta r6L
+        lda r0H
+        sta r6H
+        jsr FindFile
+        txa
+        beq :+
+        rts
+:       lda dirEntryBuf         ; a CBM entry at sector 0 (its size in
+        and #$07                ; tracks, as Mod18's Valid; not checked
+        cmp #5                  ; again here: only freeing what it holds)
+        bne @mis
+        lda dirEntryBuf + 2
+        bne @mis
+        lda r1L                 ; its entry
+        sta entT
+        lda r1H
+        sta entS
+        lda r5L
+        sta entOff
+        lda dirEntryBuf + 1
+        sta first19
+        lda dirEntryBuf + OFF_SIZE      ; tracks = size / 40
+        sta r6L
+        lda dirEntryBuf + OFF_SIZE + 1
+        sta r6H
+        ldx #0
+@div:   lda r6L
+        ora r6H
+        beq @div0
+        sec
+        lda r6L
+        sbc #40
+        sta r6L
+        lda r6H
+        sbc #0
+        sta r6H
+        bcc @mis
+        inx
+        bne @div
+@div0:  stx want19
+        txa
+        beq @mis
+        lda first19             ; empty? its directory t/3 onwards
+        sta r1L
+        lda #3
+        sta r1H
+@block: lda #<diskBlkBuf
+        sta r4L
+        lda #>diskBlkBuf
+        sta r4H
+        jsr GetBlock
+        txa
+        beq :+
+        rts
+:       ldy #2
+@ent:   lda diskBlkBuf,y
+        bne @full
+        tya
+        clc
+        adc #32
+        tay
+        bcc @ent
+        lda diskBlkBuf
+        beq @empty
+        sta r1L
+        lda diskBlkBuf+1
+        sta r1H
+        jmp @block
+@full:  ldx #DIR_NOT_EMPTY
+        rts
+@mis:   ldx #STRUCT_MISMAT
+        rts
+@empty: jsr GetDirHead          ; its tracks free in the current BAM
+        txa
+        beq :+
+        rts
+:       lda #0
+        sta run19
+@free:  lda first19
+        clc
+        adc run19
+        jsr Bam
+        ldy #0
+        lda #40
+        sta (r5L),y
+        lda #$FF
+@ff:    iny
+        sta (r5L),y
+        cpy #5
+        bne @ff
+        inc run19
+        lda run19
+        cmp want19
+        bne @free
+        jsr PutDirHead
+        txa
+        beq :+
+        rts
+:       lda entT                ; the entry: type 0
+        sta r1L
+        lda entS
+        sta r1H
+        lda #<diskBlkBuf
+        sta r4L
+        lda #>diskBlkBuf
+        sta r4H
+        jsr GetBlock
+        txa
+        beq :+
+        rts
+:       ldy entOff
+        lda #0
+        sta diskBlkBuf,y
+        jmp PutBlock
 
         .endscope

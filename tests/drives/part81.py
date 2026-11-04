@@ -34,7 +34,7 @@ from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
 
 PORT = 6546
 NAME, FOLDER, HDR, DATA, BACK, RES = 0x4F00, 0x4F40, 0x4000, 0x4400, 0x5000, 0x02F0
-GET_CUR_DIR, SET_CUR_DIR, DIR_UP, DIR_ROOT = 0, 1, 2, 3
+GET_CUR_DIR, SET_CUR_DIR, DIR_UP, DIR_ROOT, MAKE_DIR, REMOVE_DIR = 0, 1, 2, 3, 4, 5
 
 MAKE = """10 open15,8,15
 20 print#15,"n0:reference,rf"
@@ -57,6 +57,10 @@ CHECK = """10 open15,8,15:r$=""
 50 for i=1 to 4:get#2,a$:r$=r$+str$(asc(a$+chr$(0))):next:close2
 60 open2,8,2,"deep,s,r":input#15,a:r$=r$+str$(a):close2
 70 print#15,"/":input#15,a:r$=r$+str$(a)
+72 print#15,"/0:new":input#15,a,b$,c,d:r$=r$+str$(a)+str$(c)+str$(d)
+74 open2,8,2,"dosfile,s,w":print#2,"x":close2:input#15,a:r$=r$+str$(a)
+76 open2,8,2,"dosfile,s,r":input#15,a:r$=r$+str$(a):close2
+78 print#15,"/":input#15,a:r$=r$+str$(a)
 80 open2,8,2,"@0:result,s,w":print#2,r$:close2:close15
 """
 
@@ -217,6 +221,25 @@ def main():
         back = v.mem_get(BACK, BACK + 999)
         check("SaveFile, ReadFile in SUB2", (list(r[:3]), back == data, state()[2]), ([0, 0, 0], True, 110))
         run(xcall(DIR_ROOT) + stx(0))
+
+        def make(name, tracks):
+            v.mem_set(FOLDER, name.encode() + b"\0")
+            return run(ldw(FOLDER, 0x02) + [0xA9, tracks, 0x85, 0x06] + xcall(MAKE_DIR) + stx(0), wait=5)[0]
+
+        def remove(name):
+            v.mem_set(FOLDER, name.encode() + b"\0")
+            return run(ldw(FOLDER, 0x02) + xcall(REMOVE_DIR) + stx(0), wait=5)[0]
+
+        x = make("NEW", 3)
+        check("MakeDir NEW (3 tracks) at the root", (x,) + state(), (0, (40, 0), "REFERENCE", 2639, "ROOTFILE"))
+        x = setdir("NEW")
+        check("SetCurDir NEW", (x,) + state(), (0, (1, 0), "NEW", 116, ""))
+        run(xcall(DIR_UP) + stx(0))
+        x1 = make("TMP", 4)
+        x2 = remove("TMP")
+        check("MakeDir TMP, RemoveDir TMP", (x1, x2) + state(), (0, 0, (40, 0), "REFERENCE", 2639, "ROOTFILE"))
+        check("RemoveDir SUB1 (not empty) refused", remove("SUB1"), 0x41)
+        check("MakeDir NEW again refused", make("NEW", 3), 0x40)
         v.mem_set(0x0340, bytes([0x60]))
     finally:
         v.quit()
@@ -227,8 +250,9 @@ def main():
     basic_on(after, CHECK, "check")
     # its status after each step (02 selected, 00 ok) and the first four
     # bytes of the GEOS file (i * 7 + 3)
-    check("the real 1581 DOS reads it", (result_text(after) or "").split(),
-          ["2", "2", "0", "3", "10", "17", "24", "0", "2"])
+    check("the real 1581 DOS reads it, and uses GeoUltra's partition",
+          (result_text(after) or "").split(),
+          ["2", "2", "0", "3", "10", "17", "24", "0", "2", "2", "1", "3", "0", "0", "2"])
     sys.exit(0 if ok else 1)
 
 
