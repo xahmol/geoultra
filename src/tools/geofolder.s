@@ -4,7 +4,8 @@
 ; type that no file has, so no files appear); OPEN, RETURN and DEL move
 ; through them (the kernal does that), DISK goes to the next drive, OK
 ; leaves: the drive's current folder stays as chosen, and the application
-; sees it as the disk at its next OpenDisk. When the list would be empty
+; sees it as the disk at its next OpenDisk. The gush button starts gush
+; (docs/GUSH.md) from drive E in the application's place. When the list would be empty
 ; (a drive without folders, or the root of one with none), it says "No
 ; folders" above the drive's name (user's question, 2026-11-04). Own code.
 
@@ -34,6 +35,8 @@ DISK            = 6
 DBTXTSTR        = 11
 DBGETFILES      = 16
 NO_FILE_TYPE    = $FF           ; no GEOS file has it: only folders listed
+DBUSRICON       = 18
+FE_RUNSYS       = 22            ; the file engine (docs/FILE_ENGINE.md)
 
         .segment "CODE"
 
@@ -122,15 +125,45 @@ Folders:
 
 dialog: .byte DEF_DB_POS | 1
         .byte DBGETFILES, 4, 4
-        .byte OPEN, 17, 8
-        .byte DISK, 17, 30
-        .byte OK, 17, 52
-        .byte DBTXTSTR, 136, 76
+        .byte OPEN, 17, 4
+        .byte DISK, 17, 21
+        .byte DBUSRICON, 17, 38
+        .word gushIcon
+        .byte OK, 17, 55
+        .byte DBTXTSTR, 136, 79
 noteWord:
         .word noText
-        .byte DBTXTSTR, 136, 86
+        .byte DBTXTSTR, 136, 89
         .word driveText
         .byte 0
+
+; The gush button (docs/GUSH.md, "Where gush lives"): its picture, (x, y
+; from the dialog), width in bytes, height, routine.
+gushIcon:
+        .word GushIcon
+        .byte 0, 0, 6, 16
+        .word RunGush
+
+; RunGush: gush started from drive E (the file engine's FE_RUNSYS); it
+; replaces the application. Back only when that failed: the dialog stays.
+RunGush:
+        lda guExtTable          ; FileEngine: the extension table + 30
+        clc
+        adc #30
+        sta @fe+1
+        lda guExtTable+1
+        adc #0
+        sta @fe+2
+        lda #<gushName
+        sta r0L
+        lda #>gushName
+        sta r0H
+        lda #FE_RUNSYS
+@fe:    jsr $FFFF
+        rts
+
+gushName:       .byte "gush", 0
+        .include "gushicon.inc"
 
 driveText:      .byte "Drive A", 0
 noFolders:      .byte "No folders", 0

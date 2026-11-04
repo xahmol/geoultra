@@ -63,8 +63,15 @@ SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt
 
 build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	@mkdir -p build/tools
-	$(CA65) -o build/tools/$*.o $<
+	$(CA65) -I build/gen -o build/tools/$*.o $<
 	$(LD65) -C src/tools/$*.cfg -o $@ build/tools/$*.o
+
+# geoFolder's gush button, drawn like the system icons (tools/mkicons.py).
+build/gen/gushicon.inc: tools/mkicons.py tools/fonts/system9.py
+	@mkdir -p build/gen
+	$(PYTHON) tools/mkicons.py --icon $@ GushIcon gush
+
+build/tools/geofolder.bin: build/gen/gushicon.inc
 
 build/tools/%.cvt: build/tools/%.bin src/tools/%.toml
 	$(PYTHON) $(GEOSAPP) src/tools/$*.toml $< $@
@@ -328,6 +335,8 @@ test-gush: all
 	$(PYTHON) tests/gush/g4.py
 	$(PYTHON) tests/gush/g5.py
 	$(PYTHON) tests/gush/g6.py
+	$(PYTHON) tests/gush/g7.py
+	$(PYTHON) tests/gush/g8.py
 
 # gush on the U64 (tests/gush/gu64.py): the Ultimate's file system, a desk
 # accessory; gush written onto drive A's test copy first.

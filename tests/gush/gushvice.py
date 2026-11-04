@@ -173,6 +173,20 @@ class Gush:
         time.sleep(settle)
         self.v.ping()
 
+    def click(self, x, y, settle=2.0):
+        """A mouse click at x, y (pointer moved, pressed, released)."""
+        v = self.v
+        v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))
+        for data in (0x00, 0x80):
+            v.mem_set(0x8505, bytes([data]))
+            v.mem_set(0x39, bytes([v.mem_get(0x39, 0x39)[0] | 0x20]))
+            v.resume()
+            time.sleep(0.5)
+            v.ping()
+        v.resume()
+        time.sleep(settle)
+        v.ping()
+
     def screen(self):
         """Rows 1-24 from the shadow, right spaces off."""
         s = self.lbl["shadow"]

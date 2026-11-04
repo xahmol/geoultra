@@ -8,7 +8,7 @@
         .import ConPut, ConPuts, ConNewLine, ConClear, conCol
         .import FileEngine, Status, pwdBuf, startDrive
         .import Parse, argc, argLo, argHi
-        .export Run, ArgR0, PutArg, Print, Say, Fail, Decimal, num
+        .export Run, ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
         .import StartProgram
 
@@ -601,7 +601,8 @@ Gush:   lda #<GushColon
         jmp Print
 
 ; Fail: "gush: CMD: WORD: TEXT" for error X; Y = the word (its number,
-; $FF: none) the error is about. Destroys A, X, Y.
+; $FF: none) the error is about. FailPath: the same about the text at
+; A/Y (a path gush made). Destroys A, X, Y.
 Fail:   stx error
         sty errWord
         jsr Gush
@@ -611,12 +612,29 @@ Fail:   stx error
         ldy #>Colon
         jsr Print
         ldx errWord
-        bmi @text
+        bmi ErrText
+        jsr PutArg
+        jmp ErrColon
+FailPath:
+        stx error
+        sta errPath
+        sty errPath+1
+        jsr Gush
+        ldx #0
         jsr PutArg
         lda #<Colon
         ldy #>Colon
         jsr Print
-@text:  ldx #0                  ; the error's text
+        lda errPath
+        ldy errPath+1
+        jsr Print
+ErrColon:
+        lda #<Colon
+        ldy #>Colon
+        jsr Print
+; ErrText: error's text and a new line.
+ErrText:
+        ldx #0                  ; the error's text
 @find:  lda ErrCodes,x
         beq @other
         cmp error
@@ -643,11 +661,11 @@ Fail:   stx error
         jmp ConNewLine
 
 ErrCodes:
-        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, 0
+        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $FF, 0
 ErrTexts:
         .word ErrSpace, ErrNotFound, ErrDrive, ErrProtect, ErrExists
         .word ErrNotEmpty, ErrCancelled, ErrBadPath, ErrNotFolder
-        .word ErrIsFolder, ErrNotSupp, ErrUltimate
+        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrTooMany
 ErrSpace:       .byte "disk full", 0
 ErrNotFound:    .byte "no such file or folder", 0
 ErrDrive:       .byte "no such drive", 0
@@ -660,6 +678,7 @@ ErrNotFolder:   .byte "not a folder", 0
 ErrIsFolder:    .byte "is a folder", 0
 ErrNotSupp:     .byte "not supported", 0
 ErrUltimate:    .byte "the Ultimate refused", 0
+ErrTooMany:     .byte "too many entries", 0     ; (gush's own, $FF)
 ErrOther:       .byte "error ", 0
 
 GushColon:      .byte "gush: ", 0
@@ -682,6 +701,7 @@ width:          .byte 0
 count:          .byte 0
 error:          .byte 0
 errWord:        .byte 0
+errPath:        .word 0
 num:            .res 4
 digits:         .res 10
 

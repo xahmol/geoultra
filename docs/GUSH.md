@@ -171,9 +171,15 @@ GeoUltra's own desktop.
   Tests: g5.py, g6.py in VICE; tests/gush/gu64.py on the U64 (the
   Ultimate's file system through gush, geoFolder started and closed;
   `make test-gush-u64`); the boot setting checked on the U64 by hand.
-- Still to come in step 1: geoFolder's gush button, `cp -r`, `--:--` for
-  the time when there is no clock (VICE: no Ultimate, the clock counts
-  from 00:00), a document after a program's name.
+- **1.6 (2026-11-04):** geoFolder's gush button (drawn like the system
+  icons by `tools/mkicons.py --icon`; it calls `FE_RUNSYS`, gush replaces
+  the application), `cp -r` (tree.s: each folder's listing read whole
+  into the application's REU bank 2 before its entries are copied, so no
+  listing stays open; folders up to 8 deep, 255 entries each, 1024 in
+  all; a 1581 partition made as big as its source). Tests g7.py, g8.py.
+- Still to come in step 1: a document after a program's name. The time
+  stays as the clock says (GeoUltra always has the Ultimate's clock; only
+  VICE counts from 00:00).
 - Drive E is not yet in the file engine's tree: programs on it are not
   found by name (`/e/bin` in the design); `FE_RUNSYS` starts them by name.
 - A test hook: `testCtrl` (edit.s) makes the editor take CTRL as held

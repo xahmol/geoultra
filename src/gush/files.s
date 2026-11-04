@@ -10,13 +10,16 @@
 
         .import ConPut, ConPuts, ConNewLine, conCol
         .import FileEngine, argc, argLo, argHi
-        .import ArgR0, PutArg, Print, Say, Fail, Decimal, num
+        .import ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
+        .import CopyTree
         .export CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
+        .export Ask, AskPath, Copy1, func
 
 GetNextChar     = $C2A7         ; GEOS jump table
 FC_OVERWRITE    = 1
 FILE_EXISTS     = $40
 FE_BAD_PATH     = $49
+FE_IS_FOLDER    = $4B
 FE_CANCELLED    = $47
 FO_READ         = 0
 PROGRESS_FROM   = 20            ; blocks: from here a progress line
@@ -120,18 +123,22 @@ Str2:   lda argLo,x
 
 ; Ask: "gush: CMD: WHAT WORD? (y/n/a) " and a key: C clear for yes (a:
 ; yes, and all after it); C set for no. With -f or after "a": yes.
-; X = the word, A/Y the question's text.
+; X = the word, A/Y the question's text. AskPath: the same with the
+; name at askName (a path gush made) instead of a word.
 Ask:    pha
+        lda argLo,x
+        sta askName
+        lda argHi,x
+        sta askName+1
+        pla
+AskPath:
+        sta askText
+        sty askText+1
         lda flagF
         beq :+
-        pla
         clc
         rts
-:       pla
-        stx askWord
-        sta r1L
-        sty r1H
-        lda #<Gush
+:       lda #<Gush
         ldy #>Gush
         jsr Print
         ldx #0
@@ -139,11 +146,12 @@ Ask:    pha
         lda #<Colon
         ldy #>Colon
         jsr Print
-        lda r1L
-        ldy r1H
+        lda askText
+        ldy askText+1
         jsr Print
-        ldx askWord
-        jsr PutArg
+        lda askName
+        ldy askName+1
+        jsr Print
         lda #<YesNo
         ldy #>YesNo
         jsr Print
@@ -193,14 +201,61 @@ CopyMove:
         stx targetAt
         ldx firstArg
 @each:  stx srcAt
-        lda #0
-        sta overwrite
-@again: ldx srcAt
+        jsr ArgR0               ; one source: copied or moved
+        ldx targetAt
+        lda argLo,x
+        sta r1L
+        lda argHi,x
+        sta r1H
+        jsr Copy1
+        cpx #FE_IS_FOLDER       ; a folder: with -r, cp copies it whole
+        bne @next
+        lda flagR
+        beq @fail
+        lda func
+        cmp #FE_COPY
+        bne @fail
+        ldx srcAt
         jsr ArgR0
         ldx targetAt
         lda argLo,x
         sta r1L
         lda argHi,x
+        sta r1H
+        jsr CopyTree
+        jmp @next
+@fail:  ldx #FE_IS_FOLDER
+        ldy srcAt
+        jsr Fail
+@next:  ldx srcAt
+        inx
+        cpx targetAt
+        bcc @each
+@end:   rts
+
+; Copy1: func (FE_COPY, FE_MOVE) of the path at r0 to the one at r1,
+; with the progress line; there already: asked (unless -f), then again
+; with FC_OVERWRITE. Errors said, except FE_IS_FOLDER (X, for cp -r).
+; X = the error (0: done, or answered no).
+Copy1:  lda r0L
+        sta src
+        sta askName
+        lda r0H
+        sta src+1
+        sta askName+1
+        lda r1L
+        sta dst
+        lda r1H
+        sta dst+1
+        lda #0
+        sta overwrite
+@again: lda src
+        sta r0L
+        lda src+1
+        sta r0H
+        lda dst
+        sta r1L
+        lda dst+1
         sta r1H
         lda flagF               ; -f: overwrite without asking
         ora overwrite
@@ -217,25 +272,25 @@ CopyMove:
         jsr FileEngine
         jsr EndProgress
         txa
-        beq @next
+        beq @end
+        cpx #FE_IS_FOLDER
+        beq @end
         cpx #FILE_EXISTS        ; there already: asked
         bne @fail
         lda overwrite
         bne @fail
-        ldx srcAt
         lda #<Overwrite
         ldy #>Overwrite
-        jsr Ask
-        bcs @next
+        jsr AskPath
+        ldx #0
+        bcs @end
         lda #1
         sta overwrite
         bne @again
-@fail:  ldy srcAt
-        jsr Fail
-@next:  ldx srcAt
-        inx
-        cpx targetAt
-        bcc @each
+@fail:  lda src
+        ldy src+1
+        jsr FailPath
+        ldx #0                  ; (said)
 @end:   rts
 
 ; Progress (the engine's progress routine, r4 = blocks done): from
@@ -546,7 +601,10 @@ optAt:          .byte 0
 firstArg:       .byte 0
 value:          .byte 0
 digit:          .byte 0
-askWord:        .byte 0
+askName:        .word 0
+askText:        .word 0
+src:            .word 0
+dst:            .word 0
 func:           .byte 0
 targetAt:       .byte 0
 srcAt:          .byte 0
