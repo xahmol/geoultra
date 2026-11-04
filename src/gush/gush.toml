@@ -1,0 +1,8 @@
+[file]
+name    = "gush"
+type    = "APPLICATION"
+class   = "gush"
+version = "V0.1"
+author  = "GeoUltra"
+info    = "The GeoUltra shell: a command line over the GEOS drives and the Ultimate's file system"
+mode    = "40"

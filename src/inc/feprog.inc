@@ -3,7 +3,8 @@
 ; needs it. Uses cDone.
 
 ; Progress: one more block done; the caller's routine (r3, if not 0)
-; with r4 = blocks done. C set: stop.
+; with r4 = blocks done. C set: stop. X = 0 after it (the routine may
+; change X; the callers go on with X as their result). Destroys A, Y.
 Progress:
         inc cDone
         bne :+
@@ -14,6 +15,10 @@ Progress:
         sta r4L
         lda cDone+1
         sta r4H
-        jmp (argR3)
-@no:    clc
+        jsr @call
+        ldx #0                  ; (C as the routine returned it)
+        rts
+@call:  jmp (argR3)
+@no:    ldx #0
+        clc
         rts

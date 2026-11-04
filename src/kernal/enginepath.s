@@ -285,7 +285,13 @@ Ultimate:
         ldy #1
 @ch:    lda Tops,x
         beq @endT
-        cmp fePath,y
+        lda fePath,y            ; (either case: FAT's names are not exact)
+        cmp #'A'
+        bcc :+
+        cmp #'Z' + 1
+        bcs :+
+        ora #$20
+:       cmp Tops,x
         bne @skipT
         inx
         iny

@@ -148,6 +148,26 @@ GeoUltra's own desktop.
    gush button in geoFolder.
 6. U64 run, code sweep, docs (a gush manual: `docs/GUSH_MANUAL.md`).
 
+## State of the work
+
+- **1.1-1.4 (2026-11-04), in VICE:** the frame (con.s: own 6x8 font,
+  status line with the path and time, text shadow, scrolling), the line
+  editor and history (edit.s: insert, DEL, INST, cursor keys, HOME, CLR,
+  CTRL+A/E/K/U/C through the keyboard matrix, RUN/STOP, 32 lines of
+  history in the application's REU bank 1, lines up to 254 characters
+  scrolling sideways), words and wildcards (parse.s: quotes, backslash,
+  `*`/`?` through `FE_OPENDIR`), the commands (cmds.s: `exit`, `clear`,
+  `echo`, `pwd`, `cd`, `ls [-l]`; files.s: `cp`, `mv` with questions and
+  a progress line, `rm`, `mkdir -t`, `rmdir`, `cat`, `more`, `df`).
+  Tests: tests/gush/g1-g4.py (`make test-gush`). gush is on drive E
+  (`SYSFILES`). Code about 5.5 KB, buffers 3.8 KB.
+- Still to come in step 1: `cp -r`, `help`, starting applications, the
+  boot setting and geoFolder's button, the U64 run, `--:--` for the time
+  when there is no clock (VICE: no Ultimate, the clock counts from 00:00).
+- A test hook: `testCtrl` (edit.s) makes the editor take CTRL as held
+  (VICE's monitor cannot hold a key); `keyQueue`, `qHead`, `qTail` are
+  exported from the kernal for the tests' answers.
+
 ## Decisions (user, 2026-11-04)
 
 1. **Font:** a new 6x8 monospaced font in GeoUltra's style (clean-room).

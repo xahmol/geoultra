@@ -6,6 +6,7 @@
         .include "hw.inc"
 
         .export KeyScan, GetNextChar, KeyReset
+        .export keyQueue, qHead, qTail  ; (for the tests: keys into the queue)
 
 QUEUE_SIZE      = 16
 REPEAT_DELAY    = 25            ; frames before a held key repeats

@@ -383,7 +383,11 @@ Ultimate side (long FAT names both ways, case-insensitive paths).
   tests/engine/long.py (VICE: the cases above, a stale record after an
   application's `RenameFile`, a path of 133 bytes, the records and the
   BAM read from the image, the real 1581 DOS reading `GU.LONGNAMES`);
-  e3u64.py on the U64 (case, a folder path longer than one command).
+  e3u64.py on the U64 (case, a folder path longer than one command):
+  50 of 50 passed on the U64 (2026-11-04) after two fixes: the tops
+  `/usb0`, `/usb1`, `/sd` in either case; and after the copy's progress
+  routine X is 0 again (found by gush, whose routine reads the key queue:
+  copies reported its index as an error; e2.py's routine now changes X).
 - Known limits: renaming a folder changes its directory entry, not the
   name in its header (shown as the disk name inside it); native drives
   are covered by the same code but not yet by the test. Copying a folder

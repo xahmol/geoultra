@@ -20,7 +20,8 @@ from feharness import *  # noqa: E402,F401,F403  (Engine, constants, part81)
 
 WBUF, RBUF, PROG, COUNT = 0x5200, 0x5600, 0x5A00, 0x5A80
 COUNTER = [0xEE, COUNT & 0xFF, COUNT >> 8, 0xD0, 0x03, 0xEE, (COUNT + 1) & 0xFF, COUNT >> 8,
-           0x18, 0x60]                       # inc COUNT (a word); clc; rts
+           0xA2, 0x55, 0x18, 0x60]           # inc COUNT (a word); ldx #$55; clc; rts
+                                             # (X changed: the engine must not rely on it)
 CANCEL = [0x38, 0x60]                        # sec; rts
 DATA = bytes((i * 7 + 3) & 0xFF for i in range(810))
 

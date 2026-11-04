@@ -11,6 +11,7 @@ r0-r4 and a done flag where the REST interface reads them.
 import os
 import subprocess
 import time
+import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -38,9 +39,17 @@ class U64:
         self.ext = labels["ExtTable"]
 
     def _req(self, method, url, data=None):
-        req = urllib.request.Request(url, data=data, method=method)
-        with urllib.request.urlopen(req, timeout=20) as r:
-            return r.read()
+        """A REST request; tried again after a timeout (the Ultimate's REST
+        server sometimes stalls for a while under many requests)."""
+        for attempt in range(4):
+            req = urllib.request.Request(url, data=data, method=method)
+            try:
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    return r.read()
+            except (OSError, urllib.error.URLError):
+                if attempt == 3:
+                    raise
+                time.sleep(10)
 
     def read(self, addr, n):
         return self._req("GET", "%s/machine:readmem?address=%04X&length=%d" % (self.rest, addr, n))
