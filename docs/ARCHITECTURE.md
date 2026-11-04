@@ -428,6 +428,36 @@ extension table; overlay modules 12-14 with the shared helpers in
 - Not yet: 1581 partitions, renaming and moving folders, `MoveFile`, long
   names, geoFolder, the setting to switch the folders in file dialogs off.
 
+## 1581 partitions as folders
+
+(2026-11-04; the format as the real 1581 DOS writes it:
+docs/GEOS_REFERENCE.md, "1581 partitions and sub-directories".)
+- State: `folderT`/`folderS` as for native drives; on a 1581 `folderS` =
+  0 means "the partition starting at track `folderT`", the default 1/1
+  the root (track 40). `Dir81` (folders.s, resident) gives the current
+  directory track.
+- Driver: `DirHead` reads the header and both BAM blocks from that track
+  (`Patch81` sets the three `t1581` tracks); `FirstDirBlock` takes the
+  directory start from the header's link for 1581 and native drives
+  alike (`t/0` -> `t/3`); `HeaderSwap` and `Next1581` use the directory
+  track instead of 40. Allocation needs nothing else: a partition's BAM
+  marks every track outside it as used.
+- Kernal (module 12 dispatches, module 18 does the work): `GetCurDir`
+  gives `t/0` (`40/0` at the root); `SetCurDir` enters a CBM (`$85`)
+  entry that is a valid sub-directory (sector 0, whole tracks, at least
+  3, track 40 outside) with a formatted header ("D", link `t/3`), else X
+  = `STRUCT_MISMAT`; `DirUp` finds the parent by walking from the root
+  through the partitions that contain the current one (no parent pointer
+  on disk); `DirRoot` as for native drives.
+- File dialogs (`GfFolders`, `GfScan`) and geoFolder list CBM entries as
+  folders on 1581 drives too (one that is no sub-directory is refused
+  when opened).
+- `make test-part81`: a D81 made by the real 1581 DOS in VICE (nested
+  partitions), entered, left and written by GeoUltra, then read back by
+  the real 1581 DOS.
+- Not yet: `MakeDir`/`RemoveDir` on 1581 (creating and formatting a
+  partition from free whole tracks, removing an empty one).
+
 ## System drive (drive E)
 
 DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.

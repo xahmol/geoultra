@@ -37,7 +37,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-part81 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -283,6 +283,11 @@ test-folders: all
 # copy of the same DNP).
 test-filedialog: all
 	$(PYTHON) tests/drives/filedialog.py
+
+# 1581 partitions as folders, against a D81 made and read back by the real
+# 1581 DOS (VICE true drive emulation; no private files).
+test-part81: all
+	$(PYTHON) tests/drives/part81.py
 
 # A font on drive E in geoWrite (the user's own disks: SYSFONT_DISK,
 # GEOS_APPS_DISK); screens in build/harness/sysfont-*.png.

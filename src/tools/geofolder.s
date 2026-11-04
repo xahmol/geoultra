@@ -86,18 +86,25 @@ Folders:
 @ext:   jsr $FFFF
         lda r1L
         beq @none               ; (no folders on this kind of drive)
-        cmp #1
+        ldx r1H
+        cmp #40                 ; 40/0: a 1581's root
+        bne @nat
+        cpx #0
+        beq @root
+@nat:   cmp #1                  ; 1/1: a native root
         bne @some               ; in a folder: ".." is listed
-        lda r1H
-        cmp #1
+        cpx #1
         bne @some
+@root:
         jsr Get1stDirEntry      ; the root: any folder in it?
         txa
         bne @none
 @entry: ldy #0
         lda (r5L),y
         and #$07
-        cmp #6                  ; CBM type DIR
+        cmp #6                  ; CBM type DIR (native folders)
+        beq @some
+        cmp #5                  ; CBM (1581 partitions)
         beq @some
         jsr GetNxtDirEntry
         txa

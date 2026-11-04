@@ -23,6 +23,8 @@
         .export drvTracks, drvFlags
         .import WriteBackNow, FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, Ovl1571
         .import ProtExecute, ProtStatus, SetGEOSDiskOvl, folderT, folderS
+        .import Dir81, Patch81
+        .export t1581
         .export DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite
         .export geosId, FindBAMBit, FreeBlock, AllocateBlock, DrvReadBuff, DrvWriteBuff
         .import natLoaded
@@ -71,6 +73,7 @@ drvTracks:      .res 4          ; native: track count
 drvFlags:       .res 4          ; mount table flags (F_DIRTY, F_READONLY)
 
 borderFlag:     .byte 0
+d81:            .byte 0         ; Next1581: the directory track
 locBase:        .byte 0         ; Locate: the image's first REU bank
 locSys:         .byte 0         ; Locate: $80 for a block of drive E
 blkLo:          .byte 0         ; block number within the image
@@ -285,8 +288,8 @@ HeaderSwap:
         beq @native
         cmp #DRV_1581
         bne @end
-        lda r1L
-        cmp #40
+        jsr Dir81               ; (40, or the current partition's track)
+        cmp r1L
         bne @end
         lda r1H
         bne @end
@@ -611,7 +614,10 @@ DirHead:
         ldx #DEV_NOT_FOUND
         bne @ptr
 @type:  tay
-        cpy #DRV_NATIVE         ; native: the current folder's header
+        cpy #DRV_1581           ; 1581: the current partition's first
+        bne @nat                ; track (Patch81, folders.s; Y kept)
+        jsr Patch81
+@nat:   cpy #DRV_NATIVE         ; native: the current folder's header
         bne @start
         ldx curDrive
         lda folderT-8,x
@@ -1011,6 +1017,8 @@ Flip81: lda r6L
 
 ; Next1581: SetNextFree on a 1581 image.
 Next1581:
+        jsr Dir81               ; the directory track: 40, or the current
+        sta d81                 ; partition's first track
         jsr @search
         txa
         beq @end
@@ -1023,10 +1031,10 @@ Next1581:
         sta r6H
         lda r3L
         sta r6L
-        cmp #40                 ; the directory track only as the start
+        cmp d81                 ; the directory track only as the start
         beq @try
 @track: lda r6L
-        cmp #40
+        cmp d81
         beq @next
 @try:   jsr Off81
         lda r6L
@@ -1297,9 +1305,9 @@ FirstDirBlock:
         ldy curDrive
         lda driveType-8,y
         and #$0F
-        cmp #DRV_NATIVE         ; native: the current folder's first block
-        bne @table              ; (its header's link, in curDirHead)
-        lda curDirHead
+        cmp #DRV_1581           ; 1581 and native: the current folder's
+        bcc @table              ; first block (its header's link, in
+        lda curDirHead          ; curDirHead: 40/0 -> 40/3 at the root)
         sta r1L
         lda curDirHead+1
         sta r1H

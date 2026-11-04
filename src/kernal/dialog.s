@@ -786,8 +786,8 @@ GfFolders:
         ldx curDrive
         lda driveType-8,x
         and #$0F
-        cmp #DRV_NATIVE
-        bne @end
+        cmp #DRV_1581           ; native folders, 1581 partitions
+        bcc @end
         lda folderT-8,x
         cmp #1
         bne @up
@@ -851,9 +851,11 @@ GfScan: jsr Get1stDirEntry
         lda (r5),y
         beq @next
         and #$07
-        cmp #6                  ; DIR
+        cmp #6                  ; DIR (native), CBM (1581 partition: one
+        beq @dir                ; that is no sub-directory is refused by
+        cmp #5                  ; SetCurDir)
         bne @next
-        lda gfTarget
+@dir:   lda gfTarget
         cmp #$FF
         beq @list
         dec gfTarget
