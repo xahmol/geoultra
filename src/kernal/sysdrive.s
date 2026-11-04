@@ -21,13 +21,13 @@
         .include "geos.inc"
         .include "sysdrive.inc"
         .include "hw.inc"
+        .include "drvflags.inc"
 
         .export SysFTypes, SysFindFile, AppGate, RefusedMsg, turboWant, turboNow
         .export sysName
         .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
-F_READONLY      = $02
 HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
 OFF_FNAME       = 3             ; the name in a directory entry
 FONT            = 8             ; GEOS file type

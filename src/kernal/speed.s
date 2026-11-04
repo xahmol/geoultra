@@ -11,10 +11,10 @@
 
         .include "geos.inc"
         .include "hw.inc"
+        .include "drvflags.inc"
 
         .import SysRAMOp, turboWant, turboNow
 
-SLOW_BANK       = 3
 SLOW_LIST       = $FF00         ; SLOW_MAX names of SLOW_NAME
 SLOW_MAX        = 6             ; bytes, 0-padded (an empty name ends it)
 SLOW_NAME       = 12

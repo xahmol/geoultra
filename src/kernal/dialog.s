@@ -151,16 +151,7 @@ DoDlgBox:
 ; (shadow first) and return from DoDlgBox with r0L = sysDBData.
 RstrFrmDialogue:
         jsr RestoreState
-        ldy #0
-        lda (DBoxDesc),y
-        and #$1F
-        beq @box
-        lda #8
-        jsr DlgRect
-        jsr Recover
-@box:   lda #0
-        jsr DlgRect
-        jsr Recover
+        jsr RestoreBox          ; (module 11)
         lda sysDBData
         sta r0L
         ldx dlgCallerSP
@@ -170,16 +161,6 @@ RstrFrmDialogue:
         lda dlgCallerPC
         pha
         rts
-
-Recover:
-        lda RecoverVector
-        ora RecoverVector+1
-        bne @vector
-        lda #0
-        jsr SetPattern
-        jmp Rectangle
-@vector:
-        jmp (RecoverVector)
 
 ; r2-r4 = the dialog's rectangle, every coordinate + A.
 DlgRect:
@@ -223,39 +204,6 @@ DlgRect:
         bcc @end
         inc r4H
 @end:   rts
-
-; The box on the foreground screen: shadow (one card right and down) in
-; the pattern of the position byte, white area, frame.
-DrawDlgBox:
-        lda #ST_WR_FORE
-        sta dispBufferOn
-        ldy #0
-        lda (DBoxDesc),y
-        and #$1F
-        beq @box
-        jsr SetPattern
-        lda #8
-        jsr DlgRect
-        jsr Rectangle
-@box:   lda #0
-        jsr SetPattern
-        lda #0
-        jsr DlgRect
-        lda r4L
-        sta rightMargin
-        lda r4H
-        sta rightMargin+1
-        jsr Rectangle
-        lda #0
-        jsr DlgRect
-        lda #$FF
-        jsr FrameRectangle
-        lda #0
-        sta dbIconTab
-        sta dbIconTab+1
-        sta dbIconTab+2
-        sta dbIconTab+3
-        rts
 
 ; --- Commands: entered with Y = dbIndex at the command's first data byte
 
@@ -1160,6 +1108,12 @@ SaveState:
 RestoreState:
         jsr OvlCall
         .byte 11, 3
+DrawDlgBox:                     ; the box drawn, and taken away again
+        jsr OvlCall             ; (module 11: once per dialog box)
+        .byte 11, 6
+RestoreBox:
+        jsr OvlCall
+        .byte 11, 9
 
 ; The default environment of a dialog box (HG2G2022 chapter 14, "Dialog
 ; Box and Auto Exec Configuration"): plain text, both buffers, mouse
@@ -1223,6 +1177,67 @@ InitGEOEnv:
 
         jmp OvSaveState         ; entry 0
         jmp OvRestoreState      ; entry 3
+        jmp OvDrawDlgBox        ; entry 6
+        jmp OvRestoreBox        ; entry 9
+
+; The box on the foreground screen: shadow (one card right and down) in
+; the pattern of the position byte, white area, frame.
+OvDrawDlgBox:
+        lda #ST_WR_FORE
+        sta dispBufferOn
+        ldy #0
+        lda (DBoxDesc),y
+        and #$1F
+        beq @box
+        jsr SetPattern
+        lda #8
+        jsr DlgRect
+        jsr Rectangle
+@box:   lda #0
+        jsr SetPattern
+        lda #0
+        jsr DlgRect
+        lda r4L
+        sta rightMargin
+        lda r4H
+        sta rightMargin+1
+        jsr Rectangle
+        lda #0
+        jsr DlgRect
+        lda #$FF
+        jsr FrameRectangle
+        lda #0
+        sta dbIconTab
+        sta dbIconTab+1
+        sta dbIconTab+2
+        sta dbIconTab+3
+        rts
+
+; RstrFrmDialogue's part: the dialog's area recovered, shadow first
+; (RecoverVector, or pattern 0).
+OvRestoreBox:
+        ldy #0
+        lda (DBoxDesc),y
+        and #$1F
+        beq @box
+        lda #8
+        jsr DlgRect
+        jsr Recover
+@box:   lda #0
+        jsr DlgRect
+        jsr Recover
+        rts
+
+Recover:
+        lda RecoverVector
+        ora RecoverVector+1
+        bne @vector
+        lda #0
+        jsr SetPattern
+        jmp Rectangle
+@vector:
+        jmp (RecoverVector)
+
 
 ; Save zero page $22-$38, the globals $849B-$84C0, the icon table, the
 ; kernal state block and the sprites into dlgBoxRamBuf.

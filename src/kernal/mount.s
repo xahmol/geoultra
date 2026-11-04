@@ -22,6 +22,7 @@
 
         .include "geos.inc"
         .include "hw.inc"
+        .include "drvflags.inc"
         .include "kcalls.inc"
 
         .export MountAll, SerialFromDisk, TurboInit
@@ -56,11 +57,6 @@ LOG             = $4E00
 FIRST_BANK      = 31            ; drives: REU banks 31-191
 LAST_BANK       = 191
 SYS_BANK        = 1
-F_DIRTY         = $01
-F_READONLY      = $02
-F_BACKUP        = $04           ; (writeback.s: a backup copy was made)
-F_RESIZED       = $08           ; a native drive of another size than its file
-F_KNOWN         = F_DIRTY | F_READONLY | F_BACKUP | F_RESIZED
 
         .segment "INIT"
 
@@ -877,6 +873,8 @@ SizeOption:
         bcs @end
         sta r2H
         lda wantTracks          ; wantTracks * 10 + digit
+        cmp #26
+        bcs @big
         asl
         asl
         clc
@@ -884,8 +882,15 @@ SizeOption:
         asl
         clc
         adc r2H
+        bcs @big
         sta wantTracks
         jmp @digit
+@big:   lda #0                  ; (more than 255 tracks, the native most:
+        sta wantTracks          ; no resize)
+        rts
+
+MIN_TRACKS      = 2             ; native: track 1 holds header, BAM and
+                                ; directory start; at least one track more
 
 ; ResizeFirst (after ImageSize): with a wanted size for a native image,
 ; the drive gets that many banks; a smaller drive loads only its tracks.
@@ -898,7 +903,8 @@ ResizeFirst:
         cmp #DRV_NATIVE
         bne @end
         lda wantTracks
-        beq @end
+        cmp #MIN_TRACKS
+        bcc @end                ; (none, or too small for a native disk)
         cmp tracks
         beq @end                ; (the same size: nothing to do)
         sta banks
@@ -1342,7 +1348,6 @@ SlowList:
         sta reuCmd
         rts
 
-SLOW_BANK       = 3             ; as speed.s
 SLOW_LIST       = $FF00
 SLOW_MAX        = 6
 SLOW_NAME       = 12

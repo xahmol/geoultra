@@ -16,6 +16,7 @@
 
         .include "geos.inc"
         .include "hw.inc"
+        .include "drvflags.inc"
 
         .export WriteBackNow, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
         .import OvlCall, uciPresent, wbPending, wbDelay, drvTracks, drvFlags, hibState, HibSuspend
@@ -37,9 +38,6 @@ DOS_CD          = $11
 DOS_MKDIR       = $16
 DOS_SAVE_REU    = $22
 SYS_BANK        = 1
-F_DIRTY         = $01
-F_BACKUP        = $04
-F_RESIZED       = $08           ; (mount.s) another size than its file
 
         .segment "CODE"
 

@@ -63,6 +63,8 @@ def main(argv):
     blocks = []
     track, sector = first
     while track:
+        if (track, sector) in blocks:
+            sys.exit("sysreloc.py: the directory chain loops at %d/%d" % (track, sector))
         blocks.append((track, sector))
         at = offset(track, sector)
         track, sector = image[at], image[at + 1]

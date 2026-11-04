@@ -17,6 +17,7 @@
 
         .include "geos.inc"
         .include "hw.inc"
+        .include "drvflags.inc"
         .include "sysdrive.inc"
 
         .export DiskInit, saveFlag, WbCheck, WbTick, uciPresent, wbPending, wbDelay
@@ -42,8 +43,6 @@ SYS_BANK        = 1
 MOUNT_TAB       = $0100
 MOUNT_ENTRY     = $0120
 DIRTY_MAP       = $20           ; page of slot 0's dirty map in bank 1
-F_DIRTY         = $01
-F_READONLY      = $02
 WB_DELAY        = 150           ; frames (3 s at 50 Hz) after the last write
 dir3Head        = $9C80         ; third BAM block (1581), end of the driver
 

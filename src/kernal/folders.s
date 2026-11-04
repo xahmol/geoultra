@@ -14,6 +14,14 @@
 ; $24/$25 the block holding its entry in the parent, $26 the entry's offset
 ; there (GeoUltra writes the offset of the entry's type byte: to be
 ; checked against an image made by CMD software). Own code.
+;
+; 1581 images: sub-directory partitions act as folders the same way
+; (folderS = 0: the partition starting at folderT; Dir81, Patch81 below,
+; modules 18-21 at the end; docs/ARCHITECTURE.md "1581 partitions as
+; folders"). Modules: 12 the four moves (1581 ones go on to 18), 13
+; SetGEOSDisk and RemoveDir (1581: 21), 14 MakeDir (1581: 19, which
+; formats with 20). Shared code: foldershared.inc, foldername.inc,
+; part81.inc, bam81.inc (each module assembles its own copy).
 
         .include "geos.inc"
         .include "kcalls.inc"
@@ -120,10 +128,10 @@ OvGetCurDir:
         ldx #0
 @end:   rts
 @c81:   jsr Is1581              ; 1581: the partition's header t/0, or 40/0
-        bcs @end
+        bcs @none
         jsr Dir81
         sta r1L
-        ldx #0
+@none:  ldx #0                  ; (other drives: 0/0, no folders, no error)
         rts
 
 ; Go: folder of slot X = A/Y (track/sector), header read (GetDirHead).
@@ -172,21 +180,6 @@ OvDirRoot:
 ; The current partition is folderT = its first track, folderS = 0; the
 ; root keeps the native default 1/1 (Dir81 then gives track 40).
 
-; Is1581: C clear and X = slot when the current drive is a 1581.
-Is1581: ldx curDrive
-        lda driveType-8,x
-        and #$0F
-        cmp #DRV_1581
-        bne @no
-        txa
-        sec
-        sbc #8
-        tax
-        clc
-        rts
-@no:    sec
-        rts
-
 Set81:  jsr OvlCall             ; module 18 (stubs here: the return goes
         .byte 18, 0             ; to this module's caller)
 Up81:   jsr OvlCall
@@ -207,11 +200,8 @@ Remove81:
         .include "foldershared.inc"
 
 OvRemoveDir:
-        ldx curDrive            ; a 1581: a partition (module 19)
-        lda driveType-8,x
-        and #$0F
-        cmp #DRV_1581
-        bne :+
+        jsr Is1581              ; a 1581: a partition (module 21)
+        bcs :+
         jmp Remove81
 :       jsr Native
         bcc :+
@@ -275,8 +265,8 @@ OvRemoveDir:
         sta r6L
         lda r1H
         sta r6H
-        jsr FreeBlock
-        lda diskBlkBuf
+        jsr FreeBlock           ; (X ignored: a block already free stays
+        lda diskBlkBuf          ; free, the removal goes on)
         sta r1L
         lda diskBlkBuf+1
         sta r1H
@@ -286,7 +276,7 @@ OvRemoveDir:
         sta r6L
         lda hdrS
         sta r6H
-        jsr FreeBlock
+        jsr FreeBlock           ; (X ignored, as above)
         lda entT                ; the entry: gone
         sta r1L
         lda entS
@@ -314,7 +304,7 @@ OvRemoveDir:
 
 
 ; SetGEOSDisk (driver): make the disk a GEOS disk: a border block (1581:
-; on track 40 from sector 18; native: from 1/0; else from track 19, then
+; on the directory track from sector 18; native: from 1/0; else from track 19, then
 ; from track 1) and the signature in the header. X = 0 or INSUFF_SPACE.
 ; Destroys A, Y, r0L, r1, r4, r5.
 OvSetGEOSDisk:
@@ -335,7 +325,7 @@ OvSetGEOSDisk:
         and #$0F
         cmp #DRV_1581
         bne @notMp
-        lda #40
+        jsr Dir81               ; (40, or the current partition's track)
         ldy #18
         bne @one
 @notMp: cmp #DRV_NATIVE
@@ -393,11 +383,8 @@ Make81: jsr OvlCall             ; module 19 (the return goes to the caller)
         .include "foldershared.inc"
 
 OvMakeDir:
-        ldx curDrive            ; a 1581: a partition (module 19)
-        lda driveType-8,x
-        and #$0F
-        cmp #DRV_1581
-        bne :+
+        jsr Is1581              ; a 1581: a partition (modules 19, 20)
+        bcs :+
         jmp Make81
 :       jsr Native
         bcs @end
@@ -548,67 +535,18 @@ OvMakeDir:
         .endscope
 
         .segment "OVL18"                ; overlay module 18: 1581 partitions
-        .scope Mod18
+        .scope Mod18                    ; entered and left
 
         jmp Set81               ; entry 0
         jmp Up81                ; entry 3
+
+        .include "part81.inc"
 
 ; Go: folder of slot X = A/Y (track/sector), header read (GetDirHead).
 Go:     sta folderT,x
         tya
         sta folderS,x
         jmp GetDirHead
-
-; Tracks: A/Y = a partition's size in blocks (lo/hi) -> A = its tracks,
-; C clear when it is a whole number of at least 3 (a sub-directory).
-Tracks: sta r2L
-        sty r2H
-        lda #0
-        sta r3L
-@sub:   lda r2L
-        ora r2H
-        beq @done
-        sec
-        lda r2L
-        sbc #40
-        sta r2L
-        lda r2H
-        sbc #0
-        sta r2H
-        bcc @bad                ; (not a multiple of 40)
-        inc r3L
-        bne @sub
-@done:  lda r3L
-        cmp #3
-        rts                     ; (C set: at least 3; inverted below)
-@bad:   clc
-        rts
-
-; Valid: dirEntryBuf a partition usable as a sub-directory (type CBM,
-; sector 0, whole tracks, at least 3, track 40 outside): C clear, A =
-; its first track, r3L its tracks.
-Valid:  lda dirEntryBuf
-        and #$07
-        cmp #5                  ; CBM
-        bne @no
-        lda dirEntryBuf + 2
-        bne @no
-        lda dirEntryBuf + OFF_SIZE
-        ldy dirEntryBuf + OFF_SIZE + 1
-        jsr Tracks
-        bcc @no
-        clc                     ; last = first + tracks - 1 < 40, or
-        lda dirEntryBuf + 1     ; first > 40
-        cmp #41
-        bcs @ok
-        adc r3L
-        cmp #41
-        bcs @no
-@ok:    lda dirEntryBuf + 1
-        clc
-        rts
-@no:    sec
-        rts
 
 ; Set81 (SetCurDir on a 1581, r0 = name): enter the partition when it is a
 ; formatted sub-directory (its header t/0: "D", link t/3).
@@ -622,25 +560,8 @@ Set81:  stx slot81
         bne @end
         jsr Valid
         bcs @mis
-        sta r1L
-        lda #0
-        sta r1H
-        lda #<diskBlkBuf
-        sta r4L
-        lda #>diskBlkBuf
-        sta r4H
-        jsr GetBlock
-        txa
-        bne @end
-        lda diskBlkBuf + 2
-        cmp #'D'
-        bne @mis
-        lda diskBlkBuf
-        cmp r1L
-        bne @mis
-        lda diskBlkBuf + 1
-        cmp #3
-        bne @mis
+        jsr Formatted
+        bcs @end
         ldx slot81
         lda r1L
         ldy #0
@@ -736,34 +657,9 @@ cur81:  .byte 0
         jmp OvMake81            ; entry 0
 
         .include "foldername.inc"
+        .include "bam81.inc"
 
 DEF_TRACKS      = 10            ; MakeDir on a 1581 without a size (r2L = 0)
-dir3Head        = $9C80         ; the 1581's second BAM block (reudrv.s)
-
-; Bam: A = track (1-80) -> r5 = its 6-byte entry in dir2Head/dir3Head.
-Bam:    sec
-        sbc #1
-        cmp #40
-        bcc @low
-        sbc #40
-        ldy #>(dir3Head + $10)
-        ldx #<(dir3Head + $10)
-        bne @mul
-@low:   ldy #>(dir2Head + $10)
-        ldx #<(dir2Head + $10)
-@mul:   stx r5L
-        sty r5H
-        sta r6L                 ; r5 += 6 * (track - 1 within the block)
-        asl
-        clc
-        adc r6L
-        asl
-        clc
-        adc r5L
-        sta r5L
-        bcc @end
-        inc r5H
-@end:   rts
 
 ; OvMake81 (MakeDir on a 1581, r0 = name, r2L = tracks, 0: DEF_TRACKS):
 ; a partition of r2L whole free tracks of the current directory (never
@@ -1051,36 +947,13 @@ WriteT: sta r1H
 
         jmp OvRemove81          ; entry 0
 
-dir3Head        = $9C80
+        .include "part81.inc"
+        .include "bam81.inc"
 
-; Bam: A = track (1-80) -> r5 = its 6-byte entry in dir2Head/dir3Head.
-Bam:    sec
-        sbc #1
-        cmp #40
-        bcc @low
-        sbc #40
-        ldy #>(dir3Head + $10)
-        ldx #<(dir3Head + $10)
-        bne @mul
-@low:   ldy #>(dir2Head + $10)
-        ldx #<(dir2Head + $10)
-@mul:   stx r5L
-        sty r5H
-        sta r6L                 ; r5 += 6 * (track - 1 within the block)
-        asl
-        clc
-        adc r6L
-        asl
-        clc
-        adc r5L
-        sta r5L
-        bcc @end
-        inc r5H
-@end:   rts
-
-; OvRemove81 (RemoveDir on a 1581, r0 = name): an empty sub-directory
-; partition: its tracks freed in the current BAM, its entry removed.
-; X = 0, DIR_NOT_EMPTY, STRUCT_MISMAT or an error.
+; OvRemove81 (RemoveDir on a 1581, r0 = name): an empty, formatted
+; sub-directory partition (as SetCurDir would enter): its tracks freed in
+; the current BAM, its entry removed. X = 0, DIR_NOT_EMPTY, STRUCT_MISMAT
+; or a disk error.
 OvRemove81:
         lda r0L
         sta r6L
@@ -1090,42 +963,24 @@ OvRemove81:
         txa
         beq :+
         rts
-:       lda dirEntryBuf         ; a CBM entry at sector 0 (its size in
-        and #$07                ; tracks, as Mod18's Valid; not checked
-        cmp #5                  ; again here: only freeing what it holds)
-        bne @mis
-        lda dirEntryBuf + 2
-        bne @mis
-        lda r1L                 ; its entry
+:       lda r1L                 ; its entry
         sta entT
         lda r1H
         sta entS
         lda r5L
-        sta entOff
-        lda dirEntryBuf + 1
-        sta first19
-        lda dirEntryBuf + OFF_SIZE      ; tracks = size / 40
-        sta r6L
-        lda dirEntryBuf + OFF_SIZE + 1
-        sta r6H
-        ldx #0
-@div:   lda r6L
-        ora r6H
-        beq @div0
         sec
-        lda r6L
-        sbc #40
-        sta r6L
-        lda r6H
-        sbc #0
-        sta r6H
-        bcc @mis
-        inx
-        bne @div
-@div0:  stx want19
-        txa
-        beq @mis
-        lda first19             ; empty? its directory t/3 onwards
+        sbc #<diskBlkBuf
+        sta entOff
+        jsr Valid               ; a sub-directory, formatted?
+        bcs @mis
+        sta first19
+        lda r3L
+        sta want19
+        lda first19
+        jsr Formatted
+        bcc :+
+        rts
+:       lda first19             ; empty? its directory t/3 onwards
         sta r1L
         lda #3
         sta r1H

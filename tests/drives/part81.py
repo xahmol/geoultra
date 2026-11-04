@@ -3,8 +3,8 @@
 
 1. A reference D81 made by the real 1581 DOS (VICE's true 1581 emulation,
    a BASIC program on a blank image): partition SUB1 (tracks 10-19) with
-   the file HELLO, SUB2 nested in it (tracks 12-14) with DEEP, ROOTFILE at
-   the root. No private files are used.
+   the file HELLO, SUB2 nested in it (tracks 12-14) with DEEP, ROOTFILE and
+   RAW (a partition that is no sub-directory: 30/5, 50 blocks) at the root. No private files are used.
 2. GeoUltra in VICE with that image as drive B: GetCurDir, SetCurDir into
    SUB1 and SUB2, DirUp twice, DirRoot (folder, the partition's header
    name, free blocks, which files are visible), SetCurDir on a file
@@ -47,6 +47,7 @@ MAKE = """10 open15,8,15
 90 print#15,"n0:inner two,s2"
 100 open2,8,2,"deep,s,w":print#2,"in sub2":close2
 110 print#15,"/"
+115 print#15,"/0:raw,"+chr$(30)+chr$(5)+chr$(50)+chr$(0)+",c"
 120 open2,8,2,"rootfile,s,w":print#2,"at root":close2
 130 close15
 """
@@ -193,7 +194,7 @@ def main():
         v.resume()
         v.wait_event(RESP_CHECKPOINT)
         v.delete_checkpoint(cid)
-        check("the root", state(), ((40, 0), "REFERENCE", 2759, "ROOTFILE"))
+        check("the root", state(), ((40, 0), "REFERENCE", 2709, "ROOTFILE"))
         x = setdir("SUB1")
         check("SetCurDir SUB1", (x,) + state(), (0, (10, 0), "INNER ONE", 275, "HELLO"))
         x = setdir("SUB2")
@@ -201,12 +202,12 @@ def main():
         x = run(xcall(DIR_UP) + stx(0))[0]
         check("DirUp", (x,) + state(), (0, (10, 0), "INNER ONE", 275, "HELLO"))
         x = run(xcall(DIR_UP) + stx(0))[0]
-        check("DirUp to the root", (x,) + state(), (0, (40, 0), "REFERENCE", 2759, "ROOTFILE"))
+        check("DirUp to the root", (x,) + state(), (0, (40, 0), "REFERENCE", 2709, "ROOTFILE"))
         check("SetCurDir on a file refused", setdir("ROOTFILE"), 0x0A)
         setdir("SUB1")
         setdir("SUB2")
         x = run(xcall(DIR_ROOT) + stx(0))[0]
-        check("DirRoot", (x,) + state(), (0, (40, 0), "REFERENCE", 2759, "ROOTFILE"))
+        check("DirRoot", (x,) + state(), (0, (40, 0), "REFERENCE", 2709, "ROOTFILE"))
         setdir("SUB1")
         setdir("SUB2")
         data = bytes((i * 7 + 3) & 0xFF for i in range(1000))
@@ -231,14 +232,15 @@ def main():
             return run(ldw(FOLDER, 0x02) + xcall(REMOVE_DIR) + stx(0), wait=5)[0]
 
         x = make("NEW", 3)
-        check("MakeDir NEW (3 tracks) at the root", (x,) + state(), (0, (40, 0), "REFERENCE", 2639, "ROOTFILE"))
+        check("MakeDir NEW (3 tracks) at the root", (x,) + state(), (0, (40, 0), "REFERENCE", 2589, "ROOTFILE"))
         x = setdir("NEW")
         check("SetCurDir NEW", (x,) + state(), (0, (1, 0), "NEW", 116, ""))
         run(xcall(DIR_UP) + stx(0))
         x1 = make("TMP", 4)
         x2 = remove("TMP")
-        check("MakeDir TMP, RemoveDir TMP", (x1, x2) + state(), (0, 0, (40, 0), "REFERENCE", 2639, "ROOTFILE"))
+        check("MakeDir TMP, RemoveDir TMP", (x1, x2) + state(), (0, 0, (40, 0), "REFERENCE", 2589, "ROOTFILE"))
         check("RemoveDir SUB1 (not empty) refused", remove("SUB1"), 0x41)
+        check("RemoveDir RAW (a partition, no sub-directory) refused", remove("RAW"), 0x0A)
         check("MakeDir NEW again refused", make("NEW", 3), 0x40)
         v.mem_set(0x0340, bytes([0x60]))
     finally:

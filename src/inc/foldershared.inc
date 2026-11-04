@@ -1,11 +1,15 @@
 ; Shared by the folder modules 12, 13 and 14 (src/kernal/folders.s):
 ; assembled into each, as an overlay module cannot call another's code.
 
-; Native: X = slot (curDrive - 8), C clear; else C set, X = STRUCT_MISMAT.
-Native: ldx curDrive
-        lda driveType-8,x
+; Is1581, Native: C clear and X = slot (curDrive - 8) when the current
+; drive is a 1581 / a native drive, else C set and X = STRUCT_MISMAT.
+; IsType: the same for the drive type in A.
+Is1581: lda #DRV_1581
+        bne IsType
+Native: lda #DRV_NATIVE
+IsType: ldx curDrive
+        eor driveType-8,x       ; (only the type bits compared)
         and #$0F
-        cmp #DRV_NATIVE
         bne @no
         txa
         sec

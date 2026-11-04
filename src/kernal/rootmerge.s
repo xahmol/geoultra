@@ -115,8 +115,8 @@ OvRootFTypes:
         sta r6L
         bcc :+
         inc r6H
-:       jsr FindFTypes
-@back:  jsr Back
+:       jsr FindFTypes          ; (an error in the root is dropped: the
+@back:  jsr Back                ; folder's own list stands, drive E next)
 @ok:    ldx #0
 @e:     jmp ETypes
 
