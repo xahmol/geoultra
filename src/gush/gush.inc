@@ -45,6 +45,7 @@ FE_MKIMG        = 24
 FE_REBOOT       = 28
 
 ; gush's own errors (cmds.s ErrCodes, ErrTexts)
+ERR_NO_SERVER   = $F6           ; no NTP server given or set
 ERR_CLOCK       = $F7           ; the Ultimate's clock may not be set
 ERR_NO_TURBO    = $F8           ; no turbo registers
 ERR_WORDS       = $F9           ; the wrong words for the command

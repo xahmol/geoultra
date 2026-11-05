@@ -115,6 +115,7 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 26 | `FE_HOME` | r1 = 32-byte buffer | the home folder's path ("/USB0/GEOULTRA/") |
 | 27 | `FE_SETTIME` | (GEOS's date and time set by the caller) | the CIA's time-of-day clock and the Ultimate's clock set from them (`FE_ULTIMATE`: the Ultimate's menu forbids it) |
 | 28 | `FE_REBOOT` | - | every drive written back, HIBERNAT.BIN deleted, the C64 restarted through the Ultimate (control target, `REBOOT`): GeoUltra boots afresh. Back only on an error (`FE_ULTIMATE`: a drive could not be written back) |
+| 29 | `FE_NTP` | r0 = a server's name, or 0: SETTINGS.INI's `[time] ntp=` | its time, with `[time] offset=` (seconds from UTC, signed), to GEOS's clock, the CIA's time of day and the Ultimate's clock (`FILE_NOT_FOUND`: no server; `FE_ULTIMATE`: no network or answer). Also at every cold start with r0 = 0 (nothing without a server) |
 
 Flags for `FE_COPY` and `FE_MOVE`: overwrite (else `FILE_EXISTS`),
 raw (no CVT conversion), and a progress vector in r3 (called after every
@@ -220,6 +221,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 61-64 | streams on the Ultimate (enginestreamu.s): open, read, write, their setup |
 | 65-70 | mounting (enginemount.s): `FE_MOUNT` checked, `FE_UMOUNT` and `FE_MOUNTINFO`, MOUNTS.INI opened and closed, banks found and the image loaded, the drive entered, MOUNTS.INI's text |
 | 75 | `FE_TURBO`, `FE_HOME`, `FE_SETTIME`, `FE_REBOOT` (enginesys.s; `fework.inc` shared with module 66) |
+| 76-79 | `FE_NTP` (enginentp.s; from GeoUTime, GeoUTools, and ntp2ultimate by MaxPlap): the exchange, SETTINGS.INI read, the date and the clocks, its `[time]` lines (`fehome.inc` shared with module 75) |
 | 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |
 
 Still to come (estimate): Ultimate to Ultimate copies.

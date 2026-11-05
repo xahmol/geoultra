@@ -43,7 +43,8 @@ FE_TURBO        = 25            ; the U64's speed step, asked or set
 FE_HOME         = 26            ; the home folder's path
 FE_SETTIME      = 27            ; the Ultimate's clock from GEOS's
 FE_REBOOT       = 28            ; written back, the C64 restarted afresh
-FE_COUNT        = 29
+FE_NTP          = 29            ; the clocks from an NTP server
+FE_COUNT        = 30
 FE_VER          = $0003         ; FE_VERSION's answer (E3)
 
 ; FE_COPY, FE_MOVE: flags (r2L)
@@ -282,6 +283,17 @@ FE_LAST_BANK    = FE_UBANK - 1
 FE_WSAVE        = $C700         ; REU bank 1: the work area while the
                                 ; write-back runs (it uses $9F70-$9FFF)
 FE_WORK_LEN     = $A000 - FE_WORK
+
+; FE_NTP (enginentp.s), over the same place
+nTime           = feInfo        ; the time: NTP seconds, then Unix ones (4)
+nOff            = feInfo + 4    ; SETTINGS.INI's offset from UTC, seconds (3,
+                                ; signed)
+nSock           = feInfo + 7    ; the UDP socket
+nTry            = feInfo + 8    ; reads still to try
+nDays           = feInfo + 9    ; days since 1970 (word)
+nRest           = feInfo + 11   ; seconds of the day (3)
+nYear           = feInfo + 14   ; the year (word)
+nHost           = feName        ; the server's name (FE_LONG_MAX + 1 bytes)
 
 ; Streams (enginestream.s), over the same place
 sPtr            = feInfo        ; the caller's buffer, moving on (word)

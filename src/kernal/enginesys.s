@@ -13,7 +13,6 @@
         .import WriteBackNow, hibState, drvFlags
         .include "drvflags.inc"
 
-HOME_PATH       = $0300         ; REU bank 1: the home folder (mount.s)
 U_SET_TIME      = $27
 U_TARGET_CTRL   = 4             ; the control target: REBOOT (the C64,
 CTRL_REBOOT     = $06           ; cartridge and all)
@@ -31,6 +30,7 @@ CTRL_REBOOT     = $06           ; cartridge and all)
         .include "fereu.inc"
         .include "feult.inc"
         .include "fework.inc"
+        .include "fehome.inc"
 
 TodSet: jsr OvlCall             ; (module 10: the CIA's clock from GEOS's)
         .byte 10, 0
@@ -178,29 +178,6 @@ OvReboot:
         jsr UNoData
         jsr UExec
 @end:   rts
-
-; Home: into the home folder ("/" at its end left off). X = 0 or the
-; error.
-Home:   lda #<diskBlkBuf
-        sta argR1
-        lda #>diskBlkBuf
-        sta argR1+1
-        jsr OvHome
-        lda #U_CD
-        jsr UBegin
-        ldx #0
-@ch:    lda diskBlkBuf,x
-        beq @cd
-        cmp #'/'
-        bne :+
-        ldy diskBlkBuf+1,x
-        beq @cd
-:       jsr UPut
-        inx
-        cpx #32
-        bne @ch
-@cd:    jsr UNoData
-        jmp UExec
 
 HibName:        .byte "HIBERNAT.BIN", 0
 

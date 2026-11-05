@@ -1,18 +1,19 @@
-; gush: turbo and date (docs/GUSH.md, "Step 2"), with turbo -s writing
-; the step into SETTINGS.INI's [system] section. Own code.
+; gush: turbo, date and ntp (docs/GUSH.md, "Step 2"), with turbo -s
+; writing the step into SETTINGS.INI's [system] section. Own code.
 
         .include "geos.inc"
         .include "gush.inc"
 
         .import FileEngine, argc, argLo, argHi
         .import ArgR0, Print, Say, Fail, Decimal, num, ConPut
-        .export CmdTurbo, CmdDate
+        .export CmdTurbo, CmdDate, CmdNtp
 
 FO_READ         = 0
 FO_WRITE        = 1
 FE_TURBO        = 25
 FE_HOME         = 26
 FE_SETTIME      = 27
+FE_NTP          = 29
 FE_BAD_PATH     = $49
 FE_ULTIMATE     = $4F
 TEXT_MAX        = 3072          ; SETTINGS.INI's bytes, at most
@@ -424,6 +425,32 @@ Write:  sta r1L
 Out:    lda #FE_WRITE
         ldy handle
         jmp FileEngine
+
+; --- ntp ---------------------------------------------------------------------
+
+; ntp [server]: the clocks from the server (else SETTINGS.INI's [time]
+; ntp=), with [time] offset= seconds from UTC; then the date shown.
+CmdNtp: lda #0
+        sta r0L
+        sta r0H
+        lda argc
+        cmp #3
+        bcc :+
+        jmp Words
+:       cmp #2
+        bcc @go
+        ldx #1
+        jsr ArgR0
+@go:    lda #FE_NTP
+        jsr FileEngine
+        txa
+        bne :+
+        jmp ShowDate
+:       cpx #FILE_NOT_FOUND
+        bne :+
+        ldx #ERR_NO_SERVER
+:       ldy #$FF
+        jmp Fail
 
 ; --- date --------------------------------------------------------------------
 

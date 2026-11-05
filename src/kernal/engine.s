@@ -1,7 +1,7 @@
 ; File engine (docs/FILE_ENGINE.md): files by path over the GEOS drives
 ; and, later, the Ultimate's file system. One resident entry, FileEngine
 ; (extension jump table +30, folders.s); everything else is in overlay
-; modules 22-75:
+; modules 22-79:
 ;   22 engine.s      dispatcher, the caller's state, FE_VERSION, FE_PWD,
 ;                    FE_CLOSE
 ;   23 enginepath.s  path: absolute, "." and ".." (Resolve)
@@ -60,12 +60,16 @@
 ;   73 enginemkimg.s an empty native image's blocks; the banks cleared
 ;   74 enginemkimg.s an empty D81's blocks
 ;   75 enginesys.s   FE_TURBO, FE_HOME, FE_SETTIME, FE_REBOOT
+;   76 enginentp.s   FE_NTP: the exchange with the server
+;   77 enginentp.s   SETTINGS.INI's [time] read
+;   78 enginentp.s   the time as a date, the clocks set
+;   79 enginentp.s   SETTINGS.INI's [time] lines
 ; Shared: engine.inc (constants, work area, REU layout), feblock.inc,
 ; fecd.inc, fecvtout.inc, fecvtread.inc, fecvtwrite.inc, fedrive.inc,
-; fefat.inc, fefmt.inc, felong.inc, femount.inc, fepath.inc, feprog.inc,
-; fereu.inc, festream.inc, festreamu.inc, fetype.inc, fework.inc,
-; fegive.inc, fehandle.inc, feinfo.inc, fematch.inc, fename.inc,
-; feresolve.inc, feult.inc; uci.inc (the UCI handshake).
+; fefat.inc, fefmt.inc, fehome.inc, felong.inc, femount.inc, fepath.inc,
+; feprog.inc, fereu.inc, festream.inc, festreamu.inc, fetype.inc,
+; fework.inc, fegive.inc, fehandle.inc, feinfo.inc, fematch.inc,
+; fename.inc, feresolve.inc, feult.inc; uci.inc (the UCI handshake).
 ; Own code.
 ;
 ; Calling: A = function, arguments in r0-r4, Y = a handle; returns X = 0
@@ -124,6 +128,7 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 75, 3             ; FE_HOME
         .byte 75, 6             ; FE_SETTIME
         .byte 75, 9             ; FE_REBOOT
+        .byte 76, 0             ; FE_NTP (enginentp.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),

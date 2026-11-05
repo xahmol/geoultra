@@ -40,6 +40,11 @@ decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 - [ultimate-uci-oscar64](https://github.com/xahmol/ultimate-uci-oscar64):
   Ultimate Command Interface library for Oscar64.
 
+Code taken over from elsewhere (credited in the source as well): the NTP
+exchange and date arithmetic of GeoUltra's `ntp` (src/kernal/enginentp.s)
+come from GeoUTools' GeoUTime, which took the exchange from
+[ntp2ultimate](https://github.com/MaxPlap/ntp2ultimate) by MaxPlap.
+
 ## Serial numbers and copy protection
 
 GEOS applications from Berkeley Softworks key themselves to the serial

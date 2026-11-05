@@ -192,6 +192,18 @@ def system(g):
         check("turbo -s 15: SETTINGS.INI", b.getvalue() if before is None else b.getvalue().count(b"turbo=15"),
               want if before is None else 1)
         now = out("date")
+        import datetime                             # ntp: SETTINGS.INI [time] with
+        utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)   # the clock's
+        clock = datetime.datetime.strptime(now, "%Y-%m-%d %H:%M:%S")                # own offset,
+        off = round((clock - utc).total_seconds() / 900) * 900                     # so it stays
+        f.storbinary("STOR /USB0/GEOULTRA/SETTINGS.INI",
+                     io.BytesIO(b"[time]\r\nntp=pool.ntp.org\r\noffset=%d\r\n" % off))
+        g.run("ntp", settle=8)
+        got = datetime.datetime.strptime(g.lines()[-2], "%Y-%m-%d %H:%M:%S")
+        want = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) + datetime.timedelta(seconds=off)
+        check("ntp (offset %d s): the clock within a minute of UTC + offset" % off,
+              abs((got - want).total_seconds()) < 60, True)
+        now = out("date")
         g.run("date " + now, settle=3)
         shown = " ".join(g.lines()[-4:-1])
         check("date set to what it shows (%s)" % now, now[:16] in shown or "clock setting off" in shown, True)

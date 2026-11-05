@@ -28,6 +28,8 @@ def main():
         check("date set (GEOS; the Ultimate's clock not there)", g.lines()[-2], "gush: date: no such drive")
         g.run("date")
         check("date shown", g.lines()[-2][:16], "2026-11-05 14:30")
+        g.run("ntp", settle=3)
+        check("ntp without an Ultimate", g.lines()[-2], "gush: ntp: no such drive")
         g.run("date 2026-13-05 14:30")
         check("date: no month 13", g.lines()[-2], "gush: date: bad path")
         g.png("g10")

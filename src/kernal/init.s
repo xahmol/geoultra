@@ -187,6 +187,11 @@ ColdStart:                      ; $4F00: the boot ROM jumps here
         jsr SerialFromDisk      ; the user's GEOS serial, when a boot disk is in
         jsr SaveJumpTab         ; the copy that StartAppl/EnterDeskTop restore
         cli
+        lda #0                  ; SETTINGS.INI [time] ntp=: the clocks from
+        sta r0L                 ; that server (FE_NTP; nothing without one,
+        sta r0H                 ; errors left: the Ultimate's clock stays)
+        lda #FE_NTP
+        jsr FileEngine
         bit startGush           ; SETTINGS.INI start=gush: gush from drive
         bpl @loop               ; E (FE_RUNSYS); back only when it failed
         lda #<gushName
@@ -200,6 +205,7 @@ ColdStart:                      ; $4F00: the boot ROM jumps here
 gushName:
         .byte "gush", 0
 FE_RUNSYS       = 22            ; (engine.inc)
+FE_NTP          = 29
 
 bannerText:
         .byte "GeoUltra ", BOLDON, "kernal", PLAINTEXT, " - ", ULINEON, "own font", ULINEOFF, ", 1.0", 0

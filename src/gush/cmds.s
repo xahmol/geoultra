@@ -11,7 +11,7 @@
         .export Run, ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
         .import StartProgram, CmdMount, CmdUmount, CmdMkimg, CmdFree
-        .import CmdTurbo, CmdDate, CmdReboot
+        .import CmdTurbo, CmdDate, CmdReboot, CmdNtp
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -142,6 +142,8 @@ Commands:
         .word CmdTurbo
         .byte "reboot", 0
         .word CmdReboot
+        .byte "ntp", 0
+        .word CmdNtp
         .byte "date", 0
         .word CmdDate
         .byte "help", 0
@@ -200,8 +202,8 @@ CmdHelp:
 
 HelpAll:                        ; (lines within COLS)
         .byte "commands: cd clear cp date df echo exit free help ls", CR
-        .byte "mkdir mkimg more mount mv pwd reboot rm rmdir turbo", CR
-        .byte "umount; a program's name starts it.", CR
+        .byte "mkdir mkimg more mount mv ntp pwd reboot rm rmdir", CR
+        .byte "turbo umount; a program's name starts it.", CR
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
         .byte "date [YYYY-MM-DD HH:MM[:SS]]", 0
@@ -218,6 +220,7 @@ Usage:  .byte "cd [path]", 0
         .byte "more path...", 0
         .byte "mount [image /drive]", 0
         .byte "mv [-fR] source... target", 0
+        .byte "ntp [server]", 0
         .byte "pwd", 0
         .byte "reboot", 0
         .byte "rm [-f] path...", 0
@@ -683,13 +686,15 @@ ErrText:
         jmp ConNewLine
 
 ErrCodes:
-        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $F7, $F8
+        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $F6, $F7
+        .byte $F8
         .byte $F9, $FA
         .byte $FB, $FC, $FD, $FE, $FF, 0
 ErrTexts:
         .word ErrSpace, ErrNotFound, ErrDrive, ErrProtect, ErrExists
         .word ErrNotEmpty, ErrCancelled, ErrBadPath, ErrNotFolder
-        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrClock, ErrNoTurbo
+        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrNoServer, ErrClock
+        .word ErrNoTurbo
         .word ErrWords, ErrOwnDrive
         .word ErrNoRoom, ErrNoDoc, ErrOneDoc
         .word ErrOtherFolder, ErrTooMany
@@ -705,9 +710,10 @@ ErrNotFolder:   .byte "not a folder", 0
 ErrIsFolder:    .byte "is a folder", 0
 ErrNotSupp:     .byte "not supported", 0
 ErrUltimate:    .byte "the Ultimate refused", 0
+ErrNoServer:    .byte "no server (SETTINGS.INI [time] ntp=)", 0
 ErrClock:       .byte "clock setting off (Ultimate menu, Allow SetDate)", 0
 ErrNoTurbo:     .byte "no turbo (an Ultimate 64 has it)", 0   ; (gush's
-ErrWords:       .byte "wrong words (see help)", 0      ; own, $F7-$FF)
+ErrWords:       .byte "wrong words (see help)", 0      ; own, $F6-$FF)
 ErrOwnDrive:    .byte "gush runs from there", 0
 ErrNoRoom:      .byte "no room in the REU", 0
 ErrNoDoc:       .byte "a desk accessory takes no document", 0

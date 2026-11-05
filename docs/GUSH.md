@@ -210,8 +210,15 @@ GeoUltra's own desktop.
   the C64 restarted through the Ultimate (GeoUltra boots afresh).
   `reboot -u` (the Ultimate itself, decision 4) is not there: the
   Command Interface has no command for it (only the Ultimate's menu and
-  its network interface can). Still to come: `ntp`, the mouse placing
-  the cursor.
+  its network interface can). `ntp [server]` (decision 6): the server
+  given, else SETTINGS.INI's `[time] ntp=`, with `[time] offset=`
+  seconds from UTC (signed; 0 without it, so a clock kept in local time
+  needs it); the same at every cold start when `ntp=` is set. Tested on
+  the U64 with the offset measured from the clock first, so the test
+  leaves it as it was. Known (user, 2026-11-05): the U64's present
+  official firmware reads its clock back in summer time (CEST instead of
+  CET), so a clock set in winter reads an hour off; fixed in unofficial
+  builds, accepted here. Still to come: the mouse placing the cursor.
 - Drive E is not yet in the file engine's tree: programs on it are not
   found by name (`/e/bin` in the design); `FE_RUNSYS` starts them by name.
 - A test hook: `testCtrl` (edit.s) makes the editor take CTRL as held
