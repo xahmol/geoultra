@@ -276,3 +276,33 @@ Step 2 is built on file engine step E4 (docs/FILE_ENGINE.md).
 5. **`cat`/`more` on the Ultimate:** as on GEOS drives: a `.cvt` of a
    sequential GEOS file shows its data, a VLIR one is refused.
 
+## Step 3 (decisions, user, 2026-11-05)
+
+Scripting, external commands and network, on the decisions of
+2026-11-04 (DESIGN.md "Shell: gush": scripts by name or `source`,
+`gushrc`, variables, `$1`-`$9`, `$#`, `$?`, `test`, `read`, comments).
+
+1. **Script language:** a POSIX sh subset: `if`/`then`/`elif`/`else`/
+   `fi`, `for NAME in words; do ... done`, `while ... do ... done`,
+   `test` and `[ ]`, `$VAR`, `$1`-`$9`, `$#`, `$?`, `#` comments: scripts
+   look like sh, only what does not fit is left out.
+2. **External commands:** loadable modules: GEOS files of their own type,
+   loaded into a fixed area of gush's memory and called with the words
+   and a table of gush routines (print, the file engine, questions);
+   gush stays. Own design (geoShell's transient commands are the idea,
+   not the model).
+3. **PATH:** `/e/bin`, then `bin` in the GEOULTRA home folder on the
+   stick; changeable in `gushrc`.
+4. **Redirection and pipes:** `>`, `>>`, `<` for everything a command
+   prints (questions such as "overwrite?" stay on the screen); pipes in
+   step 3, through a temporary file in the REU (the commands one after
+   the other).
+5. **Completion:** the `<-` key completes the word at the cursor
+   (commands, then paths); pressed twice it lists the choices.
+6. **History across sessions:** the newest 100 lines in
+   `GEOULTRA/gush_history`, written when gush ends (exit, a program
+   started), read at its start.
+7. **Network:** `wget` (a URL into a file), `ifconfig` (the Ultimate's
+   address and state), `ping`/`host` (as far as the Command Interface
+   allows); an FTP or HTTP server stays on the roadmap.
+
