@@ -1,7 +1,7 @@
 ; gush: scripts (docs/GUSH.md, "Step 3", sub-step 3). A script is a text
 ; file, read whole into gush's REU (bank SCRIPT_BANK, SCRIPT_MAX bytes per
 ; level, DEPTH_MAX levels: scripts may run scripts), then its lines run
-; one by one as typed lines are (Run). $0 is its path, $1-$9 its words,
+; statement by statement as typed lines are (Exec, flow.s). $0 is its path, $1-$9 its words,
 ; $# their number (ArgN, for parse.s); "exit N" ends it with status N.
 ; Variables are shared with the caller (no subshell). Own code.
 
@@ -9,7 +9,7 @@
         .include "gush.inc"
 
         .import FileEngine, Run, Fail, lineBuf, argc, argLo, argHi
-        .import status, failed, VarFind, varName
+        .import status, failed, VarFind, varName, Exec, ScriptExec
         .export RunScript, CmdSource, ArgN, depth, exitReq, exitStatus
         .export RunRc
 
@@ -48,8 +48,8 @@ RunScript:
         ldx #ERR_DEEP           ; (scripts nested too deep)
         ldy #$FF
         jmp Fail
-:       ldx #5                  ; the caller's script: kept
-@push:  lda path,x              ; (path, pos, len)
+:       ldx #3                  ; the caller's script: kept
+@push:  lda path,x              ; (path, len)
         pha
         dex
         bpl @push
@@ -60,20 +60,14 @@ RunScript:
         jsr Words               ; $0-$9 kept (argBuf is reused by its lines)
         jsr Load
         bcs @out                ; (said)
+        lda len                 ; its text to Exec (flow.s)
+        ldy len+1
+        jsr ScriptExec
         inc depth
-        lda #0
-        sta pos
-        sta pos+1
-        sta exitReq
-@line:  lda pos                 ; the end?
-        cmp len
-        lda pos+1
-        sbc len+1
-        bcs @done
-        jsr NextLine
-        jsr Run
+        ldx depth
+        jsr Exec
         lda exitReq
-        beq @line
+        beq @done
         lda exitStatus          ; exit N: the status of the line that ran
         sta failed              ; the script (Run makes it status)
         lda #0
@@ -83,10 +77,10 @@ RunScript:
 @pop:   pla
         sta path,x
         inx
-        cpx #6
+        cpx #4
         bne @pop
         rts
-        .assert pos = path + 2 && len = pos + 2, error, "RunScript: path, pos, len together"
+        .assert len = path + 2, error, "RunScript: path, len together"
 
 ; Words: this level's arguments: $0 the path, then words from..argc-1
 ; (nine at most), into Args + (depth * ARGS_SIZE); their number to
@@ -293,94 +287,6 @@ Area:   lda depth
         rts
         .assert SCRIPT_MAX = $4000 && DEPTH_MAX <= 4, error, "Area: four levels of $4000"
 
-; NextLine: the line at pos (to CR or LF, LINE_MAX at most) into lineBuf,
-; zero-ended; pos past it and its CR, LF or CR LF.
-NextLine:
-        dec depth               ; (the running level's area)
-        jsr Area
-        inc depth
-        lda pos
-        sta r1L
-        lda r1H
-        clc
-        adc pos+1
-        sta r1H
-        lda #<lineBuf
-        sta r0L
-        lda #>lineBuf
-        sta r0H
-        lda #0
-        sta r2L
-        lda #1
-        sta r2H
-        jsr FetchRAM
-        ldy #0                  ; its end: CR, LF, the script's end
-@ch:    tya
-        clc
-        adc pos
-        tax
-        lda #0
-        adc pos+1
-        cpx len
-        sbc len+1
-        bcs @end
-        lda lineBuf,y
-        cmp #CR
-        beq @end
-        cmp #10
-        beq @end
-        iny
-        cpy #LINE_MAX
-        bne @ch
-@end:   lda lineBuf,y           ; (what ended it)
-        sta ender
-        lda #0
-        sta lineBuf,y
-        iny                     ; pos past the line and its CR
-        jsr Ahead
-        lda ender
-        cmp #CR                 ; CR LF: the LF too
-        bne @done
-        ldx #0
-        lda pos
-        cmp len
-        lda pos+1
-        sbc len+1
-        bcs @done
-        dec depth
-        jsr Area
-        inc depth
-        lda pos
-        sta r1L
-        lda r1H
-        clc
-        adc pos+1
-        sta r1H
-        lda #<ender
-        sta r0L
-        lda #>ender
-        sta r0H
-        lda #1
-        sta r2L
-        lda #0
-        sta r2H
-        jsr FetchRAM
-        lda ender
-        cmp #10
-        bne @done
-        ldy #1
-        jsr Ahead
-@done:  rts
-
-; Ahead: pos += Y.
-Ahead:  tya
-        clc
-        adc pos
-        sta pos
-        bcc :+
-        inc pos+1
-:       rts
-
 ; RunRc: HOME/gushrc run as a script when it is there (gush's start).
 RunRc:  lda #<HomeName
         sta r0L
@@ -450,7 +356,6 @@ handle:         .byte 0
 ender:          .byte 0
 digit:          .byte 0, 0
 path:           .word 0
-pos:            .word 0
 len:            .word 0
 
         .segment "BSS"

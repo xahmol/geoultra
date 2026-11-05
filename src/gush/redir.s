@@ -39,9 +39,11 @@ Redirect:
         sta r0H
         ldy #0
         lda (r0),y
+        cmp #REDIR_OUT          ; (an empty word: its zero, no marker)
+        bcc @word
         cmp #REDIR_IN + 1
         bcc :+
-        jmp @next               ; (a word: no marker byte)
+@word:  jmp @next               ; (a word: no marker byte)
 :       sta kind
         stx at
         inx                     ; the file: the next word

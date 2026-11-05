@@ -381,5 +381,21 @@ status N (outside one: the desktop); variables shared with the caller;
 a redirection belongs to the level that made it (a script run with `>
 file` writes there to its end; a second output redirection inside it
 is refused); `HOME/gushrc` run at gush's start. Not yet: RUN/STOP
-ending a script. Tests g14.py, gu64.py (gushrc).
+ending a script. Tests g14.py, gu64.py (gushrc). **3.4 (2026-11-05)**:
+statements and control flow (flow.s): typed lines and scripts both run
+through one executor, statement by statement (a line's end or an
+unquoted `;` ends one; a typed line is copied to gush's REU bank 5 like
+a script, read through a 256-byte page cache); `if`/`then`/`elif`/`else`
+/`fi`, `while`/`do`/`done`, `for NAME in words`/`do`/`done`, nested; open
+blocks on a frame stack (16), a level's state in arrays per script
+depth (not on the 6502 stack); a branch not taken skipped, only its
+keywords counted; `while` goes back to its statement at `done`, `for`
+reads its statement again for the next word. `test` and `[ ]` (`-e -f
+-d -z -n`, `=`, `!=`, `-eq -ne -lt -le -gt -ge` on signed 16-bit
+numbers, `!`), `read NAME...` (keyboard, or the `<` file), `true`,
+`false`. RUN/STOP between statements stops everything ("^C (stopped)").
+A typed line must close its blocks (no continuation lines yet). Not
+tested: RUN/STOP (VICE's monitor cannot hold a key). Test g15.py.
+Memory: gush to `$5759` now; more buffers move to `$6000` or into
+overlays when the next sub-steps need room.
 

@@ -16,6 +16,7 @@
         .import sinkOn
         .export status, failed
         .import RunScript, CmdSource, depth, exitReq, exitStatus, prog
+        .import CmdTest, CmdBracket, CmdRead, CmdTrue, CmdFalse
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -184,6 +185,16 @@ Commands:
         .word CmdSet
         .byte "source", 0
         .word CmdSource
+        .byte "test", 0
+        .word CmdTest
+        .byte "[", 0
+        .word CmdBracket
+        .byte "read", 0
+        .word CmdRead
+        .byte "true", 0
+        .word CmdTrue
+        .byte "false", 0
+        .word CmdFalse
         .byte "unset", 0
         .word CmdUnset
         .byte 0
@@ -269,12 +280,12 @@ CmdHelp:
         jsr PutArg
         jmp ConNewLine
 
-HelpAll:                        ; (lines within COLS)
-        .byte "commands: cd clear cp date df echo exit free help ls", CR
-        .byte "mkdir mkimg more mount mv ntp pwd reboot rm rmdir", CR
-        .byte "set source turbo umount unset; NAME=value sets a", CR
-        .byte "variable, $NAME uses it; a program's name or a", CR
-        .byte "script's starts it.", CR
+HelpAll:                        ; (lines of 52 at most: 53 wraps)
+        .byte "commands: [ cd clear cp date df echo exit false free", CR
+        .byte "help ls mkdir mkimg more mount mv ntp pwd read", CR
+        .byte "reboot rm rmdir set source test true turbo umount", CR
+        .byte "unset; if/while/for; NAME=value, $NAME; a program's", CR
+        .byte "name or a script's starts it.", CR
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
         .byte "date [YYYY-MM-DD HH:MM[:SS]]", 0
@@ -283,6 +294,7 @@ Usage:  .byte "cd [path]", 0
         .byte "df [path]", 0
         .byte "echo words...", 0
         .byte "exit [N]", 0
+        .byte "false", 0
         .byte "free", 0
         .byte "help [command]", 0
         .byte "ls [-l] [path...]", 0
@@ -293,11 +305,14 @@ Usage:  .byte "cd [path]", 0
         .byte "mv [-fR] source... target", 0
         .byte "ntp [server]", 0
         .byte "pwd", 0
+        .byte "read name...", 0
         .byte "reboot", 0
         .byte "rm [-f] path...", 0
         .byte "rmdir path...", 0
         .byte "set", 0
         .byte "source file [words]", 0
+        .byte "test expr (also [ expr ]: -e -f -d -z -n = != -eq...)", 0
+        .byte "true", 0
         .byte "turbo [-s] [step]", 0
         .byte "unset name...", 0
         .byte "umount /drive", 0

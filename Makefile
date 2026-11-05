@@ -337,6 +337,7 @@ test-engine: all
 # test D81 in VICE, keys through keyVector and GEOS's key queue, its screen
 # read from its text shadow.
 test-gush: all build/gush/docpeek.cvt
+	$(PYTHON) tests/gush/gtables.py
 	$(PYTHON) tests/gush/g1.py
 	$(PYTHON) tests/gush/g2.py
 	$(PYTHON) tests/gush/g3.py
@@ -351,6 +352,7 @@ test-gush: all build/gush/docpeek.cvt
 	$(PYTHON) tests/gush/g12.py
 	$(PYTHON) tests/gush/g13.py
 	$(PYTHON) tests/gush/g14.py
+	$(PYTHON) tests/gush/g15.py
 
 # gush on the U64 (tests/gush/gu64.py): the Ultimate's file system, a desk
 # accessory; gush written onto drive A's test copy first.

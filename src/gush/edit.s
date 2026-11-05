@@ -11,7 +11,7 @@
         .include "gush.inc"
 
         .import ConPut, ConNewLine, ConClear, ConSet, ConCursor, conCol, conRow
-        .import Run
+        .import ExecLine
         .export EdKey, EdPress, Prompt, lineBuf, lineLen, testCtrl
 
 StashRAM        = $C2C8         ; GEOS jump table
@@ -284,7 +284,7 @@ Enter:  jsr End                 ; the whole line shown
         lda #0
         sta lineBuf,x
         jsr Keep
-        jsr Run
+        jsr ExecLine            ; (its statements: flow.s)
         jmp Prompt
 
 ; Tail: the cursor column after the visible line's end; A (not 0)
