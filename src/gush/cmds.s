@@ -11,7 +11,9 @@
         .export Run, ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
         .import StartProgram, CmdMount, CmdUmount, CmdMkimg, CmdFree
-        .import CmdTurbo, CmdDate, CmdReboot, CmdNtp
+        .import CmdTurbo, CmdDate, CmdReboot, CmdNtp, CmdSet, CmdUnset
+        .import VarSet, varName, IsNameChar
+        .export status
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -36,14 +38,27 @@ pathAt:         .res 2          ; ls: the path being looked at
 
         .segment "CODE"
 
-; Run: the line in lineBuf: its words (Parse), the first a command.
-Run:    jsr Parse
+; Run: the line in lineBuf: its words (Parse); leading NAME=value words
+; set those variables (Assign: they stay set, unlike sh's for one
+; command); the first word left is a command. status ($?): 1 when the
+; line failed (an error said), else 0.
+Run:    lda #0
+        sta failed
+        jsr Line
+        lda failed
+        sta status
+        rts
+Line:   jsr Parse
         bcc :+
+        inc failed
         lda #<TooMany
         ldy #>TooMany
         jmp Say
-:       lda argc
-        beq @end
+:       jsr Assign
+        lda argc
+        bne :+
+        rts
+:
         ldy #0                  ; the commands, one by one
 @cmd:   lda Commands,y
         beq @unknown
@@ -86,13 +101,15 @@ Run:    jsr Parse
         jsr Gush                ; there, but no program
         ldx #0
         jsr PutArg
+        inc failed
         lda #<NoProgram
         ldy #>NoProgram
         jmp Say
 @nf:    cpx #FILE_NOT_FOUND
         beq @none
 @fail:  jmp Fail                ; (Y: the word it is about, or $FF)
-@none:  jsr Gush
+@none:  inc failed
+        jsr Gush
         ldx #0
         jsr PutArg
         lda #<NotFound
@@ -148,6 +165,10 @@ Commands:
         .word CmdDate
         .byte "help", 0
         .word CmdHelp
+        .byte "set", 0
+        .word CmdSet
+        .byte "unset", 0
+        .word CmdUnset
         .byte 0
 
 CmdExit:
@@ -203,7 +224,8 @@ CmdHelp:
 HelpAll:                        ; (lines within COLS)
         .byte "commands: cd clear cp date df echo exit free help ls", CR
         .byte "mkdir mkimg more mount mv ntp pwd reboot rm rmdir", CR
-        .byte "turbo umount; a program's name starts it.", CR
+        .byte "set turbo umount unset; NAME=value sets a variable,", CR
+        .byte "$NAME uses it; a program's name starts it.", CR
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
         .byte "date [YYYY-MM-DD HH:MM[:SS]]", 0
@@ -225,7 +247,9 @@ Usage:  .byte "cd [path]", 0
         .byte "reboot", 0
         .byte "rm [-f] path...", 0
         .byte "rmdir path...", 0
+        .byte "set", 0
         .byte "turbo [-s] [step]", 0
+        .byte "unset name...", 0
         .byte "umount /drive", 0
         .byte 0
 NoHelp: .byte "no help for ", 0
@@ -620,6 +644,64 @@ Print:  sta r0L
 Say:    jsr Print
         jmp ConNewLine
 
+; Assign: the leading words of the form NAME=value (NAME: letters,
+; digits, "_", not a digit first) set those variables and are taken off
+; the words.
+Assign: lda #0
+        sta done
+@word:  ldx done
+        cpx argc
+        bcs @shift
+        lda argLo,x
+        sta r0L
+        lda argHi,x
+        sta r0H
+        ldy #0
+        lda (r0),y
+        cmp #'0'                ; (no digit first)
+        bcc :+
+        cmp #'9' + 1
+        bcc @shift
+:       ldy #$FF
+@name:  iny
+        cpy #17
+        bcs @shift
+        lda (r0),y
+        cmp #'='
+        beq @eq
+        jsr IsNameChar
+        bcc @shift
+        sta varName,y
+        bcs @name
+@eq:    cpy #0
+        beq @shift
+        lda #0
+        sta varName,y
+        iny                     ; the value: after the "="
+        tya
+        clc
+        adc r0L
+        sta r0L
+        bcc :+
+        inc r0H
+:       jsr VarSet
+        inc done
+        bne @word
+@shift: ldx done                ; the words left, to the front
+        beq @end
+        ldy #0
+@move:  cpx argc
+        bcs @count
+        lda argLo,x
+        sta argLo,y
+        lda argHi,x
+        sta argHi,y
+        inx
+        iny
+        bne @move
+@count: sty argc
+@end:   rts
+
 ; Gush: "gush: ".
 Gush:   lda #<GushColon
         ldy #>GushColon
@@ -628,7 +710,8 @@ Gush:   lda #<GushColon
 ; Fail: "gush: CMD: WORD: TEXT" for error X; Y = the word (its number,
 ; $FF: none) the error is about. FailPath: the same about the text at
 ; A/Y (a path gush made). Destroys A, X, Y.
-Fail:   stx error
+Fail:   inc failed              ; ($?: the line failed)
+        stx error
         sty errWord
         jsr Gush
         ldx #0                  ; the command
@@ -641,6 +724,7 @@ Fail:   stx error
         jsr PutArg
         jmp ErrColon
 FailPath:
+        inc failed
         stx error
         sta errPath
         sty errPath+1
@@ -733,6 +817,9 @@ Dot:            .byte ".", 0
 
 home:           .byte "/a", 0
 cmdAt:          .byte 0
+failed:         .byte 0         ; Run: the line failed
+status:         .byte 0         ; $?: the last line's
+done:           .byte 0         ; Assign: words taken
 wordAt:         .byte 0
 argAt:          .byte 0
 long:           .byte 0

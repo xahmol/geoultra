@@ -353,3 +353,14 @@ The U64 runs are gathered: one gu64 run per sub-step at most.
    Interface allows: checked first on the U64), `wget URL [file]`.
 10. **Sweep** at the end of the step.
 
+State: **3.0 (2026-11-05)** done (gush to `$3318`, the large buffers at
+`$6000-$7973`). **3.1 (2026-11-05)**: variables in a 1 KB table in
+gush's memory (vars.s; RAM rather than the REU: simpler, and enough),
+names up to 16 characters, values up to 250; `NAME=value` words at the
+start of a line set them and stay set (sh keeps such an assignment for
+the one command only); `$NAME`, `${NAME}`, `$?` (1 when the line said
+an error, else 0) outside quotes and in `"..."`, not in `'...'` or after
+`\`; a value is not split into words; `set`, `unset`; `HOME` (the home
+folder) and `PATH` (`/e/bin:` HOME `/bin`) at the start. `$0`-`$9` and
+`$#` stay empty until scripts (3.3). Test g12.py.
+

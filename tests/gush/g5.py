@@ -25,9 +25,10 @@ def main():
     try:
         g.start()
         g.run("help")
-        check("help", g.lines()[-5:-1], ["commands: cd clear cp date df echo exit free help ls",
+        check("help", g.lines()[-6:-1], ["commands: cd clear cp date df echo exit free help ls",
                                           "mkdir mkimg more mount mv ntp pwd reboot rm rmdir",
-                                          "turbo umount; a program's name starts it.",
+                                          "set turbo umount unset; NAME=value sets a variable,",
+                                          "$NAME uses it; a program's name starts it.",
                                           "help NAME: a command's use."])
         g.run("help cp")
         check("help cp", g.lines()[-2], "cp [-frR] source... target")

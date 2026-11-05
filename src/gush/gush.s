@@ -8,7 +8,7 @@
 
         .import ConInit, ConPut, ConPuts, ConNewLine, ConClear, ConCursor
         .import ConStatus, conCol, conRow
-        .import EdKey, EdPress, Prompt
+        .import EdKey, EdPress, Prompt, VarsInit
         .export FileEngine, Status, pwdBuf, startDrive
 
 EnterDeskTop    = $C22C         ; GEOS jump table
@@ -27,6 +27,7 @@ Start:  lda curDrive            ; (cd without a path: its root)
         sta feVec+1
         lda #ST_WR_FORE         ; the foreground only (gush redraws from
         sta dispBufferOn        ; its shadow)
+        jsr VarsInit            ; HOME, PATH
         jsr ConInit
         jsr Status
         lda #<Hello

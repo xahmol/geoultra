@@ -238,6 +238,8 @@ def main():
     g.start()
     rows = g.lines()
     check("gush started on the U64", rows[0].startswith("gush, the GeoUltra shell") if rows else rows, True)
+    check("HOME and PATH (step 3.1)", (out("echo $HOME"), out("echo $PATH")),
+          ("/USB0/GEOULTRA", "/e/bin:/USB0/GEOULTRA/bin"))
     g.run("rm -f /a/INI '/a/A long name for the copy on the stick'")   # (left over)
     g.run("rm -f %s/*" % HOME)
     g.run("rmdir " + HOME)

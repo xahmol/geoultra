@@ -1,13 +1,14 @@
 ; gush: the command line into words (docs/GUSH.md, "Syntax"). Spaces
 ; separate words; "..." and '...' keep spaces; \ takes the next character
-; as it is. A word with an unquoted * or ? is replaced by the names that
+; as it is. $NAME, ${NAME} and $? are replaced by the value (not in
+; '...'; a value is not split into words). A word with an unquoted * or ? is replaced by the names that
 ; match (the file engine's FE_OPENDIR pattern in its last part), with the
 ; word's folder part in front; none: the word stays. Own code.
 
         .include "geos.inc"
         .include "gush.inc"
 
-        .import lineBuf, FileEngine
+        .import lineBuf, FileEngine, VarFind, varName, IsNameChar, status
         .export Parse, argc, argLo, argHi
 
         .segment "ZEROPAGE"
@@ -61,6 +62,8 @@ Parse:  lda #0
         beq @open
         cmp #'\'
         beq @escape
+        cmp #'$'
+        beq @dollar
         cmp #'*'
         beq @wild
         cmp #'?'
@@ -71,7 +74,16 @@ Parse:  lda #0
         jmp @char
 @quoted:
         cmp quote               ; the closing quote
+        beq @close
+        cmp #'$'                ; "...": $ too
         bne @put
+        cpy #'"'
+        bne @put
+@dollar:
+        jsr Dollar
+        bcs @full
+        jmp @char
+@close:
         lda #0
         sta quote
         beq @char
@@ -96,6 +108,104 @@ Parse:  lda #0
 @done:  clc
         rts
 @full:  sec
+        rts
+
+; Dollar (after a "$", inPos at the next character): a variable's
+; value, $? the status of the last line, ${NAME}; $0-$9 and $# (a
+; script's words: sub-step 3) empty for now; a "$" with no name after it
+; stays. C set when argBuf is full.
+Dollar: ldx inPos
+        lda lineBuf,x
+        cmp #'?'
+        beq @status
+        cmp #'#'
+        beq @skip
+        cmp #'{'
+        beq @brace
+        cmp #'0'
+        bcc :+
+        cmp #'9' + 1
+        bcc @skip
+:       jsr IsNameChar
+        bcs @name
+        lda #'$'                ; (no name: the "$" itself)
+        jmp Out
+@skip:  inc inPos
+        clc
+        rts
+@brace: inx
+        ldy #0
+@bn:    lda lineBuf,x
+        beq @got
+        inx
+        cmp #'}'
+        beq @got
+        sta varName,y
+        iny
+        cpy #VAR_NAME_MAX
+        bcc @bn
+        bcs @got
+@name:  ldy #0
+@nm:    lda lineBuf,x
+        jsr IsNameChar
+        bcc @got
+        sta varName,y
+        inx
+        iny
+        cpy #VAR_NAME_MAX
+        bcc @nm
+@got:   lda #0
+        sta varName,y
+        stx inPos
+        jsr VarFind
+        bcs @none
+        ldy #0
+@val:   lda (r1),y
+        beq @none
+        sty pos
+        jsr Out
+        bcs @end
+        ldy pos
+        iny
+        bne @val
+@none:  clc
+@end:   rts
+@status:
+        inc inPos
+        lda status              ; (0-255 in decimal)
+        ldx #100
+        stx pos
+        ldy #0                  ; (Y: a digit written)
+@pow:   ldx #'0'
+@sub:   cmp pos
+        bcc @digit
+        sbc pos
+        inx
+        bne @sub
+@digit: pha
+        txa
+        cpx #'0'
+        bne @put
+        cpy #0
+        bne @put
+        lda pos
+        cmp #1
+        bne @next
+        lda #'0'
+@put:   jsr Out
+        ldy #1
+@next:  pla
+        ldx pos                 ; 100, 10, 1
+        cpx #1
+        beq @done
+        cpx #100
+        bne :+
+        ldx #10
+        .byte $2C               ; (bit abs: skips the next ldx)
+:       ldx #1
+        stx pos
+        jmp @pow
+@done:  clc
         rts
 
 ; Out: A to argBuf. C set when it is full. Destroys A, Y.
@@ -221,6 +331,7 @@ Expand: ldx argc                ; the pattern to patBuf
         .segment "DATA"
 
 argc:           .byte 0
+VAR_NAME_MAX    = 16            ; (vars.s: NAME_MAX)
 inPos:          .byte 0
 quote:          .byte 0
 glob:           .byte 0
