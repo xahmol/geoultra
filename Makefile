@@ -92,8 +92,9 @@ build/gush/%.o: src/gush/%.s src/gush/gush.inc $(wildcard src/inc/*.inc) build/g
 build/gush/gush.bin: $(GUSHOBJS) src/gush/gush.cfg
 	$(LD65) -C src/gush/gush.cfg -m build/gush/gush.map -Ln build/gush/gush.lbl -o $@ $(GUSHOBJS)
 
-build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml
-	$(PYTHON) $(GEOSAPP) src/gush/gush.toml $< $@
+build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/vlircvt.py
+	$(PYTHON) $(GEOSAPP) src/gush/gush.toml $< build/gush/gush-seq.cvt
+	$(PYTHON) tools/vlircvt.py build/gush/gush-seq.cvt $@ $<.1 $<.2
 
 # DocPeek, the test application of tests/gush/g9.py (gush's "program
 # document"): linked like gush.

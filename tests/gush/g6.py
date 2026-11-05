@@ -28,6 +28,9 @@ def main():
         rows = g.lines()
         g.check("gush from drive E: its greeting", rows[0].startswith("gush, the GeoUltra shell") if rows else rows,
                 True)
+        g.check("gush from drive E: its overlays read (no warning)", rows[1:2], ["$"])
+        g.run("test 2 -eq 2; echo $?", settle=3)          # (overlay 2)
+        g.check("gush from drive E: an overlay command", g.lines()[-2], "0")
         g.png("g6-runsys")
     finally:
         g.stop()

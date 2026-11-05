@@ -9,6 +9,7 @@
         .import ConInit, ConPut, ConPuts, ConNewLine, ConClear, ConCursor
         .import ConStatus, conCol, conRow
         .import EdKey, EdPress, Prompt, VarsInit, RunRc, HistLoad
+        .import OvlInit, ovlOk
         .export FileEngine, Status, pwdBuf, startDrive
 
 EnterDeskTop    = $C22C         ; GEOS jump table
@@ -16,7 +17,8 @@ StartMouseMode  = $C14E
 
         .segment "CODE"
 
-Start:  lda curDrive            ; (cd without a path: its root)
+Start:  jsr OvlInit              ; (first: dirEntryBuf is gush's entry)
+        lda curDrive            ; (cd without a path: its root)
         sta startDrive
         lda guExtTable          ; FileEngine: the extension table + 30
         clc
@@ -35,7 +37,14 @@ Start:  lda curDrive            ; (cd without a path: its root)
         lda #>Hello
         sta r0H
         jsr ConPuts
-        jsr HistLoad            ; HOME/gush_history, when there
+        lda ovlOk               ; (overlay commands fail without them)
+        bne :+
+        lda #<NoOvl
+        sta r0L
+        lda #>NoOvl
+        sta r0H
+        jsr ConPuts
+:       jsr HistLoad            ; HOME/gush_history, when there
         jsr RunRc               ; HOME/gushrc, when there
         jsr Prompt
         lda #<EdKey
@@ -85,7 +94,9 @@ Status: lda minutes
         sta r0H
         jmp ConStatus
 
-Hello:  .byte "gush, the GeoUltra shell (step 2)", CR, 0
+Hello:  .byte "gush, the GeoUltra shell (step 3)", CR, 0
+NoOvl:  .byte "gush: its overlays could not be read: file", CR
+        .byte "and system commands, test and read fail.", CR, 0
 
         .segment "DATA"
 

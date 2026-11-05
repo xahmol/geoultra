@@ -27,7 +27,7 @@ FILE_EXISTS     = $40
 END_OF_DIR      = $48
 FE_BAD_PATH     = $49
 
-        .segment "CODE"
+        .segment "OV1"                 ; (overlay 1, ovl.s)
 
 ; CopyTree: the folder at r0 copied to the path at r1: into it under the
 ; folder's own name when r1 names a folder, else made as r1. Errors are
@@ -369,7 +369,7 @@ SayErrDst:
         ldy #>dstPath
         jmp FailPath
 
-        .segment "DATA"
+        .segment "OV1"
 
 depth:          .byte 0
 index:          .byte 0

@@ -12,7 +12,11 @@
 
         .import FileEngine, argc, argLo, argHi, failed, Fail
         .import VarSet, varName, ConPut, ConNewLine, conCol, inHandle, ReadIn
-        .export CmdTest, CmdBracket, CmdRead, CmdTrue, CmdFalse
+        .export Ov_CmdTest := CmdTest
+        .export Ov_CmdBracket := CmdBracket
+        .export Ov_CmdRead := CmdRead
+        .export Ov_CmdTrue := CmdTrue
+        .export Ov_CmdFalse := CmdFalse
 
 GetNextChar     = $C2A7
 FO_READ         = 0
@@ -28,7 +32,7 @@ READ_MAX        = 250
 
 wp:             .res 2          ; a word
 
-        .segment "CODE"
+        .segment "OV2"                 ; (overlay 2, ovl.s)
 
 ; true, false.
 CmdTrue:
@@ -520,7 +524,7 @@ Keep:   ldx at
         inc at
 :       rts
 
-        .segment "DATA"
+        .segment "OV2"
 
 first:          .byte 0
 negate:         .byte 0

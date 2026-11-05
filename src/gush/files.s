@@ -12,7 +12,14 @@
         .import FileEngine, argc, argLo, argHi
         .import ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CopyTree, sinkOn, inHandle, ReadIn
-        .export CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
+        .export Ov_CmdCp := CmdCp
+        .export Ov_CmdMv := CmdMv
+        .export Ov_CmdRm := CmdRm
+        .export Ov_CmdMkdir := CmdMkdir
+        .export Ov_CmdRmdir := CmdRmdir
+        .export Ov_CmdCat := CmdCat
+        .export Ov_CmdMore := CmdMore
+        .export Ov_CmdDf := CmdDf
         .export Ask, AskPath, Copy1, func, Options, firstArg, tracks
 
 GetNextChar     = $C2A7         ; GEOS jump table
@@ -30,7 +37,7 @@ MORE_ROWS       = ROWS_TEXT - 1 ; more: a page, then the question
 
 text:           .res 2          ; cat: the bytes being shown
 
-        .segment "CODE"
+        .segment "OV1"                 ; (overlay 1, ovl.s)
 
 ; --- Options -----------------------------------------------------------------
 
@@ -617,7 +624,7 @@ Free:           .byte " blocks free of ", 0
 Total:          .byte " blocks", 0
 Dot:            .byte ".", 0
 
-        .segment "DATA"
+        .segment "OV1"
 
 flagF:          .byte 0
 flagR:          .byte 0

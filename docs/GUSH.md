@@ -116,22 +116,44 @@ GeoUltra's own desktop.
 
 ## Memory and build
 
-- Application space `$0400-$5FFF` for the code, its data and small
-  variables (2026-11-05: to `$3318`); the large buffers (`HIGHBSS`: the
-  screen shadow, the words, file texts, paths) in the background screen
-  buffer `$6000-$7F3F` (to `$7973`), which gush does not draw on: it
-  draws the foreground only and redraws from its shadow (step 3, sub-step
-  0). Before a desk accessory starts, `$6000-$7F3F` goes to gush's REU
-  bank 3 and comes back after it (prog.s, `High`), so an accessory that
-  draws into the background buffer cannot harm it. A GEOS dialog or
-  window of gush's own later does the same: the high area kept, the
-  dialog shown, the area back, the screen redrawn from the shadow
-  (GEOS's own recovery from the background buffer would show gush's
-  data). More commands later go to VLIR records loaded on demand (GEOS
-  overlays), as geoWrite does.
-- `src/gush/*.s`, one ld65 configuration, built into a GEOS application
-  file (sequential, then VLIR when it outgrows memory) on drive E by the
-  existing system-drive build (`SYSFILES`, as geoFolder).
+- gush is a VLIR file (since 2026-11-06, ovl.s). Record 0, the resident
+  core, at `$0400-$4FFF` (to `$44F2`): console, line editor, history,
+  parser, executor, variables, scripts, redirection and pipes, starting
+  programs, and `cd`, `ls`, `echo`, `pwd` and the other small commands.
+  Records 1 and 2, the overlays, linked at the **transient area**
+  `$5000-$5FFF` (4 KB): overlay 1 the file commands (`cp`, `mv`, `rm`,
+  `mkdir`, `rmdir`, `cat`, `more`, `df`, `cp -r`), the system commands
+  (`mount`, `umount`, `mkimg`, `free`, `reboot`) and the history file;
+  overlay 2 `turbo`, `date`, `ntp` and `test`, `[`, `read`, `true`,
+  `false`. At its start gush reads both records once (its index block
+  from its own directory entry, which GetFile leaves in `dirEntryBuf`;
+  drive E's blocks are reachable from every drive) into its REU bank 7,
+  4 KB each; a stub in the core (`jsr OvlGo / .byte overlay / .addr
+  routine`) fetches an overlay from there when another one is in the
+  area (a 4 KB DMA). Overlay code calls the core and its own overlay,
+  never another overlay; an overlay's data is scratch (it comes back as
+  built with each fetch); its BSS stays in the core. External commands
+  (step 3.8) load into the same transient area, so their API is the
+  core's.
+- The large buffers (`HIGHBSS`: the screen shadow, the words, file
+  texts, paths) in the background screen buffer `$6000-$7F3F` (to
+  `$7D72`), which gush does not draw on: it draws the foreground only
+  and redraws from its shadow (step 3, sub-step 0). Before a desk
+  accessory starts, `$6000-$7F3F` goes to gush's REU bank 3 and comes
+  back after it (prog.s, `High`), so an accessory that draws into the
+  background buffer cannot harm it. A GEOS dialog or window of gush's
+  own later does the same: the high area kept, the dialog shown, the
+  area back, the screen redrawn from the shadow (GEOS's own recovery
+  from the background buffer would show gush's data).
+- gush's application REU banks: 1 the history (128 lines), 2 `cp -r`,
+  3 the high area around desk accessories, 4 scripts, 5 typed lines and
+  pipelines, 6 pipes, 7 the overlays: all eight in use (bank 0 is
+  MoveData's scratch).
+- `src/gush/*.s`, one ld65 configuration (the core to `gush.bin`, the
+  overlays to `gush.bin.1` and `.2`), made into a VLIR CVT by
+  geos-oscar64's `geosapp.py` (record 0 and the header) and
+  `tools/vlircvt.py` (the records), on drive E by the existing
+  system-drive build (`SYSFILES`, as geoFolder).
 
 ## Tests
 
@@ -427,5 +449,9 @@ across sessions (hist.s): the history keeps 128 lines (32 KB of REU bank
 after each) when gush ends (`exit`, an application started, `reboot`;
 not when geoFolder's button starts a new gush), through a page buffer;
 read back at gush's start before `gushrc`. Without `HOME` (VICE):
-nothing. Test gu64.py (a reboot, then cursor up twice).
+nothing. Test gu64.py (a reboot, then cursor up twice). **VLIR (2026-11-06)**: gush
+became a VLIR file, the core and two overlays in a 4 KB transient area
+(see "Memory and build"); the core ends at `$44F2`, 2.8 KB below the
+area. `gtables.py` checks that no overlay calls into another one; g6
+that gush started from drive E reads its overlays.
 

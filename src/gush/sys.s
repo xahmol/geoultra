@@ -7,13 +7,17 @@
         .import FileEngine, Status, pwdBuf, startDrive, argc, argLo, argHi
         .import ArgR0, PutArg, Print, Say, Fail, Decimal, num, HistSave
         .import ConPut, ConNewLine, Options, firstArg, tracks
-        .export CmdMount, CmdUmount, CmdMkimg, CmdFree, CmdReboot
+        .export Ov_CmdMount := CmdMount
+        .export Ov_CmdUmount := CmdUmount
+        .export Ov_CmdMkimg := CmdMkimg
+        .export Ov_CmdFree := CmdFree
+        .export Ov_CmdReboot := CmdReboot
 
 INSUFF_SPACE    = 3
 PATH_MAX        = 250           ; a new image's path (the engine's: 255)
 FE_BAD_PATH     = $49
 
-        .segment "CODE"
+        .segment "OV1"                 ; (overlay 1, ovl.s)
 
 ; mount: the drives' images. mount image drive: an image on the
 ; Ultimate into drive /a-/d (its old image written back first), not the
@@ -462,7 +466,7 @@ T1581:  .byte "  1581    ", 0
 TNative:.byte "  native  ", 0
 Root:   .byte "/", 0
 
-        .segment "DATA"
+        .segment "OV1"
 
 kind:   .byte 0
 words:  .byte 0

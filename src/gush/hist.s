@@ -11,7 +11,8 @@
 
         .import FileEngine, VarFind, varName, lineBuf, lineLen
         .import histTop, histCount, histSlot, histBuf, Fetch, Keep
-        .export HistSave, HistLoad
+        .export Ov_HistSave := HistSave
+        .export Ov_HistLoad := HistLoad
 
 HIST_SAVE       = 100
 HIST_N          = 128           ; (edit.s: the slots, a power of 2)
@@ -19,7 +20,7 @@ FO_READ         = 0
 FO_WRITE        = 1
 PATH_MAX        = 48
 
-        .segment "CODE"
+        .segment "OV1"                 ; (overlay 1, ovl.s)
 
 ; HistSave: the newest lines to HOME/gush_history (errors left: the
 ; history is a convenience).
@@ -213,7 +214,7 @@ Path:   ldy #0
 HomeName:       .byte "HOME", 0
 HistName:       .byte "/gush_history", 0
 
-        .segment "DATA"
+        .segment "OV1"
 
 handle:         .byte 0
 bufLen:         .byte 0

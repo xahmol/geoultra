@@ -6,7 +6,9 @@
 
         .import FileEngine, argc, argLo, argHi
         .import ArgR0, Print, Say, Fail, Decimal, num, ConPut
-        .export CmdTurbo, CmdDate, CmdNtp
+        .export Ov_CmdTurbo := CmdTurbo
+        .export Ov_CmdDate := CmdDate
+        .export Ov_CmdNtp := CmdNtp
 
 FO_READ         = 0
 FO_WRITE        = 1
@@ -20,7 +22,7 @@ TEXT_MAX        = 3072          ; SETTINGS.INI's bytes, at most
                                 ; (geos.inc: year, then month, day, hour,
                                 ; minutes, seconds)
 
-        .segment "CODE"
+        .segment "OV2"                 ; (overlay 2, ovl.s)
 
 ; turbo: the U64's speed step. turbo [-s] N: step N (0: 1 MHz, 15: the
 ; most); -s also in SETTINGS.INI ([system] turbo=N), for the next boot.
@@ -677,7 +679,7 @@ TurboLen        = * - TurboKey
 TurboLine:      .byte "turbo=", 0
 CrLf:           .byte CR, 10, 0
 
-        .segment "DATA"
+        .segment "OV2"
 
 at:             .byte 0
 save:           .byte 0
