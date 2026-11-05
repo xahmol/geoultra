@@ -66,6 +66,7 @@ CmdTurbo:
         jsr SaveStep
         txa
         bne Failed
+; Show: the speed step and its MHz on both kinds of U64.
 Show:   lda #$FF                ; "turbo: step N of 15", then "A MHz (U64,
         sta r2L                 ; Elite I), B MHz (Elite II, C64U)"
         lda #FE_TURBO
@@ -99,6 +100,8 @@ Show:   lda #$FF                ; "turbo: step N of 15", then "A MHz (U64,
         ldy #>E2Text
         jmp Say
 
+; Words: the wrong words for the command (said). Failed: error X said
+; (no turbo registers: as such).
 Words:  ldx #ERR_WORDS
         ldy #$FF
         jmp Fail
@@ -304,6 +307,7 @@ Lines:  lda #0
         jsr Put                 ; the section's line, then turbo= in [system]
         lda inSystem
         beq @next
+        jsr Nl
         jsr Turbo
         jmp @next
 @inside:
@@ -321,7 +325,20 @@ Lines:  lda #0
         bne @line
 @done:  lda written             ; no [system]: added at the end
         bne @end
-        lda #<SystemLine
+        lda textLen
+        ora textLen+1
+        beq :+
+        lda textEnd             ; (after the last line's end)
+        sec
+        sbc #1
+        sta r5L
+        lda textEnd+1
+        sbc #0
+        sta r5H
+        lda #1
+        sta lineLen
+        jsr Nl
+:       lda #<SystemLine
         ldy #>SystemLine
         jsr Write
         jsr Turbo
@@ -347,14 +364,30 @@ LineLen:
 @end:   sty lineLen
         rts
 
-; IsSystem: A = 1 when the line at r5 is "[system]" (any case), else 0.
+; Nl: CR LF written when the line at r5 (lineLen bytes) does not end
+; with LF (the file's last line).
+Nl:     ldy lineLen
+        beq @end
+        dey
+        lda (r5),y
+        cmp #10
+        beq @end
+        lda #<CrLf
+        ldy #>CrLf
+        jmp Write
+@end:   rts
+
+; IsSystem: A = 1 when the line at r5 is "[system]" (letters in any
+; case), else 0.
 IsSystem:
         ldy #0
 @ch:    lda (r5),y
+        cmp SystemKey,y         ; (as it is, else the letter in lower case:
+        beq :+                  ; ora alone would turn "[" into "{")
         ora #$20
         cmp SystemKey,y
         bne @no
-        iny
+:       iny
         cpy #SystemLen
         bne @ch
         lda #1
@@ -366,10 +399,12 @@ IsSystem:
 IsTurbo:
         ldy #0
 @ch:    lda (r5),y
+        cmp TurboKey,y          ; (as IsSystem)
+        beq :+
         ora #$20
         cmp TurboKey,y
         bne @no
-        iny
+:       iny
         cpy #TurboLen
         bne @ch
         sec
@@ -521,6 +556,7 @@ CmdDate:
 @bad:   ldx #FE_BAD_PATH
         ldy #$FF
         jmp Fail
+; ShowDate: GEOS's date and time, "yyyy-mm-dd hh:mm:ss".
 ShowDate:
         lda year                ; "20yy-mm-dd hh:mm:ss"
         cmp #80
