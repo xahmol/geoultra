@@ -363,7 +363,7 @@ LastDot:
         clc
         rts
 
-Kinds:  .byte "dddd", "6788", "411p"    ; d64, d71, d81, dnp by column
+Kinds:  .byte "dddd", "678n", "411p"    ; d64, d71, d81, dnp by column
 
 ; free: the REU's banks for drives (31-187): each drive's, in all, free.
 CmdFree:
