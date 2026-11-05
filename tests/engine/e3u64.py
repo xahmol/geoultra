@@ -195,14 +195,15 @@ class Test:
                                            stat(HOME + "/moved.seq"), self.read("/a/XFER3") == PAYLOAD),
               (0, (FILE_NOT_FOUND,), True))
         self.u.write(PROG, [0x38, 0x60])                 # sec; rts: stop
-        check("a cancelled copy", (fe(FE_COPY, s0="/a/XFER3", s1=HOME + "/cancel", r3=PROG)[0],
-                                   fe(FE_DELETE, s0=HOME + "/cancel")[0]), (CANCELLED, 0))
+        check("a cancelled copy: no file left", (fe(FE_COPY, s0="/a/XFER3", s1=HOME + "/cancel", r3=PROG)[0],
+                                                 stat(HOME + "/cancel")[0]), (CANCELLED, FILE_NOT_FOUND))
         check("FE_COPY a folder from the Ultimate", fe(FE_COPY, s0="/usb0/geoultra/test", s1="/a")[0],
               IS_FOLDER)
         check("FE_COPY the Ultimate -> the Ultimate", fe(FE_COPY, s0=HOME + "/XFER1", s1=HOME + "/x")[0],
               NOT_SUPPORTED)
         geos = [n for n in listing("/a") if stat("/a/" + n)[1:2] == (K_GEOS,)]
-        check("FE_COPY a GEOS file without FC_RAW", fe(FE_COPY, s0="/a/" + geos[0], s1=HOME)[0], NOT_SUPPORTED)
+        check("FE_COPY a GEOS file without FC_RAW: as CVT (e4u64.py)", fe(FE_COPY, s0="/a/" + geos[0],
+                                                                         s1=HOME)[0], 0)
         free = fe(FE_DF, s0="/a")[2][1]
         t = time.time()
         x = fe(FE_COPY, s0="/usb0/geoultra/test/neos.d64", s1="/a/NEOS", timeout=600)[0]

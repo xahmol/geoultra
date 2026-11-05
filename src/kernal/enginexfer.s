@@ -3,9 +3,10 @@
 ; 42 onto the Ultimate, module 43 from it (the source, the new entry's
 ; fields, the target), module 44 its blocks onto the GEOS drive. Own code.
 ;
-; Raw: a CBM file's data as it is; a GEOS file only with FC_RAW and only
-; a sequential one (its data, without the header; GEOS files as a whole
-; come with CVT, step E4). Names: a GEOS name on the Ultimate gets its
+; Raw: a CBM file's data as it is; a GEOS file with FC_RAW only when it
+; is sequential (its data, without the header). Without FC_RAW a GEOS
+; file goes as CVT (".cvt", module 56) and a CVT comes back as the GEOS
+; file (modules 46 and 57; enginecvt.s). Names: a GEOS name on the Ultimate gets its
 ; type's extension (".seq", ".prg", ".usr"; not with FC_RAW) and "%XX"
 ; for the characters FAT cannot hold; back on a GEOS drive the extension
 ; gives the type (else PRG) and goes, "%XX" is decoded, and the name is
@@ -38,17 +39,24 @@ U_PIECE         = 120           ; data bytes per WRITE_DATA (uCmd: 128)
 
 Data:   jsr OvlCall             ; (module 45: the blocks written)
         .byte 45, 0
+CvtOut: jsr OvlCall             ; (module 56: as CVT)
+        .byte 56, 0
 
 ; OvUTo (FE_COPY, FE_MOVE onto the Ultimate): the source GEOS file in
 ; cEntry (on cSrcDrv), the target path resolved (an Ultimate folder: the
 ; source's name in it; else the path's last part). FC_OVERWRITE replaces
-; an existing file. X = 0 or the error.
-OvUTo:  ldx #FE_NOT_SUPPORTED   ; a GEOS file: only sequential, only raw
+; an existing file. A copy that fails leaves no file behind. X = 0 or
+; the error.
+OvUTo:  lda #0                  ; a GEOS file: CVT, or raw (FC_RAW) when
+        sta cCvt                ; sequential
         lda cEntry + OFF_GHDR_PTR
         beq @cbm
         lda argR2
         and #FC_RAW
-        beq @end
+        bne @raw
+        inc cCvt
+        bne @cbm
+@raw:   ldx #FE_NOT_SUPPORTED
         lda cEntry + OFF_GSTRUC_TYPE
         cmp #VLIR
         beq @end
@@ -63,10 +71,13 @@ OvUTo:  ldx #FE_NOT_SUPPORTED   ; a GEOS file: only sequential, only raw
         jsr UCd                 ; no: the last part is the name
         txa
         bne @end
+        stx uNamed
         jsr Open
         jsr UPutName
         jmp @go
 @folder:
+        lda #1
+        sta uNamed
         jsr Open
         jsr PutSrc
         ldx #FE_BAD_PATH
@@ -75,15 +86,32 @@ OvUTo:  ldx #FE_NOT_SUPPORTED   ; a GEOS file: only sequential, only raw
         jsr UExec
         txa
         bne @end
-        jsr Data
-        stx feM                 ; (the first error counts)
+        lda cCvt
+        beq :+
+        jsr CvtOut
+        jmp :++
+:       jsr Data
+:       stx feM                 ; (the first error counts)
         lda #U_CLOSE
         jsr UBegin
         jsr UExec
         lda feM
         beq @end
-        tax
+        jsr Drop
+        ldx feM
 @end:   rts
+
+; Drop: the file a failed copy made deleted again (its own error left:
+; the copy's counts).
+Drop:   lda #U_DELETE
+        jsr UBegin
+        lda uNamed
+        beq :+
+        jsr PutSrc
+        jmp :++
+:       jsr UPutName
+:       jsr UNoData
+        jmp UExec
 
 ; Open: uCmd = OPEN, a new file (FC_OVERWRITE: made or replaced); the
 ; name follows.
@@ -99,7 +127,8 @@ Open:   lda #U_OPEN
 
 ; PutSrc: the source's name (feTmp: its long name, else its short one)
 ; to uCmd, with "%XX" for what FAT cannot hold and, without FC_RAW, its
-; type's extension. C set when it does not fit one command.
+; type's extension (".cvt" for CVT). C set when it does not fit one
+; command.
 PutSrc: ldx #0
 @ch:    stx cCurS
         lda uLen                ; room for "%XX" and an extension
@@ -127,7 +156,10 @@ PutSrc: ldx #0
 @more:  ldx cCurS
         inx
         bne @ch
-@ext:   lda argR2
+@ext:   ldx #3                  ; (CVT)
+        lda cCvt
+        bne @dot
+        lda argR2
         and #FC_RAW
         bne @fits
         lda cEntry
@@ -136,7 +168,7 @@ PutSrc: ldx #0
         dex
         cpx #3
         bcs @fits               ; (no SEQ, PRG, USR: none)
-        lda #'.'
+@dot:   lda #'.'
         jsr UPut
         lda Ext1,x
         jsr UPut
@@ -147,9 +179,9 @@ PutSrc: ldx #0
 @fits:  clc
 @end:   rts
 
-Ext1:   .byte "spu"
-Ext2:   .byte "ers"
-Ext3:   .byte "qgr"
+Ext1:   .byte "spuc"
+Ext2:   .byte "ersv"
+Ext3:   .byte "qgrt"
         .assert CBM_SEQ = 1 && CBM_PRG = 2 && CBM_USR = 3, error, "PutSrc: the extensions"
 
 ; Escaped: C set when A cannot be in a FAT name (a control character,
@@ -193,8 +225,8 @@ Fields: jsr OvlCall             ; (module 46: the new entry's fields)
 
 Target: jsr OvlCall             ; (module 30: the target, checked)
         .byte 30, 0
-Blocks: jsr OvlCall             ; (module 44: the blocks, the entry)
-        .byte 44, 0
+Blocks: jsr OvlCall             ; (module 57: the blocks, the entry; a
+        .byte 57, 0             ; CVT converted, else module 44)
 
 ; OvUFrom (FE_COPY, FE_MOVE from the Ultimate; the source path resolved):
 ; the file opened, the new entry's fields from its name, size and date,
@@ -581,14 +613,15 @@ Send:   jsr UNoData
         .scope Mod46
 
         jmp OvFields            ; entry 0
+        jmp Count               ; entry 3 (for module 57)
 
 FAT_OUT         = cEntry + OFF_DATE
         .include "fefat.inc"
 
 ; OvFields: the new entry in cEntry (and cLeft) from the open file:
 ; FILE_INFO's reply in diskBlkBuf, the name in the path to feTmp (as
-; module 29's Source does for a GEOS file). C set and X =
-; INSUFF_SPACE for more than 65535 blocks.
+; module 29's Source does for a GEOS file); a CVT recognised (module 60,
+; cCvt). C set and X = INSUFF_SPACE for more than 65535 blocks.
 OvFields:
         ldx #29
         lda #0
@@ -604,6 +637,7 @@ OvFields:
         sta cLeft+2
         jsr FatDate
         jsr Name
+        jsr Head
         jsr Count
         ldx #INSUFF_SPACE
         rts
@@ -690,6 +724,9 @@ Name:   ldx fePos               ; the end, and the last "."
 Ext1:   .byte "spu"
 Ext2:   .byte "ers"
 Ext3:   .byte "qgr"
+
+Head:   jsr OvlCall             ; (module 60: a CVT's signature block)
+        .byte 60, 0
 
 ; Digit: a hex digit in A (0-9, A-F, a-f) as 0-15, C clear; else C set.
 Digit:  cmp #'0'

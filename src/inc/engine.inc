@@ -153,6 +153,7 @@ UA_DIR          = $10
 U_TARGET        = 2
 U_OPEN          = $02           ; DOS commands
 U_CLOSE         = $03
+U_SEEK          = $06
 U_READ          = $04
 U_WRITE         = $05
 U_INFO          = $07
@@ -241,6 +242,12 @@ cLeft           = cToU + 1      ; a copy from the Ultimate: bytes still to
 uCdEnd          = cLeft + 3     ; module 36's folder change: fePath up to
 uCdPos          = cLeft + 4     ; here, the piece now, the next one
 uCdNext         = cLeft + 5
+cCvt            = cLeft + 6     ; a copy between a GEOS drive and the Ultimate:
+                                ; nonzero, as CVT (enginecvt.s)
+cCount          = cLeft + 7     ; CVT from the Ultimate: bytes of one read
+uNamed          = cLeft + 8     ; a copy onto the Ultimate: nonzero, the
+                                ; file named after the source (PutSrc)
+        .assert uNamed <= $9FFF, error, "engine.inc: the work area past $9FFF"
         .assert cEntry + 30 <= feM, error, "engine.inc: cEntry over feM"
 
 ; Streams (enginestream.s), over the same place

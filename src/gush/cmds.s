@@ -190,7 +190,7 @@ HelpAll:                        ; (lines within COLS)
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
         .byte "clear", 0
-        .byte "cp [-f] source... target", 0
+        .byte "cp [-frR] source... target", 0
         .byte "df [path]", 0
         .byte "echo words...", 0
         .byte "exit", 0
@@ -198,7 +198,7 @@ Usage:  .byte "cd [path]", 0
         .byte "ls [-l] [path...]", 0
         .byte "mkdir [-t tracks] path...", 0
         .byte "more path...", 0
-        .byte "mv [-f] source... target", 0
+        .byte "mv [-fR] source... target", 0
         .byte "pwd", 0
         .byte "rm [-f] path...", 0
         .byte "rmdir path...", 0

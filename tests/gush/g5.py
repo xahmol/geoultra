@@ -29,7 +29,7 @@ def main():
                                           "more mv pwd rm rmdir; a program's name starts it.",
                                           "help NAME: a command's use."])
         g.run("help cp")
-        check("help cp", g.lines()[-2], "cp [-f] source... target")
+        check("help cp", g.lines()[-2], "cp [-frR] source... target")
         g.run("help frob")
         check("help for nothing", g.lines()[-2], "gush: no help for frob")
         g.run("cd /b")

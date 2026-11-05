@@ -17,6 +17,7 @@
 
 GetNextChar     = $C2A7         ; GEOS jump table
 FC_OVERWRITE    = 1
+FC_RAW          = 2
 FILE_EXISTS     = $40
 FE_BAD_PATH     = $49
 FE_IS_FOLDER    = $4B
@@ -34,12 +35,14 @@ text:           .res 2          ; cat: the bytes being shown
 ; --- Options -----------------------------------------------------------------
 
 ; Options: the words after the command that start with "-": their letters
-; set flagF (f), flagR (r), flagT (t: the next word a number, tracks);
+; set flagF (f), flagR (r), flagRaw (R: no CVT), flagT (t: the next
+; word a number, tracks);
 ; X = the first other word. C set: an unknown option (said).
 Options:
         lda #0
         sta flagF
         sta flagR
+        sta flagRaw
         sta tracks
         ldx #1
 @word:  cpx argc
@@ -59,6 +62,10 @@ Options:
 :       cmp #'r'
         bne :+
         sta flagR
+        jmp @ch
+:       cmp #'R'
+        bne :+
+        sta flagRaw
         jmp @ch
 :       cmp #'t'
         bne @bad
@@ -261,6 +268,9 @@ Copy1:  lda r0L
         ora overwrite
         beq :+
         lda #FC_OVERWRITE
+:       ldx flagRaw             ; -R: raw, no CVT
+        beq :+
+        ora #FC_RAW
 :       sta r2L
         lda #<Progress
         sta r3L
@@ -596,6 +606,7 @@ Dot:            .byte ".", 0
 
 flagF:          .byte 0
 flagR:          .byte 0
+flagRaw:        .byte 0
 tracks:         .byte 0
 optAt:          .byte 0
 firstArg:       .byte 0

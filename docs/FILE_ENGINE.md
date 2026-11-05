@@ -153,6 +153,16 @@ power-on).
   and `.cvt` files become GEOS files again on a GEOS drive. Plain CBM
   files (SEQ, PRG, USR) copy as they are, with `.seq`/`.prg`/`.usr`
   added and taken off. Raw flag: no conversion either way.
+  Built in E4 (modules 56-60, enginecvt.s): a file is a CVT by its
+  signature block, whatever its name (a file that is none is read again
+  from its start and copied as it is); on a GEOS drive it is named
+  after its stick name without `.cvt`, or by the GEOS name inside the
+  CVT when the two differ only in case (`geowrite.cvt` becomes
+  `geoWrite`). Its type, structure, GEOS type and date come from the
+  CVT. A VLIR file's record table is counted from its chains before
+  anything is sent, so no buffer holds it. A copy onto the Ultimate that
+  fails deletes the file it made (with `FC_OVERWRITE` the replaced file
+  is gone already).
 - **Drive E** is read-only: a source only.
 
 ## Modules (numbered from 22)
@@ -400,6 +410,14 @@ Ultimate side (long FAT names both ways, case-insensitive paths).
 - **Since (2026-11-04):** `FE_SELECT` and `FE_RUNSYS` (for gush);
   `FE_MOVE` within one Ultimate folder is a rename (other Ultimate to
   Ultimate copies and moves still `FE_NOT_SUPPORTED`).
+- **E4, CVT (2026-11-05):** both ways as above; tests/engine/e4u64.py
+  on the U64: a sequential file, a small and a large VLIR file (geoPaint,
+  152 blocks) as CVT, compared with the originals and read back by
+  VICE's c1541 (whose `-geoswrite` fills a sequential file's last block
+  to 254 bytes), converted back and compared again, the name rule, a
+  `.cvt` that is none, a file with a broken chain (an error, no file
+  left), `FC_RAW`. Still to come in E4: streams on the Ultimate, mount
+  and umount, new images.
 - Known limits: renaming a folder changes its directory entry, not the
   name in its header (shown as the disk name inside it); native drives
   are covered by the same code but not yet by the test. Copying a folder

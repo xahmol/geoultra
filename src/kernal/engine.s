@@ -1,7 +1,7 @@
 ; File engine (docs/FILE_ENGINE.md): files by path over the GEOS drives
 ; and, later, the Ultimate's file system. One resident entry, FileEngine
 ; (extension jump table +30, folders.s); everything else is in overlay
-; modules 22-55:
+; modules 22-60:
 ;   22 engine.s      dispatcher, the caller's state, FE_VERSION, FE_PWD,
 ;                    FE_CLOSE
 ;   23 enginepath.s  path: absolute, "." and ".." (Resolve)
@@ -40,8 +40,13 @@
 ;   55 sysdrive.s    FE_RUNSYS: an application on drive E started
 ;   52 enginelong.s  a copy's new entry (and its long name)
 ;   53 enginelong.s  GU.LONGNAMES made
+;   56 enginecvt.s   a GEOS file onto the Ultimate as CVT (header, data)
+;   57 enginecvt.s   a CVT from the Ultimate converted (header, data)
+;   58 enginecvt.s   a VLIR file's table and records as CVT
+;   59 enginecvt.s   a CVT's VLIR table and records converted
+;   60 enginecvt.s   a CVT recognised (its signature block)
 ; Shared: engine.inc (constants, work area, REU layout), feblock.inc,
-; fecd.inc, fefat.inc, felong.inc, feprog.inc, fereu.inc,
+; fecd.inc, fecvtin.inc, fecvtout.inc, fefat.inc, felong.inc, feprog.inc, fereu.inc,
 ; fegive.inc, fehandle.inc, feinfo.inc, fematch.inc, fename.inc, feresolve.inc,
 ; festream.inc, feult.inc; uci.inc (the UCI handshake).
 ; Own code.

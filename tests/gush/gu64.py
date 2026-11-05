@@ -160,6 +160,11 @@ def main():
     g.run("cp 'A long name for the copy on the stick' /a/", settle=4)
     check("back onto drive A with its long name", out("ls /a/A\\ long\\ name*"),
           "/a/A long name for the copy on the stick")
+    g.run("cp /a/GEOS .", settle=4)                  # CVT, and -R raw
+    check("cp of a GEOS file onto the Ultimate: a .cvt", out("ls GEOS*"), "GEOS.cvt")
+    g.run("cp -R /a/GEOS geos.raw", settle=4)
+    check("cp -R: raw, no .cvt", out("ls *.raw"), "geos.raw")
+    g.run("rm -f GEOS.cvt geos.raw")
     g.run("mkdir -t 3 /a/TREE")                      # cp -r both ways
     g.run("cp /a/INI /a/TREE")
     g.run("cp -r /a/TREE .", settle=4)
