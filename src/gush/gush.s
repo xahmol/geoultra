@@ -8,10 +8,11 @@
 
         .import ConInit, ConPut, ConPuts, ConNewLine, ConClear, ConCursor
         .import ConStatus, conCol, conRow
-        .import EdKey, Prompt
+        .import EdKey, EdPress, Prompt
         .export FileEngine, Status, pwdBuf, startDrive
 
 EnterDeskTop    = $C22C         ; GEOS jump table
+StartMouseMode  = $C14E
 
         .segment "CODE"
 
@@ -38,6 +39,12 @@ Start:  lda curDrive            ; (cd without a path: its root)
         sta keyVector
         lda #>EdKey
         sta keyVector+1
+        clc                     ; the mouse on, where it is (clicks: the
+        jsr StartMouseMode      ; cursor on the line, EdPress)
+        lda #<EdPress
+        sta otherPressVec
+        lda #>EdPress
+        sta otherPressVec+1
         lda #<Tick
         sta appMain
         lda #>Tick
@@ -75,7 +82,7 @@ Status: lda minutes
         sta r0H
         jmp ConStatus
 
-Hello:  .byte "gush, the GeoUltra shell (step 1)", CR, 0
+Hello:  .byte "gush, the GeoUltra shell (step 2)", CR, 0
 
         .segment "DATA"
 

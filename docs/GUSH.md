@@ -218,7 +218,11 @@ GeoUltra's own desktop.
   leaves it as it was. Known (user, 2026-11-05): the U64's present
   official firmware reads its clock back in summer time (CEST instead of
   CET), so a clock set in winter reads an hour off; fixed in unofficial
-  builds, accepted here. Still to come: the mouse placing the cursor.
+  builds, accepted here. The mouse (decision 7): gush starts mouse mode
+  (it had none: no pointer, no clicks), and a press on the input line
+  puts the cursor on the character pressed, or at the line's end (only
+  while the editor has the keys); test g11.py.
+- Step 2 is complete (2026-11-05).
 - Drive E is not yet in the file engine's tree: programs on it are not
   found by name (`/e/bin` in the design); `FE_RUNSYS` starts them by name.
 - A test hook: `testCtrl` (edit.s) makes the editor take CTRL as held

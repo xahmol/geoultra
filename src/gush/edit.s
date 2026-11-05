@@ -12,7 +12,7 @@
 
         .import ConPut, ConNewLine, ConClear, ConSet, ConCursor, conCol, conRow
         .import Run
-        .export EdKey, Prompt, lineBuf, lineLen, testCtrl
+        .export EdKey, EdPress, Prompt, lineBuf, lineLen, testCtrl
 
 StashRAM        = $C2C8         ; GEOS jump table
 FetchRAM        = $C2CB
@@ -80,6 +80,55 @@ Show:   lda linePos             ; the view follows the cursor
         sta conCol
         lda #1
         jmp ConCursor
+
+; EdPress (otherPressVec): a mouse press on the input line puts the
+; cursor on the character pressed (or at the line's end). Only while the
+; editor has the keys (keyVector = EdKey: not while a question waits).
+EdPress:
+        lda mouseData           ; (a press, not the release)
+        bmi @end
+        lda keyVector
+        cmp #<EdKey
+        bne @end
+        lda keyVector+1
+        cmp #>EdKey
+        bne @end
+        lda mouseYPos           ; its row: 8 pixels each
+        lsr a
+        lsr a
+        lsr a
+        cmp conRow
+        bne @end
+        lda mouseXPos           ; its column: 6 pixels each
+        ldx mouseXPos+1
+        ldy #0
+@col:   cpx #0
+        bne :+
+        cmp #6
+        bcc @got
+:       sec
+        sbc #6
+        bcs :+
+        dex
+:       iny
+        bne @col
+@got:   tya                     ; the line's character there
+        sec
+        sbc #PROMPT_W
+        bcs :+
+        lda #0                  ; (on the prompt: the view's first)
+:       clc
+        adc viewAt
+        cmp lineLen
+        bcc :+
+        lda lineLen
+:       pha
+        lda #0                  ; (the cursor off while it moves)
+        jsr ConCursor
+        pla
+        sta linePos
+        jmp Show
+@end:   rts
 
 ; EdKey (keyVector): one key in keyData.
 EdKey:  lda #0                  ; the cursor off while the line changes
