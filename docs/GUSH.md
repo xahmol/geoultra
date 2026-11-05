@@ -229,9 +229,18 @@ Step 2 is built on file engine step E4 (docs/FILE_ENGINE.md).
    dialogue.
 4. **System commands:** `free` (REU use), `turbo` (show and set the
    U64's speed; for the session, `turbo -s N` also saves it in
-   `SETTINGS.INI`), `date` (show, and set the Ultimate's clock), no
-   `ntp` for now, `reboot` (GeoUltra, after the write-back; `reboot -u`
-   resets the Ultimate).
+   `SETTINGS.INI`), `date` (show, and set the Ultimate's clock),
+   `reboot` (GeoUltra, after the write-back; `reboot -u` resets the
+   Ultimate).
+6. **NTP (user, 2026-11-05, replacing "no `ntp` for now"):** the U64
+   Elite II and the C64 Ultimate sync their clock at boot themselves;
+   older U64s and the Ultimate II+ do not. One kernal overlay module,
+   ported from GeoUTime (GeoUTools, the user's own code, credited): a
+   boot step when `SETTINGS.INI` `[time] ntp=server` is set (off by
+   default; `offset=` seconds from UTC), and `ntp [server]` in gush for a
+   sync by hand.
+7. **Mouse (user, 2026-11-05):** a click in the input line places the
+   cursor there; nothing more for now.
 5. **`cat`/`more` on the Ultimate:** as on GEOS drives: a `.cvt` of a
    sequential GEOS file shows its data, a VLIR one is refused.
 
