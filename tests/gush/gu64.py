@@ -190,6 +190,9 @@ def main():
     u.write(0x39, bytes([u.read(0x39, 1)[0] | 0x20]))
     time.sleep(3)
     check("after geoFolder: gush's prompt again", g.lines()[-1], "$")
+    g.run("geoFolder /a/INI")                        # (in VICE no DA by name)
+    check("a desk accessory with a document", "".join(g.lines()[-3:-1]),   # (two lines)
+          "gush: geoFolder: /a/INI: a desk accessory takes no document")
     g.run("geoFolder", settle=4)                     # its gush button
     u.write(0x3A, bytes([224, 0, 78]))
     time.sleep(0.5)

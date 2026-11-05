@@ -1,0 +1,8 @@
+[file]
+name    = "DocPeek"
+type    = "APPLICATION"
+class   = "DocPeek"
+version = "V0.1"
+author  = "GeoUltra"
+info    = "gush test: keeps the data file GEOS passed at $5000"
+mode    = "40"

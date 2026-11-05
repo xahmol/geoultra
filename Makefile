@@ -95,6 +95,14 @@ build/gush/gush.bin: $(GUSHOBJS) src/gush/gush.cfg
 build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml
 	$(PYTHON) $(GEOSAPP) src/gush/gush.toml $< $@
 
+# DocPeek, the test application of tests/gush/g9.py (gush's "program
+# document"): linked like gush.
+build/gush/docpeek.cvt: tests/gush/docpeek.s tests/gush/docpeek.toml src/gush/gush.cfg
+	@mkdir -p build/gush
+	$(CA65) -I src/inc -o build/gush/docpeek.o $<
+	$(LD65) -C src/gush/gush.cfg -o build/gush/docpeek.bin build/gush/docpeek.o
+	$(PYTHON) $(GEOSAPP) tests/gush/docpeek.toml build/gush/docpeek.bin $@
+
 # build/sysdrive-plain.d64 is an ordinary disk image; build/sysdrive.d64,
 # the one in the cartridge, has its track numbers moved to 221-255
 # (tools/sysreloc.py, src/inc/sysdrive.inc).
@@ -328,7 +336,7 @@ test-engine: all
 # gush, the GeoUltra shell (tests/gush/g*.py, docs/GUSH.md): started from a
 # test D81 in VICE, keys through keyVector and GEOS's key queue, its screen
 # read from its text shadow.
-test-gush: all
+test-gush: all build/gush/docpeek.cvt
 	$(PYTHON) tests/gush/g1.py
 	$(PYTHON) tests/gush/g2.py
 	$(PYTHON) tests/gush/g3.py
@@ -337,6 +345,7 @@ test-gush: all
 	$(PYTHON) tests/gush/g6.py
 	$(PYTHON) tests/gush/g7.py
 	$(PYTHON) tests/gush/g8.py
+	$(PYTHON) tests/gush/g9.py
 
 # gush on the U64 (tests/gush/gu64.py): the Ultimate's file system, a desk
 # accessory; gush written onto drive A's test copy first.

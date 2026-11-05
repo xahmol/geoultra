@@ -78,6 +78,8 @@ Run:    jsr Parse
         jsr StartProgram        ; a program's name?
         txa
         beq @end
+        cpy #1                  ; (the document's error)
+        beq @fail
         cpx #STRUCT_MISMAT
         bne @nf
         jsr Gush                ; there, but no program
@@ -88,8 +90,7 @@ Run:    jsr Parse
         jmp Say
 @nf:    cpx #FILE_NOT_FOUND
         beq @none
-        ldy #$FF
-        jmp Fail
+@fail:  jmp Fail                ; (Y: the word it is about, or $FF)
 @none:  jsr Gush
         ldx #0
         jsr PutArg
@@ -661,11 +662,13 @@ ErrText:
         jmp ConNewLine
 
 ErrCodes:
-        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $FF, 0
+        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $FC, $FD
+        .byte $FE, $FF, 0
 ErrTexts:
         .word ErrSpace, ErrNotFound, ErrDrive, ErrProtect, ErrExists
         .word ErrNotEmpty, ErrCancelled, ErrBadPath, ErrNotFolder
-        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrTooMany
+        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrNoDoc, ErrOneDoc
+        .word ErrOtherFolder, ErrTooMany
 ErrSpace:       .byte "disk full", 0
 ErrNotFound:    .byte "no such file or folder", 0
 ErrDrive:       .byte "no such drive", 0
@@ -678,7 +681,10 @@ ErrNotFolder:   .byte "not a folder", 0
 ErrIsFolder:    .byte "is a folder", 0
 ErrNotSupp:     .byte "not supported", 0
 ErrUltimate:    .byte "the Ultimate refused", 0
-ErrTooMany:     .byte "too many entries", 0     ; (gush's own, $FF)
+ErrNoDoc:       .byte "a desk accessory takes no document", 0   ; (gush's
+ErrOneDoc:      .byte "one document at a time", 0       ; own, $FC-$FF)
+ErrOtherFolder: .byte "not in the program's folder", 0
+ErrTooMany:     .byte "too many entries", 0
 ErrOther:       .byte "error ", 0
 
 GushColon:      .byte "gush: ", 0

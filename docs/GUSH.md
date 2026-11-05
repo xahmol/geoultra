@@ -177,9 +177,20 @@ GeoUltra's own desktop.
   into the application's REU bank 2 before its entries are copied, so no
   listing stays open; folders up to 8 deep, 255 entries each, 1024 in
   all; a 1581 partition made as big as its source). Tests g7.py, g8.py.
-- Still to come in step 1: a document after a program's name. The time
-  stays as the clock says (GeoUltra always has the Ultimate's clock; only
-  VICE counts from 00:00).
+- **1.7 (2026-11-05):** a document after an application's name
+  (`geoWrite letter`), passed as the deskTop passes one: `ST_LD_DATA`,
+  r2 the name of the document's disk, r3 its name. Its drive and folder
+  are made current first, then the program's (user, 2026-11-05: a
+  document on another drive switches drives); on one drive both must be
+  in one folder (checked by the file's first block, so a file of the same
+  name in the program's folder does not count). Applications find their
+  document's drive by the disk name (geoWrite 2.1 compares it with drive
+  A's and otherwise takes drive B). Errors of gush's own: one document at
+  a time, a desk accessory takes none, not in the program's folder.
+  Test g9.py with DocPeek (tests/gush/docpeek.s), an application that
+  keeps what it was passed; the desk accessory case in gu64.py.
+- Step 1 is complete. The time stays as the clock says (GeoUltra always
+  has the Ultimate's clock; only VICE counts from 00:00).
 - Drive E is not yet in the file engine's tree: programs on it are not
   found by name (`/e/bin` in the design); `FE_RUNSYS` starts them by name.
 - A test hook: `testCtrl` (edit.s) makes the editor take CTRL as held
