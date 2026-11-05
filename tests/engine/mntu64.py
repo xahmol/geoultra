@@ -12,6 +12,7 @@ FE_UMOUNT, mounting over a mounted drive, the errors.
 Usage: tests/engine/mntu64.py [build/geoultra64.crt]
 """
 import os
+import subprocess
 import sys
 import time
 
@@ -20,8 +21,11 @@ from feu64 import U64  # noqa: E402
 from e2 import Image  # noqa: E402
 
 FE_STAT, FE_OPENDIR, FE_READDIR, FE_CLOSE = 1, 2, 3, 4
-FE_DELETE, FE_OPEN, FE_WRITE = 7, 13, 15
-FE_MOUNT, FE_UMOUNT, FE_MOUNTINFO = 17, 18, 23
+FE_COPY, FE_DELETE, FE_OPEN, FE_WRITE = 5, 7, 13, 15
+FE_MOUNT, FE_UMOUNT, FE_MOUNTINFO, FE_MKIMG = 17, 18, 23, 24
+FE_MKDIR, FE_RMDIR, FE_DF = 8, 9, 16
+FILE_EXISTS = 0x40
+MK = "/usb0/geoultra/test/mk"
 FO_WRITE = 1
 DEV_NOT_FOUND, BAD_PATH, NOT_SUPPORTED = 13, 0x49, 0x4E
 INFO, NAME, BUF, DATA = 0x5300, 0x5320, 0x5400, 0x6000
@@ -30,6 +34,7 @@ INI = "/USB0/GEOULTRA/MOUNTS.INI"
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "engine")
 D64, DNP = "geopub.d64", "ramapps.DNP"
+C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
 
 
 class Test:
@@ -123,6 +128,45 @@ class Test:
         check("FE_UMOUNT /d", fe(FE_UMOUNT, s0="/d", timeout=120)[0], 0)
         check("A and B as they were", (info("/a")[:2], info("/b")[:2], self.ini()),
               ((0, 3), (0, 1), saved[INI]))
+        self.mkimg(saved)
+
+    def mkimg(self, saved):
+        """FE_MKIMG: D64, D71, D81 as VICE's c1541 formats them; a DNP
+        mounted, written to, unmounted."""
+        fe, check, info = self.fe, self.check, self.info
+        fe(FE_MKDIR, s0=MK)
+        self.u.write(DATA, b"TEST DISK\0")
+        for kind in ("d64", "d71", "d81"):
+            x = fe(FE_MKIMG, s0="%s/new.%s" % (MK, kind), r1=DATA, timeout=120)[0]
+            ours = open(self.get("/USB0/GEOULTRA/test/mk/new." + kind, "mk-ours." + kind), "rb").read()
+            vice = os.path.join(OUT, "mk-vice." + kind)
+            if os.path.exists(vice):
+                os.remove(vice)
+            subprocess.run([C1541, "-format", "test disk,gu", kind, vice], capture_output=True, check=True)
+            want = open(vice, "rb").read()
+            diff = [i for i in range(min(len(ours), len(want))) if ours[i] != want[i]]
+            check("FE_MKIMG new.%s: as c1541 formats it" % kind, (x, len(ours), diff[:8]), (0, len(want), []))
+        check("FE_MKIMG over an existing image", fe(FE_MKIMG, s0=MK + "/new.d64", r1=DATA)[0], FILE_EXISTS)
+        check("FE_COPY onto an image's name: there already (not into it)",
+              fe(FE_COPY, s0="/a/GEOS", s1=MK + "/new.d64")[0], FILE_EXISTS)
+        x = fe(FE_MKIMG, s0=MK + "/new.dnp", r1=DATA, r2=4, timeout=120)[0]
+        check("FE_MKIMG new.dnp (4 tracks)", (x, os.path.getsize(self.get("/USB0/GEOULTRA/test/mk/new.dnp",
+                                                                         "mk-ours.dnp"))), (0, 4 * 65536))
+        x = fe(FE_MOUNT, s0="/c", s1=MK + "/new.dnp", timeout=120)[0]
+        df = fe(FE_DF, s0="/c")
+        check("mounted: native, empty, %d blocks free" % (4 * 256 - 35), (x, info("/c")[:2], self.listing("/c"),
+              df[0], df[2][1]), (0, (0, 4), [], 0, 4 * 256 - 35))
+        x, h, _ = fe(FE_OPEN, s0="/c/NEWFILE", r2=FO_WRITE)
+        self.u.write(DATA, b"native\r")                 # ($6000: as above; the deskTop
+        fe(FE_WRITE, y=h, r1=DATA, r2=7)                # changes bytes further on)
+        fe(FE_CLOSE, y=h)
+        check("a file written there, unmounted", (x, fe(FE_UMOUNT, s0="/c", timeout=120)[0]), (0, 0))
+        img = open(self.get("/USB0/GEOULTRA/test/mk/new.dnp", "mk-after.dnp"), "rb").read()
+        check("its bytes in the DNP", b"native\r" in img, True)
+        check("FE_DELETE of the images (files, though the firmware enters them)",
+              [fe(FE_DELETE, s0=MK + "/" + n)[0] for n in ("new.d64", "new.d71", "new.d81", "new.dnp")],
+              [0, 0, 0, 0])
+        check("cleaned up", (fe(FE_RMDIR, s0=MK)[0], self.ini()), (0, saved[INI]))
 
 
 def main():

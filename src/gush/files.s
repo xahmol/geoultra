@@ -13,7 +13,7 @@
         .import ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CopyTree
         .export CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
-        .export Ask, AskPath, Copy1, func
+        .export Ask, AskPath, Copy1, func, Options, firstArg, tracks
 
 GetNextChar     = $C2A7         ; GEOS jump table
 FC_OVERWRITE    = 1

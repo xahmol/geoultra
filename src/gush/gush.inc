@@ -41,6 +41,7 @@ FE_MOUNT        = 17
 FE_UMOUNT       = 18
 FE_SELECT       = 21
 FE_MOUNTINFO    = 23
+FE_MKIMG        = 24
 
 ; gush's own errors (cmds.s ErrCodes, ErrTexts)
 ERR_WORDS       = $F9           ; the wrong words for the command

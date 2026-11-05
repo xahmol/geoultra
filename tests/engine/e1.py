@@ -97,7 +97,7 @@ def main():
         check("FE_DELETE /b/SUB1/HELLO", (fe(FE_DELETE, s0="/b/SUB1/HELLO")[0], stat("/b/SUB1/HELLO"),
                                           fe(FE_DF, s0="/b/SUB1")[2][1]), (0, (FILE_NOT_FOUND,), 276))
         check("FE_DELETE / refused", fe(FE_DELETE, s0="/")[0], BAD_PATH)
-        check("FE_MOUNT: a later step", fe(17, s0="/a", s1="/usb0/x.d64")[0], NOT_SUPPORTED)
+        check("FE_MOUNT without a UCI (VICE): no device", fe(17, s0="/c", s1="/usb0/x.d64")[0], 13)
         check("a function number past the end", fe(40)[0], NOT_SUPPORTED)
         v.mem_set(0x0340, bytes([0x60]))
     finally:

@@ -1,15 +1,16 @@
-; gush: system commands (docs/GUSH.md, "Step 2"): mount, umount. Own
-; code.
+; gush: system commands (docs/GUSH.md, "Step 2"): mount, umount,
+; mkimg. Own code.
 
         .include "geos.inc"
         .include "gush.inc"
 
         .import FileEngine, Status, pwdBuf, startDrive, argc, argLo, argHi
         .import ArgR0, PutArg, Print, Say, Fail
-        .import ConPut, ConNewLine
-        .export CmdMount, CmdUmount
+        .import ConPut, ConNewLine, Options, firstArg, tracks
+        .export CmdMount, CmdUmount, CmdMkimg
 
 INSUFF_SPACE    = 3
+PATH_MAX        = 250           ; a new image's path (the engine's: 255)
 FE_BAD_PATH     = $49
 
         .segment "CODE"
@@ -172,6 +173,198 @@ List:   lda #0
         bne @drive
         rts
 
+; mkimg [-t tracks] type path [name]: a new, empty disk image on the
+; Ultimate: type d64, d71, d81 or dnp (-t: its tracks, else 16); ".type"
+; added to the path when it does not end so; the disk name the file's
+; name (16 characters at most) unless given.
+CmdMkimg:
+        jsr Options
+        bcs @end
+        lda argc                ; two or three words after the options
+        sec
+        sbc firstArg
+        cmp #2
+        bcc @words
+        cmp #4
+        bcc :+
+@words: jmp Words
+:       sta words
+        ldx firstArg            ; the type
+        jsr ArgR0
+        ldx #3
+@type:  ldy #0
+@ch:    lda (r0),y
+        ora #$20
+        cmp Kinds,x             ; (Kinds: "d64", "d71", "d81", "dnp",
+        bne @next               ; one byte per kind per column)
+        iny
+        txa
+        clc
+        adc #4
+        tax
+        cpy #3
+        bne @ch
+        lda (r0),y
+        beq @kind
+@next:  txa                     ; the next kind (X back to its column 0)
+        and #3
+        tax
+        dex
+        bpl @type
+        ldy firstArg
+        ldx #FE_BAD_PATH
+        jmp Fail
+@kind:  txa
+        and #3
+        sta kind
+        jsr Path
+        bcs @end
+        jsr DiskName
+        lda #<imgPath
+        sta r0L
+        lda #>imgPath
+        sta r0H
+        lda #<diskName
+        sta r1L
+        lda #>diskName
+        sta r1H
+        lda tracks
+        sta r2L
+        lda #FE_MKIMG
+        jsr FileEngine
+        txa
+        beq @end
+        cpx #INSUFF_SPACE
+        bne :+
+        ldx #ERR_NO_ROOM
+:       ldy firstArg
+        iny
+        jmp Fail
+@end:   rts
+
+; Path: the path word to imgPath, ".type" added when it does not end so.
+; C set when it is too long (said).
+Path:   ldx firstArg
+        inx
+        jsr ArgR0
+        ldy #0
+@copy:  lda (r0),y
+        sta imgPath,y
+        beq @end
+        iny
+        cpy #PATH_MAX
+        bcc @copy
+@long:  ldx #FE_BAD_PATH
+        ldy firstArg
+        iny
+        jsr Fail
+        sec
+        rts
+@end:   sty pathLen
+        cpy #4                  ; ".xyz" at its end?
+        bcc @add
+        lda imgPath-4,y
+        cmp #'.'
+        bne @add
+        ldx kind
+        lda imgPath-3,y
+        ora #$20
+        cmp Kinds,x
+        bne @add
+        lda imgPath-2,y
+        ora #$20
+        cmp Kinds+4,x
+        bne @add
+        lda imgPath-1,y
+        ora #$20
+        cmp Kinds+8,x
+        beq @ok
+@add:   cpy #PATH_MAX - 4
+        bcs @long
+        lda #'.'
+        sta imgPath,y
+        ldx kind
+        lda Kinds,x
+        sta imgPath+1,y
+        lda Kinds+4,x
+        sta imgPath+2,y
+        lda Kinds+8,x
+        sta imgPath+3,y
+        lda #0
+        sta imgPath+4,y
+        tya
+        clc
+        adc #4
+        sta pathLen
+@ok:    clc
+        rts
+
+; DiskName: the name word (the third), else imgPath's file name without
+; its extension, to diskName (16 characters at most, zero-ended).
+DiskName:
+        lda words
+        cmp #3
+        bne @file
+        ldx firstArg
+        inx
+        inx
+        jsr ArgR0
+        ldy #0
+@word:  lda (r0),y
+        sta diskName,y
+        beq @end
+        iny
+        cpy #16
+        bne @word
+        beq @cut
+@file:  ldx pathLen             ; after the last "/"
+@slash: dex
+        bmi @from
+        lda imgPath,x
+        cmp #'/'
+        bne @slash
+@from:  inx
+        ldy #0
+@char:  lda imgPath,x
+        beq @cut
+        cmp #'.'
+        beq @dot
+        sta diskName,y
+        inx
+        iny
+        cpy #16
+        bne @char
+        beq @cut
+@dot:   stx dotAt               ; (the last "." ends it)
+        jsr LastDot
+        bcc @cut
+        lda #'.'
+        sta diskName,y
+        inx
+        iny
+        cpy #16
+        bne @char
+@cut:   lda #0
+        sta diskName,y
+@end:   rts
+
+; LastDot: C set when another "." follows dotAt in imgPath.
+LastDot:
+        ldx dotAt
+@more:  inx
+        lda imgPath,x
+        beq @no
+        cmp #'.'
+        bne @more
+        ldx dotAt
+        sec
+        rts
+@no:    ldx dotAt
+        clc
+        rts
+
+Kinds:  .byte "dddd", "6788", "411p"    ; d64, d71, d81, dnp by column
+
 TypeLo: .byte <T1541, <T1571, <T1581, <TNative
 TypeHi: .byte >T1541, >T1571, >T1581, >TNative
 T1541:  .byte "  1541    ", 0
@@ -182,6 +375,10 @@ Root:   .byte "/", 0
 
         .segment "DATA"
 
+kind:   .byte 0
+words:  .byte 0
+pathLen:.byte 0
+dotAt:  .byte 0
 name:   .byte "/a", 0
 drive:  .byte 0
 word:   .byte 0
@@ -189,3 +386,5 @@ word:   .byte 0
         .segment "BSS"
 
 path:   .res 64
+imgPath:.res PATH_MAX + 1
+diskName:.res 17

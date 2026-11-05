@@ -10,7 +10,7 @@
         .import Parse, argc, argLo, argHi
         .export Run, ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
-        .import StartProgram, CmdMount, CmdUmount
+        .import StartProgram, CmdMount, CmdUmount, CmdMkimg
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -129,6 +129,8 @@ Commands:
         .word CmdMore
         .byte "df", 0
         .word CmdDf
+        .byte "mkimg", 0
+        .word CmdMkimg
         .byte "mount", 0
         .word CmdMount
         .byte "umount", 0
@@ -150,34 +152,33 @@ CmdHelp:
         jmp Say
 @one:   ldx #1
         jsr ArgStr
-        ldx #0                  ; the usage lines: "name text", zero
-@line:  lda Usage,x
+        lda #<Usage             ; the usage lines: "name text", zero
+        sta r6L                 ; (r6: the line looked at)
+        lda #>Usage
+        sta r6H
+@line:  ldy #0
+        lda (r6),y
         beq @none
-        stx cmdAt
-        ldy #0
-@cmp:   lda Usage,x
+@cmp:   lda (r6),y              ; its name: up to a space or its end
+        beq @named
         cmp #' '
-        beq @end_name
+        beq @named
         cmp (str),y
         bne @skip
-        inx
         iny
         bne @cmp
-@end_name:
-        lda (str),y
+@named: lda (str),y
         bne @skip
-        lda cmdAt               ; this one: printed
-        clc
-        adc #<Usage
-        tax
-        lda #>Usage
-        adc #0
-        tay
-        txa
+        lda r6L                 ; this one: printed
+        ldy r6H
         jmp Say
-@skip:  ldx cmdAt               ; the next line
-@past:  inx
-        lda Usage-1,x
+@skip:  ldy #0                  ; the next line
+@past:  lda (r6),y
+        php
+        inc r6L
+        bne :+
+        inc r6H
+:       plp
         bne @past
         jmp @line
 @none:  jsr Gush
@@ -190,8 +191,8 @@ CmdHelp:
 
 HelpAll:                        ; (lines within COLS)
         .byte "commands: cd clear cp df echo exit help ls mkdir", CR
-        .byte "more mount mv pwd rm rmdir umount; a program's name", CR
-        .byte "starts it.", CR
+        .byte "mkimg more mount mv pwd rm rmdir umount; a program's", CR
+        .byte "name starts it.", CR
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
         .byte "clear", 0
@@ -202,6 +203,7 @@ Usage:  .byte "cd [path]", 0
         .byte "help [command]", 0
         .byte "ls [-l] [path...]", 0
         .byte "mkdir [-t tracks] path...", 0
+        .byte "mkimg [-t tracks] type path [name]", 0
         .byte "more path...", 0
         .byte "mount [image /drive]", 0
         .byte "mv [-fR] source... target", 0
@@ -211,7 +213,6 @@ Usage:  .byte "cd [path]", 0
         .byte "umount /drive", 0
         .byte 0
 NoHelp: .byte "no help for ", 0
-        .assert * - Usage < 256, error, "help: the usage lines in one page"
 
 ; echo: the words, one space between.
 CmdEcho:

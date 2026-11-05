@@ -191,6 +191,16 @@ GeoUltra's own desktop.
   keeps what it was passed; the desk accessory case in gu64.py.
 - Step 1 is complete. The time stays as the clock says (GeoUltra always
   has the Ultimate's clock; only VICE counts from 00:00).
+- **Step 2 so far (2026-11-05, on engine step E4):** `cp`/`mv` convert
+  GEOS files to and from CVT on the Ultimate, `-R` raw; `cat`/`more` on
+  the Ultimate (a sequential GEOS file's CVT shows its data); `mount`
+  (the drives' images), `mount image /drive`, `umount /drive` (gush's own
+  drive refused; its current directory moves to `/` when it was on the
+  drive); `mkimg [-t tracks] type path [name]` (".type" added to the
+  path when missing; the disk name the file's name unless given; a DNP
+  of 16 tracks without `-t`). `help` finds its usage lines through a
+  pointer now (they no longer fit one page). Still to come: `free`,
+  `turbo`, `date`, `ntp`, `reboot`, the mouse placing the cursor.
 - Drive E is not yet in the file engine's tree: programs on it are not
   found by name (`/e/bin` in the design); `FE_RUNSYS` starts them by name.
 - A test hook: `testCtrl` (edit.s) makes the editor take CTRL as held

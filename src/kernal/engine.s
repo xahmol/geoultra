@@ -1,7 +1,7 @@
 ; File engine (docs/FILE_ENGINE.md): files by path over the GEOS drives
 ; and, later, the Ultimate's file system. One resident entry, FileEngine
 ; (extension jump table +30, folders.s); everything else is in overlay
-; modules 22-70:
+; modules 22-74:
 ;   22 engine.s      dispatcher, the caller's state, FE_VERSION, FE_PWD,
 ;                    FE_CLOSE
 ;   23 enginepath.s  path: absolute, "." and ".." (Resolve)
@@ -55,11 +55,16 @@
 ;   68 enginemount.s FE_MOUNT: free banks found, the image loaded
 ;   69 enginemount.s FE_MOUNT: the new drive entered
 ;   70 enginemount.s MOUNTS.INI's text
+;   71 enginemkimg.s FE_MKIMG: banks found, cleared, the image saved
+;   72 enginemkimg.s an empty D64's or D71's blocks
+;   73 enginemkimg.s an empty native image's blocks; the banks cleared
+;   74 enginemkimg.s an empty D81's blocks
 ; Shared: engine.inc (constants, work area, REU layout), feblock.inc,
-; fecd.inc, fecvtout.inc, fecvtread.inc, fecvtwrite.inc, fefat.inc,
-; fedrive.inc, felong.inc, femount.inc, fepath.inc, feprog.inc, festreamu.inc, fereu.inc,
-; fegive.inc, fehandle.inc, feinfo.inc, fematch.inc, fename.inc,
-; feresolve.inc, festream.inc, feult.inc; uci.inc (the UCI handshake).
+; fecd.inc, fecvtout.inc, fecvtread.inc, fecvtwrite.inc, fedrive.inc,
+; fefat.inc, fefmt.inc, felong.inc, femount.inc, fepath.inc, feprog.inc,
+; fereu.inc, festream.inc, festreamu.inc, fetype.inc, fegive.inc,
+; fehandle.inc, feinfo.inc, fematch.inc, fename.inc, feresolve.inc,
+; feult.inc; uci.inc (the UCI handshake).
 ; Own code.
 ;
 ; Calling: A = function, arguments in r0-r4, Y = a handle; returns X = 0
@@ -113,6 +118,7 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 27, 15            ; FE_SELECT
         .byte 55, 0             ; FE_RUNSYS (sysdrive.s)
         .byte 66, 6             ; FE_MOUNTINFO (enginemount.s)
+        .byte 71, 0             ; FE_MKIMG (enginemkimg.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),

@@ -110,6 +110,7 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 21 | `FE_SELECT` | r0 = a file on a GEOS drive, r1 = 17-byte buffer | its drive and folder made the caller's current ones (not put back); its short name in r1's buffer (for `GetFile`) |
 | 22 | `FE_RUNSYS` | r0 = an application's name on drive E | started (`LdApplic`; module 55 in sysdrive.s); back only with an error |
 | 23 | `FE_MOUNTINFO` | r0 = drive path, r1 = 64-byte buffer | r2L = its `DRV_*` type, r3L = a native drive's tracks, the image's path in the buffer (`DEV_NOT_FOUND`: none) |
+| 24 | `FE_MKIMG` | r0 = a new image on the Ultimate (`.d64`, `.d71`, `.d81`, `.dnp`), r1 = its disk name (or 0), r2L = a DNP's tracks (2-255; 0: 16) | made empty (header, BAM, directory; ID "GU") in free REU banks and saved (`FILE_EXISTS`: there already; `INSUFF_SPACE`: no room in the REU) |
 
 Flags for `FE_COPY` and `FE_MOVE`: overwrite (else `FILE_EXISTS`),
 raw (no CVT conversion), and a progress vector in r3 (called after every
@@ -214,8 +215,9 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 56-60 | CVT (enginecvt.s): out, VLIR out, in, VLIR in, recognised |
 | 61-64 | streams on the Ultimate (enginestreamu.s): open, read, write, their setup |
 | 65-70 | mounting (enginemount.s): `FE_MOUNT` checked, `FE_UMOUNT` and `FE_MOUNTINFO`, MOUNTS.INI opened and closed, banks found and the image loaded, the drive entered, MOUNTS.INI's text |
+| 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |
 
-Still to come (estimate): new images; Ultimate to Ultimate copies.
+Still to come (estimate): Ultimate to Ultimate copies.
 
 Shared code goes into includes assembled into each module that needs it
 (`engine.inc`: constants, the work area, the REU layout; `fereu.inc`:
@@ -228,7 +230,8 @@ progress; `fefat.inc`: FAT dates; `feult.inc`, `fecd.inc`: Ultimate
 commands and folders; `uci.inc`: the UCI handshake, shared with mount.s,
 writeback.s and hibernate.s since E3; `fecvtout.inc`, `fecvtread.inc`,
 `fecvtwrite.inc`: CVT; `fepath.inc`, `festreamu.inc`: Ultimate streams;
-`femount.inc`, `fedrive.inc`: mounting). Mounting at run time has its
+`femount.inc`, `fedrive.inc`, `fetype.inc`: mounting; `fefmt.inc`: new
+images). Mounting at run time has its
 own code (enginemount.s): mount.s's lives in the boot's `INIT` segment,
 which is gone once GEOS runs.
 
@@ -445,7 +448,23 @@ Ultimate side (long FAT names both ways, case-insensitive paths).
   MOUNTS.INI is written as MOUNTS.TMP and then takes the old file's
   place (only `[drives]` is written). Tests: tests/engine/mntu64.py on
   the U64 (15 checks; MOUNTS.INI and the images it writes saved first and
-  put back). Still to come in E4: new images (`mkimg`).
+  put back).
+- **E4, new images (2026-11-05):** `FE_MKIMG` (modules 71-74,
+  enginemkimg.s): the firmware has no command that makes an image, so
+  the free banks are cleared (one DMA per bank, the C64 address fixed on
+  a zero byte), the empty layout is written there (Commodore's for D64,
+  D71, D81; CMD's native one as tools/mkappsdnp.py writes it) and saved
+  with `SAVE_REU`; a failed save deletes the file. On the U64 the D64,
+  D71 and D81 are byte for byte what VICE's c1541 formats with the same
+  name and ID; a DNP is mounted, written to and unmounted (mntu64.py).
+- **Fixes found by these tests (2026-11-05):** `FE_READ` and `FE_WRITE`
+  kept their buffer address in their own code, which a nested overlay
+  call fetches anew: on a native drive (whose BAM work is in overlay
+  modules) `FE_WRITE` wrote the bytes from `$FFFF` on. The address now
+  stays in `sPtr` and goes into the code at every byte. The firmware
+  enters disk images with `CD` as if they were folders, so `FE_DELETE`
+  and `FE_RMDIR` on an image, and a copy onto an image's name, took it
+  for a folder; a path that opens as a file is now a file.
 - Known limits: renaming a folder changes its directory entry, not the
   name in its header (shown as the disk name inside it); native drives
   are covered by the same code but not yet by the test. Copying a folder

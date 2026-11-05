@@ -483,7 +483,7 @@ OvUFile:
 @end:   rts
 
 ; Delete: a file (a folder: FE_IS_FOLDER).
-Delete: jsr CdName
+Delete: jsr IsDir
         bcs @file
         ldx #FE_IS_FOLDER
         rts
@@ -502,20 +502,10 @@ MkDir:  lda #U_MKDIR
         jmp UExec
 
 ; RmDir: an empty folder (a file: FE_NOT_FOLDER; entries: DIR_NOT_EMPTY).
-RmDir:  jsr CdName
+RmDir:  jsr IsDir
         bcc @dir
-        lda #U_OPEN             ; no folder: a file?
-        jsr UBegin
-        lda #UO_READ
-        jsr UPut
-        jsr UPutName
-        jsr UNoData
-        jsr UExec
         txa
         bne @end                ; (neither: FILE_NOT_FOUND)
-        lda #U_CLOSE
-        jsr UBegin
-        jsr UExec
         ldx #FE_NOT_FOLDER
 @end:   rts
 @dir:   lda #U_OPENDIR          ; "01,DIRECTORY EMPTY"?
@@ -561,8 +551,26 @@ Rename: lda #U_RENAME
         jsr UNoData
         jmp UExec
 
-; CdName: into the last part; C clear when it is a folder.
-CdName: lda #U_CD
+; IsDir: C clear when the last part is a folder (entered then): not a
+; file that opens, as a disk image does (the firmware also enters disk
+; images with CD, as folders), and entered by CD. C set: a file (X = 0)
+; or neither (X = the CD's error).
+IsDir:  lda #U_OPEN
+        jsr UBegin
+        lda #UO_READ
+        jsr UPut
+        jsr UPutName
+        jsr UNoData
+        jsr UExec
+        txa
+        bne @cd
+        lda #U_CLOSE
+        jsr UBegin
+        jsr UExec
+        ldx #0
+        sec
+        rts
+@cd:    lda #U_CD
         jsr UBegin
         jsr UPutName
         jsr UNoData

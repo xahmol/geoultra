@@ -151,6 +151,15 @@ def mounts(g):
               ("/", "gush: ls: /c: no such drive"))
         check("umount /a (gush's own drive)", out("umount /a"), "gush: umount: /a: gush runs from there")
         check("mount with one word", out("mount x"), "gush: mount: wrong words (see help)")
+        g.run("mkimg d81 /usb0/geoultra/test/gumk", settle=8)          # ".d81" added
+        g.run("mount /usb0/geoultra/test/gumk.d81 /c", settle=8)
+        check("mkimg d81, mounted: empty", out("df /c"), "3160 blocks free of 3160 blocks")
+        g.run("umount /c", settle=8)
+        g.run("rm -f /usb0/geoultra/test/gumk.d81")
+        import ftplib
+        f = ftplib.FTP(g.u.ip)
+        f.login()
+        check("and removed", [n for n, _ in f.mlsd("/USB0/GEOULTRA/test") if "gumk" in n.lower()], [])
     finally:
         g.u.ftp_put(ini, "/USB0/GEOULTRA/MOUNTS.INI")
 

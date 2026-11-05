@@ -26,8 +26,8 @@ def main():
         g.start()
         g.run("help")
         check("help", g.lines()[-5:-1], ["commands: cd clear cp df echo exit help ls mkdir",
-                                          "more mount mv pwd rm rmdir umount; a program's name",
-                                          "starts it.",
+                                          "mkimg more mount mv pwd rm rmdir umount; a program's",
+                                          "name starts it.",
                                           "help NAME: a command's use."])
         g.run("help cp")
         check("help cp", g.lines()[-2], "cp [-frR] source... target")

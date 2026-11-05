@@ -38,6 +38,7 @@ U_LOAD_REU      = $21
         .include "feult.inc"
         .include "fecd.inc"
         .include "femount.inc"
+        .include "fetype.inc"
 
 Resolve:
         jsr OvlCall             ; (module 23: the path)
@@ -94,46 +95,6 @@ OvMount:
         bne @end
         jmp Enter
 @end:   rts
-
-; Type: mType and mBanks from fePath's extension (.d64, .d71, .d81,
-; .dnp: a native image's banks later, from its size). C set: X =
-; FE_NOT_SUPPORTED for another file.
-Type:   ldx #$FF
-@end:   inx
-        lda fePath,x
-        bne @end
-        ldy #3                  ; four kinds
-@kind:  lda fePath-4,x
-        cmp #'.'
-        bne @no
-        lda fePath-3,x
-        ora #$20
-        cmp #'d'
-        bne @no
-        lda fePath-2,x
-        ora #$20
-        cmp Ext2,y
-        bne @next
-        lda fePath-1,x
-        ora #$20
-        cmp Ext3,y
-        bne @next
-        lda Types,y
-        sta mType
-        lda Banks,y
-        sta mBanks
-        clc
-        rts
-@next:  dey
-        bpl @kind
-@no:    ldx #FE_NOT_SUPPORTED
-        sec
-        rts
-
-Ext2:   .byte "678n"
-Ext3:   .byte "411p"
-Types:  .byte DRV_1541, DRV_1571, DRV_1581, DRV_NATIVE
-Banks:  .byte 3, 6, 13, 0       ; (683, 1366, 3200 blocks; native: its size)
 
         .endscope
 
@@ -388,6 +349,7 @@ TmpName:        .byte "MOUNTS.TMP", 0
         .scope Mod68
 
         jmp Load                ; entry 0
+        jmp Banks0              ; entry 3 (FE_MKIMG, module 71)
 
         .include "feult.inc"
         .include "fecd.inc"

@@ -38,7 +38,8 @@ FE_SETLONG      = 20            ; (the same as FE_RENAME)
 FE_SELECT       = 21            ; a file's drive and folder made current
 FE_RUNSYS       = 22            ; an application on drive E started
 FE_MOUNTINFO    = 23            ; a drive's image: type, tracks, path
-FE_COUNT        = 24
+FE_MKIMG        = 24            ; a new, empty disk image on the Ultimate
+FE_COUNT        = 25
 FE_VER          = $0003         ; FE_VERSION's answer (E3)
 
 ; FE_COPY, FE_MOVE: flags (r2L)
@@ -271,6 +272,7 @@ mBanks          = feInfo + 2    ; its REU banks
 mTracks         = feInfo + 3    ; native: its tracks (else 0)
 mBank           = feInfo + 4    ; its first bank
 mTmp            = feInfo + 5
+mIdx            = feInfo + 6    ; FE_MKIMG: a track or block being made
 FE_FIRST_BANK   = 31            ; drives: REU banks 31-187 (mount.s)
 FE_LAST_BANK    = FE_UBANK - 1
 FE_WSAVE        = $C700         ; REU bank 1: the work area while the

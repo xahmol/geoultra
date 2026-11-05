@@ -65,10 +65,16 @@ OvUTo:  lda #0                  ; a GEOS file: CVT, or raw (FC_RAW) when
         sta cDone+1
         lda feName
         beq @folder             ; the top: a folder
+        jsr UCd                 ; a file there (a disk image too, which
+        txa                     ; the firmware would also enter as a
+        bne @end                ; folder): the name
+        jsr Exists
+        bcs @named
         jsr UCdAll              ; a folder?
         txa
         beq @folder
         jsr UCd                 ; no: the last part is the name
+@named:
         txa
         bne @end
         stx uNamed
@@ -112,6 +118,26 @@ Drop:   lda #U_DELETE
 :       jsr UPutName
 :       jsr UNoData
         jmp UExec
+
+; Exists: C set when the path's last part is a file (it opens; closed
+; again). Destroys A, X, Y.
+Exists: lda #U_OPEN
+        jsr UBegin
+        lda #UO_READ
+        jsr UPut
+        jsr UPutName
+        jsr UNoData
+        jsr UExec
+        txa
+        bne @no
+        lda #U_CLOSE
+        jsr UBegin
+        jsr UExec
+        ldx #0
+        sec
+        rts
+@no:    clc
+        rts
 
 ; Open: uCmd = OPEN, a new file (FC_OVERWRITE: made or replaced); the
 ; name follows.

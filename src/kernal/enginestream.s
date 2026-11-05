@@ -306,10 +306,6 @@ OvRead: lda #HT_READ
         bne @ret
         jmp URead
 :
-        lda sPtr
-        sta @st+1
-        lda sPtr+1
-        sta @st+2
         jsr ReadCur
         bne @ret
 @loop:  lda sLeft
@@ -322,11 +318,15 @@ OvRead: lda #HT_READ
         lda diskBlkBuf+1        ; the last: up to its last byte
         cmp feH + H_OFF
         bcc @done
-@byte:  lda diskBlkBuf,x
+@byte:  lda sPtr                ; (the address into the code at every
+        sta @st+1               ; byte: overlay.s, as in FE_WRITE)
+        lda sPtr+1
+        sta @st+2
+        lda diskBlkBuf,x
 @st:    sta $FFFF
-        inc @st+1
+        inc sPtr
         bne :+
-        inc @st+2
+        inc sPtr+1
 :       inc feH + H_OFF
         jsr Count
         inc sGot
@@ -373,10 +373,6 @@ OvWrite:
         jmp UWrite
 @no:    rts
 :
-        lda sPtr
-        sta @ld+1
-        lda sPtr+1
-        sta @ld+2
         ldx feH + H_DRIVE       ; its folder's BAM
         lda feH + H_FOLDT
         sta folderT-8,x
@@ -396,12 +392,15 @@ OvWrite:
         jsr NewBlock            ; the block is full: a new one
         bne @end
         ldx #2
-@byte:
+@byte:  lda sPtr                ; (the address into the code at every
+        sta @ld+1               ; byte: a nested overlay call, as a native
+        lda sPtr+1              ; drive's BAM work makes, fetches this
+        sta @ld+2               ; module anew; overlay.s)
 @ld:    lda $FFFF
         sta diskBlkBuf,x
-        inc @ld+1
+        inc sPtr
         bne :+
-        inc @ld+2
+        inc sPtr+1
 :       inc feH + H_OFF
         jsr Count
         jmp @loop
