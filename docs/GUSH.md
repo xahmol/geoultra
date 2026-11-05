@@ -306,3 +306,43 @@ Scripting, external commands and network, on the decisions of
    address and state), `ping`/`host` (as far as the Command Interface
    allows); an FTP or HTTP server stays on the roadmap.
 
+## Step 3 plan (2026-11-05)
+
+Sub-steps, each built, tested (VICE; the U64 where the Ultimate is
+involved), committed and pushed on its own, so the work can stop after
+any of them (also for rate limits) without leaving anything half done.
+The U64 runs are gathered: one gu64 run per sub-step at most.
+
+0. **Memory.** gush's code and data reach `$4C1D`; an application has
+   up to `$5FFF`. gush draws only on the foreground screen, so the
+   background buffer `$6000-$7F3F` (8 KB) becomes gush's: BSS (history
+   buffer, file texts, the variable table) moves there, the code keeps
+   `$0400-$5FFF`. External commands get a fixed area at its end.
+1. **Variables and status:** `NAME=value`, `$NAME` and `${NAME}`,
+   quoting (`'...'` literal, `"..."` with `$`), `set`, `unset`,
+   `$?` (every command sets a status), `PATH` and `HOME` preset. The
+   table in the application's REU (gush's own bank).
+2. **Redirection:** `> file`, `>> file`, `< file` for every command's
+   printed output (console output through a sink that writes to an
+   engine stream; questions stay on the screen).
+3. **Scripts:** a text file run by name (along `PATH`) or with `source`,
+   `$1`-`$9`, `$#`, `$0`, `#` comments, `exit N`; `gushrc` in GEOULTRA
+   run at the start.
+4. **Control flow:** `if`/`then`/`elif`/`else`/`fi`, `while ... do ...
+   done`, `for NAME in words; do ... done`, `test` and `[ ]` (files,
+   strings, numbers), `read NAME`, `true`, `false`.
+5. **Pipes:** `a | b`: `a`'s output into an REU temporary file, `b`
+   reads it as its input.
+6. **History across sessions:** the newest 100 lines in
+   `GEOULTRA/gush_history`.
+7. **Completion:** the `<-` key: command names, then paths; twice: the
+   choices listed.
+8. **External commands:** the module format (a GEOS file type, its
+   header, load address in gush's area), the table of gush routines
+   given to it (print, the file engine, questions, variables), loading
+   along `PATH`; one example command; docs/GUSH_COMMANDS.md for writing
+   them.
+9. **Network:** `ifconfig`, `host`/`ping` (as far as the Command
+   Interface allows: checked first on the U64), `wget URL [file]`.
+10. **Sweep** at the end of the step.
+
