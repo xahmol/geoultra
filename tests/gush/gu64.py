@@ -8,8 +8,8 @@ cartridge given, gush starts from drive A (GetFile through appMain), and
 its commands run on the Ultimate's file system in
 /USB0/GEOULTRA/test/gush (made and removed by the test): ls, cd, pwd,
 mkdir, cp both ways (asked before overwriting), mv, rm, cat, wildcards,
-long names; then a desk accessory (geoFolder) started and closed, gush's
-screen back.
+long names, cp -r both ways; then a desk accessory (geoFolder) started
+and closed, gush's screen back, and its gush button (a fresh gush).
 Usage: tests/gush/gu64.py [build/geoultra64.crt]
 """
 import os
@@ -35,14 +35,38 @@ class GushU64:
         self.ok = True
         self.lbl = labels()
         os.makedirs(OUT, exist_ok=True)
+        # Old copies out through GeoUltra itself (c1541's -delete does not
+        # match GEOS's lower-case names), written back; then the new ones
+        # added to the image and the U64 booted with it.
+        self.settle()
+        self.u.boot(crt)
+        for name in ("/a/gush", "/a/geoFolder"):
+            while self.u.fe(7, s0=name)[0] == 0:            # FE_DELETE
+                pass
+        time.sleep(4)
+        self.settle()
         local = os.path.join(OUT, "u64-a.d81")
         self.u.ftp_get(IMAGE, local)
-        subprocess.run([C1541, "-attach", local, "-delete", "gush", "-delete", "geofolder",
+        subprocess.run([C1541, "-attach", local,
                         "-geoswrite", os.path.join(ROOT, "build", "gush", "gush.cvt"),
                         "-geoswrite", os.path.join(ROOT, "build", "tools", "geofolder.cvt")],
                        capture_output=True, check=True)
         self.u.ftp_put(local, IMAGE)
         self.u.boot(crt)
+
+    def settle(self):
+        """Wait until the running session has written its drives back
+        (wbPending 0 three times in a row; a write-back runs a few seconds
+        after the last write). A reset would not do: the cold start keeps
+        a drive with unsaved changes in the REU and writes it back later."""
+        k = {}
+        for line in open(os.path.join(ROOT, "build", "kernal64.lbl")):
+            p = line.split()
+            k[p[2].lstrip(".")] = int(p[1], 16)
+        clean, end = 0, time.time() + 120
+        while clean < 3 and time.time() < end:
+            clean = clean + 1 if self.u.read(k["wbPending"], 1)[0] == 0 else 0
+            time.sleep(2)
 
     def start(self):
         """gush from drive A: SetDevice, OpenDisk, GetFile through appMain."""
@@ -136,6 +160,14 @@ def main():
     g.run("cp 'A long name for the copy on the stick' /a/", settle=4)
     check("back onto drive A with its long name", out("ls /a/A\\ long\\ name*"),
           "/a/A long name for the copy on the stick")
+    g.run("mkdir -t 3 /a/TREE")                      # cp -r both ways
+    g.run("cp /a/INI /a/TREE")
+    g.run("cp -r /a/TREE .", settle=4)
+    check("cp -r a 1581 partition onto the Ultimate", out("ls TREE"), "INI")
+    g.run("cp -r TREE /a/TREE2", settle=4)
+    check("cp -r an Ultimate folder onto drive A", out("ls /a/TREE2"), "INI")
+    g.run("rm -f /a/TREE/* /a/TREE2/* TREE/*")
+    g.run("rmdir /a/TREE /a/TREE2 TREE")
     g.run("rm -f '/a/A long name for the copy on the stick' /a/INI")
     g.run("mv ini.txt moved")
     check("mv on the Ultimate", out("ls m*"), "moved")
@@ -158,6 +190,17 @@ def main():
     u.write(0x39, bytes([u.read(0x39, 1)[0] | 0x20]))
     time.sleep(3)
     check("after geoFolder: gush's prompt again", g.lines()[-1], "$")
+    g.run("geoFolder", settle=4)                     # its gush button
+    u.write(0x3A, bytes([224, 0, 78]))
+    time.sleep(0.5)
+    for data in (b"\x00", b"\x80"):
+        u.write(0x8505, data)
+        u.write(0x39, bytes([u.read(0x39, 1)[0] | 0x20]))
+        time.sleep(1)
+    time.sleep(4)
+    rows = g.lines()
+    check("geoFolder's gush button: a fresh gush", (rows[0].startswith("gush, the GeoUltra shell") if rows
+                                                     else rows, rows[1:]), (True, ["$"]))
     sys.exit(0 if g.ok else 1)
 
 
