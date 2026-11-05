@@ -90,6 +90,7 @@ OvCvtOut:
         beq Vlir
         jmp Data                ; sequential: the data as it is
 @end:   rts
+; Vlir: a VLIR file's table and records (module 58).
 Vlir:   jmp VlirOut
 
 ; IsVlir: Z set when cEntry is a VLIR file.

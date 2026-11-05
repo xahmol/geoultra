@@ -94,7 +94,6 @@
         jmp OvVersion           ; entry 3
         jmp OvPwd               ; entry 6
         jmp OvClose             ; entry 9
-        jmp OvNotYet            ; entry 12
 
         .include "fereu.inc"
 
@@ -318,10 +317,5 @@ Free:   lda #HT_FREE
         lda #1
         sta r2L
         jmp ReuOp
-
-; Functions of a later step.
-OvNotYet:
-        ldx #FE_NOT_SUPPORTED
-        rts
 
         .endscope
