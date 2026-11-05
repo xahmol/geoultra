@@ -23,9 +23,11 @@ desktop and file manager; third-party applications can call it too.
 - **Application memory:** none. Buffers: `diskBlkBuf`, and `fileHeader`
   for the path (`fePath`) while it is walked; the overlay scratch
   `$9F70-$9FFF` as the engine's work area during a call (engine.inc;
-  write-back and hibernation use it too, but only from MainLoop, never
-  during an engine call); lasting state in REU bank 1 `$C000-$C6FF`
-  (Ultimate stream paths from `$C300`).
+  write-back and hibernation use it too, from MainLoop; the one engine
+  call that runs the write-back, `FE_UMOUNT` (also when `FE_MOUNT`
+  replaces an image), keeps the work area in the REU meanwhile); lasting
+  state in REU bank 1 `$C000-$C7FF` (Ultimate stream paths from `$C300`,
+  the work area during that write-back at `$C700`).
 - **UCI:** the engine uses DOS target 2. The write-back and hibernation
   use target 1 from MainLoop; on the same target, a write-back between
   two engine calls would close the engine's open file or directory
@@ -101,12 +103,13 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 14 | `FE_READ` | Y = handle, r1 = buffer, r2 = length | r2 = bytes read |
 | 15 | `FE_WRITE` | Y = handle, r1 = buffer, r2 = length | |
 | 16 | `FE_DF` | r0 = path on a drive | r1 = free, r2 = total (blocks; Ultimate: KB) |
-| 17 | `FE_MOUNT` | r0 = drive path (`/a`), r1 = image path | (step 2) |
-| 18 | `FE_UMOUNT` | r0 = drive path | (step 2) |
+| 17 | `FE_MOUNT` | r0 = drive path (`/a`-`/d`), r1 = an image on the Ultimate (`.d64`, `.d71`, `.d81`, `.dnp`; its path at most 63 characters) | the drive's old image unmounted (written back), the new one loaded into free REU banks, the drive at its root; MOUNTS.INI written anew (`INSUFF_SPACE`: no room in the REU) |
+| 18 | `FE_UMOUNT` | r0 = drive path | written back, the drive emptied; MOUNTS.INI anew (`DEV_NOT_FOUND`: no image; `FE_ULTIMATE`: the write-back failed, the drive stays) |
 | 19 | `FE_GETLONG` | r0 = path, r1 = 61-byte buffer | the long name, else the short one |
 | 20 | `FE_SETLONG` | as `FE_RENAME` | (the same function) |
 | 21 | `FE_SELECT` | r0 = a file on a GEOS drive, r1 = 17-byte buffer | its drive and folder made the caller's current ones (not put back); its short name in r1's buffer (for `GetFile`) |
 | 22 | `FE_RUNSYS` | r0 = an application's name on drive E | started (`LdApplic`; module 55 in sysdrive.s); back only with an error |
+| 23 | `FE_MOUNTINFO` | r0 = drive path, r1 = 64-byte buffer | r2L = its `DRV_*` type, r3L = a native drive's tracks, the image's path in the buffer (`DEV_NOT_FOUND`: none) |
 
 Flags for `FE_COPY` and `FE_MOVE`: overwrite (else `FILE_EXISTS`),
 raw (no CVT conversion), and a progress vector in r3 (called after every
@@ -208,10 +211,11 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 53 | `GU.LONGNAMES` made |
 | 54 | `FE_RENAME`/`FE_SETLONG`, `FE_MKDIR` with long names |
 | 55 | `FE_RUNSYS` (sysdrive.s: drive E shown for a moment, `sysenter.inc`) |
+| 56-60 | CVT (enginecvt.s): out, VLIR out, in, VLIR in, recognised |
+| 61-64 | streams on the Ultimate (enginestreamu.s): open, read, write, their setup |
+| 65-70 | mounting (enginemount.s): `FE_MOUNT` checked, `FE_UMOUNT` and `FE_MOUNTINFO`, MOUNTS.INI opened and closed, banks found and the image loaded, the drive entered, MOUNTS.INI's text |
 
-Still to come (estimate): CVT out and in; streams on the Ultimate; mount
-and umount (sharing the image code with mount.s); Ultimate to Ultimate
-copies.
+Still to come (estimate): new images; Ultimate to Ultimate copies.
 
 Shared code goes into includes assembled into each module that needs it
 (`engine.inc`: constants, the work area, the REU layout; `fereu.inc`:
@@ -222,9 +226,11 @@ a name into a directory entry; `festream.inc`: stream handles;
 `feentry.inc`, `feblock.inc`, `feprog.inc`: a copy's entry, blocks and
 progress; `fefat.inc`: FAT dates; `feult.inc`, `fecd.inc`: Ultimate
 commands and folders; `uci.inc`: the UCI handshake, shared with mount.s,
-writeback.s and hibernate.s since E3). Mounting at run time needs
-mount.s's image code, which now lives only in the boot's `INIT`
-segment: it moves into includes used by both.
+writeback.s and hibernate.s since E3; `fecvtout.inc`, `fecvtread.inc`,
+`fecvtwrite.inc`: CVT; `fepath.inc`, `festreamu.inc`: Ultimate streams;
+`femount.inc`, `fedrive.inc`: mounting). Mounting at run time has its
+own code (enginemount.s): mount.s's lives in the boot's `INIT` segment,
+which is gone once GEOS runs.
 
 ## Tests
 
@@ -427,8 +433,19 @@ Ultimate side (long FAT names both ways, case-insensitive paths).
   a page per handle). A sequential GEOS file's CVT reads as its data, a
   VLIR one is refused (`STRUCT_MISMAT`). Tests in e4u64.py (writing in
   pieces, appending, reading in pieces with `FE_STAT` calls between, a
-  CVT, a folder, a missing file). Still to come in E4: mount and
-  umount, new images.
+  CVT, a folder, a missing file).
+- **E4, mounting (2026-11-05):** `FE_MOUNT`, `FE_UMOUNT`,
+  `FE_MOUNTINFO` (modules 65-70, enginemount.s). Free banks are found
+  from the other drives' (first fit in banks 31-187); the image is loaded
+  with `LOAD_REU`; the mount table entry, path and dirty map are set as
+  the boot sets them, so the write-back and the next boot treat the drive
+  alike. `FE_UMOUNT` calls the write-back first; it uses the overlay
+  scratch, so the engine's work area is kept in REU bank 1 (`$C700`)
+  meanwhile, and a hibernation it would start is left to MainLoop.
+  MOUNTS.INI is written as MOUNTS.TMP and then takes the old file's
+  place (only `[drives]` is written). Tests: tests/engine/mntu64.py on
+  the U64 (15 checks; MOUNTS.INI and the images it writes saved first and
+  put back). Still to come in E4: new images (`mkimg`).
 - Known limits: renaming a folder changes its directory entry, not the
   name in its header (shown as the disk name inside it); native drives
   are covered by the same code but not yet by the test. Copying a folder

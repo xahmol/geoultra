@@ -24,7 +24,8 @@
 
 path            = $9F70         ; the slot's scratch area (overlay.s; the
                                 ; file engine's work area during its calls,
-                                ; engine.inc: never at the same time)
+                                ; engine.inc: FE_UMOUNT keeps it in the REU
+                                ; while it calls WriteBackNow, enginemount.s)
 cmdBuf          = $9FB0
 TARGET_DOS      = $01
 DOS_OPEN        = $02

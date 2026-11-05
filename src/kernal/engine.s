@@ -1,7 +1,7 @@
 ; File engine (docs/FILE_ENGINE.md): files by path over the GEOS drives
 ; and, later, the Ultimate's file system. One resident entry, FileEngine
 ; (extension jump table +30, folders.s); everything else is in overlay
-; modules 22-64:
+; modules 22-70:
 ;   22 engine.s      dispatcher, the caller's state, FE_VERSION, FE_PWD,
 ;                    FE_CLOSE
 ;   23 enginepath.s  path: absolute, "." and ".." (Resolve)
@@ -49,9 +49,15 @@
 ;   62 enginestreamu.s FE_READ on the Ultimate
 ;   63 enginestreamu.s FE_WRITE on the Ultimate
 ;   64 enginestreamu.s an Ultimate stream's setup: handle, open, close
+;   65 enginemount.s FE_MOUNT: the image checked
+;   66 enginemount.s FE_UMOUNT: a drive emptied (after the write-back)
+;   67 enginemount.s MOUNTS.INI written anew (opened, closed)
+;   68 enginemount.s FE_MOUNT: free banks found, the image loaded
+;   69 enginemount.s FE_MOUNT: the new drive entered
+;   70 enginemount.s MOUNTS.INI's text
 ; Shared: engine.inc (constants, work area, REU layout), feblock.inc,
 ; fecd.inc, fecvtout.inc, fecvtread.inc, fecvtwrite.inc, fefat.inc,
-; felong.inc, fepath.inc, feprog.inc, festreamu.inc, fereu.inc,
+; fedrive.inc, felong.inc, femount.inc, fepath.inc, feprog.inc, festreamu.inc, fereu.inc,
 ; fegive.inc, fehandle.inc, feinfo.inc, fematch.inc, fename.inc,
 ; feresolve.inc, festream.inc, feult.inc; uci.inc (the UCI handshake).
 ; Own code.
@@ -100,12 +106,13 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 34, 0             ; FE_READ
         .byte 35, 0             ; FE_WRITE
         .byte 25, 3             ; FE_DF
-        .byte 22, 12            ; FE_MOUNT (E4)
-        .byte 22, 12            ; FE_UMOUNT (E4)
+        .byte 65, 0             ; FE_MOUNT (enginemount.s)
+        .byte 66, 0             ; FE_UMOUNT
         .byte 51, 6             ; FE_GETLONG
         .byte 27, 3             ; FE_SETLONG (= FE_RENAME)
         .byte 27, 15            ; FE_SELECT
         .byte 55, 0             ; FE_RUNSYS (sysdrive.s)
+        .byte 66, 6             ; FE_MOUNTINFO (enginemount.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),

@@ -133,6 +133,28 @@ class GushU64:
         print("%s %s: %s" % ("pass" if good else "FAIL", title, got if good else "%s, expected %s" % (got, want)))
 
 
+def mounts(g):
+    """mount, umount (gush step 2): MOUNTS.INI saved first and put back."""
+    check, out = g.check, g.out
+    ini = os.path.join(OUT, "gu64-mounts.ini")
+    g.u.ftp_get("/USB0/GEOULTRA/MOUNTS.INI", ini)
+    try:
+        g.run("mount")
+        check("mount: the drives' images", g.lines()[-3:-1],
+              ["/a  1581    /USB0/GEOULTRA/test/GEOS64.D81", "/b  1541    /USB0/GEOULTRA/test/neos.d64"])
+        g.run("mount /usb0/geoultra/test/geopub.d64 /c", settle=8)
+        g.run("ls /c", settle=3)
+        check("mount an image into /c, ls /c", "GEOPUBLISH" in " ".join(g.lines()[-6:]), True)
+        g.run("cd /c")
+        g.run("umount /c", settle=8)
+        check("umount /c: out of it, back at /", (out("pwd"), out("ls /c")),
+              ("/", "gush: ls: /c: no such drive"))
+        check("umount /a (gush's own drive)", out("umount /a"), "gush: umount: /a: gush runs from there")
+        check("mount with one word", out("mount x"), "gush: mount: wrong words (see help)")
+    finally:
+        g.u.ftp_put(ini, "/USB0/GEOULTRA/MOUNTS.INI")
+
+
 def main():
     crt = sys.argv[1] if len(sys.argv) > 1 else None
     g = GushU64(crt)
@@ -182,6 +204,7 @@ def main():
     g.run("rmdir " + HOME)
     g.run("ls /usb0/geoultra/test/gu*")
     check("cleaned up", "".join(g.lines()[-3:-1]).endswith("no such file or folder"), True)
+    mounts(g)
     g.run("cd /a")
     g.run("geoFolder", settle=4)
     # geoFolder's dialog: OK (a click on its icon, at 224,90) closes it;

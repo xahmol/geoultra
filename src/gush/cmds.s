@@ -10,7 +10,7 @@
         .import Parse, argc, argLo, argHi
         .export Run, ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
-        .import StartProgram
+        .import StartProgram, CmdMount, CmdUmount
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -129,6 +129,10 @@ Commands:
         .word CmdMore
         .byte "df", 0
         .word CmdDf
+        .byte "mount", 0
+        .word CmdMount
+        .byte "umount", 0
+        .word CmdUmount
         .byte "help", 0
         .word CmdHelp
         .byte 0
@@ -186,7 +190,8 @@ CmdHelp:
 
 HelpAll:                        ; (lines within COLS)
         .byte "commands: cd clear cp df echo exit help ls mkdir", CR
-        .byte "more mv pwd rm rmdir; a program's name starts it.", CR
+        .byte "more mount mv pwd rm rmdir umount; a program's name", CR
+        .byte "starts it.", CR
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
         .byte "clear", 0
@@ -198,10 +203,12 @@ Usage:  .byte "cd [path]", 0
         .byte "ls [-l] [path...]", 0
         .byte "mkdir [-t tracks] path...", 0
         .byte "more path...", 0
+        .byte "mount [image /drive]", 0
         .byte "mv [-fR] source... target", 0
         .byte "pwd", 0
         .byte "rm [-f] path...", 0
         .byte "rmdir path...", 0
+        .byte "umount /drive", 0
         .byte 0
 NoHelp: .byte "no help for ", 0
         .assert * - Usage < 256, error, "help: the usage lines in one page"
@@ -662,12 +669,13 @@ ErrText:
         jmp ConNewLine
 
 ErrCodes:
-        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $FC, $FD
-        .byte $FE, $FF, 0
+        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $F9, $FA
+        .byte $FB, $FC, $FD, $FE, $FF, 0
 ErrTexts:
         .word ErrSpace, ErrNotFound, ErrDrive, ErrProtect, ErrExists
         .word ErrNotEmpty, ErrCancelled, ErrBadPath, ErrNotFolder
-        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrNoDoc, ErrOneDoc
+        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrWords, ErrOwnDrive
+        .word ErrNoRoom, ErrNoDoc, ErrOneDoc
         .word ErrOtherFolder, ErrTooMany
 ErrSpace:       .byte "disk full", 0
 ErrNotFound:    .byte "no such file or folder", 0
@@ -681,8 +689,11 @@ ErrNotFolder:   .byte "not a folder", 0
 ErrIsFolder:    .byte "is a folder", 0
 ErrNotSupp:     .byte "not supported", 0
 ErrUltimate:    .byte "the Ultimate refused", 0
-ErrNoDoc:       .byte "a desk accessory takes no document", 0   ; (gush's
-ErrOneDoc:      .byte "one document at a time", 0       ; own, $FC-$FF)
+ErrWords:       .byte "wrong words (see help)", 0      ; (gush's own,
+ErrOwnDrive:    .byte "gush runs from there", 0        ; $F9-$FF)
+ErrNoRoom:      .byte "no room in the REU", 0
+ErrNoDoc:       .byte "a desk accessory takes no document", 0
+ErrOneDoc:      .byte "one document at a time", 0
 ErrOtherFolder: .byte "not in the program's folder", 0
 ErrTooMany:     .byte "too many entries", 0
 ErrOther:       .byte "error ", 0

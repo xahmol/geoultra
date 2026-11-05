@@ -37,7 +37,8 @@ FE_GETLONG      = 19
 FE_SETLONG      = 20            ; (the same as FE_RENAME)
 FE_SELECT       = 21            ; a file's drive and folder made current
 FE_RUNSYS       = 22            ; an application on drive E started
-FE_COUNT        = 23
+FE_MOUNTINFO    = 23            ; a drive's image: type, tracks, path
+FE_COUNT        = 24
 FE_VER          = $0003         ; FE_VERSION's answer (E3)
 
 ; FE_COPY, FE_MOVE: flags (r2L)
@@ -104,7 +105,7 @@ FE_LONG_MAX     = 60            ; a long name (feName, feTmp: + its zero)
 FE_UPART_MAX    = 120           ; the last part of an Ultimate path (it
                                 ; goes into uCmd with a command)
 
-; REU bank 1, $C000-$C6FF: the engine's lasting state
+; REU bank 1, $C000-$C7FF: the engine's lasting state (and FE_WSAVE)
 FE_BANK         = 1
 FE_MAGIC        = $C000         ; "FE", FE_LAYOUT: the area is set up
 FE_LAYOUT       = 2             ; (1: E1-E3, the directory in 128 bytes)
@@ -182,8 +183,10 @@ uCmd            = fileTrScTab + $80 ; the command (U_CMD_MAX bytes; the
                                 ; engine destroys fileTrScTab)
 
 ; Work area: the overlay scratch $9F70-$9FFF (overlay.s), owned by the
-; engine during a call. No other overlay module uses it; an engine module
-; keeps here what must survive its nested overlay calls.
+; engine during a call. Write-back and hibernation use it from MainLoop;
+; FE_UMOUNT, which calls the write-back, keeps it at FE_WSAVE meanwhile
+; (enginemount.s). An engine module keeps here what must survive its
+; nested overlay calls.
 FE_WORK         = $9F70
 feFunc          = FE_WORK       ; the function number
 feY             = FE_WORK + 1   ; Y at the call (a handle)
@@ -260,6 +263,19 @@ uNamed          = cLeft + 8     ; a copy onto the Ultimate: nonzero, the
                                 ; file named after the source (PutSrc)
         .assert uNamed <= $9FFF, error, "engine.inc: the work area past $9FFF"
         .assert cEntry + 30 <= feM, error, "engine.inc: cEntry over feM"
+
+; FE_MOUNT, FE_UMOUNT (enginemount.s), over the same place
+mSlot           = feInfo        ; the drive (0-3)
+mType           = feInfo + 1    ; the image's DRV_* type
+mBanks          = feInfo + 2    ; its REU banks
+mTracks         = feInfo + 3    ; native: its tracks (else 0)
+mBank           = feInfo + 4    ; its first bank
+mTmp            = feInfo + 5
+FE_FIRST_BANK   = 31            ; drives: REU banks 31-187 (mount.s)
+FE_LAST_BANK    = FE_UBANK - 1
+FE_WSAVE        = $C700         ; REU bank 1: the work area while the
+                                ; write-back runs (it uses $9F70-$9FFF)
+FE_WORK_LEN     = $A000 - FE_WORK
 
 ; Streams (enginestream.s), over the same place
 sPtr            = feInfo        ; the caller's buffer, moving on (word)

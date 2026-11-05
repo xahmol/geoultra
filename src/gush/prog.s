@@ -26,7 +26,6 @@ OTHER_FOLDER    = $FE
 FI_KIND         = 0
 FI_GTYPE        = 3
 K_GEOS          = 3
-FE_SELECT       = 21
 
         .segment "CODE"
 
