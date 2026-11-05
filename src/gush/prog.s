@@ -37,10 +37,14 @@ StartProgram:
         jsr Try                 ; (r0: the word)
         bcc Found
         rts
-@name:  jsr Try                 ; the current directory
+@name:  sty wordLen             ; (its length)
+        jsr Try                 ; the current directory
         bcc Found
         cpx #FILE_NOT_FOUND
         bne @end
+        lda wordLen             ; longer than a name: on no drive's root
+        cmp #FE_NAME_MAX_LONG + 1
+        bcs @end
         lda #'a'                ; then "/a/NAME" .. "/d/NAME"
         sta drive
 @drive: jsr Build
@@ -125,14 +129,11 @@ Build:  lda #'/'
         lda argHi
         sta r1H
         ldy #0
-@copy:  lda (r1),y
-        sta path+3,y
+@copy:  lda (r1),y              ; (at most FE_NAME_MAX_LONG: StartProgram
+        sta path+3,y            ; checked it)
         beq @done
         iny
-        cpy #FE_NAME_MAX_LONG
         bne @copy
-        lda #0
-        sta path+3,y
 @done:  lda #<path
         sta r0L
         lda #>path
@@ -144,6 +145,7 @@ FE_NAME_MAX_LONG = 60
         .segment "DATA"
 
 drive:          .byte 0
+wordLen:        .byte 0
 prog:           .word 0
 
         .segment "BSS"
