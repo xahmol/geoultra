@@ -199,8 +199,14 @@ GeoUltra's own desktop.
   drive); `mkimg [-t tracks] type path [name]` (".type" added to the
   path when missing; the disk name the file's name unless given; a DNP
   of 16 tracks without `-t`). `help` finds its usage lines through a
-  pointer now (they no longer fit one page). Still to come: `free`,
-  `turbo`, `date`, `ntp`, `reboot`, the mouse placing the cursor.
+  pointer now (they no longer fit one page). `free` (the drives' REU
+  banks), `turbo [-s] [step]` (both MHz tables: step 15 is 48 MHz on a
+  U64 or Elite I and 64 MHz on an Elite II or C64 Ultimate, which the
+  register does not tell; `-s` writes `turbo=N` into SETTINGS.INI's
+  `[system]`, every other line kept, through SETTINGS.TMP), `date
+  [YYYY-MM-DD HH:MM[:SS]]` (GEOS's clock, the CIA's time of day and the
+  Ultimate's clock; years 1980-2079). Tests g10.py (VICE) and gu64.py.
+  Still to come: `ntp`, `reboot`, the mouse placing the cursor.
 - Drive E is not yet in the file engine's tree: programs on it are not
   found by name (`/e/bin` in the design); `FE_RUNSYS` starts them by name.
 - A test hook: `testCtrl` (edit.s) makes the editor take CTRL as held

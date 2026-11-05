@@ -10,7 +10,8 @@
         .import Parse, argc, argLo, argHi
         .export Run, ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
-        .import StartProgram, CmdMount, CmdUmount, CmdMkimg
+        .import StartProgram, CmdMount, CmdUmount, CmdMkimg, CmdFree
+        .import CmdTurbo, CmdDate
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -135,6 +136,12 @@ Commands:
         .word CmdMount
         .byte "umount", 0
         .word CmdUmount
+        .byte "free", 0
+        .word CmdFree
+        .byte "turbo", 0
+        .word CmdTurbo
+        .byte "date", 0
+        .word CmdDate
         .byte "help", 0
         .word CmdHelp
         .byte 0
@@ -190,16 +197,18 @@ CmdHelp:
         jmp ConNewLine
 
 HelpAll:                        ; (lines within COLS)
-        .byte "commands: cd clear cp df echo exit help ls mkdir", CR
-        .byte "mkimg more mount mv pwd rm rmdir umount; a program's", CR
-        .byte "name starts it.", CR
+        .byte "commands: cd clear cp date df echo exit free help ls", CR
+        .byte "mkdir mkimg more mount mv pwd rm rmdir turbo umount;", CR
+        .byte "a program's name starts it.", CR
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
+        .byte "date [YYYY-MM-DD HH:MM[:SS]]", 0
         .byte "clear", 0
         .byte "cp [-frR] source... target", 0
         .byte "df [path]", 0
         .byte "echo words...", 0
         .byte "exit", 0
+        .byte "free", 0
         .byte "help [command]", 0
         .byte "ls [-l] [path...]", 0
         .byte "mkdir [-t tracks] path...", 0
@@ -210,6 +219,7 @@ Usage:  .byte "cd [path]", 0
         .byte "pwd", 0
         .byte "rm [-f] path...", 0
         .byte "rmdir path...", 0
+        .byte "turbo [-s] [step]", 0
         .byte "umount /drive", 0
         .byte 0
 NoHelp: .byte "no help for ", 0
@@ -670,12 +680,14 @@ ErrText:
         jmp ConNewLine
 
 ErrCodes:
-        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $F9, $FA
+        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $F7, $F8
+        .byte $F9, $FA
         .byte $FB, $FC, $FD, $FE, $FF, 0
 ErrTexts:
         .word ErrSpace, ErrNotFound, ErrDrive, ErrProtect, ErrExists
         .word ErrNotEmpty, ErrCancelled, ErrBadPath, ErrNotFolder
-        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrWords, ErrOwnDrive
+        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrClock, ErrNoTurbo
+        .word ErrWords, ErrOwnDrive
         .word ErrNoRoom, ErrNoDoc, ErrOneDoc
         .word ErrOtherFolder, ErrTooMany
 ErrSpace:       .byte "disk full", 0
@@ -690,8 +702,10 @@ ErrNotFolder:   .byte "not a folder", 0
 ErrIsFolder:    .byte "is a folder", 0
 ErrNotSupp:     .byte "not supported", 0
 ErrUltimate:    .byte "the Ultimate refused", 0
-ErrWords:       .byte "wrong words (see help)", 0      ; (gush's own,
-ErrOwnDrive:    .byte "gush runs from there", 0        ; $F9-$FF)
+ErrClock:       .byte "clock setting off (Ultimate menu, Allow SetDate)", 0
+ErrNoTurbo:     .byte "no turbo (an Ultimate 64 has it)", 0   ; (gush's
+ErrWords:       .byte "wrong words (see help)", 0      ; own, $F7-$FF)
+ErrOwnDrive:    .byte "gush runs from there", 0
 ErrNoRoom:      .byte "no room in the REU", 0
 ErrNoDoc:       .byte "a desk accessory takes no document", 0
 ErrOneDoc:      .byte "one document at a time", 0

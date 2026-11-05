@@ -137,7 +137,8 @@ CPU Speed=64
   permanent names listed in SETTINGS.INI `[system] slow=NAME` (one per
   line, up to 6, matched as the start of the permanent name, case as in
   the file header), full speed for all others, so the desktop gets full
-  speed back; `turbo=off` switches turbo off. The list lives in REU bank
+  speed back; `turbo=off` switches turbo off, `turbo=N` (0-15, user
+  2026-11-05: gush's `turbo -s N` writes it) starts at that speed step. The list lives in REU bank
   3 at `$FF00` (padding of the cartridge image, filled anew at each boot,
   not hibernated), so a resumed session follows the current SETTINGS.INI;
   the speed in use comes back with it (`turboNow`). Measured on the U64-II with `slow=geoWrite`

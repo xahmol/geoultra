@@ -164,6 +164,45 @@ def mounts(g):
         g.u.ftp_put(ini, "/USB0/GEOULTRA/MOUNTS.INI")
 
 
+def system(g):
+    """turbo, turbo -s, date (gush step 2): SETTINGS.INI as it was after
+    (none on the test stick: removed again); the clock set to the time it
+    shows, so it moves by a second or two at most."""
+    import ftplib
+    import io
+    check, out = g.check, g.out
+    f = ftplib.FTP(g.u.ip)
+    f.login()
+    names = [n for n, _ in f.mlsd("/USB0/GEOULTRA")]
+    before = None
+    if "SETTINGS.INI" in names:
+        b = io.BytesIO()
+        f.retrbinary("RETR /USB0/GEOULTRA/SETTINGS.INI", b.write)
+        before = b.getvalue()
+    try:
+        g.run("turbo")
+        check("turbo: step 15 (full speed at boot)", g.lines()[-3:-1],
+              ["turbo: step 15 of 15", "48 MHz (U64, Elite I), 64 MHz (Elite II, C64U)"])
+        g.run("turbo 12")
+        check("turbo 12", g.lines()[-3], "turbo: step 12 of 15")
+        g.run("turbo -s 15", settle=4)
+        b = io.BytesIO()
+        f.retrbinary("RETR /USB0/GEOULTRA/SETTINGS.INI", b.write)
+        want = (before or b"") + (b"" if before and b"[system]" in before.lower() else b"[system]\r\n") + b"turbo=15\r\n"
+        check("turbo -s 15: SETTINGS.INI", b.getvalue() if before is None else b.getvalue().count(b"turbo=15"),
+              want if before is None else 1)
+        now = out("date")
+        g.run("date " + now, settle=3)
+        shown = " ".join(g.lines()[-4:-1])
+        check("date set to what it shows (%s)" % now, now[:16] in shown or "clock setting off" in shown, True)
+    finally:
+        if before is None:
+            f.delete("/USB0/GEOULTRA/SETTINGS.INI")
+        else:
+            f.storbinary("STOR /USB0/GEOULTRA/SETTINGS.INI", io.BytesIO(before))
+        f.quit()
+
+
 def main():
     crt = sys.argv[1] if len(sys.argv) > 1 else None
     g = GushU64(crt)
@@ -214,6 +253,7 @@ def main():
     g.run("ls /usb0/geoultra/test/gu*")
     check("cleaned up", "".join(g.lines()[-3:-1]).endswith("no such file or folder"), True)
     mounts(g)
+    system(g)
     g.run("cd /a")
     g.run("geoFolder", settle=4)
     # geoFolder's dialog: OK (a click on its icon, at 224,90) closes it;

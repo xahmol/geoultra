@@ -39,7 +39,10 @@ FE_SELECT       = 21            ; a file's drive and folder made current
 FE_RUNSYS       = 22            ; an application on drive E started
 FE_MOUNTINFO    = 23            ; a drive's image: type, tracks, path
 FE_MKIMG        = 24            ; a new, empty disk image on the Ultimate
-FE_COUNT        = 25
+FE_TURBO        = 25            ; the U64's speed step, asked or set
+FE_HOME         = 26            ; the home folder's path
+FE_SETTIME      = 27            ; the Ultimate's clock from GEOS's
+FE_COUNT        = 28
 FE_VER          = $0003         ; FE_VERSION's answer (E3)
 
 ; FE_COPY, FE_MOVE: flags (r2L)

@@ -44,6 +44,8 @@ FE_MOUNTINFO    = 23
 FE_MKIMG        = 24
 
 ; gush's own errors (cmds.s ErrCodes, ErrTexts)
+ERR_CLOCK       = $F7           ; the Ultimate's clock may not be set
+ERR_NO_TURBO    = $F8           ; no turbo registers
 ERR_WORDS       = $F9           ; the wrong words for the command
 ERR_OWN_DRIVE   = $FA           ; the drive gush runs from
 ERR_NO_ROOM     = $FB           ; no room in the REU

@@ -1,13 +1,13 @@
 ; gush: system commands (docs/GUSH.md, "Step 2"): mount, umount,
-; mkimg. Own code.
+; mkimg, free. Own code.
 
         .include "geos.inc"
         .include "gush.inc"
 
         .import FileEngine, Status, pwdBuf, startDrive, argc, argLo, argHi
-        .import ArgR0, PutArg, Print, Say, Fail
+        .import ArgR0, PutArg, Print, Say, Fail, Decimal, num
         .import ConPut, ConNewLine, Options, firstArg, tracks
-        .export CmdMount, CmdUmount, CmdMkimg
+        .export CmdMount, CmdUmount, CmdMkimg, CmdFree
 
 INSUFF_SPACE    = 3
 PATH_MAX        = 250           ; a new image's path (the engine's: 255)
@@ -365,6 +365,82 @@ LastDot:
 
 Kinds:  .byte "dddd", "6788", "411p"    ; d64, d71, d81, dnp by column
 
+; free: the REU's banks for drives (31-187): each drive's, in all, free.
+CmdFree:
+        lda #0
+        sta drive
+        sta used
+@drive: lda drive
+        clc
+        adc #'a'
+        sta name+1
+        lda #<name
+        sta r0L
+        lda #>name
+        sta r0H
+        lda #<path
+        sta r1L
+        lda #>path
+        sta r1H
+        lda #FE_MOUNTINFO
+        jsr FileEngine
+        txa
+        bne @next
+        ldx r2L                 ; its banks (native: its tracks)
+        lda BanksOf-1,x
+        bne :+
+        lda r3L
+:       pha
+        clc
+        adc used
+        sta used
+        lda #<name
+        ldy #>name
+        jsr Print
+        pla
+        ldx #6
+        jsr Number
+        lda #<Banks
+        ldy #>Banks
+        jsr Say
+@next:  inc drive
+        lda drive
+        cmp #4
+        bne @drive
+        lda #<Drives            ; "drives: N of 157 banks used, M free"
+        ldy #>Drives
+        jsr Print
+        lda used
+        ldx #1
+        jsr Number
+        lda #<Of
+        ldy #>Of
+        jsr Print
+        lda #DRIVE_BANKS
+        sec
+        sbc used
+        ldx #1
+        jsr Number
+        lda #<FreeText
+        ldy #>FreeText
+        jmp Say
+
+; Number: A in decimal, right-aligned in X columns.
+Number: sta num
+        lda #0
+        sta num+1
+        sta num+2
+        sta num+3
+        txa
+        jmp Decimal
+
+BanksOf:.byte 3, 6, 13, 0       ; 1541, 1571, 1581; native: its tracks
+Banks:  .byte " banks (64 KB each)", 0
+Drives: .byte "drives: ", 0
+Of:     .byte " of 157 banks used, ", 0
+FreeText:.byte " free", 0
+DRIVE_BANKS     = 157           ; banks 31-187 (docs/DESIGN.md, REU map)
+
 TypeLo: .byte <T1541, <T1571, <T1581, <TNative
 TypeHi: .byte >T1541, >T1571, >T1581, >TNative
 T1541:  .byte "  1541    ", 0
@@ -377,6 +453,7 @@ Root:   .byte "/", 0
 
 kind:   .byte 0
 words:  .byte 0
+used:   .byte 0
 pathLen:.byte 0
 dotAt:  .byte 0
 name:   .byte "/a", 0

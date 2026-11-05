@@ -473,12 +473,23 @@ ReadSettings:
 @serial2:
         cmp #'T'
         bne @serial3
-        ldx #turboKey - keys    ; "URBO=OFF"
+        ldx #turboKey - keys    ; "URBO=": a speed step 0-15, else off
         jsr Match
         bne @skip0
+        ldy #0
+        lda (r1),y
+        sec
+        sbc #'0'
+        cmp #10
+        bcc @step
         lda #$80
         sta turboOff
 @skip0: jmp @skip
+@step:  jsr Decimal
+        cmp #16
+        bcs @skip0
+        sta turboStep
+        jmp @skip
 @serial3:
         cmp #'S'
         bne @skip0
@@ -538,7 +549,7 @@ keys:
 systemKey:      .byte "SYSTEM]", 0
 serialKey:      .byte "ERIAL=", 0
 hibKey:         .byte "IBERNATE=", 0
-turboKey:       .byte "URBO=OFF", 0
+turboKey:       .byte "URBO=", 0
 slowKey:        .byte "LOW=", 0
 startKey:       .byte "TART=GUSH", 0
 .ifdef BYPASS
@@ -1298,8 +1309,13 @@ TurboInit:
 @on:    lda $D030
         ora #$01
         sta $D030
-        lda #TURBO_FULL
-        sta $D031
+        lda #TURBO_FULL         ; full speed, or SETTINGS.INI's step (with
+        ldx turboStep           ; the badline stalls off above 1 MHz)
+        bmi @full
+        txa
+        beq @full
+        ora #$80
+@full:  sta $D031
         sta turboWant           ; (speed.s sets it per application)
         sta turboNow
 @end:   rts
@@ -1367,6 +1383,7 @@ SLOW_NAME       = 12
 slowList:       .res SLOW_MAX * SLOW_NAME
 slowCount:      .byte 0
 turboOff:       .byte 0
+turboStep:      .byte $FF       ; [system] turbo=N (0-15); $FF: full speed
 
 ApplyCfg:
         ldy #0

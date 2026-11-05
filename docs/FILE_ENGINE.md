@@ -111,6 +111,9 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 22 | `FE_RUNSYS` | r0 = an application's name on drive E | started (`LdApplic`; module 55 in sysdrive.s); back only with an error |
 | 23 | `FE_MOUNTINFO` | r0 = drive path, r1 = 64-byte buffer | r2L = its `DRV_*` type, r3L = a native drive's tracks, the image's path in the buffer (`DEV_NOT_FOUND`: none) |
 | 24 | `FE_MKIMG` | r0 = a new image on the Ultimate (`.d64`, `.d71`, `.d81`, `.dnp`), r1 = its disk name (or 0), r2L = a DNP's tracks (2-255; 0: 16) | made empty (header, BAM, directory; ID "GU") in free REU banks and saved (`FILE_EXISTS`: there already; `INSUFF_SPACE`: no room in the REU) |
+| 25 | `FE_TURBO` | r2L = $FF: ask; 0-15: set (also for applications started later) | r1L = the U64's speed step (`DEV_NOT_FOUND`: no turbo registers) |
+| 26 | `FE_HOME` | r1 = 32-byte buffer | the home folder's path ("/USB0/GEOULTRA/") |
+| 27 | `FE_SETTIME` | (GEOS's date and time set by the caller) | the CIA's time-of-day clock and the Ultimate's clock set from them (`FE_ULTIMATE`: the Ultimate's menu forbids it) |
 
 Flags for `FE_COPY` and `FE_MOVE`: overwrite (else `FILE_EXISTS`),
 raw (no CVT conversion), and a progress vector in r3 (called after every
@@ -215,6 +218,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 56-60 | CVT (enginecvt.s): out, VLIR out, in, VLIR in, recognised |
 | 61-64 | streams on the Ultimate (enginestreamu.s): open, read, write, their setup |
 | 65-70 | mounting (enginemount.s): `FE_MOUNT` checked, `FE_UMOUNT` and `FE_MOUNTINFO`, MOUNTS.INI opened and closed, banks found and the image loaded, the drive entered, MOUNTS.INI's text |
+| 75 | `FE_TURBO`, `FE_HOME`, `FE_SETTIME` (enginesys.s) |
 | 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |
 
 Still to come (estimate): Ultimate to Ultimate copies.
