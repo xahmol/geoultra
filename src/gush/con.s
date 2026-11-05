@@ -7,6 +7,7 @@
         .include "geos.inc"
         .include "gush.inc"
 
+        .import sinkOn, sinkPause, SinkPut
         .export ConInit, ConPut, ConPuts, ConNewLine, ConClear, ConCell, ConSet
         .export ConRedraw
         .export ConCursor, ConStatus, conCol, conRow, shadow
@@ -117,7 +118,13 @@ ConPuts:
 
 ; ConPut: character A at the cursor (CR: a new line); the cursor on, a
 ; new line at the right edge. Destroys A, X, Y.
-ConPut: cmp #CR
+ConPut: bit sinkOn              ; output to a file (redir.s)?
+        bpl @screen
+        ldx sinkPause
+        bne @screen
+        jmp SinkPut             ; (a CR as it is)
+@screen:
+        cmp #CR
         beq ConNewLine
         pha                     ; into the shadow
         ldx conRow
@@ -136,7 +143,15 @@ ConPut: cmp #CR
 ; ConNewLine: the cursor to the next line's start, scrolling at the
 ; bottom. Destroys A, X, Y.
 ConNewLine:
+        bit sinkOn              ; output to a file: a CR there (a paused
+        bpl @screen             ; line, an error or a question, ends
+        lda sinkPause           ; on the screen)
+        bne @screen
+        lda #CR
+        jmp SinkPut
+@screen:
         lda #0
+        sta sinkPause           ; (the pause ends with its line)
         sta conCol
         lda conRow
         cmp #ROWS_LAST

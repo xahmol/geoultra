@@ -11,7 +11,7 @@
         .import ConPut, ConPuts, ConNewLine, conCol
         .import FileEngine, argc, argLo, argHi
         .import ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
-        .import CopyTree
+        .import CopyTree, sinkOn, inHandle
         .export CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
         .export Ask, AskPath, Copy1, func, Options, firstArg, tracks
 
@@ -405,15 +405,25 @@ Each:   sta func
 ; --- cat, more ---------------------------------------------------------------
 
 ; cat path...; more path... (a page at a time: SPACE a page, RETURN a
-; line, q stops).
+; line, q stops; not when the output goes to a file). Without a path:
+; the input file (< file), if any.
 CmdMore:
         lda #1
-        bne Show
+        bit sinkOn
+        bpl Show
 CmdCat: lda #0
 Show:   sta paging
         lda #0
         sta pageRows
-        ldx #1
+        lda argc
+        cmp #2
+        bcs @paths
+        lda inHandle            ; no path: the input (none: nothing)
+        bmi @end
+        sta handle
+        jsr ShowHandle
+        jmp @end
+@paths: ldx #1
 @each:  cpx argc
         bcs @end
         stx srcAt
@@ -428,6 +438,20 @@ Show:   sta paging
         ldy srcAt
         jsr Fail
         jmp @next
+@read:  jsr ShowHandle
+        ldy handle
+        lda #FE_CLOSE
+        jsr FileEngine
+@next:  ldx srcAt
+        inx
+        bne @each
+@end:   lda conCol
+        beq :+
+        jmp ConNewLine
+:       rts
+
+; ShowHandle: the open file `handle` shown to its end (or q).
+ShowHandle:
 @read:  lda #<readBuf
         sta r1L
         lda #>readBuf
@@ -456,16 +480,7 @@ Show:   sta paging
         bne @read
         lda r2L
         bne @read
-@close: ldy handle
-        lda #FE_CLOSE
-        jsr FileEngine
-@next:  ldx srcAt
-        inx
-        bne @each
-@end:   lda conCol
-        beq :+
-        jmp ConNewLine
-:       rts
+@close: rts
 
 ; Bytes: count bytes of readBuf (0: 256) shown: CR a new line, LF and
 ; other control characters left out, TAB a space, beyond ASCII a dot. C

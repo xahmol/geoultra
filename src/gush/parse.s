@@ -1,7 +1,8 @@
 ; gush: the command line into words (docs/GUSH.md, "Syntax"). Spaces
 ; separate words; "..." and '...' keep spaces; \ takes the next character
 ; as it is. $NAME, ${NAME} and $? are replaced by the value (not in
-; '...'; a value is not split into words). A word with an unquoted * or ? is replaced by the names that
+; '...'; a value is not split into words). An unquoted >, >> or < is a
+; word of its own: a marker byte (gush.inc REDIR_*; redir.s). A word with an unquoted * or ? is replaced by the names that
 ; match (the file engine's FE_OPENDIR pattern in its last part), with the
 ; word's folder part in front; none: the word stays. Own code.
 
@@ -64,6 +65,15 @@ Parse:  lda #0
         beq @escape
         cmp #'$'
         beq @dollar
+        cmp #'>'
+        beq @mark
+        cmp #'<'
+        bne :+
+@mark:  jsr Mark
+        bcc @ended
+        jmp @full
+@ended: jmp @end
+:
         cmp #'*'
         beq @wild
         cmp #'?'
@@ -108,6 +118,36 @@ Parse:  lda #0
 @done:  clc
         rts
 @full:  sec
+        rts
+
+; Mark (A: an unquoted ">" or "<" read): the word begun ends there (the
+; character read again), else the marker byte REDIR_OUT, REDIR_ADD (">>")
+; or REDIR_IN is this word. C set when argBuf is full.
+Mark:   sta redirCh
+        ldx argc                ; a word already begun: ended first (the
+        lda argOut              ; ">" read again then)
+        cmp argLo,x
+        bne @before
+        lda argOut+1
+        cmp argHi,x
+        bne @before
+        lda redirCh
+        cmp #'<'                ; the marker as a word of its own
+        beq @in
+        ldx inPos
+        lda lineBuf,x
+        cmp #'>'
+        bne @out
+        inc inPos
+        lda #REDIR_ADD
+        bne @mark
+@out:   lda #REDIR_OUT
+        bne @mark
+@in:    lda #REDIR_IN
+@mark:  jmp Out                 ; (C set: argBuf full)
+@before:
+        dec inPos
+        clc
         rts
 
 ; Dollar (after a "$", inPos at the next character): a variable's
@@ -331,6 +371,7 @@ Expand: ldx argc                ; the pattern to patBuf
         .segment "DATA"
 
 argc:           .byte 0
+redirCh:        .byte 0         ; the ">" or "<" read
 VAR_NAME_MAX    = 16            ; (vars.s: NAME_MAX)
 inPos:          .byte 0
 quote:          .byte 0

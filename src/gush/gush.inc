@@ -44,6 +44,12 @@ FE_MOUNTINFO    = 23
 FE_MKIMG        = 24
 FE_REBOOT       = 28
 
+; Redirection markers: Parse makes an unquoted >, >> or < a word of one
+; of these bytes (redir.s)
+REDIR_OUT       = 1
+REDIR_ADD       = 2
+REDIR_IN        = 3
+
 ; gush's own errors (cmds.s ErrCodes, ErrTexts)
 ERR_NO_SERVER   = $F6           ; no NTP server given or set
 ERR_CLOCK       = $F7           ; the Ultimate's clock may not be set

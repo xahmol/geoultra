@@ -12,7 +12,8 @@
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
         .import StartProgram, CmdMount, CmdUmount, CmdMkimg, CmdFree
         .import CmdTurbo, CmdDate, CmdReboot, CmdNtp, CmdSet, CmdUnset
-        .import VarSet, varName, IsNameChar
+        .import VarSet, varName, IsNameChar, Redirect, EndRedirect, sinkPause
+        .import sinkOn
         .export status
 
 EnterDeskTop    = $C22C         ; GEOS jump table
@@ -44,7 +45,9 @@ pathAt:         .res 2          ; ls: the path being looked at
 ; line failed (an error said), else 0.
 Run:    lda #0
         sta failed
+        sta sinkPause
         jsr Line
+        jsr EndRedirect         ; (a file written: closed)
         lda failed
         sta status
         rts
@@ -55,7 +58,10 @@ Line:   jsr Parse
         ldy #>TooMany
         jmp Say
 :       jsr Assign
-        lda argc
+        jsr Redirect            ; > >> <: files opened, words taken off
+        bcc :+
+        rts
+:       lda argc
         bne :+
         rts
 :
@@ -423,6 +429,13 @@ EndList:
 ; its info (info) for ls -l.
 Entry:  lda long
         bne Long
+        bit sinkOn              ; into a file: a name per line
+        bpl @screen
+        lda #<nameBuf
+        ldy #>nameBuf
+        jsr Print
+        jmp ConNewLine
+@screen:
         ldy #$FF                ; the name's length; on the next line when
 @len:   iny                     ; it does not fit after the others
         lda nameBuf,y
@@ -702,8 +715,11 @@ Assign: lda #0
 @count: sty argc
 @end:   rts
 
-; Gush: "gush: ".
-Gush:   lda #<GushColon
+; Gush: "gush: " (an error or a question: its line on the screen even
+; when the output goes to a file: sinkPause, redir.s).
+Gush:   lda #1
+        sta sinkPause
+        lda #<GushColon
         ldy #>GushColon
         jmp Print
 

@@ -362,5 +362,12 @@ the one command only); `$NAME`, `${NAME}`, `$?` (1 when the line said
 an error, else 0) outside quotes and in `"..."`, not in `'...'` or after
 `\`; a value is not split into words; `set`, `unset`; `HOME` (the home
 folder) and `PATH` (`/e/bin:` HOME `/bin`) at the start. `$0`-`$9` and
-`$#` stay empty until scripts (3.3). Test g12.py.
+`$#` stay empty until scripts (3.3). Test g12.py. **3.2 (2026-11-05)**:
+redirection (redir.s): an unquoted `>`, `>>` or `<` is a word of its
+own (a marker byte from Parse), taken off the line with the file after
+it; output goes through a 256-byte buffer into the file (`FE_WRITE`; a
+new line is a CR), errors and questions (lines starting "gush: ") stay
+on the screen, like sh's stderr; `cat` and `more` without a path read
+the `<` file; `more` does not page into a file; `ls` into a file writes
+a name per line. Test g13.py.
 
