@@ -337,6 +337,8 @@ Rename: ldx #0                  ; the source's path aside
         jsr UCd
         txa
         bne @done
+        jsr Fits
+        bcs @done
         lda #U_RENAME           ; RENAME old, new
         jsr UBegin
         ldx cSrcFT
@@ -349,10 +351,6 @@ Rename: ldx #0                  ; the source's path aside
         bne @old
 @new:   jsr UPut                ; (the zero between them)
         jsr UPutName
-        ldx #FE_BAD_PATH        ; both in one command, or none
-        lda uLen
-        cmp #U_CMD_MAX + 1
-        bcs @done
         jsr UNoData
         jsr UExec
 @done:  clc
@@ -363,6 +361,32 @@ Rename: ldx #0                  ; the source's path aside
         sta r0H
         sec
         rts
+
+; Fits: C clear when the old name (diskBlkBuf after cSrcFT) and the new
+; one (fePath after fePos) fit in one RENAME command, measured before it
+; is built (uCmd is followed by dirEntryBuf); else C set, X = FE_BAD_PATH.
+; Destroys A, X; cSrcFS.
+Fits:   ldx #$FF
+@olen:  inx
+        lda diskBlkBuf,x
+        bne @olen
+        txa
+        sec
+        sbc cSrcFT              ; (old name + 1)
+        sta cSrcFS
+        ldx #$FF
+@nlen:  inx
+        lda fePath,x
+        bne @nlen
+        txa
+        sec
+        sbc fePos               ; (new name + 1)
+        clc
+        adc cSrcFS
+        ldx #FE_BAD_PATH
+        bcs @end
+        cmp #U_CMD_MAX - 2 + 1  ; (2 bytes target, command)
+@end:   rts
 
         .endscope
 
