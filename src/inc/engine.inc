@@ -143,11 +143,10 @@ H_UNEXT         = 4             ; the next one to look at (word)
 
 ; The Ultimate (DOS target 2; write-back and hibernation use target 1).
 ; A listing: one slot of FE_USLOT bytes per entry (the FAT attribute byte,
-; the name, zero-ended, at most FE_UNAME_MAX characters).
+; the name, zero-ended, at most FE_USLOT - 2 characters).
 FE_UBANK        = 188           ; banks 188-191: one per handle (the drives
                                 ; end before, mount.s LAST_BANK)
 FE_USLOT        = 64
-FE_UNAME_MAX    = FE_USLOT - 2
 FE_USLOTS       = $10000 / FE_USLOT
 UA_READONLY     = $01           ; FAT attributes
 UA_DIR          = $10

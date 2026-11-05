@@ -586,7 +586,7 @@ dataEnd         = uEnd
 
 ; OvList: READ_DIR (after OPEN_DIR), one packet per entry (the attribute
 ; byte, the name), each into its slot of REU bank FE_UBANK + feHandle (to
-; FE_USLOTS; a longer name cut to FE_UNAME_MAX); feH's H_UCOUNT the
+; FE_USLOTS; a longer name cut to FE_USLOT - 2); feH's H_UCOUNT the
 ; number, H_UNEXT 0. I/O on meanwhile. Destroys A, X, Y, r0-r3L.
 OvList: lda #0
         sta feH + H_UCOUNT

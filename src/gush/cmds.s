@@ -273,7 +273,7 @@ CmdLs:  lda #0
 @nextopt:
         inx
         bne @opt
-@paths: stx firstPath
+@paths:
         cpx argc
         bcc @each
         lda #<Dot               ; none: "."
@@ -694,7 +694,6 @@ home:           .byte "/a", 0
 cmdAt:          .byte 0
 wordAt:         .byte 0
 argAt:          .byte 0
-firstPath:      .byte 0
 long:           .byte 0
 handle:         .byte 0
 width:          .byte 0

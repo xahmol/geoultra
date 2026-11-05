@@ -13,8 +13,8 @@ ARGBUF_SIZE     = 1024          ; their bytes
 hour            = $8519         ; GEOS's clock (year at $8516)
 minutes         = $851A
 
-; Keys (keyData): geos.inc has them, and CR; KEY_BS is DEL.
-KEY_BS          = 8
+; Keys (keyData): geos.inc has them (DEL is KEY_DELETE, cursor left
+; KEY_LEFT), and CR.
 
 ; The file engine (docs/FILE_ENGINE.md): entry 6 of GeoUltra's extension
 ; jump table, whose address is at guExtTable (gush.s, FileEngine); its
