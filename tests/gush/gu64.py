@@ -156,6 +156,9 @@ def mounts(g):
         check("mkimg d81, mounted: empty", out("df /c"), "3160 blocks free of 3160 blocks")
         g.run("umount /c", settle=8)
         g.run("rm -f /usb0/geoultra/test/gumk.d81")
+        g.run("mkimg -t 2 dnp /usb0/geoultra/test/gumk", settle=8)   # (the sweep's find)
+        check("mkimg -t 2 dnp", out("ls /usb0/geoultra/test/gumk*", settle=3), "/usb0/geoultra/test/gumk.dnp")
+        g.run("rm -f /usb0/geoultra/test/gumk.dnp")
         import ftplib
         f = ftplib.FTP(g.u.ip)
         f.login()
@@ -191,6 +194,13 @@ def system(g):
         want = (before or b"") + (b"" if before and b"[system]" in before.lower() else b"[system]\r\n") + b"turbo=15\r\n"
         check("turbo -s 15: SETTINGS.INI", b.getvalue() if before is None else b.getvalue().count(b"turbo=15"),
               want if before is None else 1)
+        for old, new in ((b"[time]\r\nx=1", b"[time]\r\nx=1\r\n[system]\r\nturbo=15\r\n"),
+                         (b"[system]", b"[system]\r\nturbo=15\r\n")):   # (no line end at the end)
+            f.storbinary("STOR /USB0/GEOULTRA/SETTINGS.INI", io.BytesIO(old))
+            g.run("turbo -s 15", settle=4)
+            b = io.BytesIO()
+            f.retrbinary("RETR /USB0/GEOULTRA/SETTINGS.INI", b.write)
+            check("turbo -s on %r" % old, b.getvalue(), new)
         now = out("date")
         import datetime                             # ntp: SETTINGS.INI [time] with
         utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)   # the clock's
@@ -198,11 +208,17 @@ def system(g):
         off = round((clock - utc).total_seconds() / 900) * 900                     # so it stays
         f.storbinary("STOR /USB0/GEOULTRA/SETTINGS.INI",
                      io.BytesIO(b"[time]\r\nntp=pool.ntp.org\r\noffset=%d\r\n" % off))
-        g.run("ntp", settle=8)
-        got = datetime.datetime.strptime(g.lines()[-2], "%Y-%m-%d %H:%M:%S")
-        want = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) + datetime.timedelta(seconds=off)
-        check("ntp (offset %d s): the clock within a minute of UTC + offset" % off,
-              abs((got - want).total_seconds()) < 60, True)
+        for attempt in range(3):                    # (a server may not answer once)
+            g.run("ntp", settle=8)
+            if not g.lines()[-2].startswith("gush:"):
+                break
+        try:
+            got = datetime.datetime.strptime(g.lines()[-2], "%Y-%m-%d %H:%M:%S")
+            want = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) + datetime.timedelta(seconds=off)
+            good = abs((got - want).total_seconds()) < 60
+        except ValueError:
+            good = g.lines()[-2]
+        check("ntp (offset %d s): the clock within a minute of UTC + offset" % off, good, True)
         now = out("date")
         g.run("date " + now, settle=3)
         shown = " ".join(g.lines()[-4:-1])
