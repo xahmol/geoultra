@@ -254,6 +254,8 @@ def main():
     g.run("echo redirected > r.txt", settle=3)     # (step 3.2: > on the stick)
     g.run("cat < r.txt", settle=3)
     check("> and < on the stick", g.lines()[-2], "redirected")
+    g.run("cat r.txt | cat", settle=3)             # (step 3.5: a pipe)
+    check("a pipe from the stick", g.lines()[-2], "redirected")
     g.run("rm -f r.txt")
     g.run("cp /a/INI ini.txt", settle=3)
     check("cp onto a file asks", g.lines()[-1], "gush: cp: overwrite /a/INI? (y/n/a)")

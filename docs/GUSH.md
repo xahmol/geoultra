@@ -353,6 +353,17 @@ The U64 runs are gathered: one gu64 run per sub-step at most.
    Interface allows: checked first on the U64), `wget URL [file]`.
 10. **Sweep** at the end of the step.
 
+Decisions for the rest of step 3 (user, 2026-11-05, design questions):
+gush grows through **VLIR overlays**: a resident core (console, editor,
+parser, executor) and records loaded on demand for groups of commands,
+as geoWrite does. **External command modules** load into one fixed area
+of 4 KB (freed by the overlays), one at a time: a GEOS sequential file
+of a gush type, with a header (jump table, the gush API version).
+**wget** does HTTP only (the Ultimate's TCP sockets), the file into the
+current directory under the URL's last part, `-O name` to choose.
+**Completion**: the first `<-` completes as far as all matches agree,
+a second one lists the matches and shows the line again.
+
 State: **3.0 (2026-11-05)** done (gush to `$3318`, the large buffers at
 `$6000-$7973`). **3.1 (2026-11-05)**: variables in a 1 KB table in
 gush's memory (vars.s; RAM rather than the REU: simpler, and enough),
@@ -397,5 +408,18 @@ numbers, `!`), `read NAME...` (keyboard, or the `<` file), `true`,
 A typed line must close its blocks (no continuation lines yet). Not
 tested: RUN/STOP (VICE's monitor cannot hold a key). Test g15.py.
 Memory: gush to `$5759` now; more buffers move to `$6000` or into
-overlays when the next sub-steps need room.
+overlays when the next sub-steps need room. **3.5 (2026-11-05)**: pipes:
+`a | b | ...` (an unquoted `|`), the stages one after the other: each
+one's output into gush's REU (bank 6, two areas of 32 KB used in turn:
+"pipe full" beyond), the next one's input from there (`cat`, `more`,
+`read` read their input through one routine, redir.s `ReadIn`, from a
+file or a pipe); a pipeline's text kept in bank 5 per script depth (a
+stage may run a script with pipelines of its own); conditions of `if`
+and `while` may be pipelines. A block cannot be a stage (`cat f | while
+read L; ...`): a stage is one statement. Fixed on the way: the
+`sta`/`bne` trap (`sta` keeps the flags of the `cmp` before it) in the
+statement and stage scanners, which ended a quote as soon as it began;
+the 16-bit limit of a pipe read. Test g16.py. Memory: the executor's
+three page buffers moved to `$6000` (gush's code area to `$57B1`, the
+high one to `$7C72`).
 

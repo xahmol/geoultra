@@ -18,6 +18,7 @@
 
         .import Run, Parse, Fail, Say, lineBuf, lineLen, argc, argLo, argHi
         .import status, failed, VarSet, varName, depth, exitReq
+        .import PipeOut, PipeIn
         .export Exec, ExecLine, breakReq, cachePage, ScriptExec
 
 StashRAM        = $C2C8
@@ -181,14 +182,124 @@ Do:     lda skip
 KwDo:   .word DoIf-1, DoRest-1, DoElif-1, DoElse-1, DoFi-1
         .word DoWhile-1, DoRest-1, DoDone-1, DoFor-1
 
-; Plain: a statement without a keyword: Run.
-Plain:  ldx #0
-@copy:  lda stmtBuf,x
-        sta lineBuf,x
-        beq @run
-        inx
+; Plain: a statement without a keyword: RunPiped.
+Plain:  lda #<stmtBuf
+        sta restPtr
+        lda #>stmtBuf
+        sta restPtr+1
+        jmp RunPiped
+
+; RunPiped: the statement at (restPtr) run (Run), its stages (split at
+; an unquoted "|") one after the other, each one's output (redir.s,
+; PipeOut) the next one's input (PipeIn). status: the last stage's. The
+; statement is kept in LINE_BANK at page 1 + depth meanwhile: a stage may
+; run a script, whose own statements use the buffers.
+RunPiped:
+        ldy #0                  ; to pipeSrc, then to its REU page
+@copy:  lda (restPtr),y
+        sta pipeSrc,y
+        beq :+
+        iny
         bne @copy
-@run:   jmp Run
+:       ldy #0                  ; (Y: Keep's direction: stash)
+        jsr Keep
+        lda #0
+        sta stage
+        sta srcAt
+@stage: ldy #1                  ; (fetch: a script may have used it)
+        jsr Keep
+        jsr Segment             ; the next stage to lineBuf; more: C set
+        lda #0
+        rol
+        sta more
+        beq @in                 ; (the last: its output as it is)
+        lda stage
+        and #1
+        jsr PipeOut
+        bcs @end                ; (said)
+@in:    lda stage               ; the stage before: its output as input
+        beq @run
+        sec
+        sbc #1
+        and #1
+        jsr PipeIn
+@run:   jsr Run
+        inc stage
+        lda breakReq
+        bne @end
+        lda more
+        bne @stage
+@end:   rts
+
+; Keep: Y = 0: pipeSrc to LINE_BANK, page 1 + depth; 1: back from there.
+Keep:   lda #<pipeSrc
+        sta r0L
+        lda #>pipeSrc
+        sta r0H
+        lda #0
+        sta r1L
+        sta r2L
+        lda depth
+        clc
+        adc #1
+        sta r1H
+        lda #1
+        sta r2H
+        lda #LINE_BANK
+        sta r3L
+        tya
+        bne :+
+        jmp StashRAM
+:       jmp FetchRAM
+
+; Segment: pipeSrc from srcAt to an unquoted "|" (or its end) to lineBuf;
+; srcAt past it. C set when a "|" ended it (more stages follow).
+Segment:
+        ldy srcAt
+        ldx #0
+        lda #0
+        sta quote
+@ch:    lda pipeSrc,y
+        beq @end
+        iny
+        sta lineBuf,x
+        inx
+        lda quote
+        bne @inq
+        lda pipeSrc-1,y
+        cmp #'|'
+        beq @pipe
+        cmp #'"'
+        beq @open
+        cmp #$27
+        beq @open
+        cmp #'\'
+        bne @ch
+        lda pipeSrc,y           ; (\: the next as it is)
+        beq @end
+        sta lineBuf,x
+        inx
+        iny
+        bne @ch
+@open:  sta quote               ; (sta keeps cmp's flags: jmp, not bne)
+        jmp @ch
+@inq:   lda pipeSrc-1,y
+        cmp quote
+        bne @ch
+        lda #0
+        sta quote
+        beq @ch
+@pipe:  dex                     ; (the "|" off)
+        lda #0
+        sta lineBuf,x
+        sty srcAt
+        sec
+        rts
+@end:   lda #0
+        sta lineBuf,x
+        sty srcAt
+        clc
+        rts
 
 ; DoRest: "then", "do": the rest of the statement, if any, run.
 DoRest: ldy #0
@@ -198,19 +309,12 @@ DoRest: ldy #0
 :       jsr Shift               ; to stmtBuf's start, then as a statement
         jmp Do
 
-; Cond: the rest of the statement run as a command: C clear when its
+; Cond: the rest of the statement run (RunPiped): C clear when its
 ; status is 0 (true). (Empty: false.)
 Cond:   ldy #0
         lda (restPtr),y
         beq @false
-        ldx #0
-@copy:  lda (restPtr),y
-        sta lineBuf,x
-        beq @run
-        iny
-        inx
-        bne @copy
-@run:   jsr Run
+        jsr RunPiped
         lda status
         cmp #1                  ; (0: C clear)
         rts
@@ -578,8 +682,8 @@ GetStmt:
         jsr GetCh               ; (\: the next as it is)
         bcs @end
         bcc @put
-@open:  sta quote
-        bne @put
+@open:  sta quote               ; (sta keeps cmp's flags: jmp, not bne)
+        jmp @put
 @quoted:
         cmp quote
         bne @put
@@ -762,6 +866,9 @@ stmtHi:         .byte 0
 saveLo:         .byte 0
 saveHi:         .byte 0
 breakReq:       .byte 0
+stage:          .byte 0         ; RunPiped: the stage, more after it,
+more:           .byte 0         ; its place in pipeSrc
+srcAt:          .byte 0
 cachePage:      .byte $FF
 cacheBank:      .byte $FF
 
@@ -780,5 +887,8 @@ frPosHi:        .res FR_MAX
 frBodyLo:       .res FR_MAX
 frBodyHi:       .res FR_MAX
 frDone:         .res FR_MAX     ; if: a branch taken; for: its index
+        .segment "HIGHBSS"
 stmtBuf:        .res STMT_MAX + 1
+pipeSrc:        .res 256
 cache:          .res 256
+        .segment "BSS"

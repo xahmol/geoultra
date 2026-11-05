@@ -11,7 +11,7 @@
         .include "gush.inc"
 
         .import FileEngine, argc, argLo, argHi, failed, Fail
-        .import VarSet, varName, ConPut, ConNewLine, conCol, inHandle
+        .import VarSet, varName, ConPut, ConNewLine, conCol, inHandle, ReadIn
         .export CmdTest, CmdBracket, CmdRead, CmdTrue, CmdFalse
 
 GetNextChar     = $C2A7
@@ -450,7 +450,8 @@ Set:    lda from
 Line:   ldx #0
         stx at
         lda inHandle
-        bmi @key
+        cmp #$FF
+        beq @key
 @file:  lda #<chr               ; a byte at a time
         sta r1L
         lda #>chr
@@ -459,9 +460,8 @@ Line:   ldx #0
         sta r2L
         lda #0
         sta r2H
-        ldy inHandle
-        lda #FE_READ
-        jsr FileEngine
+        ldy inHandle            ; (a file, or a pipe)
+        jsr ReadIn
         txa
         bne @eof
         lda r2L

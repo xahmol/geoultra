@@ -17,7 +17,14 @@
 
         .import FileEngine, Fail, argc, argLo, argHi, depth
         .export Redirect, EndRedirect, SinkPut, sinkOn, sinkPause, inHandle
+        .export PipeOut, PipeIn, ReadIn, PIPE
+        .import Say
 
+StashRAM        = $C2C8
+FetchRAM        = $C2CB
+PIPE            = $FE           ; the handle of a pipe (a stage's output in
+PIPE_BANK       = 6             ; the REU: two areas of PIPE_MAX in this
+PIPE_MAX        = $8000         ; bank, used in turn)
 FO_READ         = 0
 FO_WRITE        = 1
 FO_APPEND       = 2
@@ -81,7 +88,8 @@ Redirect:
         sta sinkOn
         bne @drop
 @in:    lda inHandle
-        bmi :+
+        cmp #$FF
+        beq :+
         ldx #ERR_ONE_REDIR
         bne @fail
 :       lda #FO_READ
@@ -124,24 +132,133 @@ EndRedirect:
         cmp depth
         bne @in
         jsr Flush
-        ldy outHandle
+        lda outHandle           ; a pipe: its bytes stay for the next stage
+        cmp #PIPE
+        bne @close
+        ldx outArea
+        lda pipeLen
+        sta availLo,x
+        lda pipeLen+1
+        sta availHi,x
+        lda pipeFull
+        beq @off
+        lda #0
+        sta pipeFull
+        lda #<FullText
+        ldy #>FullText
+        jsr Say
+        jmp @off
+@close: ldy outHandle
         lda #FE_CLOSE
         jsr FileEngine
-        lda #0
+@off:   lda #0
         sta sinkOn
         sta sinkPause
 @in:    lda inHandle
-        bmi @end
+        cmp #$FF
+        beq @end
         lda inDepth
         cmp depth
         bne @end
         lda inHandle
+        cmp #PIPE               ; (a pipe: nothing to close)
+        beq @free
         tay
         lda #FE_CLOSE
         jsr FileEngine
-        lda #$FF
+@free:  lda #$FF
         sta inHandle
 @end:   rts
+
+; PipeOut: the output of this stage into pipe area A (its old bytes
+; dropped). C set when the output goes elsewhere already (said).
+PipeOut:
+        bit sinkOn
+        bpl :+
+        ldx #ERR_ONE_REDIR
+        ldy #$FF
+        jsr Fail
+        sec
+        rts
+:       sta outArea
+        lda #PIPE
+        sta outHandle
+        lda #0
+        sta pipeLen
+        sta pipeLen+1
+        sta sinkLen
+        lda depth
+        sta sinkDepth
+        lda #$80
+        sta sinkOn
+        clc
+        rts
+
+; PipeIn: the input of this stage from pipe area A (what the stage before
+; wrote).
+PipeIn: tax
+        stx inArea
+        lda availLo,x
+        sta inLenLo
+        lda availHi,x
+        sta inLenHi
+        lda #0
+        sta inPosLo
+        sta inPosHi
+        lda #PIPE
+        sta inHandle
+        lda depth
+        sta inDepth
+        rts
+
+; ReadIn: Y = a handle (a file's, or PIPE): up to r2 bytes to (r1); r2 =
+; the bytes read. X = 0 or the error.
+ReadIn: cpy #PIPE
+        beq :+
+        lda #FE_READ
+        jmp FileEngine
+:       lda inLenLo             ; at most what is left (16 bits)
+        sec
+        sbc inPosLo
+        sta leftLo
+        lda inLenHi
+        sbc inPosHi
+        sta leftHi
+        lda leftLo
+        cmp r2L
+        lda leftHi
+        sbc r2H
+        bcs :+                  ; (enough left)
+        lda leftLo
+        sta r2L
+        lda leftHi
+        sta r2H
+:       lda r1L                 ; to (r1) from the area at inPos
+        sta r0L
+        lda r1H
+        sta r0H
+        lda inPosLo
+        sta r1L
+        lda inPosHi
+        ldx inArea
+        beq :+
+        ora #>PIPE_MAX
+:       sta r1H
+        lda #PIPE_BANK
+        sta r3L
+        lda r2L
+        ora r2H
+        beq @none
+        jsr FetchRAM
+        lda inPosLo
+        clc
+        adc r2L
+        sta inPosLo
+        lda inPosHi
+        adc r2H
+        sta inPosHi
+@none:  ldx #0
+        rts
 
 ; SinkPut: A into the output file's buffer (written when full). Destroys
 ; A, X, Y.
@@ -173,8 +290,45 @@ Flush:  ldx #9
         ora r2L
         beq @back
         ldy outHandle
+        cpy #PIPE
+        beq @pipe
         lda #FE_WRITE
         jsr FileEngine
+        jmp @back
+@pipe:  lda pipeLen             ; room left in the area?
+        clc
+        adc r2L
+        tax
+        lda pipeLen+1
+        adc r2H
+        cmp #>PIPE_MAX
+        bcc :+
+        bne @over
+        cpx #0
+        beq :+
+@over:  inc pipeFull            ; (more: left out, said at the end)
+        jmp @back
+:       lda r1L                 ; sinkBuf to the area at pipeLen
+        sta r0L
+        lda r1H
+        sta r0H
+        lda pipeLen
+        sta r1L
+        lda pipeLen+1
+        ldx outArea
+        beq :+
+        ora #>PIPE_MAX
+:       sta r1H
+        lda #PIPE_BANK
+        sta r3L
+        jsr StashRAM
+        lda pipeLen
+        clc
+        adc r2L
+        sta pipeLen
+        lda pipeLen+1
+        adc r2H
+        sta pipeLen+1
 @back:  lda #0
         sta sinkLen
         sta full
@@ -197,6 +351,20 @@ sinkLen:        .byte 0
 full:           .byte 0
 kind:           .byte 0
 at:             .byte 0
+outArea:        .byte 0
+inArea:         .byte 0
+pipeFull:       .byte 0
+pipeLen:        .word 0
+inPosLo:        .byte 0
+inPosHi:        .byte 0
+inLenLo:        .byte 0
+inLenHi:        .byte 0
+leftLo:         .byte 0
+leftHi:         .byte 0
+availLo:        .byte 0, 0      ; per area: the bytes written
+availHi:        .byte 0, 0
+
+FullText:       .byte "gush: pipe full (32 KB): the rest left out", 0
 
         .segment "BSS"
 

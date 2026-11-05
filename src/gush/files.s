@@ -11,7 +11,7 @@
         .import ConPut, ConPuts, ConNewLine, conCol
         .import FileEngine, argc, argLo, argHi
         .import ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
-        .import CopyTree, sinkOn, inHandle
+        .import CopyTree, sinkOn, inHandle, ReadIn
         .export CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
         .export Ask, AskPath, Copy1, func, Options, firstArg, tracks
 
@@ -419,7 +419,8 @@ Show:   sta paging
         cmp #2
         bcs @paths
         lda inHandle            ; no path: the input (none: nothing)
-        bmi @end
+        cmp #$FF
+        beq @end
         sta handle
         jsr ShowHandle
         jmp @end
@@ -460,9 +461,8 @@ ShowHandle:
         sta r2L
         lda #1
         sta r2H
-        ldy handle
-        lda #FE_READ
-        jsr FileEngine
+        ldy handle              ; (a file, or a pipe: redir.s)
+        jsr ReadIn
         txa
         bne @close
         lda r2L                 ; (the bytes read: at most 256)
