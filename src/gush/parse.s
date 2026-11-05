@@ -10,6 +10,7 @@
         .include "gush.inc"
 
         .import lineBuf, FileEngine, VarFind, varName, IsNameChar, status
+        .import ArgN
         .export Parse, argc, argLo, argHi
 
         .segment "ZEROPAGE"
@@ -36,7 +37,10 @@ Parse:  lda #0
         bne @start
         inx
         bne @sp
-@start: stx inPos
+@start: cmp #'#'                ; a comment: the rest of the line
+        bne :+
+        jmp @done
+:       stx inPos
         lda argc
         cmp #ARGS_MAX
         bcc :+
@@ -151,28 +155,35 @@ Mark:   sta redirCh
         rts
 
 ; Dollar (after a "$", inPos at the next character): a variable's
-; value, $? the status of the last line, ${NAME}; $0-$9 and $# (a
-; script's words: sub-step 3) empty for now; a "$" with no name after it
-; stays. C set when argBuf is full.
+; value, $? the status of the last line, ${NAME}; $0-$9 and $# a
+; script's words and their number (script.s, ArgN; empty outside one); a
+; "$" with no name after it stays. C set when argBuf is full.
 Dollar: ldx inPos
         lda lineBuf,x
         cmp #'?'
         beq @status
         cmp #'#'
-        beq @skip
+        beq @count
         cmp #'{'
         beq @brace
         cmp #'0'
         bcc :+
         cmp #'9' + 1
-        bcc @skip
+        bcc @arg
 :       jsr IsNameChar
         bcs @name
         lda #'$'                ; (no name: the "$" itself)
         jmp Out
-@skip:  inc inPos
-        clc
+@count: lda #$FF                ; $#: the script's words' number
+        .byte $2C               ; (bit abs: skips the next lda)
+@arg:   and #$0F                ; $0-$9: the script's word
+        inc inPos
+        jsr ArgN
+        bcc @val0
+        clc                     ; (none: empty)
         rts
+@val0:  ldy #0
+        jmp @val
 @brace: inx
         ldy #0
 @bn:    lda lineBuf,x

@@ -305,6 +305,11 @@ def main():
     g.run("geoFolder /a/INI")                        # (in VICE no DA by name)
     check("a desk accessory with a document", "".join(g.lines()[-3:-1]),   # (two lines)
           "gush: geoFolder: /a/INI: a desk accessory takes no document")
+    import ftplib
+    import io
+    ftp = ftplib.FTP(u.ip)                          # gushrc for the fresh gush
+    ftp.login()
+    ftp.storbinary("STOR /USB0/GEOULTRA/gushrc", io.BytesIO(b"# gu64\rG='from gushrc'\r"))
     g.run("geoFolder", settle=4)                     # its gush button
     u.write(0x3A, bytes([224, 0, 78]))
     time.sleep(0.5)
@@ -316,6 +321,9 @@ def main():
     rows = g.lines()
     check("geoFolder's gush button: a fresh gush", (rows[0].startswith("gush, the GeoUltra shell") if rows
                                                      else rows, rows[1:]), (True, ["$"]))
+    check("gushrc run at its start (step 3.3)", out("echo $G"), "from gushrc")
+    ftp.delete("/USB0/GEOULTRA/gushrc")
+    ftp.quit()
     g.run("reboot", settle=1)                       # (last: it ends the session)
     time.sleep(25)
     check("reboot: GEOS started afresh (keyVector cleared)", bytes(u.read(0x84A3, 2)), b"\0\0")

@@ -25,10 +25,11 @@ def main():
     try:
         g.start()
         g.run("help")
-        check("help", g.lines()[-6:-1], ["commands: cd clear cp date df echo exit free help ls",
+        check("help", g.lines()[-7:-1], ["commands: cd clear cp date df echo exit free help ls",
                                           "mkdir mkimg more mount mv ntp pwd reboot rm rmdir",
-                                          "set turbo umount unset; NAME=value sets a variable,",
-                                          "$NAME uses it; a program's name starts it.",
+                                          "set source turbo umount unset; NAME=value sets a",
+                                          "variable, $NAME uses it; a program's name or a",
+                                          "script's starts it.",
                                           "help NAME: a command's use."])
         g.run("help cp")
         check("help cp", g.lines()[-2], "cp [-frR] source... target")
@@ -36,7 +37,7 @@ def main():
         check("help for nothing", g.lines()[-2], "gush: no help for frob")
         g.run("cd /b")
         g.run("ALPHA")
-        check("a file that is no program", g.lines()[-2], "gush: ALPHA: no program")
+        check("a plain file: run as a script (3.3; these bytes: nothing)", g.lines()[-2], "$ ALPHA")
         g.run("frob")
         check("an unknown name", g.lines()[-2], "gush: frob: not found")
         g.run("gush", settle=5)

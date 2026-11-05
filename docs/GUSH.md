@@ -369,5 +369,17 @@ it; output goes through a 256-byte buffer into the file (`FE_WRITE`; a
 new line is a CR), errors and questions (lines starting "gush: ") stay
 on the screen, like sh's stderr; `cat` and `more` without a path read
 the `<` file; `more` does not page into a file; `ls` into a file writes
-a name per line. Test g13.py.
+a name per line. Test g13.py. **3.3 (2026-11-05)**: scripts
+(script.s): a text file read whole into gush's REU (bank 4, 16 KB a
+script, 4 deep), its lines run as typed lines are; run by `source file
+[words]`, or by name: a plain file (CBM on a GEOS drive, or on the
+Ultimate) that is no program runs as a script (a GEOS document still
+says "no program"), looked for in the current folder, the drives' roots,
+then along `PATH`; `$0` (its path), `$1`-`$9`, `$#`; `#` comments (a
+word starting with `#` ends the line); `exit N` ends a script with
+status N (outside one: the desktop); variables shared with the caller;
+a redirection belongs to the level that made it (a script run with `>
+file` writes there to its end; a second output redirection inside it
+is refused); `HOME/gushrc` run at gush's start. Not yet: RUN/STOP
+ending a script. Tests g14.py, gu64.py (gushrc).
 

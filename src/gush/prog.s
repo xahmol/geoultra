@@ -15,7 +15,8 @@
         .include "gush.inc"
 
         .import FileEngine, Status, ConRedraw, argc, argLo, argHi
-        .export StartProgram
+        .export StartProgram, prog
+        .import VarFind, varName
 
 GetFile         = $C208         ; GEOS jump table
 StashRAM        = $C2C8
@@ -29,6 +30,15 @@ OTHER_FOLDER    = $FE
 FI_KIND         = 0
 FI_GTYPE        = 3
 K_GEOS          = 3
+K_CBM           = 4
+K_UFILE         = 5
+PATH_DIR_MAX    = 80            ; a PATH folder's characters at most
+PATH_BUF        = 128           ; a folder, "/", the word
+
+        .segment "ZEROPAGE"
+
+pathAt:         .res 2          ; Path: the PATH folder looked at
+argLo0:         .res 2          ; Path: word 0
 
         .segment "CODE"
 
@@ -69,6 +79,8 @@ StartProgram:
         lda drive
         cmp #'d' + 1
         bcc @drive
+        jsr Path                ; then along PATH
+        bcc Found
 @end:   ldy #$FF                ; (about the program)
         rts
 
@@ -89,8 +101,13 @@ Try:    lda r0L
         jsr FileEngine
         txa
         bne @none
-        ldx #STRUCT_MISMAT
+        ldx #IS_SCRIPT          ; a plain file: a script (script.s)
         lda info + FI_KIND
+        cmp #K_CBM
+        beq @no
+        cmp #K_UFILE
+        beq @no
+        ldx #STRUCT_MISMAT
         cmp #K_GEOS
         bne @no
         lda info + FI_GTYPE
@@ -244,6 +261,75 @@ High:   lda #<$6000
         jmp StashRAM
 :       jmp FetchRAM
 
+; Path: word 0 looked for in each folder of PATH (":" between them): C
+; clear for a program (Found goes on); else C set, X = FILE_NOT_FOUND,
+; IS_SCRIPT (prog: the file) or another error. Destroys A, Y.
+Path:   ldy #0
+@name:  lda PathName,y
+        sta varName,y
+        beq :+
+        iny
+        bne @name
+:       jsr VarFind
+        bcs @none
+        lda r1L
+        sta pathAt
+        lda r1H
+        sta pathAt+1
+        lda argLo
+        sta argLo0
+        lda argHi
+        sta argLo0+1
+@dir:   ldy #0                  ; a folder: up to ":" or the end
+        ldx #0
+@ch:    lda (pathAt),y
+        beq @copy
+        cmp #':'
+        beq @copy
+        sta pathBuf,x
+        inx
+        iny
+        cpx #PATH_DIR_MAX
+        bcc @ch
+@copy:  sty dirLen
+        lda #'/'
+        sta pathBuf,x
+        inx
+        ldy #0                  ; then the word
+@word:  lda (argLo0),y
+        sta pathBuf,x
+        beq @try
+        inx
+        iny
+        cpx #PATH_BUF - 1
+        bcc @word
+        lda #0
+        sta pathBuf,x
+@try:   lda #<pathBuf
+        sta r0L
+        lda #>pathBuf
+        sta r0H
+        jsr Try
+        bcc @end
+        cpx #FILE_NOT_FOUND
+        bne @end
+        ldy dirLen              ; the next folder, if a ":" ended this
+        lda (pathAt),y
+        beq @none
+        iny
+        tya
+        clc
+        adc pathAt
+        sta pathAt
+        bcc @dir
+        inc pathAt+1
+        bne @dir
+@none:  ldx #FILE_NOT_FOUND
+        sec
+@end:   rts
+
+PathName:       .byte "PATH", 0
+
 ; Build: path = "/" drive "/" word 0, at r0.
 Build:  lda #'/'
         sta path
@@ -271,6 +357,7 @@ FE_NAME_MAX_LONG = 60
         .segment "DATA"
 
 drive:          .byte 0
+dirLen:         .byte 0
 wordLen:        .byte 0
 prog:           .word 0
 loadOpt:        .byte 0
@@ -280,6 +367,7 @@ docTS:          .word 0
         .segment "BSS"
 
 info:           .res 16
+pathBuf:        .res PATH_BUF
 short:          .res 17
 docShort:       .res 17
 path:           .res 3 + FE_NAME_MAX_LONG + 1

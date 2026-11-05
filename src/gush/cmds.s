@@ -14,7 +14,8 @@
         .import CmdTurbo, CmdDate, CmdReboot, CmdNtp, CmdSet, CmdUnset
         .import VarSet, varName, IsNameChar, Redirect, EndRedirect, sinkPause
         .import sinkOn
-        .export status
+        .export status, failed
+        .import RunScript, CmdSource, depth, exitReq, exitStatus, prog
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -102,7 +103,15 @@ Line:   jsr Parse
         beq @end
         cpy #1                  ; (the document's error)
         beq @fail
-        cpx #STRUCT_MISMAT
+        cpx #IS_SCRIPT          ; a plain file: run as a script
+        bne :+
+        lda prog
+        sta r0L
+        lda prog+1
+        sta r0H
+        ldx #1
+        jmp RunScript
+:       cpx #STRUCT_MISMAT
         bne @nf
         jsr Gush                ; there, but no program
         ldx #0
@@ -173,12 +182,45 @@ Commands:
         .word CmdHelp
         .byte "set", 0
         .word CmdSet
+        .byte "source", 0
+        .word CmdSource
         .byte "unset", 0
         .word CmdUnset
         .byte 0
 
+; exit [N]: in a script, the script ends (status N, else 0); else back
+; to the desktop.
 CmdExit:
+        lda depth
+        bne :+
         jmp EnterDeskTop
+:       lda #0
+        sta exitStatus
+        lda argc
+        cmp #2
+        bcc @end
+        ldx #1
+        jsr ArgStr
+        ldy #0
+@digit: lda (str),y             ; (0-255; the digits there)
+        sec
+        sbc #'0'
+        cmp #10
+        bcs @end
+        pha
+        lda exitStatus
+        asl
+        asl
+        adc exitStatus
+        asl
+        sta exitStatus
+        pla
+        adc exitStatus
+        sta exitStatus
+        iny
+        bne @digit
+@end:   inc exitReq
+        rts
 
 ; help [command]: the commands, or one command's use.
 CmdHelp:
@@ -230,8 +272,9 @@ CmdHelp:
 HelpAll:                        ; (lines within COLS)
         .byte "commands: cd clear cp date df echo exit free help ls", CR
         .byte "mkdir mkimg more mount mv ntp pwd reboot rm rmdir", CR
-        .byte "set turbo umount unset; NAME=value sets a variable,", CR
-        .byte "$NAME uses it; a program's name starts it.", CR
+        .byte "set source turbo umount unset; NAME=value sets a", CR
+        .byte "variable, $NAME uses it; a program's name or a", CR
+        .byte "script's starts it.", CR
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
         .byte "date [YYYY-MM-DD HH:MM[:SS]]", 0
@@ -239,7 +282,7 @@ Usage:  .byte "cd [path]", 0
         .byte "cp [-frR] source... target", 0
         .byte "df [path]", 0
         .byte "echo words...", 0
-        .byte "exit", 0
+        .byte "exit [N]", 0
         .byte "free", 0
         .byte "help [command]", 0
         .byte "ls [-l] [path...]", 0
@@ -254,6 +297,7 @@ Usage:  .byte "cd [path]", 0
         .byte "rm [-f] path...", 0
         .byte "rmdir path...", 0
         .byte "set", 0
+        .byte "source file [words]", 0
         .byte "turbo [-s] [step]", 0
         .byte "unset name...", 0
         .byte "umount /drive", 0
@@ -786,14 +830,16 @@ ErrText:
         jmp ConNewLine
 
 ErrCodes:
-        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $F6, $F7
+        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $F3, $F4
+        .byte $F5, $F6, $F7
         .byte $F8
         .byte $F9, $FA
         .byte $FB, $FC, $FD, $FE, $FF, 0
 ErrTexts:
         .word ErrSpace, ErrNotFound, ErrDrive, ErrProtect, ErrExists
         .word ErrNotEmpty, ErrCancelled, ErrBadPath, ErrNotFolder
-        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrNoServer, ErrClock
+        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrDeep, ErrOneRedir
+        .word ErrLong, ErrNoServer, ErrClock
         .word ErrNoTurbo
         .word ErrWords, ErrOwnDrive
         .word ErrNoRoom, ErrNoDoc, ErrOneDoc
@@ -810,10 +856,13 @@ ErrNotFolder:   .byte "not a folder", 0
 ErrIsFolder:    .byte "is a folder", 0
 ErrNotSupp:     .byte "not supported", 0
 ErrUltimate:    .byte "the Ultimate refused", 0
+ErrDeep:        .byte "scripts nested too deep (4 at most)", 0
+ErrOneRedir:    .byte "one output redirection at a time", 0
+ErrLong:        .byte "script too long (16 KB at most)", 0
 ErrNoServer:    .byte "no server (SETTINGS.INI [time] ntp=)", 0
 ErrClock:       .byte "clock setting off (Ultimate menu, Allow SetDate)", 0
 ErrNoTurbo:     .byte "no turbo (an Ultimate 64 has it)", 0   ; (gush's
-ErrWords:       .byte "wrong words (see help)", 0      ; own, $F6-$FF)
+ErrWords:       .byte "wrong words (see help)", 0      ; own, $F3-$FF)
 ErrOwnDrive:    .byte "gush runs from there", 0
 ErrNoRoom:      .byte "no room in the REU", 0
 ErrNoDoc:       .byte "a desk accessory takes no document", 0

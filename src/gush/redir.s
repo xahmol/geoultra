@@ -7,12 +7,15 @@
 ; when it is full and at the line's end (EndRedirect). Error messages and
 ; questions start with "gush: " (cmds.s, Gush): sinkPause keeps that
 ; line on the screen. "<" gives commands that read their input
-; (cat, more without a path) the file's handle in inHandle. Own code.
+; (cat, more without a path) the file's handle in inHandle. A
+; redirection belongs to the script level that made it (sinkDepth,
+; inDepth): a script run with "> file" writes there to its end; its own
+; lines cannot open a second one (ERR_ONE_REDIR). Own code.
 
         .include "geos.inc"
         .include "gush.inc"
 
-        .import FileEngine, Fail, argc, argLo, argHi
+        .import FileEngine, Fail, argc, argLo, argHi, depth
         .export Redirect, EndRedirect, SinkPut, sinkOn, sinkPause, inHandle
 
 FO_READ         = 0
@@ -37,8 +40,9 @@ Redirect:
         ldy #0
         lda (r0),y
         cmp #REDIR_IN + 1
-        bcs @next               ; (a word: no marker byte)
-        sta kind
+        bcc :+
+        jmp @next               ; (a word: no marker byte)
+:       sta kind
         stx at
         inx                     ; the file: the next word
         cpx argc
@@ -55,7 +59,11 @@ Redirect:
         lda kind
         cmp #REDIR_IN
         beq @in
-        sec                     ; FO_WRITE (>) or FO_APPEND (>>)
+        bit sinkOn              ; one at a time
+        bpl :+
+        ldx #ERR_ONE_REDIR
+        bne @fail
+:       sec                     ; FO_WRITE (>) or FO_APPEND (>>)
         sbc #REDIR_OUT - FO_WRITE
         sta r2L
         lda #FE_OPEN
@@ -63,18 +71,26 @@ Redirect:
         txa
         bne @fail
         sta outHandle
+        lda depth
+        sta sinkDepth
         lda #0
         sta sinkLen
         lda #$80
         sta sinkOn
         bne @drop
-@in:    lda #FO_READ
+@in:    lda inHandle
+        bmi :+
+        ldx #ERR_ONE_REDIR
+        bne @fail
+:       lda #FO_READ
         sta r2L
         lda #FE_OPEN
         jsr FileEngine
         txa
         bne @fail
         sta inHandle
+        lda depth
+        sta inDepth
 @drop:  ldx at                  ; the two words off: the rest down
 @move:  cpx argc
         bcs @less
@@ -102,6 +118,9 @@ Redirect:
 EndRedirect:
         bit sinkOn
         bpl @in
+        lda sinkDepth           ; (a script's lines: its caller's stays)
+        cmp depth
+        bne @in
         jsr Flush
         ldy outHandle
         lda #FE_CLOSE
@@ -111,6 +130,10 @@ EndRedirect:
         sta sinkPause
 @in:    lda inHandle
         bmi @end
+        lda inDepth
+        cmp depth
+        bne @end
+        lda inHandle
         tay
         lda #FE_CLOSE
         jsr FileEngine
@@ -166,6 +189,8 @@ sinkOn:         .byte 0         ; bit 7: output to the file
 sinkPause:      .byte 0         ; nonzero: this line to the screen
 inHandle:       .byte $FF       ; the input file's handle ($FF: none)
 outHandle:      .byte 0
+sinkDepth:      .byte 0         ; the script level that opened them
+inDepth:        .byte 0
 sinkLen:        .byte 0
 full:           .byte 0
 kind:           .byte 0

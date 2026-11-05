@@ -50,7 +50,12 @@ REDIR_OUT       = 1
 REDIR_ADD       = 2
 REDIR_IN        = 3
 
+IS_SCRIPT       = $F2           ; prog.s: a plain file, a script (no error)
+
 ; gush's own errors (cmds.s ErrCodes, ErrTexts)
+ERR_DEEP        = $F3           ; scripts nested too deep
+ERR_ONE_REDIR   = $F4           ; a second output redirection (a script's)
+ERR_LONG        = $F5           ; a script longer than its REU area
 ERR_NO_SERVER   = $F6           ; no NTP server given or set
 ERR_CLOCK       = $F7           ; the Ultimate's clock may not be set
 ERR_NO_TURBO    = $F8           ; no turbo registers

@@ -8,7 +8,7 @@
 
         .import ConInit, ConPut, ConPuts, ConNewLine, ConClear, ConCursor
         .import ConStatus, conCol, conRow
-        .import EdKey, EdPress, Prompt, VarsInit
+        .import EdKey, EdPress, Prompt, VarsInit, RunRc
         .export FileEngine, Status, pwdBuf, startDrive
 
 EnterDeskTop    = $C22C         ; GEOS jump table
@@ -35,6 +35,7 @@ Start:  lda curDrive            ; (cd without a path: its root)
         lda #>Hello
         sta r0H
         jsr ConPuts
+        jsr RunRc               ; HOME/gushrc, when there
         jsr Prompt
         lda #<EdKey
         sta keyVector
