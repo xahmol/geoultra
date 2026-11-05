@@ -210,3 +210,28 @@ GeoUltra's own desktop.
    started from (a home folder can come with `gushrc` in step 3).
 5. **`cat` on GEOS documents:** VLIR files are refused in step 1 (the
    engine's streams refuse them); geoWrite as text can come later.
+
+## Step 2 (decisions, user, 2026-11-05)
+
+Step 2 is built on file engine step E4 (docs/FILE_ENGINE.md).
+
+1. **CVT:** `cp` and `mv` between a GEOS drive and the Ultimate convert
+   GEOS files to `.cvt` and back (decided 2026-11-04); `cp -R` copies
+   raw instead (a `.cvt` stays a `.cvt` file on the GEOS disk, a GEOS
+   file goes out as its data, as in step 1).
+2. **`mount image drive`, `umount drive`:** like the mount dialogue:
+   write-back on `umount`, `MOUNTS.INI` updated so the next boot comes
+   back with the same images. An image of another type changes the
+   drive's type; refused for the drive gush was started from and for
+   drive E.
+3. **`mkimg type path`:** new d64, d71, d81 and dnp images (dnp with
+   `-t tracks`), formatted with a disk name; code shared with the mount
+   dialogue.
+4. **System commands:** `free` (REU use), `turbo` (show and set the
+   U64's speed; for the session, `turbo -s N` also saves it in
+   `SETTINGS.INI`), `date` (show, and set the Ultimate's clock), no
+   `ntp` for now, `reboot` (GeoUltra, after the write-back; `reboot -u`
+   resets the Ultimate).
+5. **`cat`/`more` on the Ultimate:** as on GEOS drives: a `.cvt` of a
+   sequential GEOS file shows its data, a VLIR one is refused.
+

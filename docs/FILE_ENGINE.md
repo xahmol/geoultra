@@ -325,6 +325,12 @@ Ultimate side (long FAT names both ways, case-insensitive paths).
    **gush step 1** (decided: it includes the Ultimate's file system).
 5. **E4:** CVT both ways, streams on the Ultimate, mount and umount;
    gush step 2.
+   Decisions (user, 2026-11-05; docs/GUSH.md "Step 2"): a raw copy
+   stays possible (`FC_RAW`, gush `cp -R`); `FE_MOUNT`/`FE_UMOUNT` work
+   as the mount dialogue (write-back, `MOUNTS.INI`, the drive's type
+   follows the image); new images (`FE_MKIMG`); streams on the Ultimate
+   read a `.cvt` of a sequential GEOS file as its data and refuse a VLIR
+   one.
 
 ## State of the work
 
