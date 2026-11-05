@@ -475,5 +475,7 @@ word:   .byte 0
         .segment "BSS"
 
 path:   .res 64
+        .segment "HIGHBSS"
 imgPath:.res PATH_MAX + 1
+        .segment "BSS"
 diskName:.res 17

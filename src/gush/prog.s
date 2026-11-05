@@ -18,6 +18,9 @@
         .export StartProgram
 
 GetFile         = $C208         ; GEOS jump table
+StashRAM        = $C2C8
+FetchRAM        = $C2CB
+HIGH_BANK       = 3             ; (1: history, 2: cp -r, tree.s)
 FindFile        = $C20B
 ST_LD_DATA      = $80
 NO_DOC          = $FC           ; gush's own errors (cmds.s ErrCodes)
@@ -119,8 +122,10 @@ Found:  jsr Doc
         jsr FileEngine
         txa
         bne @end
-        lda loadOpt
-        beq @start
+        ldy #0                  ; gush's variables ($6000-$7F3F, which a
+        jsr High                ; desk accessory may draw over) kept
+        lda loadOpt             ; (before GetFile's registers: High uses
+        beq @start              ; r0-r3)
         lda curDrive            ; one drive: the document in this folder?
         cmp docDrive            ; (the same file: its first block)
         bne @pass
@@ -153,6 +158,8 @@ Found:  jsr Doc
         jsr GetFile             ; (an application: no return)
         txa
         pha
+        ldy #1                  ; a desk accessory back: gush's variables
+        jsr High
         jsr ConRedraw           ; a desk accessory back: the screen anew
         jsr Status
         pla
@@ -217,6 +224,25 @@ FindDoc:
 ; The drives' disk names (GetFile copies r2's to dataDiskName).
 DiskLo: .byte <DrACurDkNm, <DrBCurDkNm, <DrCCurDkNm, <DrDCurDkNm
 DiskHi: .byte >DrACurDkNm, >DrBCurDkNm, >DrCCurDkNm, >DrDCurDkNm
+
+; High: Y = 0: $6000-$7F3F to the application's REU (bank HIGH_BANK);
+; 1: back from there. (StashRAM, FetchRAM.) Destroys A, Y, r0-r3L.
+High:   lda #<$6000
+        sta r0L
+        sta r1L
+        lda #>$6000
+        sta r0H
+        sta r1H
+        lda #<$1F40
+        sta r2L
+        lda #>$1F40
+        sta r2H
+        lda #HIGH_BANK
+        sta r3L
+        tya
+        bne :+
+        jmp StashRAM
+:       jmp FetchRAM
 
 ; Build: path = "/" drive "/" word 0, at r0.
 Build:  lda #'/'

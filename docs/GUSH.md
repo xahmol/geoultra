@@ -116,12 +116,19 @@ GeoUltra's own desktop.
 
 ## Memory and build
 
-- Application space `$0400-$5FFF` (and up to `$7FFF` without the
-  background screen buffer, which gush does not need: it redraws from its
-  shadow). Estimate for step 1: console and font 3 KB, editor and
-  history 2 KB, parser and wildcard expansion 2 KB, commands 5-6 KB,
-  texts 2 KB: about 15 KB. More commands later go to VLIR records
-  loaded on demand (GEOS overlays), as geoWrite does.
+- Application space `$0400-$5FFF` for the code, its data and small
+  variables (2026-11-05: to `$3318`); the large buffers (`HIGHBSS`: the
+  screen shadow, the words, file texts, paths) in the background screen
+  buffer `$6000-$7F3F` (to `$7973`), which gush does not draw on: it
+  draws the foreground only and redraws from its shadow (step 3, sub-step
+  0). Before a desk accessory starts, `$6000-$7F3F` goes to gush's REU
+  bank 3 and comes back after it (prog.s, `High`), so an accessory that
+  draws into the background buffer cannot harm it. A GEOS dialog or
+  window of gush's own later does the same: the high area kept, the
+  dialog shown, the area back, the screen redrawn from the shadow
+  (GEOS's own recovery from the background buffer would show gush's
+  data). More commands later go to VLIR records loaded on demand (GEOS
+  overlays), as geoWrite does.
 - `src/gush/*.s`, one ld65 configuration, built into a GEOS application
   file (sequential, then VLIR when it outgrows memory) on drive E by the
   existing system-drive build (`SYSFILES`, as geoFolder).

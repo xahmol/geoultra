@@ -696,4 +696,6 @@ textEnd:        .word 0
 new:            .res 6
 iniPath:        .res 48
 tmpPath:        .res 48
+        .segment "HIGHBSS"
 text:           .res TEXT_MAX + 1
+        .segment "BSS"

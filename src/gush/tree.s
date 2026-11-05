@@ -384,7 +384,9 @@ mkTracks:       .byte 0
 
         .segment "BSS"
 
+        .segment "HIGHBSS"
 srcPath:        .res 256
 dstPath:        .res 256
 entry:          .res TREE_SLOT
+        .segment "BSS"
 info:           .res 16

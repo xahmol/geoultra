@@ -231,9 +231,11 @@ pos:            .byte 0
 
         .segment "BSS"
 
+        .segment "HIGHBSS"
 argLo:          .res ARGS_MAX
 argHi:          .res ARGS_MAX
 argBuf:         .res ARGBUF_SIZE
 patBuf:         .res 256
+        .segment "BSS"
 nameBuf:        .res 64
 info:           .res 16

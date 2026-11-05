@@ -475,4 +475,6 @@ statusIdx:      .byte 0
 
         .segment "BSS"
 
+        .segment "HIGHBSS"
 shadow:         .res ROWS_TEXT * COLS
+        .segment "BSS"
