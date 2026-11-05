@@ -11,7 +11,7 @@
         .export Run, ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
         .import StartProgram, CmdMount, CmdUmount, CmdMkimg, CmdFree
-        .import CmdTurbo, CmdDate
+        .import CmdTurbo, CmdDate, CmdReboot
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -140,6 +140,8 @@ Commands:
         .word CmdFree
         .byte "turbo", 0
         .word CmdTurbo
+        .byte "reboot", 0
+        .word CmdReboot
         .byte "date", 0
         .word CmdDate
         .byte "help", 0
@@ -198,8 +200,8 @@ CmdHelp:
 
 HelpAll:                        ; (lines within COLS)
         .byte "commands: cd clear cp date df echo exit free help ls", CR
-        .byte "mkdir mkimg more mount mv pwd rm rmdir turbo umount;", CR
-        .byte "a program's name starts it.", CR
+        .byte "mkdir mkimg more mount mv pwd reboot rm rmdir turbo", CR
+        .byte "umount; a program's name starts it.", CR
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
         .byte "date [YYYY-MM-DD HH:MM[:SS]]", 0
@@ -217,6 +219,7 @@ Usage:  .byte "cd [path]", 0
         .byte "mount [image /drive]", 0
         .byte "mv [-fR] source... target", 0
         .byte "pwd", 0
+        .byte "reboot", 0
         .byte "rm [-f] path...", 0
         .byte "rmdir path...", 0
         .byte "turbo [-s] [step]", 0

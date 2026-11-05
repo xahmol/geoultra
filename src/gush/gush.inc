@@ -42,6 +42,7 @@ FE_UMOUNT       = 18
 FE_SELECT       = 21
 FE_MOUNTINFO    = 23
 FE_MKIMG        = 24
+FE_REBOOT       = 28
 
 ; gush's own errors (cmds.s ErrCodes, ErrTexts)
 ERR_CLOCK       = $F7           ; the Ultimate's clock may not be set

@@ -108,6 +108,7 @@ OvMount:
         .include "fereu.inc"
         .include "femount.inc"
         .include "fedrive.inc"
+        .include "fework.inc"
 
 Ini:    jsr OvlCall             ; (module 67: MOUNTS.INI anew; a stub)
         .byte 67, 0
@@ -225,21 +226,6 @@ Unmount:
         sta saveDrive
 @done:  ldx #0
         rts
-
-; WorkOp: Y = REU_STASH or REU_FETCH: the work area <-> FE_WSAVE.
-WorkOp: lda #<FE_WORK
-        sta r0L
-        lda #>FE_WORK
-        sta r0H
-        lda #<FE_WSAVE
-        sta r1L
-        lda #>FE_WSAVE
-        sta r1H
-        lda #FE_WORK_LEN
-        sta r2L
-        lda #0
-        sta r2H
-        jmp ReuOp
 
         .endscope
 

@@ -114,6 +114,7 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 25 | `FE_TURBO` | r2L = $FF: ask; 0-15: set (also for applications started later) | r1L = the U64's speed step (`DEV_NOT_FOUND`: no turbo registers) |
 | 26 | `FE_HOME` | r1 = 32-byte buffer | the home folder's path ("/USB0/GEOULTRA/") |
 | 27 | `FE_SETTIME` | (GEOS's date and time set by the caller) | the CIA's time-of-day clock and the Ultimate's clock set from them (`FE_ULTIMATE`: the Ultimate's menu forbids it) |
+| 28 | `FE_REBOOT` | - | every drive written back, HIBERNAT.BIN deleted, the C64 restarted through the Ultimate (control target, `REBOOT`): GeoUltra boots afresh. Back only on an error (`FE_ULTIMATE`: a drive could not be written back) |
 
 Flags for `FE_COPY` and `FE_MOVE`: overwrite (else `FILE_EXISTS`),
 raw (no CVT conversion), and a progress vector in r3 (called after every
@@ -218,7 +219,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 56-60 | CVT (enginecvt.s): out, VLIR out, in, VLIR in, recognised |
 | 61-64 | streams on the Ultimate (enginestreamu.s): open, read, write, their setup |
 | 65-70 | mounting (enginemount.s): `FE_MOUNT` checked, `FE_UMOUNT` and `FE_MOUNTINFO`, MOUNTS.INI opened and closed, banks found and the image loaded, the drive entered, MOUNTS.INI's text |
-| 75 | `FE_TURBO`, `FE_HOME`, `FE_SETTIME` (enginesys.s) |
+| 75 | `FE_TURBO`, `FE_HOME`, `FE_SETTIME`, `FE_REBOOT` (enginesys.s; `fework.inc` shared with module 66) |
 | 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |
 
 Still to come (estimate): Ultimate to Ultimate copies.

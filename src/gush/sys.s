@@ -1,5 +1,5 @@
 ; gush: system commands (docs/GUSH.md, "Step 2"): mount, umount,
-; mkimg, free. Own code.
+; mkimg, free, reboot. Own code.
 
         .include "geos.inc"
         .include "gush.inc"
@@ -7,7 +7,7 @@
         .import FileEngine, Status, pwdBuf, startDrive, argc, argLo, argHi
         .import ArgR0, PutArg, Print, Say, Fail, Decimal, num
         .import ConPut, ConNewLine, Options, firstArg, tracks
-        .export CmdMount, CmdUmount, CmdMkimg, CmdFree
+        .export CmdMount, CmdUmount, CmdMkimg, CmdFree, CmdReboot
 
 INSUFF_SPACE    = 3
 PATH_MAX        = 250           ; a new image's path (the engine's: 255)
@@ -440,6 +440,18 @@ Drives: .byte "drives: ", 0
 Of:     .byte " of 157 banks used, ", 0
 FreeText:.byte " free", 0
 DRIVE_BANKS     = 157           ; banks 31-187 (docs/DESIGN.md, REU map)
+
+; reboot: every drive written back, GeoUltra started afresh (the
+; hibernated session dropped). Back only when that failed.
+CmdReboot:
+        lda argc
+        cmp #1
+        beq :+
+        jmp Words
+:       lda #FE_REBOOT
+        jsr FileEngine
+        ldy #$FF
+        jmp Fail
 
 TypeLo: .byte <T1541, <T1571, <T1581, <TNative
 TypeHi: .byte >T1541, >T1571, >T1581, >TNative

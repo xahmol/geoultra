@@ -42,7 +42,8 @@ FE_MKIMG        = 24            ; a new, empty disk image on the Ultimate
 FE_TURBO        = 25            ; the U64's speed step, asked or set
 FE_HOME         = 26            ; the home folder's path
 FE_SETTIME      = 27            ; the Ultimate's clock from GEOS's
-FE_COUNT        = 28
+FE_REBOOT       = 28            ; written back, the C64 restarted afresh
+FE_COUNT        = 29
 FE_VER          = $0003         ; FE_VERSION's answer (E3)
 
 ; FE_COPY, FE_MOVE: flags (r2L)

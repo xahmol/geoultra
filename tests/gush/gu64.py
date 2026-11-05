@@ -282,6 +282,9 @@ def main():
     rows = g.lines()
     check("geoFolder's gush button: a fresh gush", (rows[0].startswith("gush, the GeoUltra shell") if rows
                                                      else rows, rows[1:]), (True, ["$"]))
+    g.run("reboot", settle=1)                       # (last: it ends the session)
+    time.sleep(25)
+    check("reboot: GEOS started afresh (keyVector cleared)", bytes(u.read(0x84A3, 2)), b"\0\0")
     sys.exit(0 if g.ok else 1)
 
 

@@ -1,8 +1,8 @@
 ; File engine: system functions for gush (docs/FILE_ENGINE.md
 ; "Functions"; engine.s has the module list): module 75 FE_TURBO,
-; FE_HOME, FE_SETTIME. An application cannot reach the turbo registers'
-; owner (speed.s), the home folder (REU bank 1) or the Ultimate's clock
-; command safely itself. Own code.
+; FE_HOME, FE_SETTIME, FE_REBOOT. An application cannot reach the turbo
+; registers' owner (speed.s), the home folder (REU bank 1), the
+; Ultimate's clock command or the write-back safely itself. Own code.
 
         .include "geos.inc"
         .include "hw.inc"
@@ -10,9 +10,13 @@
         .include "engine.inc"
 
         .import OvlCall, SysRAMOp, turboWant, turboNow
+        .import WriteBackNow, hibState, drvFlags
+        .include "drvflags.inc"
 
 HOME_PATH       = $0300         ; REU bank 1: the home folder (mount.s)
 U_SET_TIME      = $27
+U_TARGET_CTRL   = 4             ; the control target: REBOOT (the C64,
+CTRL_REBOOT     = $06           ; cartridge and all)
                                 ; (geos.inc: year, then month, day, hour,
                                 ; minutes, seconds)
 
@@ -22,9 +26,11 @@ U_SET_TIME      = $27
         jmp OvTurbo             ; entry 0
         jmp OvHome              ; entry 3
         jmp OvSetTime           ; entry 6
+        jmp OvReboot            ; entry 9
 
         .include "fereu.inc"
         .include "feult.inc"
+        .include "fework.inc"
 
 TodSet: jsr OvlCall             ; (module 10: the CIA's clock from GEOS's)
         .byte 10, 0
@@ -123,5 +129,79 @@ OvSetTime:
         bne @field
         jsr UNoData
         jmp UExec
+
+; FE_REBOOT: every drive written back, the hibernated session dropped
+; (HIBERNAT.BIN in the home folder deleted: the boot would resume it),
+; then the C64 restarted through the Ultimate (GeoUltra boots afresh).
+; Back only when a drive could not be written back (FE_ULTIMATE), or
+; without an Ultimate (DEV_NOT_FOUND). The write-back uses the overlay
+; scratch, the engine's work area, as in FE_UMOUNT (enginemount.s): kept
+; at FE_WSAVE meanwhile, a hibernation it would start held back.
+OvReboot:
+        lda hibState
+        pha
+        and #$BF
+        sta hibState
+        ldy #REU_STASH
+        jsr WorkOp
+        jsr WriteBackNow
+        ldy #REU_FETCH
+        jsr WorkOp
+        pla
+        sta hibState
+        ldx #3                  ; a drive still changed: no reboot
+        lda #0
+@dirty: ora drvFlags,x
+        dex
+        bpl @dirty
+        and #F_DIRTY
+        beq :+
+        ldx #FE_ULTIMATE
+        rts
+:       jsr Home                ; the session file away (none: fine)
+        txa
+        bne @end
+        lda #U_DELETE
+        jsr UBegin
+        ldx #0
+@name:  lda HibName,x
+        beq :+
+        jsr UPut
+        inx
+        bne @name
+:       jsr UNoData
+        jsr UExec
+        lda #CTRL_REBOOT        ; (does not come back)
+        jsr UBegin
+        lda #U_TARGET_CTRL
+        sta uCmd
+        jsr UNoData
+        jsr UExec
+@end:   rts
+
+; Home: into the home folder ("/" at its end left off). X = 0 or the
+; error.
+Home:   lda #<diskBlkBuf
+        sta argR1
+        lda #>diskBlkBuf
+        sta argR1+1
+        jsr OvHome
+        lda #U_CD
+        jsr UBegin
+        ldx #0
+@ch:    lda diskBlkBuf,x
+        beq @cd
+        cmp #'/'
+        bne :+
+        ldy diskBlkBuf+1,x
+        beq @cd
+:       jsr UPut
+        inx
+        cpx #32
+        bne @ch
+@cd:    jsr UNoData
+        jmp UExec
+
+HibName:        .byte "HIBERNAT.BIN", 0
 
         .endscope
