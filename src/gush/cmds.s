@@ -16,7 +16,7 @@
         .import sinkOn
         .export status, failed
         .import RunScript, CmdSource, depth, exitReq, exitStatus, prog
-        .import CmdTest, CmdBracket, CmdRead, CmdTrue, CmdFalse
+        .import CmdTest, CmdBracket, CmdRead, CmdTrue, CmdFalse, HistSave
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -204,6 +204,7 @@ Commands:
 CmdExit:
         lda depth
         bne :+
+        jsr HistSave            ; (hist.s)
         jmp EnterDeskTop
 :       lda #0
         sta exitStatus

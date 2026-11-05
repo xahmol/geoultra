@@ -16,7 +16,7 @@
 
         .import FileEngine, Status, ConRedraw, argc, argLo, argHi
         .export StartProgram, prog
-        .import VarFind, varName
+        .import VarFind, varName, HistSave
 
 GetFile         = $C208         ; GEOS jump table
 StashRAM        = $C2C8
@@ -141,6 +141,11 @@ Found:  jsr Doc
         bne @end
         ldy #0                  ; gush's variables ($6000-$7F3F, which a
         jsr High                ; desk accessory may draw over) kept
+        lda info + FI_GTYPE     ; an application ends gush: its history
+        cmp #APPLICATION        ; saved (hist.s)
+        bne :+
+        jsr HistSave
+:
         lda loadOpt             ; (before GetFile's registers: High uses
         beq @start              ; r0-r3)
         lda curDrive            ; one drive: the document in this folder?

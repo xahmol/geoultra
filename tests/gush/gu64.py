@@ -329,6 +329,17 @@ def main():
     g.run("reboot", settle=1)                       # (last: it ends the session)
     time.sleep(25)
     check("reboot: GEOS started afresh (keyVector cleared)", bytes(u.read(0x84A3, 2)), b"\0\0")
+    g.start()                                       # (step 3.6: the history kept)
+    lb = g.lbl["lineBuf"]
+    got = []
+    for _ in range(2):
+        g.keys([16], settle=1)                      # cursor up
+        got.append(bytes(u.read(lb, 16)).split(b"\0")[0])
+    check("history across sessions: reboot, then the line before", got, [b"reboot", b"echo $G"])
+    ftp = ftplib.FTP(u.ip)
+    ftp.login()
+    ftp.delete("/USB0/GEOULTRA/gush_history")
+    ftp.quit()
     sys.exit(0 if g.ok else 1)
 
 

@@ -13,13 +13,15 @@
         .import ConPut, ConNewLine, ConClear, ConSet, ConCursor, conCol, conRow
         .import ExecLine
         .export EdKey, EdPress, Prompt, lineBuf, lineLen, testCtrl
+        .export histTop, histCount, histSlot, histBuf, Fetch, Keep
 
 StashRAM        = $C2C8         ; GEOS jump table
 FetchRAM        = $C2CB
 
 PROMPT_W        = 2             ; "$ "
 VIEW_W          = COLS - PROMPT_W
-HIST_N          = 32            ; lines kept, 256 bytes each
+HIST_N          = 128           ; lines kept, 256 bytes each (32 KB; a
+                                ; power of 2; hist.s saves 100 of them)
 HIST_BANK       = 1
 
         .segment "CODE"

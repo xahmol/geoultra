@@ -5,7 +5,7 @@
         .include "gush.inc"
 
         .import FileEngine, Status, pwdBuf, startDrive, argc, argLo, argHi
-        .import ArgR0, PutArg, Print, Say, Fail, Decimal, num
+        .import ArgR0, PutArg, Print, Say, Fail, Decimal, num, HistSave
         .import ConPut, ConNewLine, Options, firstArg, tracks
         .export CmdMount, CmdUmount, CmdMkimg, CmdFree, CmdReboot
 
@@ -448,7 +448,8 @@ CmdReboot:
         cmp #1
         beq :+
         jmp Words
-:       lda #FE_REBOOT
+:       jsr HistSave
+        lda #FE_REBOOT
         jsr FileEngine
         ldy #$FF
         jmp Fail

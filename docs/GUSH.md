@@ -421,5 +421,11 @@ read L; ...`): a stage is one statement. Fixed on the way: the
 statement and stage scanners, which ended a quote as soon as it began;
 the 16-bit limit of a pipe read. Test g16.py. Memory: the executor's
 three page buffers moved to `$6000` (gush's code area to `$57B1`, the
-high one to `$7C72`).
+high one to `$7C72`). **3.6 (2026-11-05)**: the history
+across sessions (hist.s): the history keeps 128 lines (32 KB of REU bank
+1); the newest 100 go to `HOME/gush_history` (the oldest first, a CR
+after each) when gush ends (`exit`, an application started, `reboot`;
+not when geoFolder's button starts a new gush), through a page buffer;
+read back at gush's start before `gushrc`. Without `HOME` (VICE):
+nothing. Test gu64.py (a reboot, then cursor up twice).
 
