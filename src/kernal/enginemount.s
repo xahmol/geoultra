@@ -26,7 +26,6 @@ SYS_BANK        = 1
 MOUNT_ENTRY     = $0120         ; (reudrv.s, mount.s)
 MOUNT_PATHS     = $0200         ; 64 bytes per drive
 DIRTY_MAPS      = $2000         ; $2000 bytes per drive
-HOME_PATH       = $0300         ; the home folder, "/" at its end (32 bytes)
 PATH_MAX        = 63            ; an image path in its 64 bytes
 U_LOAD_REU      = $21
 
@@ -236,6 +235,7 @@ Unmount:
 
         .include "fereu.inc"
         .include "feult.inc"
+        .include "fehome.inc"
 
 Lines:  jsr OvlCall             ; (module 70: the text written)
         .byte 70, 0
@@ -246,35 +246,7 @@ Lines:  jsr OvlCall             ; (module 70: the text written)
 ; written: other lines in the file are lost. Written as MOUNTS.TMP
 ; first, which then takes MOUNTS.INI's place, so a failed write leaves
 ; the old list. X = 0 or the error.
-OvIni:  lda #<diskBlkBuf        ; the home folder (32 bytes, "/" at its
-        sta r0L                 ; end)
-        lda #>diskBlkBuf
-        sta r0H
-        lda #<HOME_PATH
-        sta r1L
-        lda #>HOME_PATH
-        sta r1H
-        lda #32
-        sta r2L
-        lda #0
-        sta r2H
-        ldy #REU_FETCH
-        jsr ReuOp
-        lda #U_CD
-        jsr UBegin
-        ldx #0
-@home:  lda diskBlkBuf,x
-        beq @cd
-        cmp #'/'                ; (the "/" at its end left off)
-        bne :+
-        ldy diskBlkBuf+1,x
-        beq @cd
-:       jsr UPut
-        inx
-        cpx #32
-        bne @home
-@cd:    jsr UNoData
-        jsr UExec
+OvIni:  jsr Home                ; (fehome.inc)
         txa
         bne @end
         lda #U_OPEN

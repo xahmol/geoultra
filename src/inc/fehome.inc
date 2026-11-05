@@ -1,6 +1,6 @@
 ; File engine: into the home folder (GEOULTRA on /USB0, /USB1 or /SD; its
-; path in REU bank 1 at HOME_PATH, from the boot), for modules 75 and
-; 77. Assembled into each module that needs it, after fereu.inc and
+; path in REU bank 1 at HOME_PATH, from the boot), for modules 67, 75
+; and 77. Assembled into each module that needs it, after fereu.inc and
 ; feult.inc. Destroys diskBlkBuf.
 
 HOME_PATH       = $0300
