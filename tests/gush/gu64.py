@@ -150,6 +150,7 @@ def main():
     check("cp from the stick onto drive A, cat", out("cat /a/INI", settle=3).startswith("B="), True)
     g.run("cp /a/INI ini.txt")
     check("cp back onto the stick, ls", out("ls"), "ini.txt")
+    check("cat on the stick", out("cat ini.txt", settle=3).startswith("B="), True)
     g.run("cp /a/INI ini.txt", settle=3)
     check("cp onto a file asks", g.lines()[-1], "gush: cp: overwrite /a/INI? (y/n/a)")
     g.queue("n")

@@ -24,7 +24,10 @@ from feu64 import U64  # noqa: E402
 from e2 import Image  # noqa: E402
 
 (FE_VERSION, FE_STAT, FE_OPENDIR, FE_READDIR, FE_CLOSE, FE_COPY, FE_MOVE, FE_DELETE,
- FE_MKDIR, FE_RMDIR) = range(10)
+ FE_MKDIR, FE_RMDIR, FE_RENAME, FE_CD, FE_PWD, FE_OPEN, FE_READ, FE_WRITE) = range(16)
+FO_READ, FO_WRITE, FO_APPEND = range(3)
+IS_FOLDER, STRUCT_MISMAT = 0x4B, 10
+DATA = 0x6000
 assert FE_MKDIR == 8
 FILE_NOT_FOUND = 5
 FC_RAW = 2
@@ -138,6 +141,7 @@ class Test:
             x = fe(FE_COPY, s0="/a/" + name, s1=HOME, timeout=300)[0]
             check("%s (a broken chain on the test image): an error, no %s.cvt left" % (name, name),
                   (x != 0, fe(FE_STAT, s0="%s/%s.cvt" % (HOME, name), r1=INFO)[0]), (True, FILE_NOT_FOUND))
+        self.streams(seq, vlir, orig)
         # back onto drive A under a new name
         for e, new in ((seq, "E4SEQ"), (vlir, "E4VLIR"), (big, "E4BIG")):
             x = fe(FE_COPY, s0="%s/%s.cvt" % (HOME, name_of(e)), s1="/a/" + new, timeout=300)[0]
@@ -189,6 +193,49 @@ class Test:
         check("cleaned up", [fe(FE_STAT, s0=p, r1=INFO)[0] for p in (HOME, "/a/E4SEQ", "/a/E4VLIR", "/a/E4BIG",
                                                                       "/a/E4DIR", "/b/fake.cvt")],
               [FILE_NOT_FOUND] * 6)
+
+
+    def read_all(self, h, piece):
+        out = b""
+        while True:
+            x, _, r = self.fe(FE_READ, y=h, r1=DATA, r2=piece)
+            if x or r[2] == 0:
+                return x, out
+            out += self.u.read(DATA, r[2])
+            self.fe(FE_STAT, s0=HOME, r1=INFO)              # (opens files of its own)
+
+    def streams(self, seq, vlir, orig):
+        """Streams on the Ultimate (modules 61-64)."""
+        fe, check = self.fe, self.check
+        path = HOME + "/stream.txt"
+        x, h, _ = fe(FE_OPEN, s0=path, r2=FO_WRITE)
+        data = bytes((i * 11 + 5) & 0xFF for i in range(600))
+        self.u.write(DATA, data[:250])
+        a = fe(FE_WRITE, y=h, r1=DATA, r2=250)[0]
+        fe(FE_STAT, s0=HOME, r1=INFO)
+        self.u.write(DATA, data[250:])
+        b = fe(FE_WRITE, y=h, r1=DATA, r2=350)[0]
+        fe(FE_CLOSE, y=h)
+        check("FE_OPEN, FE_WRITE (250 + 350 bytes) on the Ultimate", (x, a, b), (0, 0, 0))
+        check("its bytes on the stick", open(self.get(path, "e4-stream"), "rb").read(), data)
+        x, h, _ = fe(FE_OPEN, s0=path, r2=FO_APPEND)
+        self.u.write(DATA, b"tail")
+        a = fe(FE_WRITE, y=h, r1=DATA, r2=4)[0]
+        fe(FE_CLOSE, y=h)
+        x, h, _ = fe(FE_OPEN, s0=path, r2=FO_READ)
+        got = self.read_all(h, 257)
+        fe(FE_CLOSE, y=h)
+        check("FO_APPEND, then FE_READ in pieces of 257 (FE_STAT between)", (x, a, got), (0, 0, (0, data + b"tail")))
+        x, h, _ = fe(FE_OPEN, s0="%s/%s.cvt" % (HOME, name_of(seq)), r2=FO_READ)
+        got = self.read_all(h, 200)
+        fe(FE_CLOSE, y=h)
+        check("FE_READ of a sequential GEOS file's CVT: its data", (x, got), (0, (0, orig.contents(seq)[1])))
+        check("FE_OPEN of a VLIR file's CVT", fe(FE_OPEN, s0="%s/%s.cvt" % (HOME, name_of(vlir)),
+                                                  r2=FO_READ)[0], STRUCT_MISMAT)
+        check("FE_OPEN of a folder, of nothing", (fe(FE_OPEN, s0=HOME, r2=FO_READ)[0],
+                                                   fe(FE_OPEN, s0=HOME + "/none", r2=FO_READ)[0]),
+              (IS_FOLDER, FILE_NOT_FOUND))
+        fe(FE_DELETE, s0=path)
 
 
 def main():

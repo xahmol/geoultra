@@ -104,7 +104,7 @@ FE_LONG_MAX     = 60            ; a long name (feName, feTmp: + its zero)
 FE_UPART_MAX    = 120           ; the last part of an Ultimate path (it
                                 ; goes into uCmd with a command)
 
-; REU bank 1, $C000-$C2FF: the engine's lasting state
+; REU bank 1, $C000-$C6FF: the engine's lasting state
 FE_BANK         = 1
 FE_MAGIC        = $C000         ; "FE", FE_LAYOUT: the area is set up
 FE_LAYOUT       = 2             ; (1: E1-E3, the directory in 128 bytes)
@@ -112,6 +112,8 @@ FE_CWD          = $C100         ; the current directory (256 bytes)
 FE_HANDLES      = $C200         ; FE_HANDLES_N handles of FE_HSIZE bytes
 FE_HANDLES_N    = 4
 FE_HSIZE        = 64
+FE_UPATHS       = $C300         ; an Ultimate stream's path per handle
+                                ; (256 bytes each, to $C6FF)
 
 ; A handle (FE_HUSED bytes kept, at feH while a call works on it)
 H_TYPE          = 0             ; HT_*
@@ -131,6 +133,8 @@ HT_WRITE        = 4             ; a file written (and H_DIR*, H_SIZE)
 HT_UDIR         = 5             ; an Ultimate listing in REU bank
                                 ; FE_UBANK + handle (H_UCOUNT, H_UNEXT,
                                 ; H_PAT)
+HT_UREAD        = 6             ; an Ultimate file read (enginestreamu.s)
+HT_UWRITE       = 7             ; an Ultimate file written
 ; A stream (HT_READ, HT_WRITE): H_BLKT/S the block, H_OFF its next byte
 ; (0: past the block's end); for HT_WRITE also, in H_PAT's place:
 H_DIRT          = 7             ; the directory block with its entry
@@ -138,6 +142,11 @@ H_DIRS          = 8
 H_DIRO          = 9             ; the entry's offset (its type byte)
 H_SIZE          = 10            ; its blocks (word)
         .assert H_SIZE + 2 <= FE_HUSED, error, "engine.inc: stream handle"
+H_UPOS          = 2             ; HT_UREAD, HT_UWRITE: the next byte's
+                                ; place in the file (3 bytes)
+H_UEND          = 5             ; HT_UREAD: where the data ends (3 bytes)
+H_UFPOS         = 8             ; the path's folder end (fePos), the path
+                                ; itself in FE_UPATHS
 H_UCOUNT        = 2             ; HT_UDIR: entries in the bank (word)
 H_UNEXT         = 4             ; the next one to look at (word)
 
@@ -166,6 +175,8 @@ U_MKDIR         = $16
 UO_READ         = $01           ; open attributes
 UO_NEW          = $06           ; write, a new file
 UO_ALWAYS       = $0A           ; write, made or replaced
+UO_WRITE        = $02           ; write, an existing file
+UO_APPEND       = $12           ; write, made when not there
 U_CMD_MAX       = 128
 uCmd            = fileTrScTab + $80 ; the command (U_CMD_MAX bytes; the
                                 ; engine destroys fileTrScTab)

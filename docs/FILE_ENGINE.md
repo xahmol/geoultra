@@ -24,7 +24,8 @@ desktop and file manager; third-party applications can call it too.
   for the path (`fePath`) while it is walked; the overlay scratch
   `$9F70-$9FFF` as the engine's work area during a call (engine.inc;
   write-back and hibernation use it too, but only from MainLoop, never
-  during an engine call); lasting state in REU bank 1 `$C000-$C2FF`.
+  during an engine call); lasting state in REU bank 1 `$C000-$C6FF`
+  (Ultimate stream paths from `$C300`).
 - **UCI:** the engine uses DOS target 2. The write-back and hibernation
   use target 1 from MainLoop; on the same target, a write-back between
   two engine calls would close the engine's open file or directory
@@ -416,8 +417,18 @@ Ultimate side (long FAT names both ways, case-insensitive paths).
   VICE's c1541 (whose `-geoswrite` fills a sequential file's last block
   to 254 bytes), converted back and compared again, the name rule, a
   `.cvt` that is none, a file with a broken chain (an error, no file
-  left), `FC_RAW`. Still to come in E4: streams on the Ultimate, mount
-  and umount, new images.
+  left), `FC_RAW`.
+- **E4, streams on the Ultimate (2026-11-05):** `FE_OPEN`, `FE_READ`,
+  `FE_WRITE` on Ultimate paths (modules 61-64, enginestreamu.s). The
+  Ultimate's DOS has one open file and other calls open their own, so
+  no file stays open between calls: each read or write enters the
+  folder, opens the file, seeks to the stream's place and closes it
+  again; the path is kept in REU bank 1 (`FE_UPATHS`, `$C300`-`$C6FF`,
+  a page per handle). A sequential GEOS file's CVT reads as its data, a
+  VLIR one is refused (`STRUCT_MISMAT`). Tests in e4u64.py (writing in
+  pieces, appending, reading in pieces with `FE_STAT` calls between, a
+  CVT, a folder, a missing file). Still to come in E4: mount and
+  umount, new images.
 - Known limits: renaming a folder changes its directory entry, not the
   name in its header (shown as the disk name inside it); native drives
   are covered by the same code but not yet by the test. Copying a folder

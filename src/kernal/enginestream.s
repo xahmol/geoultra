@@ -1,7 +1,8 @@
 ; File engine: streams on GEOS drives (docs/FILE_ENGINE.md "Functions";
 ; engine.s has the module list): module 32 FE_OPEN, module 33 a new
 ; file for it, module 34 FE_READ, module 35 FE_WRITE (FE_CLOSE is in
-; module 22). Shared: festream.inc. Own code.
+; module 22). Shared: festream.inc. On the Ultimate the three go on in
+; modules 61 and 62 (enginestreamu.s). Own code.
 ;
 ; A stream is one chain: a CBM file, or a sequential GEOS file's data
 ; (not its header); VLIR files are refused (STRUCT_MISMAT). A file made
@@ -30,6 +31,8 @@ CBM_SEQ         = $81           ; a closed SEQ file
 
 New:    jsr OvlCall             ; (module 33: a new file)
         .byte 33, 0
+UOpen:  jsr OvlCall             ; (module 61: on the Ultimate; a stub:
+        .byte 61, 0             ; back to the function's caller)
 Drop:   jsr OvlCall             ; (module 51: a deleted file's record)
         .byte 51, 3
 
@@ -43,10 +46,17 @@ OvOpen: jsr NewHandle
         sta r0L
         lda argR0+1
         sta r0H
+        lda #1                  ; (Ultimate paths too: module 61)
+        sta feUlt
         jsr Resolve
         txa
-        bne @ret
-        ldx #FE_BAD_PATH        ; "/" or a drive
+        beq :+
+        rts
+:       lda feKind
+        cmp #FE_P_ULTIMATE
+        bne :+
+        jmp UOpen
+:       ldx #FE_BAD_PATH        ; "/" or a drive
         lda feName
         beq @ret
         ldx feDrive             ; the folder holding it
@@ -283,12 +293,19 @@ OFF_DATE        = 23
 
         .include "fereu.inc"
         .include "festream.inc"
+URead:  jsr OvlCall             ; (module 62: an Ultimate stream; a stub)
+        .byte 62, 0
 
 ; FE_READ: Y = a handle (FO_READ), r1 = a buffer, r2 = bytes wanted.
 ; r2 = bytes read (fewer: the end of the file).
 OvRead: lda #HT_READ
         jsr Stream
+        beq :+
+        lda feH + H_TYPE        ; an Ultimate stream: module 62 (it checks
+        cmp #HT_UREAD           ; the handle itself)
         bne @ret
+        jmp URead
+:
         lda sPtr
         sta @st+1
         lda sPtr+1
@@ -341,6 +358,8 @@ OvRead: lda #HT_READ
 
         .include "fereu.inc"
         .include "festream.inc"
+UWrite: jsr OvlCall             ; (module 63: an Ultimate stream; a stub)
+        .byte 63, 0
 
 ; FE_WRITE: Y = a handle (FO_WRITE, FO_APPEND), r1 = the bytes, r2 their
 ; number.
@@ -348,7 +367,11 @@ OvWrite:
         lda #HT_WRITE
         jsr Stream
         beq :+
-        rts
+        lda feH + H_TYPE        ; an Ultimate stream: module 63 (it checks
+        cmp #HT_UWRITE          ; the handle itself)
+        bne @no
+        jmp UWrite
+@no:    rts
 :
         lda sPtr
         sta @ld+1
