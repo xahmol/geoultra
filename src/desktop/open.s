@@ -7,8 +7,8 @@
 ; code): FE_SELECT makes their drive and folder current, GetFile by the
 ; short name; on drive E (no slot stays E's, FILE_ENGINE.md) an
 ; application through FE_RUNSYS, a desk accessory through GetFile by
-; its name (GetFile falls back to drive E). Documents: step D3b.
-; Own code.
+; its name (GetFile falls back to drive E). A document opens with its
+; application (Document, step D3b). Own code.
 
         .include "geos.inc"
 
@@ -17,7 +17,13 @@
         .export Open, Up, Drive
 
 GetFile         = $C208         ; GEOS jump table
+FindFTypes      = $C23B
+SetDevice       = $C2B0
+OpenDisk        = $C2A1
+guExtTable      = $C0E4         ; GeoUltra's extension table: DirRoot at +15
+DIR_ROOT        = 15
 
+FE_STAT         = 1
 FE_CD           = 11
 FE_SELECT       = 21
 FE_RUNSYS       = 22
@@ -27,6 +33,9 @@ K_DRIVE         = 1
 K_FOLDER        = 2
 K_GEOS          = 3
 K_UDIR          = 6
+ST_LD_DATA      = $80
+O_GHP_FNAME     = $75           ; a document's parent application's name
+CLASS_LEN       = 12
 
         .segment "CODE"
 
@@ -54,6 +63,7 @@ Open:   lda count               ; (an empty folder: nothing)
         beq Program
         cmp #DESK_ACC
         beq Program
+        jmp Document            ; (any other GEOS file: a document)
 @end:   rts
 @enter: lda #<entryName
         ldx #>entryName
@@ -129,12 +139,143 @@ Start:  lda #0                  ; GetFile (an application does not come
         jsr GetFile
         jmp Redraw              ; (a desk accessory came back)
 
+; Document: entryName (a GEOS file in path that is no program) opened
+; with its application, as the deskTop passes a document: the parent's
+; permanent name (the document's header at $75; the class is its first
+; 12 characters) looked for among the applications of the document's
+; folder (FE_SELECT makes it current; FindFTypes with that class), then
+; in the root of each other drive A-D; started with ST_LD_DATA, r2 the
+; document disk's name, r3 the document's name. An application finds
+; its document on its own drive in its own folder, or by the disk's
+; name on another drive (geoWrite 2.1's findDocDevice, mist64/geowrite,
+; read for this behaviour only). Nothing when none is found.
+Document:
+        lda #<entryName         ; its header: the parent's name
+        sta r0L
+        lda #>entryName
+        sta r0H
+        lda #<statInfo
+        sta r1L
+        lda #>statInfo
+        sta r1H
+        lda #0
+        sta r2L
+        sta r2H
+        lda #FE_STAT
+        jsr FileEngine
+        txa
+        bne @none
+        ldy #CLASS_LEN - 1
+@class: lda fileHeader + O_GHP_FNAME,y
+        sta appClass,y
+        dey
+        bpl @class
+        lda #0
+        sta appClass + CLASS_LEN
+        lda appClass            ; (no parent named: nothing)
+        beq @none
+        lda #<entryName         ; its drive and folder current
+        sta r0L
+        lda #>entryName
+        sta r0H
+        lda #<docShort
+        sta r1L
+        lda #>docShort
+        sta r1H
+        lda #FE_SELECT
+        jsr FileEngine
+        txa
+        bne @none
+        lda curDrive
+        sta docDrive
+        jsr FindApp             ; in the document's folder
+        bcc Launch
+        lda #8                  ; then the other drives' roots
+        sta drv
+@drive: lda drv
+        cmp docDrive
+        beq @next
+        tax
+        lda driveType-8,x
+        beq @next
+        txa
+        jsr SetDevice
+        lda guExtTable          ; DirRoot (a drive without folders: an
+        clc                     ; error, left: it has only its root)
+        adc #DIR_ROOT
+        sta @root+1
+        lda guExtTable+1
+        adc #0
+        sta @root+2
+@root:  jsr $FFFF
+        jsr OpenDisk
+        jsr FindApp
+        bcc Launch
+@next:  inc drv
+        lda drv
+        cmp #12
+        bcc @drive
+        lda docDrive            ; none: the document's drive current again
+        jsr SetDevice
+        jmp OpenDisk
+@none:  rts
+
+; Launch: appName (on the current drive, in its current folder) started
+; with docShort of docDrive (an application does not come back; an error
+; leaves the desktop drawn again).
+Launch: ldx docDrive
+        lda DiskLo-8,x
+        sta r2L
+        lda DiskHi-8,x
+        sta r2H
+        lda #<docShort
+        sta r3L
+        lda #>docShort
+        sta r3H
+        lda #<appName
+        sta r6L
+        lda #>appName
+        sta r6H
+        lda #ST_LD_DATA
+        sta r0L
+        jsr GetFile
+        jmp Redraw
+
+; FindApp: an application of class appClass in the current drive's
+; current folder: its name to appName, C clear; C set when none.
+FindApp:
+        lda #<appName
+        sta r6L
+        lda #>appName
+        sta r6H
+        lda #APPLICATION
+        sta r7L
+        lda #1
+        sta r7H
+        lda #<appClass
+        sta r10L
+        lda #>appClass
+        sta r10H
+        jsr FindFTypes
+        lda r7H                 ; (0: one found)
+        cmp #1
+        rts
+
+DiskLo: .byte <DrACurDkNm, <DrBCurDkNm, <DrCCurDkNm, <DrDCurDkNm
+DiskHi: .byte >DrACurDkNm, >DrBCurDkNm, >DrCCurDkNm, >DrDCurDkNm
+
 DotDot:         .byte "..", 0
 
         .segment "DATA"
 
 drivePath:      .byte "/a", 0
+docDrive:       .byte 0
+drv:            .byte 0
 
         .segment "BSS"
 
 shortName:      .res 17
+docShort:       .res 17
+appName:        .res 17
+appClass:       .res CLASS_LEN + 1
+statInfo:       .res 16

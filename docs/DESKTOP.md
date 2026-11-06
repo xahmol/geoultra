@@ -150,7 +150,15 @@ moves the window over the folder's entries.
   application through `FE_RUNSYS`, a desk accessory through `GetFile`
   by its name). Cursor left goes to the parent folder; a click on a
   sidebar line to that drive's root. Test tests/desktop/d3.py (VICE).
-  Documents (D3b) next.
+- **D3b (2026-11-06):** documents (open.s, `Document`). Any other GEOS
+  file opens with its application: the parent's permanent name from
+  its header (`$75`; the class is its first 12 characters) is looked
+  for among the applications of the document's folder (`FE_SELECT`
+  makes it current, then `FindFTypes` with the class), then in the
+  root of each other drive A-D; the application starts with
+  `ST_LD_DATA`, `r2` the document disk's name and `r3` the document's
+  name, as the deskTop passes one. Test tests/desktop/d3doc.py (VICE,
+  the user's GEOS64.D81: "ReadMe 1581" opens in geoWrite 2.1).
 
 ## Tests
 
