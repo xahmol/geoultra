@@ -499,3 +499,9 @@ help, words, URLs), gu64.py (`ifconfig`, `wget` of example.com, a 404). **3.10 (
 (docs/DESIGN.md, "Code sweeps"). Step 3 is complete. The user manual: docs/GUSH_MANUAL.md
 (2026-11-06), planned in step 1's order of work.
 
+After step 3 (user, 2026-11-06): gush's commands all stay built in
+(the overlays keep the core small); external commands are for new and
+user-written tools. Next: drive E readable by path in the file engine
+(so `/e/bin` in `PATH` works and commands can ship on the system drive),
+then GeoUltra's desktop (docs/DESIGN.md, "Desktop").
+
