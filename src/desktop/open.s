@@ -13,8 +13,8 @@
         .include "geos.inc"
 
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
-        .import cur, count, path, Redraw
-        .export Open, Up, Drive
+        .import cur, count, path, Redraw, RecentAdd
+        .export Open, Up, Drive, Into, Document
 
 GetFile         = $C208         ; GEOS jump table
 FindFTypes      = $C23B
@@ -168,7 +168,8 @@ Start:  lda #0                  ; GetFile (an application does not come
 ; document disk's name, r3 the document's name. An application finds
 ; its document on its own drive in its own folder, or by the disk's
 ; name on another drive (geoWrite 2.1's findDocDevice, mist64/geowrite,
-; read for this behaviour only). Nothing when none is found.
+; read for this behaviour only). Nothing when none is found. The document
+; goes to the top of the recent ones (side.s) first.
 Document:
         lda #<entryName         ; its header: the parent's name
         sta r0L
@@ -184,8 +185,9 @@ Document:
         lda #FE_STAT
         jsr FileEngine
         txa
-        bne @none
-        ldy #CLASS_LEN - 1
+        beq :+
+        rts                     ; (not there: nothing)
+:       ldy #CLASS_LEN - 1
 @class: lda fileHeader + O_GHP_FNAME,y
         sta appClass,y
         dey
@@ -194,6 +196,7 @@ Document:
         sta appClass + CLASS_LEN
         lda appClass            ; (no parent named: nothing)
         beq @none
+        jsr RecentAdd           ; (side.s: to the recent documents)
         lda #<entryName         ; its drive and folder current
         sta r0L
         lda #>entryName

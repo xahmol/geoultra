@@ -15,7 +15,7 @@
 
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
         .import entryInfo, entryName, cur, count, path
-        .export Copy, Cut, Paste, Delete, Rename, NewFolder
+        .export Copy, Cut, Paste, Delete, Rename, NewFolder, Ask
 
 DoDlgBox        = $C256         ; GEOS jump table
 StashRAM        = $C2C8

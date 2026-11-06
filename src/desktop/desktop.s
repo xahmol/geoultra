@@ -1,7 +1,8 @@
 ; GeoUltra Desktop (docs/DESKTOP.md): GeoUltra's own desktop, milestone
 ; 1. This file: the start, the menus (geos with the desk accessories,
 ; drive E's merged in by the kernal; file with the actions; view; disk),
-; the sidebar with the drives that are there and drive E, the mouse and
+; the sidebar with the drives that are there, drive E, the Ultimate's
+; roots, favourites and recent documents (side.s), the mouse and
 ; key routines that hand on to the list (list.s), opening (open.s) and
 ; the actions (actions.s). Drawn on both screens, RecoverVector =
 ; RecoverRectangle, so menus and desk accessories give back what was
@@ -11,7 +12,9 @@
 
         .import ListRead, ListDraw, ListPress, ListKey, Drive, Open
         .import Copy, Cut, Paste, Delete, Rename, NewFolder
-        .export FileEngine, Redraw
+        .import SideLoad, SideLists, SidePress, FavAdd
+        .export FileEngine, Redraw, SideText, SideName, SideLine, SideRedraw
+        .export rowY
 
 ; GEOS jump table
 Rectangle       = $C124
@@ -47,7 +50,7 @@ ROW_H           = 9
 SCREEN_RIGHT    = 319
 BASELINE        = 7             ; a row's baseline below its top
 SIDE_FIRST      = LIST_TOP      ; the sidebar's first drive line's top
-SIDE_MAX        = 8             ; sidebar lines a click can choose
+SIDE_MAX        = 16            ; sidebar lines a click can choose
 
 DA_MAX          = 8             ; desk accessories in the geos menu
 NAME_LEN        = 17            ; a GEOS name and its zero
@@ -69,6 +72,7 @@ Start:  lda guExtTable          ; FileEngine: the extension table + 30
         sta RecoverVector       ; under them (from the background screen;
         lda #>RecoverRectangle  ; GEOS's default 0 erases with white)
         sta RecoverVector+1
+        jsr SideLoad            ; favourites, recent documents (side.s)
         jsr Draw
         lda #<mainMenu
         sta r0L
@@ -106,7 +110,9 @@ Press:  lda mouseData
         cmp #ROW_H
         bcs @next
         lda sideLetters,x
+        bmi @lists
         jmp Drive
+@lists: jmp SidePress           ; (a favourite or recent document)
 @next:  inx
         bne @line
 @end:   rts
@@ -132,8 +138,10 @@ Key:    lda keyData
 KeyActs:
         .byte SHORTCUT | 'c', SHORTCUT | 'x', SHORTCUT | 'v'
         .byte SHORTCUT | 'r', SHORTCUT | 'n', KEY_DELETE, SHORTCUT | 'o'
+        .byte SHORTCUT | 'f'
 KeyActs_n = * - KeyActs
 ActDo:  .word Copy-1, Cut-1, Paste-1, Rename-1, NewFolder-1, Delete-1, Open-1
+        .word FavAdd-1
 
 ; The file menu's items: the menus closed, then the action.
 MOpen:  jsr GotoFirstMenu
@@ -152,6 +160,8 @@ MRename:
         jmp Rename
 MNew:   jsr GotoFirstMenu
         jmp NewFolder
+MFav:   jsr GotoFirstMenu
+        jmp FavAdd
 
 ; FileEngine: A = function, Y = handle, r0-r4 (FILE_ENGINE.md).
 FileEngine:
@@ -330,10 +340,29 @@ Ultimate:
 @close: ldy handle
         lda #FE_CLOSE
         jsr FileEngine
-@end:   rts
+@end:   jmp SideLists           ; favourites, recent documents (side.s)
+
+; SideRedraw: the sidebar cleared and drawn again (side.s, after a
+; favourite was added or removed); the current drive put back.
+SideRedraw:
+        lda #0
+        jsr SetPattern
+        lda #MENU_BOTTOM + 1
+        sta r2L
+        lda #199
+        sta r2H
+        lda #0
+        sta r3L
+        sta r3H
+        sta r4H
+        lda #SIDE_RIGHT
+        sta r4L
+        jsr Rectangle
+        jmp Sidebar
 
 ; SideLine: a sidebar line for a click: code A (a drive letter, or an
-; Ultimate root's code; open.s, Drive), its top row from rowY.
+; Ultimate root's code, open.s, Drive; with bit 7 a favourite or recent
+; document, side.s), its top row from rowY.
 SideLine:
         ldy sideCount
         cpy #SIDE_MAX
@@ -548,9 +577,9 @@ geosItems:
         .res DA_MAX * 5         ; (the accessories, GeosMenu)
 
 fileMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 8 * 14
+        .byte MENU_BOTTOM, MENU_BOTTOM + 9 * 14
         .word 30, 129
-        .byte VERTICAL | UN_CONSTRAINED | 8
+        .byte VERTICAL | UN_CONSTRAINED | 9
         .word OpenItem
         .byte MENU_ACTION
         .word MOpen
@@ -572,6 +601,9 @@ fileMenu:
         .word NewItem
         .byte MENU_ACTION
         .word MNew
+        .word FavItem
+        .byte MENU_ACTION
+        .word MFav
         .word GushItem
         .byte MENU_ACTION
         .word Gush
@@ -614,6 +646,7 @@ PasteItem:      .byte "paste     C=V", 0
 DeleteItem:     .byte "delete    DEL", 0
 RenameItem:     .byte "rename    C=R", 0
 NewItem:        .byte "new folder C=N", 0
+FavItem:        .byte "favourite  C=F", 0
 ListItem:       .byte "* list", 0
 RefreshItem:    .byte "refresh", 0
 InfoLine1:      .byte BOLDON, "GeoUltra Desktop", PLAINTEXT, 0

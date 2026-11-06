@@ -224,7 +224,31 @@ colour is a property of an element, by name:
   VICE); a click goes there. Every sidebar line keeps its code and its
   top row, so clicks find their line across headings. Test
   tests/desktop/du64.py (U64: usb0 listed, a click goes to /usb0).
-  Favourites and recent documents (D5b) next.
+- **D5b (2026-11-06):** favourites and recent documents (side.s; the
+  user's choices of 2026-11-06). Favourite folders are kept in
+  `SETTINGS.INI` `[favourites]`, recent documents in `RECENT.INI`
+  `[recent]` in the home folder, one path a line, at most four of each
+  and paths of at most 62 characters. The desktop reads them at its
+  start (applications reuse its memory). file > favourite (C=F) adds
+  the selected folder under the cursor, else the current folder, at
+  the end (not twice; the first dropped when there are four); C=+click
+  on a favourite asks, then removes it; a click goes there. Opening a
+  document puts it at the top of the recent ones (moved there when it
+  is in the list); a click on one shows its folder and opens it with
+  its application. The sidebar shows the headings only when there are
+  entries, a path's last part (a one-part path such as `/a` whole), and
+  leaves out lines below the screen. Writing keeps the file's other
+  lines (its section moves to the end): the file is read whole (at most
+  3072 bytes, else not written), written as a `.TMP` file that then
+  takes its place, so a failed write leaves the old file. Without a
+  home folder (VICE: no Ultimate) nothing is read or written and the
+  lists live until the desktop starts again. Tests: tests/desktop/d5.py
+  (VICE: adding, not twice, the selected folder, the fifth drops the
+  first, the sidebar's lines, a click), du64.py (U64: both files read,
+  C=F rewrites `SETTINGS.INI` with its other lines kept, a recent
+  "ReadMe 1581" opens in geoWrite and goes to the top of `RECENT.INI`;
+  both files deleted again). C=+click removal is for the hand test
+  (the harness cannot hold C=).
 
 ## Tests
 

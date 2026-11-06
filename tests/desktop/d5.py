@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""GeoUltra's desktop in VICE, step D5b (docs/DESKTOP.md): favourites.
+C=F adds the current folder (/b), not twice; a selected folder (a new
+one, the cursor on it) is added as itself; the fifth favourite drops the
+first; the sidebar shows them ("FAVOURITES", codes $80-$83) and a click
+on one goes there. Without an Ultimate the lists are not saved (the
+U64 test, du64.py, checks SETTINGS.INI and RECENT.INI). Screen:
+build/harness/gush/desktop-d5.png.
+Usage: tests/desktop/d5.py
+"""
+import os
+import sys
+import time
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
+from gushvice import Gush, OUT, harness  # noqa: E402
+
+KEY_DOWN, KEY_UP, KEY_HOME, KEY_LEFT, CR, DEL = 17, 16, 18, 8, 13, 29
+C = 0x80
+YES_XY = (90, 110)              # the dialog's left icon (DBI_X_0, DBI_Y_2)
+
+
+def main():
+    os.makedirs(OUT, exist_ok=True)
+    files = []
+    for i in range(3):
+        path = os.path.join(OUT, "f%02d" % i)
+        open(path, "wb").write(b"text %d\r" % i)
+        files.append(path)
+    k = {}
+    for line in open(os.path.join(ROOT, "build", "desktop", "desktop.lbl")):
+        p = line.split()
+        k.setdefault(p[2].lstrip("."), int(p[1], 16))
+    kern = {}
+    for line in open(os.path.join(ROOT, "build", "kernal64.lbl")):
+        p = line.split()
+        kern.setdefault(p[2].lstrip("."), int(p[1], 16))
+    g = Gush("desktop-d5", 6641, files)
+    check = g.check
+    v = g.v
+
+    def word(name):
+        return int.from_bytes(bytes(v.mem_get(k[name], k[name] + 1)), "little")
+
+    def settle(s=3):
+        time.sleep(s)
+        v.ping()
+
+    def press(x, y, s=3):
+        v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))
+        v.mem_set(0x8505, b"\x00")
+        pf = v.mem_get(0x39, 0x39)[0]
+        v.mem_set(0x39, bytes([pf | 0x20]))
+        v.resume()
+        settle(s)
+    def favs():
+        n = v.mem_get(k["counts"], k["counts"])[0]
+        out = []
+        for i in range(n):
+            a = k["favs"] + 64 * i
+            out.append(bytes(v.mem_get(a, a + 63)).split(b"\0")[0].decode("latin1"))
+        return out
+
+    def side(code):
+        """Press on the sidebar line with this code."""
+        n = v.mem_get(k["sideCount"], k["sideCount"])[0]
+        codes = bytes(v.mem_get(k["sideLetters"], k["sideLetters"] + n - 1))
+        top = v.mem_get(k["sideTops"] + codes.index(bytes([code])), k["sideTops"] + codes.index(bytes([code])))[0]
+        press(20, top + 4, s=5)
+
+    def here():
+        return bytes(v.mem_get(k["path"], k["path"] + 15)).split(b"\0")[0].decode("latin1")
+    try:
+        fe = kern["ExtTable"] + 30                          # FE_CD /b, the desktop
+        start = harness.TRAMPOLINE
+        nm, desk = 0x4F00, 0x4F10
+        code = [0x78, 0xA9, 0x30, 0x85, 0x01,
+                0xA9, nm & 0xFF, 0x85, 0x02, 0xA9, nm >> 8, 0x85, 0x03,
+                0xA9, 11, 0x20, fe & 0xFF, fe >> 8,
+                0xA9, desk & 0xFF, 0x85, 0x02, 0xA9, desk >> 8, 0x85, 0x03,
+                0xA9, 22, 0x20, fe & 0xFF, fe >> 8]
+        end = start + len(code)
+        code += [0x4C, end & 0xFF, end >> 8]
+        v.resume()
+        settle(5)
+        jt = v.mem_get(0xC1C3, 0xC1C5)
+        from vicemon import RESP_CHECKPOINT
+        cid = v.checkpoint(jt[1] | jt[2] << 8, temporary=False)
+        v.resume()
+        v.wait_event(RESP_CHECKPOINT)
+        v.delete_checkpoint(cid)
+        v.mem_set(start, bytes(code))
+        v.mem_set(nm, b"/b\0")
+        v.mem_set(desk, b"GeoUltra Desktop\0")
+        v.regs_set({"PC": start})
+        v.resume()
+        settle(8)
+        check("no favourites at the start", favs(), [])
+        g.keys([C | ord("f")], settle=1)
+        settle(3)
+        check("C=F: /b", favs(), ["/b"])
+        g.keys([C | ord("f")], settle=1)
+        settle(3)
+        check("C=F again: not twice", favs(), ["/b"])
+        g.keys([C | ord("n")], settle=2)                    # a new folder,
+        settle(2)                                           # the cursor on it
+        g.keys("dir1\r", settle=0.3)
+        settle(4)
+        n = word("count")
+        g.keys([KEY_HOME] + [KEY_DOWN] * (n - 1), settle=0.3)
+        settle(1)
+        g.keys([C | ord("f")], settle=1)
+        settle(3)
+        check("C=F on the selected folder: /b/dir1", favs(), ["/b", "/b/dir1"])
+        side(ord("a"))
+        check("drive A", here(), "/a")
+        g.keys([C | ord("f")], settle=1)
+        settle(3)
+        side(ord("e"))
+        g.keys([C | ord("f")], settle=1)
+        settle(3)
+        check("four: /b, /b/dir1, /a, /e", favs(), ["/b", "/b/dir1", "/a", "/e"])
+        side(ord("b"))
+        n = word("count")
+        g.keys([KEY_HOME, C | ord("f")], settle=1)          # the cursor on gush:
+        settle(3)                                           # /b already there
+        g.keys([C | ord("n")], settle=2)
+        settle(2)
+        g.keys("dir2\r", settle=0.3)
+        settle(4)
+        g.keys([KEY_HOME] + [KEY_DOWN] * n, settle=0.3)
+        settle(1)
+        g.keys([C | ord("f")], settle=1)
+        settle(3)
+        check("no file written without an Ultimate", word("count"), n + 1)
+        check("a fifth drops the first", favs(), ["/b/dir1", "/a", "/e", "/b/dir2"])
+        n = v.mem_get(k["sideCount"], k["sideCount"])[0]
+        codes = bytes(v.mem_get(k["sideLetters"], k["sideLetters"] + n - 1))
+        check("the sidebar's favourite lines", [c for c in codes if c & 0x80], [0x80, 0x81, 0x82, 0x83])
+        side(0x80)
+        check("a click on the first: there", here(), "/b/dir1")
+        g.png("desktop-d5")
+    finally:
+        g.stop()
+    sys.exit(0 if g.ok else 1)
+
+
+if __name__ == "__main__":
+    main()

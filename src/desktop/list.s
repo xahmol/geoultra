@@ -16,6 +16,7 @@
         .import FileEngine, Open, Up
         .export ListRead, ListDraw, ListPress, ListKey, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
+        .export Modifiers, mods
 
 ; GEOS jump table
 Rectangle       = $C124
