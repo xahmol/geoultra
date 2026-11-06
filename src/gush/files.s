@@ -29,7 +29,6 @@ FILE_EXISTS     = $40
 FE_BAD_PATH     = $49
 FE_IS_FOLDER    = $4B
 FE_CANCELLED    = $47
-FO_READ         = 0
 PROGRESS_FROM   = 20            ; blocks: from here a progress line
 MORE_ROWS       = ROWS_TEXT - 1 ; more: a page, then the question
 

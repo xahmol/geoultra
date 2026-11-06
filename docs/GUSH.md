@@ -117,24 +117,27 @@ GeoUltra's own desktop.
 ## Memory and build
 
 - gush is a VLIR file (since 2026-11-06, ovl.s). Record 0, the resident
-  core, at `$0400-$4FFF` (to `$44F2`): console, line editor, history,
+  core, at `$0400-$4FFF` (to `$480E`): console, line editor, history,
   parser, executor, variables, scripts, redirection and pipes, starting
-  programs, and `cd`, `ls`, `echo`, `pwd` and the other small commands.
-  Records 1 and 2, the overlays, linked at the **transient area**
+  programs and external commands (module.s, with the API table at
+  `$0403`), and `cd`, `ls`, `echo`, `pwd` and the other small commands.
+  Records 1-4, the overlays, linked at the **transient area**
   `$5000-$5FFF` (4 KB): overlay 1 the file commands (`cp`, `mv`, `rm`,
   `mkdir`, `rmdir`, `cat`, `more`, `df`, `cp -r`), the system commands
-  (`mount`, `umount`, `mkimg`, `free`, `reboot`) and the history file;
-  overlay 2 `turbo`, `date`, `ntp` and `test`, `[`, `read`, `true`,
-  `false`. At its start gush reads both records once (its index block
-  from its own directory entry, which GetFile leaves in `dirEntryBuf`;
-  drive E's blocks are reachable from every drive) into its REU bank 7,
-  4 KB each; a stub in the core (`jsr OvlGo / .byte overlay / .addr
-  routine`) fetches an overlay from there when another one is in the
-  area (a 4 KB DMA). Overlay code calls the core and its own overlay,
-  never another overlay; an overlay's data is scratch (it comes back as
-  built with each fetch); its BSS stays in the core. External commands
-  (step 3.8) load into the same transient area, so their API is the
-  core's.
+  (`mount`, `umount`, `mkimg`, `free`, `reboot`) and the history file
+  (3.3 KB); overlay 2 `turbo`, `date`, `ntp` and `test`, `[`, `read`,
+  `true`, `false` (2.4 KB); overlay 3 completion (0.9 KB); overlay 4
+  `ifconfig` and `wget` (2.9 KB). At its start gush reads the records
+  once (its index block from its own directory entry, which GetFile
+  leaves in `dirEntryBuf`; drive E's blocks are reachable from every
+  drive) into its REU bank 7, 4 KB each; a stub in the core (`jsr OvlGo
+  / .byte overlay / .addr routine`) fetches an overlay from there when
+  another one is in the area (a 4 KB DMA). Overlay code calls the core
+  and its own overlay, never another overlay (`gtables.py` checks it);
+  an overlay's data is scratch (it comes back as built with each fetch,
+  and stays as left while the overlay stays: set it before use); its
+  BSS stays in the core. External commands load into the same area, so
+  their API is the core's.
 - The large buffers (`HIGHBSS`: the screen shadow, the words, file
   texts, paths) in the background screen buffer `$6000-$7F3F` (to
   `$7D72`), which gush does not draw on: it draws the foreground only
@@ -145,6 +148,8 @@ GeoUltra's own desktop.
   own later does the same: the high area kept, the dialog shown, the
   area back, the screen redrawn from the shadow (GEOS's own recovery
   from the background buffer would show gush's data).
+- Zero page: gush's own `$80-$DF` (used to `$9F`), external commands'
+  `$E0-$EF` (gush.cfg, src/cmds/cmd.cfg).
 - gush's application REU banks: 1 the history (128 lines), 2 `cp -r`,
   3 the high area around desk accessories, 4 scripts, 5 typed lines and
   pipelines, 6 pipes, 7 the overlays: all eight in use (bank 0 is
@@ -453,5 +458,41 @@ nothing. Test gu64.py (a reboot, then cursor up twice). **VLIR (2026-11-06)**: g
 became a VLIR file, the core and two overlays in a 4 KB transient area
 (see "Memory and build"); the core ends at `$44F2`, 2.8 KB below the
 area. `gtables.py` checks that no overlay calls into another one; g6
-that gush started from drive E reads its overlays.
+that gush started from drive E reads its overlays. **3.7 (2026-11-06)**:
+completion with `<-` (complete.s, overlay 3): the word before the
+cursor (back to a space, `;` or `|`, taken as typed) completed from the
+folder its path names, or the current one (`FE_OPENDIR` with the word
+and `*` as its pattern), and for a statement's first word without `/`
+also from gush's commands. The first `<-` adds what all names that fit
+agree on; one name: all of it and `/` (a folder or drive) or a space; a
+space inside a name gets a `\`. A `<-` that adds nothing right after
+another lists the names and shows the line again. Programs along `PATH`
+are not offered (only the current folder's). Tests g17.py, gu64.py (a
+name on the stick). **3.8 (2026-11-06)**: external commands
+(module.s; docs/GUSH_COMMANDS.md): a GEOS `APPL_DATA` file of class
+`gush cmd`, or its CVT on the stick (the name tried with `.cvt`), found
+like programs; its data (`GCMD`, the API version, `jmp`) loaded into the
+4 KB transient area at `$5000` (the overlays' area: the next overlay
+call fetches its own again) and called with the words; C on return is
+the status. The API: a fixed jump table at `$0403` (gush.s) of core
+routines only (output through redirection and pipes, the file engine,
+words, variables, the input, numbers, a key, errors); the zero page
+`$E0-$EF` is the module's (gush's own ends at `$DF`). Example `wc`
+(`src/cmds/`, on drive E too). Tests g18.py, gu64.py (`wc.cvt` on the
+stick). **3.9 (2026-11-06)**: network commands (net.s,
+overlay 4) through a new engine function `FE_UCI` (a command sent to the
+Ultimate as given, its reply's data back; module 80, enginenet.s; the
+exchange is the one every Ultimate call uses). `ifconfig`: address,
+netmask, gateway, MAC. `wget [-O name] http://host[:port]/path`:
+HTTP/1.0 (`Connection: close`), the Ultimate resolving the host's name;
+the status line must say 200 (else it is shown and the line fails), the
+headers skipped, the body into the current folder under the path's last
+part (`index.html` for none, up to a `?`) or `-O`'s name; "NAME: N
+bytes" at the end; no answer for about 20 s: "no answer in time".
+**Not possible**: `ping` and `host`: the Ultimate's network target has
+no ICMP and no name lookup of its own (it resolves names only when
+opening a socket). No HTTPS (no TLS on the Ultimate's sockets), no
+redirects followed (a 301/302 shows its status). Tests g19.py (VICE:
+help, words, URLs), gu64.py (`ifconfig`, `wget` of example.com, a 404). **3.10 (2026-11-06)**: the fifth code sweep
+(docs/DESIGN.md, "Code sweeps"). Step 3 is complete.
 

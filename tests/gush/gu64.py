@@ -256,6 +256,44 @@ def main():
     check("> and < on the stick", g.lines()[-2], "redirected")
     g.run("cat r.txt | cat", settle=3)             # (step 3.5: a pipe)
     check("a pipe from the stick", g.lines()[-2], "redirected")
+    g.keys("cat r.t")                               # (step 3.7: completion)
+    g.keys([20], settle=4)                          # (KEY_LARROW)
+    check("completion on the stick", g.lines()[-1].rstrip(), "$ cat r.txt")
+    g.keys("\r", settle=3)
+    import ftplib
+    ftp = ftplib.FTP(g.u.ip)                          # (step 3.8: a module as CVT)
+    ftp.login()
+    with open(os.path.join(ROOT, "build", "cmds", "wc.cvt"), "rb") as f:
+        ftp.storbinary("STOR /USB0/GEOULTRA/test/gush/wc.cvt", f)
+    g.run("wc r.txt", settle=6)
+    check("an external command on the stick (wc.cvt)", g.lines()[-2].split(), ["1", "1", "11", "r.txt"])
+    ftp.delete("/USB0/GEOULTRA/test/gush/wc.cvt")
+    ftp.quit()
+    g.run("ifconfig", settle=4)                     # (step 3.9: the network)
+    rows = g.lines()[-5:-1]
+    check("ifconfig: the U64's own address", rows[0], "address  " + g.u.ip)
+    check("ifconfig: netmask, gateway, mac", [r.split()[0] for r in rows], ["address", "netmask", "gateway", "mac"])
+    g.run("wget http://example.com/", settle=20)
+    got = g.lines()[-2]
+    check("wget http://example.com/: index.html", got.startswith("index.html: ") and got.endswith(" bytes"), True)
+    g.run("wget -O ex.htm http://example.com/", settle=20)
+    check("wget -O", g.lines()[-2].startswith("ex.htm: "), True)
+    g.run("wget http://example.com/gush-nope", settle=20)
+    check("wget of a missing page: its status", g.lines()[-2].startswith("gush: wget: HTTP/1.") and " 404" in g.lines()[-2],
+          True)
+    import io
+    ftp = ftplib.FTP(g.u.ip)
+    ftp.login()
+    page = io.BytesIO()
+    ftp.retrbinary("RETR /USB0/GEOULTRA/test/gush/index.html", page.write)
+    check("wget: the page as served", b"Example Domain" in page.getvalue() and page.getvalue().rstrip().endswith(b"</html>"),
+          True)
+    for f in ("index.html", "ex.htm", "gush-nope"):
+        try:
+            ftp.delete("/USB0/GEOULTRA/test/gush/" + f)
+        except ftplib.error_perm:
+            pass
+    ftp.quit()
     g.run("rm -f r.txt")
     g.run("cp /a/INI ini.txt", settle=3)
     check("cp onto a file asks", g.lines()[-1], "gush: cp: overwrite /a/INI? (y/n/a)")

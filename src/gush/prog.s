@@ -27,11 +27,6 @@ ST_LD_DATA      = $80
 NO_DOC          = $FC           ; gush's own errors (cmds.s ErrCodes)
 ONE_DOC         = $FD
 OTHER_FOLDER    = $FE
-FI_KIND         = 0
-FI_GTYPE        = 3
-K_GEOS          = 3
-K_CBM           = 4
-K_UFILE         = 5
 PATH_DIR_MAX    = 80            ; a PATH folder's characters at most
 PATH_BUF        = 128           ; a folder, "/", the word
 
@@ -58,12 +53,14 @@ StartProgram:
         cmp #'/'
         bne @slash
         jsr Try                 ; (r0: the word)
-        bcc Found
-        rts
+        bcs :+
+        jmp Found
+:        rts
 @name:  sty wordLen             ; (its length)
         jsr Try                 ; the current directory
-        bcc Found
-        cpx #FILE_NOT_FOUND
+        bcs :+
+        jmp Found
+:        cpx #FILE_NOT_FOUND
         bne @end
         lda wordLen             ; longer than a name: on no drive's root
         cmp #FE_NAME_MAX_LONG + 1
@@ -72,21 +69,62 @@ StartProgram:
         sta drive
 @drive: jsr Build
         jsr Try
-        bcc Found
-        cpx #FILE_NOT_FOUND
+        bcs :+
+        jmp Found
+:        cpx #FILE_NOT_FOUND
         bne @end
         inc drive
         lda drive
         cmp #'d' + 1
         bcc @drive
         jsr Path                ; then along PATH
-        bcc Found
-@end:   ldy #$FF                ; (about the program)
+        bcs :+
+        jmp Found
+:@end:   ldy #$FF                ; (about the program)
         rts
 
 ; Try: the path at r0 a program? C clear (r0 kept in prog); else C set,
-; X = FILE_NOT_FOUND or STRUCT_MISMAT (there, but no program).
-Try:    lda r0L
+; X = FILE_NOT_FOUND, STRUCT_MISMAT (there, but no program), IS_SCRIPT
+; (a plain file) or IS_MODULE (an external command: a GEOS file of class
+; "gush cmd", or the name with ".cvt" added: on the Ultimate a module is
+; its CVT; module.s). prog: the path found.
+Try:    jsr Try1
+        bcc @end
+        cpx #FILE_NOT_FOUND
+        bne @end
+        ldy #$FF                ; NAME.cvt (a module on the Ultimate)
+@cp:    iny
+        cpy #PATH_BUF - 5
+        bcs @no
+        lda (r0),y
+        sta cvtBuf,y
+        bne @cp
+        ldx #0                  ; (y: at the zero)
+@ext:   lda Cvt,x
+        sta cvtBuf,y
+        iny
+        inx
+        cpx #5
+        bne @ext
+        lda #<cvtBuf
+        sta r0L
+        lda #>cvtBuf
+        sta r0H
+        jsr Try1
+        bcc @no                 ; (a program named so: none)
+        cpx #IS_SCRIPT          ; a plain file: a module's CVT
+        bne @no
+        ldx #IS_MODULE
+        sec
+@end:   rts
+@no:    ldx #FILE_NOT_FOUND
+        sec
+        rts
+
+Cvt:    .byte ".cvt", 0
+GushCmd:        .byte "gush cmd"        ; (a module's class, 8 of its 12)
+
+Try1:   lda r0L
         sta prog
         lda r0H
         sta prog+1
@@ -111,7 +149,18 @@ Try:    lda r0L
         cmp #K_GEOS
         bne @no
         lda info + FI_GTYPE
-        cmp #APPLICATION
+        cmp #APPL_DATA          ; class "gush cmd": an external command
+        bne @prog
+        ldy #7
+@class: lda fileHeader + O_GHFNAME,y
+        cmp GushCmd,y
+        bne @no
+        dey
+        bpl @class
+        ldx #IS_MODULE
+        sec
+        rts
+@prog:  cmp #APPLICATION
         beq @yes
         cmp #DESK_ACC
         bne @no
@@ -373,6 +422,7 @@ docTS:          .word 0
 
 info:           .res 16
 pathBuf:        .res PATH_BUF
+cvtBuf:         .res PATH_BUF
 short:          .res 17
 docShort:       .res 17
 path:           .res 3 + FE_NAME_MAX_LONG + 1

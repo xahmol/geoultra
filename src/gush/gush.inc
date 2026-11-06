@@ -43,6 +43,7 @@ FE_SELECT       = 21
 FE_MOUNTINFO    = 23
 FE_MKIMG        = 24
 FE_REBOOT       = 28
+FE_UCI          = 30
 
 ; Redirection markers: Parse makes an unquoted >, >> or < a word of one
 ; of these bytes (redir.s)
@@ -51,6 +52,11 @@ REDIR_ADD       = 2
 REDIR_IN        = 3
 
 IS_SCRIPT       = $F2           ; prog.s: a plain file, a script (no error)
+IS_MODULE       = $F1           ; prog.s: an external command (module.s)
+ERR_MODULE      = $F0           ; not a gush command (or for a newer gush)
+ERR_URL         = $EF           ; wget: not an http:// URL, or too long
+ERR_HTTP        = $EE           ; wget: the answer ended in its headers
+ERR_TIMEOUT     = $ED           ; wget: no answer in time
 
 ; gush's own errors (cmds.s ErrCodes, ErrTexts)
 ERR_DEEP        = $F3           ; scripts nested too deep
@@ -62,3 +68,25 @@ ERR_NO_TURBO    = $F8           ; no turbo registers
 ERR_WORDS       = $F9           ; the wrong words for the command
 ERR_OWN_DRIVE   = $FA           ; the drive gush runs from
 ERR_NO_ROOM     = $FB           ; no room in the REU
+
+; The file engine's info block (FE_STAT, FE_READDIR; FILE_ENGINE.md):
+FI_KIND         = 0             ; the kind (K_*)
+FI_CBM          = 1             ; the CBM file type
+FI_GTYPE        = 3             ; the GEOS file type
+FI_SIZE         = 4             ; blocks (Ultimate: bytes), 32 bits
+FI_DATE         = 8
+K_ROOT          = 0             ; "/"
+K_DRIVE         = 1
+K_FOLDER        = 2
+K_GEOS          = 3             ; a GEOS file
+K_CBM           = 4             ; a plain CBM file
+K_UFILE         = 5             ; a file on the Ultimate
+K_UDIR          = 6             ; a folder on the Ultimate
+FO_READ         = 0             ; FE_OPEN's modes
+FO_WRITE        = 1
+FO_APPEND       = 2
+APPL_DATA       = 7             ; (GEOS file type: a module, prog.s)
+
+; The transient area (ovl.s): the overlays and external commands.
+TRANS           = $5000
+TRANS_SIZE      = $1000

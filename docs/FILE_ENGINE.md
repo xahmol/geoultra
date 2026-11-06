@@ -116,6 +116,7 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 27 | `FE_SETTIME` | (GEOS's date and time set by the caller) | the CIA's time-of-day clock and the Ultimate's clock set from them (`FE_ULTIMATE`: the Ultimate's menu forbids it) |
 | 28 | `FE_REBOOT` | - | every drive written back, HIBERNAT.BIN deleted, the C64 restarted through the Ultimate (control target, `REBOOT`): GeoUltra boots afresh. Back only on an error (`FE_ULTIMATE`: a drive could not be written back) |
 | 29 | `FE_NTP` | r0 = a server's name, or 0: SETTINGS.INI's `[time] ntp=` | its time, with `[time] offset=` (seconds from UTC, signed), to GEOS's clock, the CIA's time of day and the Ultimate's clock (`FILE_NOT_FOUND`: no server; `FE_ULTIMATE`: no network or answer). Also at every cold start with r0 = 0 (nothing without a server) |
+| 30 | `FE_UCI` | r0 = a command for the Ultimate (its target, command and bytes), r1L = its length (2-128), r2 = a buffer for the reply's data, r3 = its size (0: none) | r3 = the data's length, r4 = the status's first two characters (`FE_ULTIMATE`: the Ultimate said no; `DEV_NOT_FOUND`: no Command Interface). Sent through the same exchange as every Ultimate call (module 80, enginenet.s); gush's network commands use it (the network target 3: addresses, TCP and UDP sockets) |
 
 Flags for `FE_COPY` and `FE_MOVE`: overwrite (else `FILE_EXISTS`),
 raw (no CVT conversion), and a progress vector in r3 (called after every

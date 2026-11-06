@@ -29,7 +29,8 @@ def labels():
     out = {}
     for line in open(os.path.join(ROOT, "build", "gush", "gush.lbl")):
         parts = line.split()
-        out[parts[2].lstrip(".")] = int(parts[1], 16)
+        out.setdefault(parts[2].lstrip("."), int(parts[1], 16))   # (exports come
+                                        # first: a module's own label of the same name loses)
     return out
 
 

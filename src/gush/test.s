@@ -19,13 +19,6 @@
         .export Ov_CmdFalse := CmdFalse
 
 GetNextChar     = $C2A7
-FO_READ         = 0
-FI_KIND         = 0
-K_DRIVE         = 1
-K_FOLDER        = 2
-K_UDIR          = 6
-K_GEOS          = 3
-K_UFILE         = 5
 READ_MAX        = 250
 
         .segment "ZEROPAGE"

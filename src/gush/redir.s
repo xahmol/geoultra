@@ -25,9 +25,6 @@ FetchRAM        = $C2CB
 PIPE            = $FE           ; the handle of a pipe (a stage's output in
 PIPE_BANK       = 6             ; the REU: two areas of PIPE_MAX in this
 PIPE_MAX        = $8000         ; bank, used in turn)
-FO_READ         = 0
-FO_WRITE        = 1
-FO_APPEND       = 2
 
         .segment "CODE"
 

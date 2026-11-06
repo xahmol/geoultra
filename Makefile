@@ -59,7 +59,7 @@ checkcfg: check-deploy
 # GeoUltra's own GEOS files, assembled at $0400 and packed as CVT by
 # geos-oscar64's geosapp.py (0.1.2 or later: it pads desk accessories to
 # whole blocks), written to a D64 with VICE's c1541.
-SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt
+SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt
 
 build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	@mkdir -p build/tools
@@ -94,7 +94,16 @@ build/gush/gush.bin: $(GUSHOBJS) src/gush/gush.cfg
 
 build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/vlircvt.py
 	$(PYTHON) $(GEOSAPP) src/gush/gush.toml $< build/gush/gush-seq.cvt
-	$(PYTHON) tools/vlircvt.py build/gush/gush-seq.cvt $@ $<.1 $<.2
+	$(PYTHON) tools/vlircvt.py build/gush/gush-seq.cvt $@ $<.1 $<.2 $<.3 $<.4
+
+# External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
+# at gush's transient area (src/cmds/cmd.cfg), a GEOS APPL_DATA file of
+# class "gush cmd" (src/cmds/NAME.toml).
+build/cmds/%.cvt: src/cmds/%.s src/cmds/%.toml src/cmds/cmd.cfg src/cmds/gushapi.inc $(wildcard src/inc/*.inc)
+	@mkdir -p build/cmds
+	$(CA65) -I src/inc -I src/cmds -o build/cmds/$*.o $<
+	$(LD65) -C src/cmds/cmd.cfg -m build/cmds/$*.map -o build/cmds/$*.bin build/cmds/$*.o
+	$(PYTHON) $(GEOSAPP) src/cmds/$*.toml build/cmds/$*.bin $@
 
 # DocPeek, the test application of tests/gush/g9.py (gush's "program
 # document"): linked like gush.
@@ -355,6 +364,9 @@ test-gush: all build/gush/docpeek.cvt
 	$(PYTHON) tests/gush/g14.py
 	$(PYTHON) tests/gush/g15.py
 	$(PYTHON) tests/gush/g16.py
+	$(PYTHON) tests/gush/g17.py
+	$(PYTHON) tests/gush/g18.py
+	$(PYTHON) tests/gush/g19.py
 
 # gush on the U64 (tests/gush/gu64.py): the Ultimate's file system, a desk
 # accessory; gush written onto drive A's test copy first.

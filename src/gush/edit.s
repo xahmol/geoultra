@@ -14,6 +14,8 @@
         .import ExecLine
         .export EdKey, EdPress, Prompt, lineBuf, lineLen, testCtrl
         .export histTop, histCount, histSlot, histBuf, Fetch, Keep
+        .export linePos, prevKey, Show, InsCh
+        .import Complete
 
 StashRAM        = $C2C8         ; GEOS jump table
 FetchRAM        = $C2CB
@@ -135,7 +137,10 @@ EdPress:
 ; EdKey (keyVector): one key in keyData.
 EdKey:  lda #0                  ; the cursor off while the line changes
         jsr ConCursor
+        lda lastKey             ; (the key before: completion, a second <-)
+        sta prevKey
         lda keyData
+        sta lastKey
         jsr Ctrl                ; CTRL held: A, E, K, U, C
         bcc @plain
         and #$1F | $40          ; (either case)
@@ -174,10 +179,10 @@ EdKey:  lda #0                  ; the cursor off while the line changes
         rts
 
 Keys:   .byte CR, KEY_DELETE, KEY_INSERT, KEY_LEFT, KEY_RIGHT, KEY_HOME
-        .byte KEY_CLEAR, KEY_UP, KEY_DOWN, KEY_STOP
+        .byte KEY_CLEAR, KEY_UP, KEY_DOWN, KEY_STOP, KEY_LARROW
 Keys_n = * - Keys
 KeyDo:  .word Enter-1, Back-1, Forward-1, Left-1, Right-1, Home-1
-        .word Clear-1, Older-1, Newer-1, Drop-1
+        .word Clear-1, Older-1, Newer-1, Drop-1, Complete-1
 CtrlKeys:
         .byte "aekuc"
 CtrlKeys_n = * - CtrlKeys
@@ -186,9 +191,14 @@ CtrlDo: .word Home-1, End-1, CutEnd-1, CutStart-1, Drop-1
 ToShow: jmp Show                ; (in reach of the routines' branches)
 
 ; Insert: character A at the cursor.
-Insert: ldx lineLen
+Insert: jsr InsCh
+        jmp Show
+
+; InsCh: character A at the cursor, the line not drawn. C set when the
+; line is full (nothing changed). (complete.s too.)
+InsCh:  ldx lineLen
         cpx #LINE_MAX
-        bcs ToShow
+        bcs @full
         pha
 @move:  cpx linePos             ; the rest one place right
         beq @put
@@ -200,7 +210,8 @@ Insert: ldx lineLen
         sta lineBuf,x
         inc lineLen
         inc linePos
-        jmp Show
+        clc
+@full:  rts
 
 ; Back (DEL): the character before the cursor off.
 Back:   ldx linePos
@@ -442,6 +453,8 @@ Ctrl:   pha
 
 lineLen:        .byte 0
 linePos:        .byte 0
+lastKey:        .byte 0
+prevKey:        .byte 0
 viewAt:         .byte 0
 drawAt:         .byte 0
 histTop:        .byte HIST_N - 1        ; (the first line goes to slot 0)

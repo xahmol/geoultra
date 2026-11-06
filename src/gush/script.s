@@ -20,7 +20,6 @@ ARGS_SIZE       = 256           ; a level's $0-$9, zero-ended one after
                                 ; the other
 StashRAM        = $C2C8
 FetchRAM        = $C2CB
-FO_READ         = 0
 
         .segment "CODE"
 

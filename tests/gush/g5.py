@@ -26,10 +26,10 @@ def main():
         g.start()
         g.run("help")
         check("help", g.lines()[-7:-1], ["commands: [ cd clear cp date df echo exit false free",
-                                          "help ls mkdir mkimg more mount mv ntp pwd read",
-                                          "reboot rm rmdir set source test true turbo umount",
-                                          "unset; if/while/for; NAME=value, $NAME; a program's",
-                                          "name or a script's starts it.",
+                                          "help ifconfig ls mkdir mkimg more mount mv ntp pwd",
+                                          "read reboot rm rmdir set source test true turbo",
+                                          "umount unset wget; if/while/for; NAME=value, $NAME;",
+                                          "a program's or a script's name starts it.",
                                           "help NAME: a command's use."])
         g.run("help cp")
         check("help cp", g.lines()[-2], "cp [-frR] source... target")

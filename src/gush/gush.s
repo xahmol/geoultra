@@ -9,7 +9,8 @@
         .import ConInit, ConPut, ConPuts, ConNewLine, ConClear, ConCursor
         .import ConStatus, conCol, conRow
         .import EdKey, EdPress, Prompt, VarsInit, RunRc, HistLoad
-        .import OvlInit, ovlOk
+        .import OvlInit, ovlOk, Print, Fail, ArgR0
+        .import ApiArgc, ApiGetVar, ApiSetVar, ApiReadIn, ApiDecimal, ApiKey
         .export FileEngine, Status, pwdBuf, startDrive
 
 EnterDeskTop    = $C22C         ; GEOS jump table
@@ -17,7 +18,26 @@ StartMouseMode  = $C14E
 
         .segment "CODE"
 
-Start:  jsr OvlInit              ; (first: dirEntryBuf is gush's entry)
+Start:  jmp Begin
+
+; The API for external commands (module.s, docs/GUSH_COMMANDS.md): a
+; jump table at $0403, which never moves; new entries only at its end
+; (and API_VERSION up, module.s).
+Api:    jmp ConPut              ; $0403 A: a character (CR: a new line)
+        jmp Print               ; $0406 A/Y: a zero-ended text
+        jmp ConNewLine          ; $0409 a new line
+        jmp FileEngine          ; $040C A: function, Y, r0-r4 (FILE_ENGINE.md)
+        jmp Fail                ; $040F X: error, Y: word ($FF: none)
+        jmp ArgR0               ; $0412 X: word -> r0
+        jmp ApiArgc             ; $0415 -> A: the words
+        jmp ApiGetVar           ; $0418 r0: name -> r1: value; C set: none
+        jmp ApiSetVar           ; $041B r0: name, r1: value
+        jmp ApiReadIn           ; $041E r1, r2 -> r2 read; C set: no input
+        jmp ApiDecimal          ; $0421 r0-r1 (32 bits), A: columns
+        jmp ApiKey              ; $0424 -> A: a key, waited for
+        .assert Api = $0403, error, "gush's API moved"
+
+Begin:  jsr OvlInit             ; (first: dirEntryBuf is gush's entry)
         lda curDrive            ; (cd without a path: its root)
         sta startDrive
         lda guExtTable          ; FileEngine: the extension table + 30

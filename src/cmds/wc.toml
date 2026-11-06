@@ -1,0 +1,11 @@
+# wc, the example external gush command (docs/GUSH_COMMANDS.md): a GEOS
+# APPL_DATA file of class "gush cmd", its data at gush's transient area.
+[file]
+name = "wc"
+type = "APPL_DATA"
+cbmtype = "USR"
+load = 0x5000
+class = "gush cmd"
+version = "V1.0"
+author = "Xander Mol"
+info = "Lines, words and bytes: an external gush command."

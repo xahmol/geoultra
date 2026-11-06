@@ -17,7 +17,7 @@
         .include "gush.inc"
 
         .import failed
-        .export OvlInit, ovlOk
+        .export OvlInit, ovlOk, OvlDrop
 
 ReadFile        = $C1FF         ; GEOS jump table
 GetBlock        = $C1E4
@@ -25,9 +25,7 @@ StashRAM        = $C2C8
 FetchRAM        = $C2CB
 OVL_BANK        = 7             ; (1-6: history, cp -r, HIGH, scripts,
                                 ; lines, pipes; the last free bank)
-TRANS           = $5000         ; the transient area (gush.cfg)
-TRANS_SIZE      = $1000
-OVL_N           = 2             ; overlay records
+OVL_N           = 4             ; overlay records
 
         .segment "ZEROPAGE"
 
@@ -89,6 +87,13 @@ OvlInit:
         bcc @rec
         inc ovlOk
 @end:   rts
+
+; OvlDrop: no overlay in the area any more (an external command loaded
+; there: module.s); the next stub fetches its own.
+OvlDrop:
+        lda #$FF
+        sta curOvl
+        rts
 
 ; Reu: r0-r3 for overlay (A / 2 + 1) between TRANS and its REU place
 ; (bank OVL_BANK, (n - 1) * 4 KB).
@@ -186,6 +191,9 @@ name:   jsr OvlGo
         Stub CmdRead, 2
         Stub CmdTrue, 2
         Stub CmdFalse, 2
+        Stub Complete, 3        ; overlay 3: complete.s
+        Stub CmdIfconfig, 4     ; overlay 4: net.s
+        Stub CmdWget, 4
 
         .segment "DATA"
 

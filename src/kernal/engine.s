@@ -64,6 +64,7 @@
 ;   77 enginentp.s   SETTINGS.INI's [time] read
 ;   78 enginentp.s   the time as a date, the clocks set
 ;   79 enginentp.s   SETTINGS.INI's [time] lines
+;   80 enginenet.s   FE_UCI: a command to the Ultimate, its reply
 ; Shared: engine.inc (constants, work area, REU layout), feblock.inc,
 ; fecd.inc, fecvtout.inc, fecvtread.inc, fecvtwrite.inc, fedrive.inc,
 ; fefat.inc, fefmt.inc, fehome.inc, felong.inc, femount.inc, fepath.inc,
@@ -128,6 +129,7 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 75, 6             ; FE_SETTIME
         .byte 75, 9             ; FE_REBOOT
         .byte 76, 0             ; FE_NTP (enginentp.s)
+        .byte 80, 0             ; FE_UCI (enginenet.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),

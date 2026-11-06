@@ -14,24 +14,14 @@
         .import CmdTurbo, CmdDate, CmdReboot, CmdNtp, CmdSet, CmdUnset
         .import VarSet, varName, IsNameChar, Redirect, EndRedirect, sinkPause
         .import sinkOn
-        .export status, failed
+        .export status, failed, Commands
         .import RunScript, CmdSource, depth, exitReq, exitStatus, prog
         .import CmdTest, CmdBracket, CmdRead, CmdTrue, CmdFalse, HistSave
+        .import RunModule, CmdIfconfig, CmdWget
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
 ; Info block (docs/FILE_ENGINE.md, "Functions")
-FI_KIND         = 0
-FI_CBM          = 1
-FI_SIZE         = 4
-FI_DATE         = 8
-K_ROOT          = 0
-K_DRIVE         = 1
-K_FOLDER        = 2
-K_GEOS          = 3
-K_CBM           = 4
-K_UFILE         = 5
-K_UDIR          = 6
 END_OF_DIR      = $48
 
         .segment "ZEROPAGE"
@@ -104,7 +94,10 @@ Line:   jsr Parse
         beq @end
         cpy #1                  ; (the document's error)
         beq @fail
-        cpx #IS_SCRIPT          ; a plain file: run as a script
+        cpx #IS_MODULE          ; an external command (module.s)
+        bne :+
+        jmp RunModule
+:       cpx #IS_SCRIPT          ; a plain file: run as a script
         bne :+
         lda prog
         sta r0L
@@ -179,6 +172,10 @@ Commands:
         .word CmdNtp
         .byte "date", 0
         .word CmdDate
+        .byte "ifconfig", 0
+        .word CmdIfconfig
+        .byte "wget", 0
+        .word CmdWget
         .byte "help", 0
         .word CmdHelp
         .byte "set", 0
@@ -283,10 +280,10 @@ CmdHelp:
 
 HelpAll:                        ; (lines of 52 at most: 53 wraps)
         .byte "commands: [ cd clear cp date df echo exit false free", CR
-        .byte "help ls mkdir mkimg more mount mv ntp pwd read", CR
-        .byte "reboot rm rmdir set source test true turbo umount", CR
-        .byte "unset; if/while/for; NAME=value, $NAME; a program's", CR
-        .byte "name or a script's starts it.", CR
+        .byte "help ifconfig ls mkdir mkimg more mount mv ntp pwd", CR
+        .byte "read reboot rm rmdir set source test true turbo", CR
+        .byte "umount unset wget; if/while/for; NAME=value, $NAME;", CR
+        .byte "a program's or a script's name starts it.", CR
         .byte "help NAME: a command's use.", 0
 Usage:  .byte "cd [path]", 0
         .byte "date [YYYY-MM-DD HH:MM[:SS]]", 0
@@ -298,6 +295,7 @@ Usage:  .byte "cd [path]", 0
         .byte "false", 0
         .byte "free", 0
         .byte "help [command]", 0
+        .byte "ifconfig", 0
         .byte "ls [-l] [path...]", 0
         .byte "mkdir [-t tracks] path...", 0
         .byte "mkimg [-t tracks] type path [name]", 0
@@ -317,6 +315,7 @@ Usage:  .byte "cd [path]", 0
         .byte "turbo [-s] [step]", 0
         .byte "unset name...", 0
         .byte "umount /drive", 0
+        .byte "wget [-O name] http://host[:port]/path", 0
         .byte 0
 NoHelp: .byte "no help for ", 0
 
@@ -850,7 +849,8 @@ ErrCodes:
         .byte $F5, $F6, $F7
         .byte $F8
         .byte $F9, $FA
-        .byte $FB, $FC, $FD, $FE, $FF, 0
+        .byte $FB, $FC, $FD, $FE, $FF, ERR_MODULE, ERR_URL, ERR_HTTP
+        .byte ERR_TIMEOUT, 0
 ErrTexts:
         .word ErrSpace, ErrNotFound, ErrDrive, ErrProtect, ErrExists
         .word ErrNotEmpty, ErrCancelled, ErrBadPath, ErrNotFolder
@@ -859,7 +859,8 @@ ErrTexts:
         .word ErrNoTurbo
         .word ErrWords, ErrOwnDrive
         .word ErrNoRoom, ErrNoDoc, ErrOneDoc
-        .word ErrOtherFolder, ErrTooMany
+        .word ErrOtherFolder, ErrTooMany, ErrModule, ErrUrl, ErrHttp
+        .word ErrTimeout
 ErrSpace:       .byte "disk full", 0
 ErrNotFound:    .byte "no such file or folder", 0
 ErrDrive:       .byte "no such drive", 0
@@ -885,6 +886,10 @@ ErrNoDoc:       .byte "a desk accessory takes no document", 0
 ErrOneDoc:      .byte "one document at a time", 0
 ErrOtherFolder: .byte "not in the program's folder", 0
 ErrTooMany:     .byte "too many entries", 0
+ErrModule:      .byte "not a gush command, or for a newer gush", 0
+ErrUrl:         .byte "bad URL (http:// only)", 0
+ErrHttp:        .byte "the answer ended early", 0
+ErrTimeout:     .byte "no answer in time", 0
 ErrOther:       .byte "error ", 0
 
 GushColon:      .byte "gush: ", 0

@@ -10,8 +10,6 @@
         .export Ov_CmdDate := CmdDate
         .export Ov_CmdNtp := CmdNtp
 
-FO_READ         = 0
-FO_WRITE        = 1
 FE_TURBO        = 25
 FE_HOME         = 26
 FE_SETTIME      = 27

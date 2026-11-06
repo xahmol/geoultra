@@ -44,7 +44,8 @@ FE_HOME         = 26            ; the home folder's path
 FE_SETTIME      = 27            ; the Ultimate's clock from GEOS's
 FE_REBOOT       = 28            ; written back, the C64 restarted afresh
 FE_NTP          = 29            ; the clocks from an NTP server
-FE_COUNT        = 30
+FE_UCI          = 30            ; a command to the Ultimate, its reply
+FE_COUNT        = 31
 FE_VER          = $0003         ; FE_VERSION's answer (E3)
 
 ; FE_COPY, FE_MOVE: flags (r2L)
