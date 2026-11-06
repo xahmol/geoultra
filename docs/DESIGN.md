@@ -410,7 +410,8 @@ To try by hand after gush step 3 (2026-11-06; the automatic tests ran in
 VICE and on the U64, docs/GUSH.md "Step 3"): completion with `<-` while
 typing; `wget http://...` and `ifconfig`; an external command: copy
 `build/cmds/wc.cvt` into `GEOULTRA/bin` on the stick, then `wc FILE` or
-`ls | wc` from any folder; the history across a `reboot` (cursor up).
+`ls | wc` from any folder; the history across a `reboot` (cursor up); RUN/STOP held during
+`while true; do echo x; done` (it should stop the loop).
 Ideas welcome for which commands should become external ones, and
 whether `/e` (drive E) should be reachable by path next (then modules
 could live on the system drive).
