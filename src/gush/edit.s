@@ -389,7 +389,9 @@ Newer:  lda histAt
         sta linePos
 @end:   jmp Show
 
-; Recall: history line histAt (1: the newest) into the input line.
+; Recall: history line histAt (1: the newest) into the input line, the
+; cursor and the view at its start (user, 2026-11-06: a long line showed
+; its end; CTRL+E goes there).
 Recall: lda histTop
         sec
         sbc histAt
@@ -404,7 +406,9 @@ Recall: lda histTop
         sta lineBuf,x
         bne @copy
         stx lineLen
-        stx linePos
+        lda #0
+        sta linePos
+        sta viewAt
         jmp Show
 
 ; Newest: histSlot = histTop.

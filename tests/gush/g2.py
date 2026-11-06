@@ -82,6 +82,11 @@ def main():
         g.keys("\r")
         out = g.lines()
         check("and runs whole", (out[-3] + out[-2]), long[5:])
+        g.keys([UP], settle=1)                  # recalled: its start shown (user, 2026-11-06)
+        row = g.screen()[g.v.mem_get(g.lbl["conRow"], g.lbl["conRow"])[0] - 1]
+        pos = g.v.mem_get(g.lbl["linePos"], g.lbl["linePos"])[0]
+        check("a recalled long line: its start, the cursor there", (row, pos), ("$ " + long[:51], 0))
+        g.keys([STOP])
         g.png("g2-editor")
     finally:
         g.stop()
