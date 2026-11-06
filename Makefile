@@ -100,8 +100,8 @@ build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/vlircvt.py
 DESKSRCS = $(wildcard src/desktop/*.s)
 build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/desktop
-	$(CA65) -g -I src/inc -o build/desktop/desktop.o src/desktop/desktop.s
-	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o
+	for f in $(DESKSRCS); do $(CA65) -g -I src/inc -o build/desktop/$$(basename $$f .s).o $$f || exit 1; done
+	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o $(patsubst src/desktop/%.s,build/desktop/%.o,$(filter-out src/desktop/desktop.s,$(DESKSRCS)))
 	$(PYTHON) $(GEOSAPP) src/desktop/desktop.toml build/desktop/desktop.bin $@
 
 # External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
@@ -414,6 +414,7 @@ test-desktop81: all
 # U64 (SETTINGS.INI desktop=geoultra, made and deleted again).
 test-desktop: all
 	$(PYTHON) tests/desktop/d1.py
+	$(PYTHON) tests/desktop/d2.py
 
 test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt

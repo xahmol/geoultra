@@ -125,6 +125,22 @@ moves the window over the folder's entries.
   module (the engine's modules overwrite the slot): copied to `$0400`
   first. Tests: tests/desktop/d1.py (VICE, `make test-desktop`),
   tests/desktop/du64.py (U64, `make test-desktop-u64`).
+- **D2 (2026-11-06):** the list (list.s). A folder's entries are read
+  once into an entry table in the application's REU (128 bytes each:
+  the engine's info block and the long name; banks 1-4, up to 2048
+  entries), in directory order; 17 rows show from `top`, with a scroll
+  strip on the right (its thumb at the window's place; a click above
+  or below it pages). The selection is a bit per entry, the cursor
+  the entry the keys move. Mouse: a click selects the entry alone,
+  SHIFT+click the range from the cursor, C=+click toggles it. Keys:
+  cursor up and down move the cursor, the window follows; **C= +
+  cursor extends the selection** (a deviation from the plan's "SHIFT
+  extends": on the C64 cursor up is SHIFT + CRSR DOWN, so SHIFT cannot
+  be told apart); HOME to the first entry. SHIFT and C= are read from
+  the keyboard matrix at a click, with I/O switched in (applications
+  run with RAM over `$D000`: without it the matrix read RAM and every
+  click looked like C=+SHIFT). Test tests/desktop/d2.py (VICE: 40
+  files on drive B; reading, keys, C= extending, a click, a page).
 
 ## Tests
 

@@ -8,6 +8,9 @@
 
         .include "geos.inc"
 
+        .import ListRead, ListDraw, ListPress, ListKey
+        .export FileEngine
+
 ; GEOS jump table
 Rectangle       = $C124
 FrameRectangle  = $C127
@@ -75,8 +78,26 @@ Start:  lda guExtTable          ; FileEngine: the extension table + 30
         sta r0L
         lda #>mainMenu
         sta r0H
+        lda #<Press             ; mouse presses outside menus and keys
+        sta otherPressVec
+        lda #>Press
+        sta otherPressVec+1
+        lda #<Key
+        sta keyVector
+        lda #>Key
+        sta keyVector+1
         lda #0
         jmp DoMenu
+
+; Press (otherPressVec): a press (not a release) in the list.
+Press:  lda mouseData
+        bmi @end
+        jsr ListPress
+@end:   rts
+
+; Key (keyVector): the list's keys.
+Key:    lda keyData
+        jmp ListKey
 
 ; FileEngine: A = function, Y = handle, r0-r4 (FILE_ENGINE.md).
 FileEngine:
@@ -97,7 +118,8 @@ Draw:   lda #0
         ldy #0
         jsr Box
         jsr Sidebar
-        jmp List
+        jsr ListRead
+        jmp ListDraw
 
 ; Box: a rectangle from row A to row X, x 0 to 319 (Y = 0) or the list
 ; area (Y = 1), in the current pattern.
@@ -158,8 +180,8 @@ Sidebar:
         ldy rowY
         jsr SideText
         jsr DiskName            ; its disk's name after the letter
-        lda #<name
-        ldx #>name
+        lda #<dname
+        ldx #>dname
         ldy rowY
         jsr SideName
         lda rowY
@@ -214,7 +236,7 @@ SideAt: sta r11L
 ; the current drive back.
 DiskName:
         lda #0
-        sta name
+        sta dname
         lda drv
         clc
         adc #8
@@ -226,109 +248,13 @@ DiskName:
 @ch:    lda (r5),y
         cmp #$A0
         beq @zero
-        sta name,y
+        sta dname,y
         iny
         cpy #NAME_LEN - 1
         bcc @ch
 @zero:  lda #0
-        sta name,y
+        sta dname,y
 @end:   rts
-
-; List: the path line (FE_PWD) and the current folder's first ROWS names
-; (FE_OPENDIR, FE_READDIR; a folder or drive with "/" after it).
-List:   lda #0
-        jsr SetPattern
-        lda #MENU_BOTTOM + 1
-        ldx #199
-        ldy #1
-        jsr Box
-        lda #<path              ; the path
-        sta r0L
-        lda #>path
-        sta r0H
-        lda #FE_PWD
-        jsr FileEngine
-        lda #<path
-        ldx #>path
-        ldy #PATH_Y
-        jsr ListText
-        lda #<path
-        sta r0L
-        lda #>path
-        sta r0H
-        lda #FE_OPENDIR
-        jsr FileEngine
-        sta handle
-        txa
-        bne @end
-        lda #0
-        sta count
-        lda #LIST_TOP + BASELINE
-        sta rowY
-@entry: lda #<info
-        sta r1L
-        lda #>info
-        sta r1H
-        lda #<name
-        sta r2L
-        lda #>name
-        sta r2H
-        lda #0
-        sta r3L
-        sta r3H
-        ldy handle
-        lda #FE_READDIR
-        jsr FileEngine
-        txa
-        bne @close
-        jsr Mark                ; a folder or drive: "/" after its name
-        lda #<name
-        ldx #>name
-        ldy rowY
-        jsr ListText
-        inc count
-        lda rowY
-        clc
-        adc #ROW_H
-        sta rowY
-        lda count
-        cmp #ROWS
-        bcc @entry
-@close: ldy handle
-        lda #FE_CLOSE
-        jsr FileEngine
-@end:   rts
-
-; Mark: "/" after name when info says folder or drive.
-Mark:   lda info + FI_KIND
-        cmp #K_FOLDER
-        beq @slash
-        cmp #K_UDIR
-        beq @slash
-        cmp #K_DRIVE
-        bne @end
-@slash: ldy #$FF
-@len:   iny
-        lda name,y
-        bne @len
-        cpy #LONG_LEN - 1
-        bcs @end
-        lda #'/'
-        sta name,y
-        lda #0
-        sta name + 1,y
-@end:   rts
-
-; ListText: the text at A/X at the list's left edge + 2, baseline Y.
-ListText:
-        sta r0L
-        stx r0H
-        sty r1H
-        lda #LIST_LEFT + 2
-        sta r11L
-        lda #0
-        sta r11H
-        jmp PutString
 
 ; --- Menus --------------------------------------------------------------
 
@@ -428,7 +354,8 @@ Gush:   jsr GotoFirstMenu
 ; Refresh (disk > refresh): the list read again.
 Refresh:
         jsr GotoFirstMenu
-        jmp List
+        jsr ListRead
+        jmp ListDraw
 
 ; Nothing (view > list: the only view yet).
 Nothing:
@@ -523,8 +450,6 @@ driveLine:      .byte " A", 0
 drivePath:      .byte "/a", 0
 
 feVec:          .word 0
-handle:         .byte 0
-count:          .byte 0
 rowY:           .byte 0
 drv:            .byte 0
 homeDrive:      .byte 0
@@ -533,7 +458,5 @@ daCount:        .byte 0
 
         .segment "BSS"
 
-info:           .res 16
-name:           .res LONG_LEN + 2
-path:           .res 256
+dname:          .res NAME_LEN
 daNames:        .res DA_MAX * NAME_LEN
