@@ -30,6 +30,7 @@ decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 | [`docs/GEOS_REFERENCE.md`](docs/GEOS_REFERENCE.md) | GEOS technical reference (memory and zero page maps, kernal, file formats, GEOS 128, MegaPatch3/GDOS64/Wheels differences) |
 | [`docs/GEOS_API_REFERENCE.md`](docs/GEOS_API_REFERENCE.md) | Per-routine kernal API (from The Hitchhiker's Guide to GEOS v2022) |
 | [`docs/GUSH.md`](docs/GUSH.md) | gush, the GeoUltra shell: design, commands, state of the work |
+| [`docs/GUSH_MANUAL.md`](docs/GUSH_MANUAL.md) | Using gush: keys, paths, command lines, control flow, scripts, commands |
 | [`docs/GUSH_COMMANDS.md`](docs/GUSH_COMMANDS.md) | Writing external gush commands: format, calling convention, the routines gush offers, building |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Rules for pull requests: clean-room, coding practices, tests, descriptions, use of AI |
 
