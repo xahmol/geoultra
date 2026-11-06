@@ -231,7 +231,9 @@ Source: ldy #0
         bne @p
 @end:   jmp Append
 
-; Append: "/" (unless full ends in one, Y its end) and entryName to full.
+; Append: "/" (unless full ends in one, Y its end) and entryName to full,
+; cut at its 255th character (a path that long fails in the engine, with
+; an error shown, rather than running past full).
 Append: lda full-1,y
         cmp #'/'
         beq @name
@@ -239,12 +241,16 @@ Append: lda full-1,y
         sta full,y
         iny
 @name:  ldx #0
-@n:     lda entryName,x
+@n:     cpy #255
+        bcs @cut
+        lda entryName,x
         sta full,y
         beq @end
         iny
         inx
         bne @n
+@cut:   lda #0
+        sta full,y
 @end:   rts
 
 ; Delete: after one question, each entry taking part removed (a folder

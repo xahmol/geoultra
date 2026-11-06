@@ -1,10 +1,11 @@
 ; GeoUltra Desktop (docs/DESKTOP.md): GeoUltra's own desktop, milestone
-; 1, step D1: the frame. The menu bar (geos with the desk accessories,
-; drive E's merged in by the kernal; file; view; disk), the sidebar with
-; the drives that are there and drive E, and the list area with the
-; current folder's path and its first names (through the file engine).
-; Drawn on both screens, so GEOS recovers menus and desk accessories from
-; the background. Own design and code.
+; 1. This file: the start, the menus (geos with the desk accessories,
+; drive E's merged in by the kernal; file with the actions; view; disk),
+; the sidebar with the drives that are there and drive E, the mouse and
+; key routines that hand on to the list (list.s), opening (open.s) and
+; the actions (actions.s). Drawn on both screens, RecoverVector =
+; RecoverRectangle, so menus and desk accessories give back what was
+; under them. Own design and code.
 
         .include "geos.inc"
 
@@ -30,16 +31,7 @@ guExtTable      = $C0E4         ; GeoUltra: the extension table
 FE_ENTRY        = 30            ; (its file engine entry)
 
 ; The file engine (docs/FILE_ENGINE.md)
-FE_STAT         = 1
-FE_OPENDIR      = 2
-FE_READDIR      = 3
-FE_CLOSE        = 4
-FE_PWD          = 12
 FE_RUNSYS       = 22
-FI_KIND         = 0
-K_DRIVE         = 1
-K_FOLDER        = 2
-K_UDIR          = 6
 
 ; Layout (docs/DESKTOP.md, "Screen")
 MENU_BOTTOM     = 14
@@ -48,15 +40,12 @@ LIST_LEFT       = 82
 PATH_Y          = 24            ; the path line's baseline
 LIST_TOP        = 28            ; the list: rows of ROW_H pixels
 ROW_H           = 9
-ROWS            = 17
-LIST_BOTTOM     = LIST_TOP + ROWS * ROW_H
 SCREEN_RIGHT    = 319
 BASELINE        = 7             ; a row's baseline below its top
 SIDE_FIRST      = LIST_TOP      ; the sidebar's first drive line's top
 
 DA_MAX          = 8             ; desk accessories in the geos menu
 NAME_LEN        = 17            ; a GEOS name and its zero
-LONG_LEN        = 61            ; FE_READDIR's name buffer
 
         .segment "CODE"
 
