@@ -96,7 +96,12 @@ measured on an Ultimate 64 (docs/DESIGN.md, "Verified on hardware"). On
 the Ultimate the AI also runs the tests itself through its network
 interface (deploying builds, changing settings, reading memory, taking
 screenshots), while Xander does the physical steps (power cycles, keys)
-and judges what is on the screen.
+and judges what is on the screen. gush, the shell, has its own suites:
+`make test-gush` in VICE and `tests/gush/gu64.py` on the Ultimate 64.
+Some steps are done unattended: on Xander's instruction the AI works
+through steps he decided on, testing, committing and pushing each one,
+and he reviews the result afterwards (the commits and docs/GUSH.md say
+what was done and tested).
 Tests reduce the risk of mistakes; they do not exclude them.
 
 Clean-room: the AI reads GEOS reference sources (the reassembled GEOS 2.0
