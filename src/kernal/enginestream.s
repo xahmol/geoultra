@@ -16,7 +16,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
+        .import OvlCall, SysRAMOp, folderT, folderS, FindFile, sysActive
 
 CBM_SEQ         = $81           ; a closed SEQ file
 
@@ -60,7 +60,11 @@ OvOpen: jsr NewHandle
         lda feName
         beq @ret
         ldx feDrive             ; the folder holding it
-        stx feH + H_DRIVE
+        txa
+        bit sysActive           ; (drive E shown: bit 7, HDrive)
+        bvc :+
+        ora #$80
+:       sta feH + H_DRIVE
         lda folderT-8,x
         sta feH + H_FOLDT
         lda folderS-8,x
@@ -373,7 +377,9 @@ OvWrite:
         jmp UWrite
 @no:    rts
 :
-        ldx feH + H_DRIVE       ; its folder's BAM
+        lda feH + H_DRIVE       ; its folder's BAM
+        jsr HDrive
+        ldx curDrive
         lda feH + H_FOLDT
         sta folderT-8,x
         lda feH + H_FOLDS

@@ -25,10 +25,13 @@ Stream: sta feM
         sta sGot+1
         lda #$FF                ; (a drive used)
         sta feTouched
-        lda feH + H_DRIVE
-        jsr SetDevice
-        ldx #0
+        lda feH + H_DRIVE       ; (drive E: shown again in its slot)
+        jsr HDrive
+        cpx #0                  ; (Z: the caller tests it)
 @end:   rts
+
+HDrive: jsr OvlCall             ; (module 81: a handle's drive current; X)
+        .byte 81, 18
         .assert sLeft = sPtr + 2, error, "Stream: sPtr, sLeft from r1, r2"
 
 ; Count: one byte less to go.

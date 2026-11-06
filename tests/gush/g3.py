@@ -28,7 +28,7 @@ def main():
         return rows[-1 - n:-1] if n > 1 else rows[-2]
     try:
         g.start()
-        check("ls /: the drives", out("ls /"), "a  b")
+        check("ls /: the drives (and e, the system drive)", out("ls /"), "a  b  e")
         check("cd /b, pwd", (out("cd /b", 0) if False else g.run("cd /b"), out("pwd")), (None, "/b"))
         check("ls", out("ls"), "gush  ALPHA  ALPS  BETA")
         check("echo with a wildcard", out("echo AL*"), "ALPHA ALPS")

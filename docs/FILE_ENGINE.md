@@ -174,7 +174,20 @@ power-on).
   anything is sent, so no buffer holds it. A copy onto the Ultimate that
   fails deletes the file it made (with `FC_OVERWRITE` the replaced file
   is gone already).
-- **Drive E** is read-only: a source only.
+- **Drive E** (`/e`, since 2026-11-06) is read-only: a source only.
+  GEOS has four drive slots (A-D), so for each engine call that names
+  `/e` the engine shows E in an **empty** slot (user, 2026-11-06: a slot
+  the same command also uses as its own drive would mix the two up) and
+  the dispatcher puts the slot back at the call's end (overlay module
+  81, sysenter.s); with A-D all in use, `/e` answers `FE_NO_SLOT` ($50).
+  Handles opened on E (listings, read streams) keep the slot's device
+  with bit 7 set and show E there again on each later call (`HDrive`).
+  E is a native image with folders (`/e/bin`: gush's commands). Writing
+  fails (write protected). `FE_SELECT` cannot leave E current (the slot
+  is empty again after the call): it answers `FE_NOT_SUPPORTED`, and
+  programs on E start through `FE_RUNSYS` (gush does so). The engine
+  does not open E with `OpenDisk`, so the native BAM working copy stays
+  the real drive's.
 
 ## Modules (numbered from 22)
 

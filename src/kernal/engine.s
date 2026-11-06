@@ -168,6 +168,7 @@ OvFileEngine:
         jsr Call
 @done:  sta feA
         stx feErr
+        jsr HideE               ; (drive E shown for /e: its slot back)
         lda feTouched
         beq @out
         ldx #3
@@ -197,6 +198,8 @@ OvFileEngine:
 ; out). Called with jsr: OvlCall returns to the stub's caller.
 Call:   jsr OvlCall
         .byte 0, 0
+HideE:  jsr OvlCall             ; (module 81, sysenter.s)
+        .byte 81, 12
 
 ; Setup: the REU state (engine.inc) made when it is not there yet (after
 ; power-on): the current directory "/", every handle free. diskBlkBuf

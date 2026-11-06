@@ -113,14 +113,16 @@ build/gush/docpeek.cvt: tests/gush/docpeek.s tests/gush/docpeek.toml src/gush/gu
 	$(LD65) -C src/gush/gush.cfg -o build/gush/docpeek.bin build/gush/docpeek.o
 	$(PYTHON) $(GEOSAPP) tests/gush/docpeek.toml build/gush/docpeek.bin $@
 
-# build/sysdrive-plain.d64 is an ordinary disk image; build/sysdrive.d64,
-# the one in the cartridge, has its track numbers moved to 221-255
-# (tools/sysreloc.py, src/inc/sysdrive.inc).
-build/sysdrive.d64: $(SYSFILES) tools/sysreloc.py
-	rm -f build/sysdrive-plain.d64
-	$(C1541) -format "geoultra system,gu" d64 build/sysdrive-plain.d64 $(foreach f,$(SYSFILES),-geoswrite $(f)) >/dev/null 2>&1
-	@test -s build/sysdrive-plain.d64
-	$(PYTHON) tools/sysreloc.py build/sysdrive-plain.d64 $@
+# Drive E (docs/ARCHITECTURE.md "System drive"): build/sysdrive-plain.dnp
+# is an ordinary native image with folders (src/sysdrive.toml,
+# tools/mkappsdnp.py); build/sysdrive.dnp, the one in the cartridge, has
+# its track numbers moved above SYSDRV_TRACK (tools/sysreloc.py,
+# src/inc/sysdrive.inc) and ends after its last used track.
+SYSDRV_TRACK  := $(shell sed -n 's/^SYSDRV_TRACK  *= *\([0-9]*\).*/\1/p' src/inc/sysdrive.inc)
+SYSDRV_TRACKS := $(shell sed -n 's/^SYSDRV_TRACKS *= *\([0-9]*\).*/\1/p' src/inc/sysdrive.inc)
+build/sysdrive.dnp: $(SYSFILES) src/sysdrive.toml src/inc/sysdrive.inc tools/mkappsdnp.py tools/sysreloc.py
+	$(PYTHON) tools/mkappsdnp.py src/sysdrive.toml
+	$(PYTHON) tools/sysreloc.py build/sysdrive-plain.dnp $@ $(SYSDRV_TRACK) $(SYSDRV_TRACKS)
 
 # --- System -----------------------------------------------------------
 
@@ -216,12 +218,12 @@ $(SPLASH) &: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/sy
 
 # The splash comes first: the boot ROM copies it with the CPU (--cpu 2).
 $(GEN)/image.bin $(GEN)/image.inc: build/kernal64.bin build/reudrv64.bin build/init64.bin build/kbf64.bin \
-		build/overlays64s.bin build/sysdrive.d64 \
+		build/overlays64s.bin build/sysdrive.dnp \
 		$(SPLASH) tools/mkimage.py
 	@mkdir -p $(GEN)
 	$(PYTHON) tools/mkimage.py --cpu 2 $(GEN)/image.bin $(GEN)/image.inc build/overlays64s.bin@REU \
 		$(GEN)/splash.bin@A000 $(GEN)/splash_col.bin@8C00 build/kbf64.bin@BF40 build/kernal64.bin@C000 \
-		build/reudrv64.bin@9000 build/init64.bin@4F00 build/sysdrive.d64@BANK4
+		build/reudrv64.bin@9000 build/init64.bin@4F00 build/sysdrive.dnp@BANK4
 
 build/boot.o: src/boot/boot.s $(GEN)/image.inc $(SPLASH) $(INCS)
 	$(CA65) -I src/inc -I $(GEN) --bin-include-dir $(GEN) -o $@ $<
@@ -367,6 +369,7 @@ test-gush: all build/gush/docpeek.cvt
 	$(PYTHON) tests/gush/g17.py
 	$(PYTHON) tests/gush/g18.py
 	$(PYTHON) tests/gush/g19.py
+	$(PYTHON) tests/gush/g20.py
 
 # gush on the U64 (tests/gush/gu64.py): the Ultimate's file system, a desk
 # accessory; gush written onto drive A's test copy first.

@@ -503,5 +503,11 @@ After step 3 (user, 2026-11-06): gush's commands all stay built in
 (the overlays keep the core small); external commands are for new and
 user-written tools. Next: drive E readable by path in the file engine
 (so `/e/bin` in `PATH` works and commands can ship on the system drive),
-then GeoUltra's desktop (docs/DESIGN.md, "Desktop").
+then GeoUltra's desktop (docs/DESIGN.md, "Desktop"). **Drive E by path (2026-11-06)**: drive E became a native
+image with folders (user: so `/e/bin` is a real folder, and E has room
+to grow), shown by the file engine in a free drive slot for each call
+(user: a free letter; FILE_ENGINE.md, "Drive E"). gush: `/` lists `e`;
+`/e/bin/wc` is found along `PATH`; an application on `/e` starts
+through `FE_RUNSYS`, a desk accessory through `GetFile` by its name
+(which falls back to E). Test g20.py.
 

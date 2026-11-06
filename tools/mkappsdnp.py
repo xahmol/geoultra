@@ -18,6 +18,7 @@ Manifest (TOML):
     name = "GeoUltra Apps"         # disk name, max 16 characters
     id = "GU"
     tracks = 48                    # 64 KB each; 0: as small as fits (+25%)
+    strict = false                 # true: a missing file stops the build
 
     [sources]                      # name = image or folder of CVTs
     gdos = "~/geos-dev/u64-usb/ramapps.DNP"
@@ -435,6 +436,8 @@ def main(argv):
           % (out, len(plan), len(dnp.dirs) - 1, tracks, dnp.blocks_used(), tracks * 256))
     for spec in missing:
         print("  not found: %s" % spec)
+    if missing and dnp_cfg.get("strict"):
+        die("files missing (strict: the system drive's build)")
 
 
 if __name__ == "__main__":

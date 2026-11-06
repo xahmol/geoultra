@@ -23,8 +23,9 @@ external command when
   under its own name is a script.
 
 `PATH` is `/e/bin:/USB0/GEOULTRA/bin` by default (`gushrc` can change
-it), so commands kept in `GEOULTRA/bin` on the stick work from
-everywhere. Drive E (`/e`) is not reachable by path yet.
+it): the system's commands in the system drive's `bin` folder (built
+into the cartridge, `src/sysdrive.toml`), then your own in
+`GEOULTRA/bin` on the stick.
 
 ## Format
 

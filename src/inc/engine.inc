@@ -73,12 +73,14 @@ FE_BAD_HANDLE   = $4C           ; not open, or no handle number
 FE_NO_HANDLE    = $4D           ; all FE_HANDLES in use
 FE_NOT_SUPPORTED = $4E          ; not (yet) on this kind of path
 FE_ULTIMATE     = $4F           ; the Ultimate's DOS refused (E3)
+FE_NO_SLOT      = $50           ; drive E needs an empty drive letter (A-D)
 
 ; What a resolved path names (feKind, set by the walk in module 24)
 FE_P_ROOT       = 0             ; "/"
 FE_P_GEOS       = 1             ; a GEOS drive A-D (feName: the last
                                 ; part, empty for the drive itself)
-FE_P_DRIVEE     = 2             ; drive E (later)
+                                ; (2: was drive E; E is a GEOS drive now,
+                                ; shown in a free slot: sysenter.s)
 FE_P_ULTIMATE   = 3             ; /usb0, /usb1, /sd: the walk leaves fePos
                                 ; at the "/" before the last part (feName
                                 ; nonzero) or at the path's end (the top

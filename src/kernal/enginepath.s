@@ -147,6 +147,12 @@ Cwd:    lda #<fePath
 
         .include "feresolve.inc"
 
+FreeSlot:                       ; (module 81: an empty slot's device)
+        jsr OvlCall
+        .byte 81, 15
+ShowE:  jsr OvlCall             ; (module 81: drive E shown in slot A)
+        .byte 81, 9
+
 ; OvWalk: fePath (absolute) to feKind, feDrive, feName; on a GEOS drive
 ; that drive current, from its root into every folder but the last part.
 ; X = 0 or an error. fePos, feEnd: the part being looked at (work area:
@@ -261,10 +267,19 @@ Top:    ldy #1
         jsr OpenDisk
         cpx #1                  ; (C set on an error)
         rts
-@later: lda #FE_P_DRIVEE        ; drive E: a later step
+@later: jsr FreeSlot            ; drive E: shown in an empty slot for
+        cpx #0                  ; this call (module 81, sysenter.s; the
+        bne @eNo                ; dispatcher hides it again), its root
+        sta feDrive             ; current; read-only
+        jsr ShowE
+        cpx #0
+        bne @eNo
+        lda #FE_P_GEOS
         sta feKind
-        ldx #FE_NOT_SUPPORTED
-        sec
+        sta feTouched
+        clc
+        rts
+@eNo:   sec
         rts
 @nodev: ldx #DEV_NOT_FOUND
         sec

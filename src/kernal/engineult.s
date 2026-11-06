@@ -410,24 +410,28 @@ OvUReadDir:
         .include "fegive.inc"
 
 ; OvRoot (FE_READDIR on "/"; H_BLKT the next slot): the drives A-D that
-; are there, then (with a UCI) the Ultimate's tops it can enter.
+; are there, drive E, then (with a UCI) the Ultimate's tops it can enter.
 OvRoot: ldx feH + H_BLKT
         cpx #4
-        bcs @tops
+        bcs @e
         inc feH + H_BLKT
         lda driveType,x
         beq OvRoot
         txa
         clc
         adc #'a'
-        sta fileHeader+1
+@drive: sta fileHeader+1
         lda #0
         sta fileHeader+2
         lda #FE_K_DRIVE
         bne @give
+@e:     bne @tops               ; (4: drive E, always there)
+        inc feH + H_BLKT
+        lda #'e'
+        bne @drive
 @tops:  lda uciPresent
         beq Eod
-        lda TopAt-4,x
+        lda TopAt-5,x
         beq Eod
         inc feH + H_BLKT
         tay                     ; "/" and its name to fePath (fileHeader:

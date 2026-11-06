@@ -67,6 +67,7 @@ One tree for everything:
 | Path | |
 | --- | --- |
 | `/a` ... `/d` | GEOS drives A-D (their images, folders and 1581 partitions) |
+| `/e` | the system drive in the cartridge, read-only (gush, geoFolder; `/e/bin`: external commands); it needs one of A-D free while a command uses it |
 | `/usb0`, `/usb1`, `/sd` | the Ultimate's file system |
 | `/` | the list of the above |
 
@@ -168,16 +169,17 @@ and no separate name lookup, so gush has no `ping` or `host`.
 
 A word that is no command is looked for as a program: by its path when
 it has a `/`, else in the current folder, the root of each drive A-D,
-and the folders in `PATH` (default `/e/bin:/USB0/GEOULTRA/bin`). What is
-found:
+and the folders in `PATH` (default `/e/bin:/USB0/GEOULTRA/bin`: the system drive's
+commands, then your own on the stick). What is found:
 
 - a GEOS **application** is started (it replaces gush, as from the
   desktop); a document after its name is passed to it (`geoWrite
-  letter`); a **desk accessory** runs and returns to gush;
+  letter`); a **desk accessory** runs and returns to gush (a program on
+  `/e` takes no document);
 - an **external command** (a GEOS file of class `gush cmd`, or its
-  `.cvt` on the stick) is loaded and run inside gush: put such commands
-  (for example `wc.cvt`, built in `build/cmds/`) into `GEOULTRA/bin` on
-  the stick to have them everywhere;
+  `.cvt` on the stick) is loaded and run inside gush: those of the
+  system are in `/e/bin` (`wc`); put your own into `GEOULTRA/bin` on the
+  stick to have them everywhere;
 - a plain text file runs as a script.
 
 `wc [file...]` is the example external command: lines, words and bytes
@@ -186,8 +188,6 @@ of files or of its input (`ls | wc`).
 ## Limits
 
 - Lines up to 254 characters; 32 words a line.
-- Drive E (the system drive) is not reachable by path yet, so `/e/bin`
-  in `PATH` finds nothing for now.
 - Not every GEOS file can be shown: `cat` refuses VLIR files (GEOS
   documents).
 - gush aims at the GEOS conventions and sh's habits where they fit, but

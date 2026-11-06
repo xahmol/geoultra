@@ -845,7 +845,7 @@ ErrText:
         jmp ConNewLine
 
 ErrCodes:
-        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $F3, $F4
+        .byte 3, 5, 13, $26, $40, $41, $47, $49, $4A, $4B, $4E, $4F, $50, $F3, $F4
         .byte $F5, $F6, $F7
         .byte $F8
         .byte $F9, $FA
@@ -854,7 +854,7 @@ ErrCodes:
 ErrTexts:
         .word ErrSpace, ErrNotFound, ErrDrive, ErrProtect, ErrExists
         .word ErrNotEmpty, ErrCancelled, ErrBadPath, ErrNotFolder
-        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrDeep, ErrOneRedir
+        .word ErrIsFolder, ErrNotSupp, ErrUltimate, ErrNoSlot, ErrDeep, ErrOneRedir
         .word ErrLong, ErrNoServer, ErrClock
         .word ErrNoTurbo
         .word ErrWords, ErrOwnDrive
@@ -873,6 +873,7 @@ ErrNotFolder:   .byte "not a folder", 0
 ErrIsFolder:    .byte "is a folder", 0
 ErrNotSupp:     .byte "not supported", 0
 ErrUltimate:    .byte "the Ultimate refused", 0
+ErrNoSlot:      .byte "no free drive letter for E", 0
 ErrDeep:        .byte "scripts nested too deep (4 at most)", 0
 ErrOneRedir:    .byte "one output redirection at a time", 0
 ErrLong:        .byte "script too long (16 KB at most)", 0

@@ -43,6 +43,8 @@ FE_SELECT       = 21
 FE_MOUNTINFO    = 23
 FE_MKIMG        = 24
 FE_REBOOT       = 28
+FE_RUNSYS       = 22
+FE_NOT_SUPPORTED = $4E          ; (engine.inc)
 FE_UCI          = 30
 
 ; Redirection markers: Parse makes an unquoted >, >> or < a word of one

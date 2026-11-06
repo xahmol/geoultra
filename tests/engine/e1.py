@@ -57,7 +57,7 @@ def main():
         check("FE_CD ..", (fe(FE_CD, s0="..")[0], pwd()), (0, "/b/SUB1"))
         check("FE_CD to a file refused", (fe(FE_CD, s0="/b/ROOTFILE")[0], pwd()), (NOT_FOLDER, "/b/SUB1"))
         check("FE_CD /", (fe(FE_CD, s0="/")[0], pwd()), (0, "/"))
-        check("FE_OPENDIR /", listing("/"), ["a", "b"])
+        check("FE_OPENDIR / (and e, the system drive)", listing("/"), ["a", "b", "e"])
         check("FE_OPENDIR /b", listing("/b"), ["SUB1", "RAW", "ROOTFILE"])
         check("FE_OPENDIR /b/SUB1 (a folder)", listing("/b/SUB1"), ["HELLO", "SUB2"])
         check("FE_OPENDIR /b/R*", listing("/b/R*"), ["RAW", "ROOTFILE"])

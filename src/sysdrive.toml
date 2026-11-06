@@ -1,0 +1,26 @@
+# Drive E, the system drive (docs/ARCHITECTURE.md "System drive"): a
+# native (DNP) image with folders, built by tools/mkappsdnp.py from the
+# build's CVT files and relocated by tools/sysreloc.py (tracks above
+# SYSDRV_TRACK, src/inc/sysdrive.inc). Desk accessories, fonts and the
+# system's applications stay in the root (the kernal merges the root's
+# desk accessories and fonts into every application's lists); gush's
+# external commands go to /e/bin (gush's PATH).
+[dnp]
+out = "../build/sysdrive-plain.dnp"
+name = "GeoUltra System"
+id = "GU"
+tracks = 8                      # SYSDRV_TRACKS
+strict = true
+
+[sources]
+tools = "../build/tools"
+gush = "../build/gush"
+cmds = "../build/cmds"
+
+[[folder]]
+path = ""
+files = ["tools:geofolder.cvt", "gush:gush.cvt"]
+
+[[folder]]
+path = "bin"
+files = ["cmds:wc.cvt"]

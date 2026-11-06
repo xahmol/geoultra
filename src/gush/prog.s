@@ -171,12 +171,37 @@ Try1:   lda r0L
         rts
 
 ; Found: the document's folder current (Doc), then the program's
-; (FE_SELECT); GetFile by its short name.
+; (FE_SELECT); GetFile by its short name. A program on drive E: no slot
+; can stay E's for GetFile (the engine shows E only during a call), so an
+; application starts through FE_RUNSYS by its name, a desk accessory
+; through GetFile by its name (GetFile falls back to drive E); neither
+; takes a document there.
 Found:  jsr Doc
         bcc :+
         ldy #1                  ; (about the document)
         rts
-:       lda prog
+:       jsr OnE
+        bcc @sel
+        ldx #FE_NOT_SUPPORTED   ; (a document for a program on E)
+        ldy #1
+        lda loadOpt
+        beq :+
+        rts
+:       lda info + FI_GTYPE
+        cmp #APPLICATION
+        bne :+
+        jsr HistSave            ; (its history first: gush ends)
+        lda #<short
+        sta r0L
+        lda #>short
+        sta r0H
+        lda #FE_RUNSYS
+        jsr FileEngine          ; (back only with an error)
+        jmp @end
+:       ldy #0
+        jsr High
+        jmp @start
+@sel:   lda prog
         sta r0L
         lda prog+1
         sta r0H
@@ -237,6 +262,37 @@ Found:  jsr Doc
         tax
 @end:   ldy #$FF
         rts
+
+; OnE: C set when prog is on drive E ("/e/..."); then short = its last
+; part (E's names are short names).
+OnE:    lda prog                ; (r0: free here, Found sets it after)
+        sta r0L
+        lda prog+1
+        sta r0H
+        ldy #0
+@pre:   lda (r0),y
+        cmp EPrefix,y
+        bne @no
+        iny
+        cpy #3
+        bne @pre
+        ldx #0                  ; the part after the last "/"
+@ch:    lda (r0),y
+        sta short,x
+        beq @yes
+        iny
+        inx
+        cmp #'/'
+        bne :+
+        ldx #0
+:       cpx #17                 ; (short's size)
+        bcc @ch
+@no:    clc
+        rts
+@yes:   sec
+        rts
+
+EPrefix:        .byte "/e/"
 
 ; Doc: word 1, if there is one, the document: loadOpt ST_LD_DATA, its
 ; drive and folder current (FE_SELECT), its short name in docShort, its

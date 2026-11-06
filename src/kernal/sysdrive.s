@@ -1,21 +1,23 @@
 ; The system drive, drive E (docs/DESIGN.md "System drive"; ARCHITECTURE
 ; "System drive"): GeoUltra's own GEOS files (geoFolder ...) on a
-; read-only 1541 image at REU bank SYSDRV_BANK, relocated at build time
-; (tools/sysreloc.py) so all its track/sector references use tracks
-; 221-255. The disk driver reads those tracks from drive E on every drive
-; (reudrv.s, Locate), so a file found there can be read through the
-; current drive, also by applications that keep track/sector pairs
-; (geoWrite reads fonts by them). Searching E's directory borrows the
-; current drive's slot for a moment (driveType and curType as a 1541,
-; ramBase = SYSDRV_BANK, the driver's flags with F_READONLY); the
-; current drive's directory header (curDirHead, which reading E's
-; directory replaces) is kept in REU bank 1 meanwhile.
+; read-only native image with folders (src/sysdrive.toml) at REU bank
+; SYSDRV_BANK, relocated at build time (tools/sysreloc.py) so all its
+; track/sector references use tracks SYSDRV_TRACK+1 to 255. The disk
+; driver reads those tracks from drive E on every drive (reudrv.s,
+; Locate), so a file found there can be read through the current drive,
+; also by applications that keep track/sector pairs (geoWrite reads
+; fonts by them). Searching E's directory borrows the current drive's
+; slot for a moment (module 81, sysenter.s: native, E's tracks and root
+; folder, ramBase = SYSDRV_BANK, the driver's flags with F_READONLY); the
+; current drive's directory header (curDirHead) is kept in REU bank 1
+; meanwhile, and the native BAM working copy is left alone.
 ; - FindFTypes (files.s) adds E's desk accessories and fonts;
 ; - FindFile through the jump table, GetFile and OpenRecordFile fall back
 ;   to E for a desk accessory or font not found on the current drive;
 ;   the kernal's other callers (DeleteFile, RenameFile, SaveFile ...) do
 ;   not, so they never change E's files.
-; Not on a native drive with more than 220 tracks (its tracks are real).
+; Not on a native drive with more than SYSDRV_TRACK tracks (its tracks are
+; real).
 ; Own code.
 
         .include "geos.inc"
@@ -24,7 +26,8 @@
         .include "drvflags.inc"
 
         .export SysFTypes, SysFindFile, AppGate, RefusedMsg, turboWant, turboNow
-        .export sysName
+        .export sysName, sysActive, sysType, sysCurType, sysBase, sysFlags
+        .export sysTracks, sysFolderT, sysFolderS, sysSlot, sysActive
         .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
@@ -67,6 +70,10 @@ sysType:        .byte 0         ; the borrowed slot's values
 sysCurType:     .byte 0
 sysBase:        .byte 0
 sysFlags:       .byte 0
+sysTracks:      .byte 0
+sysFolderT:     .byte 0
+sysFolderS:     .byte 0
+sysSlot:        .byte 0         ; the slot E is shown in (its driveType index)
 
         .segment "DATA"
 turboWant:      .byte $FF       ; $D031 at full speed; $FF: no turbo (speed.s)
@@ -79,7 +86,7 @@ turboNow:       .byte $FF       ; $D031 now (a resumed session: Resumed)
         jmp OvAppGate           ; entry 6
         jmp OvRefused           ; entry 9
 
-        .include "sysenter.inc" ; Enter, Leave, HeadDma (also module 55)
+        .include "sysenter.inc" ; Enter, Leave, Usable (module 81)
 
 ; OvFTypes (after FindFTypes, X its error, r6/r7H where it stopped): for
 ; desk accessories and fonts with room left, drive E's are added.
@@ -261,7 +268,7 @@ LdApplic        = $C21D         ; GEOS jump table
 
 ; OvRunSys (FE_RUNSYS, from the file engine's dispatcher; gush at the cold
 ; start and from geoFolder): r0 = the name of an application on drive E,
-; started (LdApplic from E's entry; its blocks show as tracks 221-255 of
+; started (LdApplic from E's entry; its blocks show as E's tracks on
 ; every drive, so they load from the current one). Back only with X =
 ; FILE_NOT_FOUND, STRUCT_MISMAT (no application), DEV_NOT_FOUND (E cannot
 ; be shown on this drive) or LdApplic's error.

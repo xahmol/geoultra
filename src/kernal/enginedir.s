@@ -7,7 +7,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
+        .import OvlCall, SysRAMOp, folderT, folderS, FindFile, sysActive
 
         .segment "OVL25"
         .scope Mod25
@@ -160,15 +160,16 @@ OvOpenDir:
         bne @geos
         sta feH + H_BLKT        ; "/" (FE_P_ROOT): the drives from slot 0
         lda #HT_ROOT
-        bne @save
+        jmp @save
 @geos:  lda feName
         beq @all
         jsr Wild
         bcc @pat
         jsr FindName            ; one name: a folder is listed whole
         txa
-        bne @end
-        jsr IsDir
+        beq :+
+        jmp @end
+:       jsr IsDir
         bcs @one
         jsr EnterName
         txa
@@ -202,8 +203,11 @@ OvOpenDir:
         bne @exact
 @where:
         lda feDrive
-        sta feH + H_DRIVE
         tax
+        bit sysActive           ; (drive E shown: bit 7, so the handle
+        bvc :+                  ; shows it again, HDrive)
+        ora #$80
+:       sta feH + H_DRIVE
         lda folderT-8,x
         sta feH + H_FOLDT
         lda folderS-8,x
@@ -254,6 +258,8 @@ UDir:   jsr OvlCall             ; (module 39: an Ultimate listing)
         .byte 39, 0
 Root:   jsr OvlCall             ; (module 40: "/")
         .byte 40, 0
+HDrive: jsr OvlCall             ; (module 81: a handle's drive current)
+        .byte 81, 18
 Pick:   jsr OvlCall             ; (module 51: the entry's long name, the
         .byte 51, 0             ; pattern; C clear: listed)
 
@@ -278,13 +284,15 @@ OvReadDir:
 @bad:   ldx #FE_BAD_HANDLE
         rts
 @dir:   sta feTouched           ; the drive and its folder of the listing
-        ldx feH + H_DRIVE
+        lda feH + H_DRIVE       ; (drive E: shown again in its slot)
+        jsr HDrive
+        txa
+        bne @end
+        ldx curDrive
         lda feH + H_FOLDT
         sta folderT-8,x
         lda feH + H_FOLDS
         sta folderS-8,x
-        txa
-        jsr SetDevice
         jsr GetDirHead          ; (its header: GU.LONGNAMES is found from it)
         txa
         bne @end

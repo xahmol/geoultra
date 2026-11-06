@@ -477,25 +477,39 @@ docs/GEOS_REFERENCE.md, "1581 partitions and sub-directories".)
 
 DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
 
-- Image: built from GeoUltra's own GEOS files: each `src/tools/NAME.s`
-  assembled at `$0400` (`NAME.cfg`), padded to whole 254-byte blocks,
-  packed as CVT by geos-oscar64's `geosapp.py` (`NAME.toml`), written with
-  VICE's c1541 (`-geoswrite`) to `build/sysdrive-plain.d64` (1541 layout).
-  `tools/sysreloc.py` then moves every track/sector reference in it
-  (directory header link and border block, directory chain, entries' data
-  and header blocks, block links, VLIR index blocks) up by 220:
-  `build/sysdrive.d64`, which `mkimage.py` places at REU bank 4
-  (`FILE@BANK4`). Constants in `src/inc/sysdrive.inc`.
-- High tracks: the driver's `Locate` reads tracks 221-255 of every drive
-  from bank 4 at track - 220 (1541 zones); `WriteBlock` refuses them
-  (`WR_PR_ON`). So a file found on E is read through the current drive,
-  also by an application that keeps track/sector pairs: geoWrite reads a
-  font's header, index block and records by them. Not on a native drive
-  with more than 220 tracks, whose tracks are real (drive E is then left
-  out).
-- Search (`src/kernal/sysdrive.s`, overlay module 15): E's directory is
-  read by borrowing the current drive's slot for a moment (driveType and
-  curType as a 1541, ramBase = bank 4, F_READONLY), resident saved values.
+- Image (since 2026-11-06 a native image with folders; a 1541 image
+  before): built from GeoUltra's own GEOS files as CVTs (each
+  `src/tools/NAME.s` assembled at `$0400`, packed by geos-oscar64's
+  `geosapp.py`; gush, gush's external commands). `src/sysdrive.toml` says
+  which file goes into which folder (the system's applications, desk
+  accessories and fonts in the root, which the kernal merges; gush's
+  commands in `bin`); `tools/mkappsdnp.py` builds
+  `build/sysdrive-plain.dnp` (8 tracks, `SYSDRV_TRACKS`) from it, and
+  `tools/sysreloc.py` moves every track/sector reference (the headers'
+  directory, own block, parent and border fields; folder entries;
+  directory chains; files' data, GEOS header, VLIR index and record
+  chains; the BAM is read by position and stays) up by `SYSDRV_TRACK`
+  (247): `build/sysdrive.dnp`, cut after its last used track (1 track,
+  64 KB today), which `mkimage.py` places at REU bank 4 (`FILE@BANK4`).
+  Constants in `src/inc/sysdrive.inc`.
+- High tracks: the driver's `Locate` reads tracks 248-255 of every drive
+  from bank 4 as a native image (block (track - 248) * 256 + sector);
+  `WriteBlock` refuses them (`WR_PR_ON`). So a file found on E is read
+  through the current drive, also by an application that keeps
+  track/sector pairs: geoWrite reads a font's header, index block and
+  records by them. Not on a native drive with more than 247 tracks, whose
+  tracks are real (drive E is then left out).
+- Showing E in a slot (overlay module 81, `src/kernal/sysenter.s`): a
+  drive slot made drive E for a moment: native type, E's track count,
+  ramBase = bank 4, F_READONLY, its root folder 1/1, E's root header in
+  `curDirHead`; the slot's values are kept and put back. The driver keeps
+  E's BAM out of the native BAM working copy while E is shown (`DirHead`
+  tests `sysActive`). The kernal's searches (below) borrow the current
+  drive's slot and keep `curDirHead` in REU bank 1; the file engine
+  (`/e`) uses an empty slot only, for one engine call (FILE_ENGINE.md).
+- Search (`src/kernal/sysdrive.s`, overlay module 15): E's root folder is
+  read by borrowing the current drive's slot for a moment (module 81),
+  resident saved values.
   Reading E's directory loads E's header into `curDirHead`: it is kept in
   REU bank 1 at `$1800` meanwhile (the GEOS 2.0 deskTop otherwise took
   drive A for "GEOULTRA SYSTEM" and asked for that disk).

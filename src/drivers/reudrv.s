@@ -28,7 +28,7 @@
         .export t1581
         .export DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite
         .export geosId, FindBAMBit, FreeBlock, AllocateBlock, DrvReadBuff, DrvWriteBuff
-        .import natLoaded
+        .import natLoaded, sysActive
         .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
 
 FRST_FILE_ENTRY = 2
@@ -338,10 +338,10 @@ BufPtr: lda #<diskBlkBuf
 
 
 ; Locate: r1 of the current drive -> blkHi/blkLo and dmaReu. C set when
-; valid; else C clear and X = error. Tracks SYSDRV_TRACK+1 and up are drive
-; E's blocks (docs/ARCHITECTURE.md "System drive"): its 1541 image at
-; SYSDRV_BANK, track - SYSDRV_TRACK, on every drive but a native one that
-; large (locSys = $80 then).
+; valid; else C clear and X = error. Tracks SYSDRV_TRACK+1 and up (to 255)
+; are drive E's blocks (docs/ARCHITECTURE.md "System drive"): its native
+; image at SYSDRV_BANK, track - SYSDRV_TRACK, on every drive but a native
+; one that large (locSys = $80 then).
 Locate: ldy curDrive
         lda driveType-8,y
         and #$0F
@@ -369,11 +369,9 @@ Locate: ldy curDrive
         sta locBase
         lda #$80
         sta locSys
-        txa
-        sec
-        sbc #SYSDRV_TRACK
-        tax
-        lda #DRV_1541
+        txa                     ; (C clear on both ways here: track -
+        sbc #SYSDRV_TRACK       ; SYSDRV_TRACK - 1, E's 256-block tracks)
+        jmp SysBlock
 @own:   cmp #DRV_1581
         beq Loc1581
         bcs LocNative
@@ -441,6 +439,7 @@ LocNative:
         jmp BadTrack
 @ok:    sec                     ; track - 1
         sbc #1
+SysBlock:                       ; (Locate: drive E's block, A its track - 1)
         sta blkHi
         lda r1H
         sta blkLo
@@ -626,9 +625,8 @@ DirHead:
         sta dirIndex
 @next:  ldy dirIndex
         lda headTab,y
-        beq @done
-        bmi @bam
-        sta r1L
+        beq @last               ; (0: no more blocks; a track of 128 and
+        sta r1L                 ; up is a track, not a marker)
         lda headTab+1,y
         sta r1H
         lda headTab+2,y
@@ -643,7 +641,11 @@ DirHead:
         txa
         beq @next
         rts
-@bam:   jmp NatBamOvl           ; native: the BAM's working copy (r4 kept)
+@last:  cpy #tNativeEnd - headTab ; native: the BAM's working copy too
+        bne @done               ; (r4 kept)
+        bit sysActive           ; (drive E shown: read-only, its BAM never
+        bmi @done               ; enters the working copy, which stays the
+        jmp NatBamOvl           ; drive's; sysenter.s)
 @done:  ldx #0                  ; r4 = the last block read, as GEOS 2.0
         rts                     ; (curDirHead on a 1541, dir3Head on a 1581)
 @ptr:   lda #<curDirHead
@@ -664,7 +666,9 @@ t1571:  .byte 18, 0, <curDirHead, >curDirHead, 53, 0, <dir2Head, >dir2Head, 0
 t1581:  .byte 40, 0, <curDirHead, >curDirHead, 40, 1, <dir2Head, >dir2Head
         .byte 40, 2, <dir3Head, >dir3Head, 0
 tNative:
-        .byte 1, 1, <curDirHead, >curDirHead, 1, 2, <dir2Head, >dir2Head, $FF
+        .byte 1, 1, <curDirHead, >curDirHead, 1, 2, <dir2Head, >dir2Head
+tNativeEnd:
+        .byte 0
 
 ; OpenDisk: header in, isGEOS set, disk name to DrXCurDkNm. Returns X =
 ; error, r5 = the name. Destroys A, Y, r0-r4.
