@@ -63,6 +63,48 @@ Sidebar 80 pixels wide; list from x 82; rows of 9 pixels (the system
 font's height plus a gap): about 17 visible names; a scroll position
 moves the window over the folder's entries.
 
+## Look and themes (user, 2026-11-06)
+
+The desktop's look is a **theme built from design elements**, not from
+palette numbers (mock-up with all choices:
+https://claude.ai/artifact/5Jv2FtLekd6o343SYpRhJJ, approved
+2026-11-06). Each element is one drawing routine with a few styles;
+colour is a property of an element, by name:
+
+| Element | Styles | Colours |
+| --- | --- | --- |
+| screen | - | border; desk ink on paper |
+| menubar | plain, clock | ink on paper |
+| sidebar | wide (80 px), narrow (64 px) | ink on paper |
+| headings | inverted, band, underlined, plain (bold) | ink on paper |
+| titlebar | stripes, solid, line, none | ink on paper |
+| rows | 9 (system font and a gap), 8 (on the cell grid) | - |
+| columns | name, detailed (name, size, date) | - |
+| icons | on, off (8 x 8, own drawings) | ink |
+| selection | invert, bar (needs 8-pixel rows), frame | ink on paper |
+| cursor | dotted, mark, underline | accent ink |
+| scrollbar | arrows (with a thumb), thin | - |
+| status | on, off (entries, selection, free space) | ink on paper |
+
+- A theme is a file `THEMES/<name>.INI` in GEOULTRA, in words
+  (`selection=invert, white on purple`); `SETTINGS.INI` names the one
+  in use. Colour names map to the 16 colours; on an Ultimate 64 or C64
+  Ultimate a theme may carry a palette (firmware 3.15), which changes
+  what a name looks like, not which element uses it.
+- In memory a theme record: a style byte per element, a colour byte
+  per colour. Combinations the cell grid cannot draw are corrected
+  when loading (a colour bar forces 8-pixel rows).
+- Built-in themes: **GeoUltra (the default)**, GEOS classic, Flat,
+  Detailed, Night, Mono. GeoUltra: clock, wide sidebar, inverted
+  headings (white on light blue), striped title bar, 9-pixel rows,
+  icons (blue), inverted selection, dotted cursor, scroll strip with
+  arrows, status line (white on grey), dark grey on light grey,
+  border light blue.
+- Applications and dialogs keep GEOS's own look; a theme dresses the
+  desktop only.
+- The theme editor (settings tool, phase 3) edits this record, one
+  line per element, the desktop as preview.
+
 ## Structure
 
 - Assembler (ca65/ld65), a VLIR application like gush (gush's overlay
@@ -103,7 +145,12 @@ moves the window over the folder's entries.
    current folder; `SETTINGS.INI`), recent documents.
 6. **D6 images:** opening a disk image on the Ultimate mounts it
    (`FE_MOUNT`), asking for the drive letter.
-7. **Sweep** and the switch of the default (user's decision).
+7. **D7 look:** the element routines with their styles, the theme
+   record (built-in themes, the default GeoUltra; a theme file read when
+   named in `SETTINGS.INI`), icons, the clock and the status line, the
+   busy pointer and the copy progress line. D5b and D6 are drawn
+   through the same routines from the start.
+8. **Sweep** and the switch of the default (user's decision).
 
 ## State of the work
 
