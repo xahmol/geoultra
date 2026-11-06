@@ -15,8 +15,9 @@
 
         .include "geos.inc"
 
-        .import FileEngine, SideText, SideName, SideLine, SideRedraw, rowY
+        .import FileEngine, SideText, SideLine, SideRedraw, rowY
         .import ListRead, ListDraw, Fetch, IsSelected, Modifiers, mods
+        .import IsDotDot
         .import Into, Document, Ask
         .import path, entryInfo, entryName, cur, count
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
@@ -473,6 +474,8 @@ FavAdd: jsr Here                ; the current folder
         lda cur
         ldx cur+1
         jsr Fetch
+        jsr IsDotDot            ; (".." selected: the current folder)
+        beq @add
         lda entryInfo + FI_KIND
         cmp #K_FOLDER
         beq :+
@@ -695,7 +698,7 @@ List:   jsr Setup
         jsr Slot
         jsr LastPart
         ldy rowY
-        jsr SideName
+        jsr SideText            ; (fully left, as the heading)
         inc at
         bne @line
 @end:   rts

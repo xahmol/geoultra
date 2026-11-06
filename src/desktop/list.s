@@ -13,10 +13,10 @@
 
         .include "geos.inc"
 
-        .import FileEngine, Open, Up
+        .import FileEngine, Open, Up, Into
         .export ListRead, ListDraw, ListPress, ListKey, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
-        .export Modifiers, mods
+        .export Modifiers, mods, IsDotDot
 
 ; GEOS jump table
 Rectangle       = $C124
@@ -24,6 +24,7 @@ InvertRectangle = $C12A
 SetPattern      = $C139
 PutString       = $C148
 FrameRectangle  = $C127
+GetCharWidth    = $C1C9
 StashRAM        = $C2C8
 FetchRAM        = $C2CB
 
@@ -66,7 +67,9 @@ RAM_IO          = $35
         .segment "CODE"
 
 ; ListRead: the current folder (FE_PWD to path) read into the entry
-; table; count entries, top, cur 0, nothing selected.
+; table; count entries, top, cur 0, nothing selected. Below "/" the
+; first entry is "..", a folder (Open goes up; the actions leave it out,
+; IsDotDot).
 ListRead:
         lda #<path
         sta r0L
@@ -82,7 +85,25 @@ ListRead:
         sta cur
         sta cur+1
         jsr ClearSel
-        lda #<path
+        lda path + 1            ; below "/": ".." first
+        beq @read
+        ldx #INFO_LEN - 1
+        lda #0
+@info:  sta entryInfo,x
+        dex
+        bpl @info
+        lda #K_FOLDER
+        sta entryInfo + FI_KIND
+        lda #'.'
+        sta entryName
+        sta entryName + 1
+        lda #0
+        sta entryName + 2
+        tax
+        jsr Place
+        jsr StashRAM
+        inc count
+@read:  lda #<path
         sta r0L
         lda #>path
         sta r0H
@@ -464,12 +485,87 @@ Locate: sta tmp
 
 ; --- Input -------------------------------------------------------------
 
+; IsDotDot: Z set when entryName is "..".
+IsDotDot:
+        lda entryName
+        cmp #'.'
+        bne @end
+        lda entryName + 1
+        cmp #'.'
+        bne @end
+        lda entryName + 2
+@end:   rts
+
+; PathPress (ListPress: a press on the path line): the folder whose part
+; of the path the pointer is on (the system font's widths from the
+; line's start); the last part, the current folder, does nothing. C
+; clear (the list's).
+PathPress:
+        lda #LIST_LEFT + 2      ; (Text's x)
+        sta numL
+        lda #0
+        sta numH
+        tay
+@ch:    lda path,y
+        beq @done               ; (past the end: nothing)
+        sty tmp
+        jsr GetCharWidth
+        clc
+        adc numL
+        sta numL
+        bcc :+
+        inc numH
+:       ldy tmp
+        lda mouseXPos+1         ; the pointer before this character's end?
+        cmp numH
+        bcc @found
+        bne @next
+        lda mouseXPos
+        cmp numL
+        bcc @found
+@next:  iny
+        bne @ch
+@found: cpy #0                  ; its part's end: the next "/" (the root's
+        bne @end                ; "/" ends at 1)
+        iny
+        bne @cut
+@end:   lda path,y
+        beq @done               ; (the last part: the current folder)
+        cmp #'/'
+        beq @cut
+        iny
+        bne @end
+@cut:   tya
+        tax
+        ldy #0
+@copy:  lda path,y
+        sta cutPath,y
+        iny
+        dex
+        bne @copy
+        lda #0
+        sta cutPath,y
+        lda #<cutPath
+        ldx #>cutPath
+        jsr Into
+@done:  clc
+        rts
+
 ; ListPress (a mouse press in the list area or the strip; desktop.s).
 ; C clear when it was the list's.
 ListPress:
         lda mouseYPos
         cmp #LIST_TOP
+        bcs :+
+        cmp #MENU_BOTTOM + 2    ; the path line
         bcc @out
+        lda mouseXPos+1
+        bne PathPress
+        lda mouseXPos
+        cmp #LIST_LEFT
+        bcs PathPress
+        bcc @out
+:
         cmp #LIST_BOTTOM + 1
         bcc :+
 @out:   sec                     ; (not the list's)
@@ -829,3 +925,4 @@ path:           .res 256
 entryInfo:      .res INFO_LEN
 entryName:      .res NAME_LEN + 2
 sel:            .res ENTRY_MAX / 8
+cutPath:        .res 256        ; (PathPress)

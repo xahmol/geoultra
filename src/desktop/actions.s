@@ -14,7 +14,7 @@
         .include "geos.inc"
 
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
-        .import entryInfo, entryName, cur, count, path
+        .import entryInfo, entryName, cur, count, path, IsDotDot
         .export Copy, Cut, Paste, Delete, Rename, NewFolder, Ask
 
 DoDlgBox        = $C256         ; GEOS jump table
@@ -78,6 +78,8 @@ Clip:   sta clipMode
         lda n
         ldx n+1
         jsr Fetch
+        jsr IsDotDot            ; (".." not copied)
+        beq @next
         lda clipCount
         ldx clipCount+1
         jsr ClipPlace
@@ -280,6 +282,8 @@ Delete: jsr AnySelected
         lda n
         ldx n+1
         jsr Fetch
+        jsr IsDotDot            ; (".." not deleted)
+        beq @next
         lda #<entryName
         sta r0L
         lda #>entryName
@@ -313,6 +317,8 @@ Rename: lda count
         lda cur
         ldx cur+1
         jsr Fetch
+        jsr IsDotDot            ; (".." not renamed)
+        beq @end
         ldy #NAME_MAX           ; the old name as the start of the line
 @old:   lda entryName,y
         sta input,y

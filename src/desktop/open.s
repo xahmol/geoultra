@@ -17,6 +17,7 @@
         .export Open, Up, Drive, Into, Document
 
 GetFile         = $C208         ; GEOS jump table
+ReDoMenu        = $C193
 FindFTypes      = $C23B
 SetDevice       = $C2B0
 OpenDisk        = $C2A1
@@ -157,7 +158,7 @@ Program:
 Start:  lda #0                  ; GetFile (an application does not come
         sta r0L                 ; back)
         jsr GetFile
-        jmp Redraw              ; (a desk accessory came back)
+        jmp Back                ; (a desk accessory came back)
 
 ; Document: entryName (a GEOS file in path that is no program) opened
 ; with its application, as the deskTop passes a document: the parent's
@@ -262,7 +263,10 @@ Launch: ldx docDrive
         lda #ST_LD_DATA
         sta r0L
         jsr GetFile
-        jmp Redraw
+; Back: the screen drawn again after GetFile came back (a desk accessory
+; ended, or the start failed), the menu bar too: Redraw clears it.
+Back:   jsr Redraw
+        jmp ReDoMenu
 
 ; FindApp: an application of class appClass in the current drive's
 ; current folder: its name to appName, C clear; C set when none.

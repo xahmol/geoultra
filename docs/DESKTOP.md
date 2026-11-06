@@ -143,8 +143,16 @@ colour is a property of an element, by name:
    folder (dialogs), with a progress line for long copies.
 5. **D5 sidebar:** the Ultimate's roots, favourites (add from the
    current folder; `SETTINGS.INI`), recent documents.
-6. **D6 images:** opening a disk image on the Ultimate mounts it
-   (`FE_MOUNT`), asking for the drive letter.
+6. **D6 images:** opening a disk image on the Ultimate (`.d64`,
+   `.d71`, `.d81`, `.dnp`) mounts it (`FE_MOUNT`) after asking for the
+   drive: a dialog with A-D, each with the image mounted there now, and
+   free letters offered too (user, 2026-11-06); the old image written
+   back first, `MOUNTS.INI` updated, the list then at that drive's root
+   and the sidebar's disk name new. **Unmount** (user, 2026-11-06): an
+   eject icon (8 x 8, own drawing) at the right end of each sidebar
+   drive line A-D that has an image (not drive E); a click asks
+   "Unmount drive B (work.d81)?", then `FE_UMOUNT`. Errors (no room in
+   the REU, a failed write-back) in a dialog, nothing changed.
 7. **D7 look:** the element routines with their styles, the theme
    record (built-in themes, the default GeoUltra; a theme file read when
    named in `SETTINGS.INI`), icons, the clock and the status line, the
@@ -249,6 +257,22 @@ colour is a property of an element, by name:
   "ReadMe 1581" opens in geoWrite and goes to the top of `RECENT.INI`;
   both files deleted again). C=+click removal is for the hand test
   (the harness cannot hold C=).
+
+## Open bugs
+
+- **geoFolder opened from the list in `/e` (2026-11-06, the user's
+  hand test on the U64):** its dialog shows an empty file list, a
+  garbled third button and garbage below the buttons. Also from the
+  desktop's geos menu, in `/a` as in `/e` (the user, same day): so not
+  the folder nor the way it starts, but the desktop's state while an
+  accessory runs. Suspects: the desktop's REU use (entry table banks
+  1-4, clipboard bank 5; are they the applications' banks?) and its
+  zero page ($80-$87), both grown with D4/D5b. To do first next
+  session: bisect today's commits in VICE (geoFolder from the
+  desktop's geos menu, a screenshot per commit).
+- Fixed in the working copy, not yet committed: after a desk
+  accessory started from the list, the menu bar was gone (Redraw
+  clears it; open.s now calls ReDoMenu after it).
 
 ## Tests
 

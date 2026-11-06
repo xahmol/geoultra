@@ -245,7 +245,7 @@ Sidebar:
         txa
         clc
         adc #'A'
-        sta driveLine + 1
+        sta driveLine
         lda #<driveLine
         ldx #>driveLine
         ldy rowY
@@ -333,10 +333,10 @@ Ultimate:
         beq :+                  ; dname + 3 still holds an earlier name's)
         lda dname + 3
 :       jsr SideLine
-        lda #<dname
-        ldx #>dname
+        lda #<dname             ; (fully left, as the headings: the
+        ldx #>dname             ; user, 2026-11-06)
         ldy rowY
-        jsr SideName
+        jsr SideText
         jmp @entry
 @close: ldy handle
         lda #FE_CLOSE
@@ -376,15 +376,16 @@ SideLine:
         inc sideCount
 @end:   rts
 
-; SideText: the text at A/X at x 4, baseline Y. SideName: at x 20,
-; clipped at the sidebar's edge (rightMargin).
+; SideText: the text at A/X at x 4, baseline Y (headings and the lines
+; under ULTIMATE, FAVOURITES, RECENT). SideName: at x 14, after a drive
+; letter (at x 4, fully left). Both clipped at the sidebar's edge (rightMargin).
 SideText:
         pha
         lda #4
         bne SideAt
 SideName:
         pha
-        lda #20
+        lda #14
 SideAt: sta r11L
         pla
         sta r0L
@@ -544,7 +545,7 @@ DaHi:   .repeat DA_MAX, i
 DrivesText:     .byte BOLDON, "DRIVES", PLAINTEXT, 0
 UltText:        .byte BOLDON, "ULTIMATE", PLAINTEXT, 0
 rootPath:       .byte "/", 0
-ELetter:        .byte " E", 0
+ELetter:        .byte "E", 0
 SystemText:     .byte "System", 0
 GushName:       .byte "gush", 0
 
@@ -652,7 +653,7 @@ ListItem:       .byte "* list", 0
 RefreshItem:    .byte "refresh", 0
 InfoLine1:      .byte BOLDON, "GeoUltra Desktop", PLAINTEXT, 0
 InfoLine2:      .byte "milestone 1 (in development)", 0
-driveLine:      .byte " A", 0
+driveLine:      .byte "A", 0
 drivePath:      .byte "/a", 0
 
 feVec:          .word 0
