@@ -459,7 +459,8 @@ Slot:   ldx #0
 ; FavAdd (file > add favourite, C=F): the cursor's entry when it is a
 ; selected folder, else the current folder, at the end of the
 ; favourites (the first dropped when full; one already there not added
-; again); saved, the sidebar drawn again.
+; again); the sidebar drawn again, then saved (the user saw no reaction
+; while saving first, 2026-11-06).
 FavAdd: jsr Here                ; the current folder
         bcs @end
         lda count
@@ -492,9 +493,9 @@ FavAdd: jsr Here                ; the current folder
         jsr Slot
         jsr Store
         inc counts + L_FAV
+        jsr SideRedraw          ; shown first: the save takes a moment
         ldx #L_FAV
-        jsr Save                ; (an error: kept until the next start)
-        jmp SideRedraw
+        jmp Save                ; (an error: kept until the next start)
 @end:   rts
 
 ; RecentAdd (open.s, Document): entryName in the current folder at the
@@ -764,9 +765,9 @@ SidePress:
         jsr Setup
         lda at
         jsr Remove
+        jsr SideRedraw          ; shown first: the save takes a moment
         ldx #L_FAV
-        jsr Save
-        jmp SideRedraw
+        jmp Save                ; (an error: kept until the next start)
 @recent:
         ldx #L_REC
         jsr Setup
