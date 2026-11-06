@@ -647,6 +647,11 @@ PageDown:
 
 ; Modifiers: mods = SHIFT and C= as held now (the keyboard matrix:
 ; row 1 bit 7 left SHIFT, row 6 bit 4 right SHIFT, row 7 bit 5 C=).
+; Control port 1 shares the matrix's columns: a 1351's left button
+; pulls bit 4 low (right SHIFT's) while it is pressed. The lines held
+; low with no row selected are therefore ignored (joyMask), so a click
+; is not taken for SHIFT+click; right SHIFT then does not count during
+; a click, left SHIFT does.
 Modifiers:
         lda #0
         sta mods
@@ -658,9 +663,15 @@ Modifiers:
         sta CPU_PORT
         lda CIA1_PA
         pha
+        lda #$FF                ; no row: what control port 1 holds low
+        sta CIA1_PA
+        lda CIA1_PB
+        eor #$FF
+        sta joyMask             ; (those lines: read as not pressed)
         lda #%11111101          ; row 1
         sta CIA1_PA
         lda CIA1_PB
+        ora joyMask
         and #%10000000
         bne :+
         lda #MOD_SHIFT
@@ -668,6 +679,7 @@ Modifiers:
 :       lda #%10111111          ; row 6
         sta CIA1_PA
         lda CIA1_PB
+        ora joyMask
         and #%00010000
         bne :+
         lda mods
@@ -676,6 +688,7 @@ Modifiers:
 :       lda #%01111111          ; row 7
         sta CIA1_PA
         lda CIA1_PB
+        ora joyMask
         and #%00100000
         bne :+
         lda mods
@@ -801,6 +814,7 @@ tmp:            .byte 0
 tmpH:           .byte 0
 mode:           .byte 0
 mods:           .byte 0
+joyMask:        .byte 0         ; control port 1's low lines (Modifiers)
 key:            .byte 0
 numL:           .byte 0
 numH:           .byte 0
