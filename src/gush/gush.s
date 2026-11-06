@@ -9,7 +9,7 @@
         .import ConInit, ConPut, ConPuts, ConNewLine, ConClear, ConCursor
         .import ConStatus, conCol, conRow
         .import EdKey, EdPress, Prompt, VarsInit, RunRc, HistLoad
-        .import OvlInit, ovlOk, Print, Fail, ArgR0
+        .import OvlInit, ovlOk, Print, Fail, ArgR0, DrivesInit, Remember
         .import ApiArgc, ApiGetVar, ApiSetVar, ApiReadIn, ApiDecimal, ApiKey
         .export FileEngine, Status, pwdBuf, startDrive
 
@@ -50,8 +50,9 @@ Begin:  jsr OvlInit             ; (first: dirEntryBuf is gush's entry)
         lda #ST_WR_FORE         ; the foreground only (gush redraws from
         sta dispBufferOn        ; its shadow)
         jsr VarsInit            ; HOME, PATH
+        jsr DrivesInit          ; (drives.s: no folder kept per drive yet)
         jsr ConInit
-        jsr Status
+        jsr Remember            ; (the status line; the start folder kept for its drive)
         lda #<Hello
         sta r0L
         lda #>Hello

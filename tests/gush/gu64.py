@@ -256,6 +256,8 @@ def main():
     check("> and < on the stick", g.lines()[-2], "redirected")
     g.run("cat r.txt | cat", settle=3)             # (step 3.5: a pipe)
     check("a pipe from the stick", g.lines()[-2], "redirected")
+    g.run("a:")                                     # (drive switch: usb0: back here)
+    check("usb0: back in the folder on the stick", out("usb0:; pwd"), HOME)
     g.keys("cat r.t")                               # (step 3.7: completion)
     g.keys([20], settle=4)                          # (KEY_LARROW)
     check("completion on the stick", g.lines()[-1].rstrip(), "$ cat r.txt")

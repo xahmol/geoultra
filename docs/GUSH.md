@@ -511,5 +511,10 @@ to grow), shown by the file engine in a free drive slot for each call
 (user: a free letter; FILE_ENGINE.md, "Drive E"). gush: `/` lists `e`;
 `/e/bin/wc` is found along `PATH`; an application on `/e` starts
 through `FE_RUNSYS`, a desk accessory through `GetFile` by its name
-(which falls back to E). Test g20.py.
+(which falls back to E). Test g20.py. **Drive switch (2026-11-06)**: a line of just `b:` (a-e, usb0,
+usb1, sd; either case) goes back to the folder last used on that drive
+(user: as on DOS), its root the first time or when the folder is gone
+(drives.s: every successful cd keeps the folder in the application's
+REU bank 1 after the history, a page per drive). Tests g21.py, gu64.py
+(`usb0:`).
 

@@ -17,7 +17,7 @@
         .export status, failed, Commands
         .import RunScript, CmdSource, depth, exitReq, exitStatus, prog
         .import CmdTest, CmdBracket, CmdRead, CmdTrue, CmdFalse, HistSave
-        .import RunModule, CmdIfconfig, CmdWget
+        .import RunModule, CmdIfconfig, CmdWget, DriveSwitch, Remember
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
@@ -55,6 +55,9 @@ Line:   jsr Parse
         rts
 :       lda argc
         bne :+
+        rts
+:       jsr DriveSwitch         ; "b:": a drive (drives.s)
+        bcs :+
         rts
 :
         ldy #0                  ; the commands, one by one
@@ -363,7 +366,7 @@ CmdCd:  lda argc
         beq @ok
         ldy #1
         jmp Fail
-@ok:    jmp Status
+@ok:    jmp Remember            ; (drives.s: kept for "b:"; the status line)
 
 ; ls [-l] [path...]: each folder listed (its names, or with -l one line
 ; each: kind, type, size, date, name); a file: its own line.

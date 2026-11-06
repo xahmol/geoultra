@@ -370,6 +370,7 @@ test-gush: all build/gush/docpeek.cvt
 	$(PYTHON) tests/gush/g18.py
 	$(PYTHON) tests/gush/g19.py
 	$(PYTHON) tests/gush/g20.py
+	$(PYTHON) tests/gush/g21.py
 
 # gush on the U64 (tests/gush/gu64.py): the Ultimate's file system, a desk
 # accessory; gush written onto drive A's test copy first.

@@ -73,7 +73,11 @@ One tree for everything:
 | `/usb0`, `/usb1`, `/sd` | the Ultimate's file system |
 | `/` | the list of the above |
 
-Relative paths, `.` and `..` work as usual. Long names and short names
+Relative paths, `.` and `..` work as usual. A line of just a drive's
+name and a colon switches drives as on DOS: `b:` goes back to the folder
+you were last in on drive B (its root the first time, or when that
+folder is gone); `a:` to `e:` and `usb0:`, `usb1:`, `sd:`, in either
+case. Long names and short names
 both work. On GEOS drives names are exact and case-sensitive; on the
 Ultimate case-insensitive. GEOS files copied onto the Ultimate become
 `name.cvt` (CVT) and come back as GEOS files; `-R` copies raw.
