@@ -27,6 +27,7 @@
 
         .export MountAll, SerialFromDisk, TurboInit
         .export startGush
+        .import ownDesk
         .import turboWant, turboNow
 .ifdef BYPASS
         .import bypassOn
@@ -451,7 +452,16 @@ ReadSettings:
         jmp @skip
 @serial:
 .endif
-        cmp #'H'
+        cmp #'D'
+        bne @hib
+        ldx #deskKey - keys     ; "ESKTOP=GEOULTRA": EnterDeskTop starts
+        jsr Match               ; GeoUltra's desktop (docs/DESKTOP.md)
+        beq :+
+        jmp @skip
+:       lda #$80
+        sta ownDesk
+        jmp @skip
+@hib:   cmp #'H'
         bne @serial2
         ldx #hibKey - keys      ; "IBERNATE=" seconds after a change (0:
         jsr Match               ; off), in steps of 256 frames (about 5 s)
@@ -552,6 +562,7 @@ hibKey:         .byte "IBERNATE=", 0
 turboKey:       .byte "URBO=", 0
 slowKey:        .byte "LOW=", 0
 startKey:       .byte "TART=GUSH", 0
+deskKey:        .byte "ESKTOP=GEOULTRA", 0
 .ifdef BYPASS
 protKey:        .byte "ROTECTION=BYPASS", 0
 .endif

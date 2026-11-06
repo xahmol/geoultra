@@ -27,7 +27,7 @@
 
         .export SysFTypes, SysFindFile, AppGate, RefusedMsg, turboWant, turboNow
         .export sysName, sysActive, sysType, sysCurType, sysBase, sysFlags
-        .export sysTracks, sysFolderT, sysFolderS, sysSlot, sysActive
+        .export sysTracks, sysFolderT, sysFolderS, sysSlot, ownDesk, sysActive
         .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
@@ -74,6 +74,8 @@ sysTracks:      .byte 0
 sysFolderT:     .byte 0
 sysFolderS:     .byte 0
 sysSlot:        .byte 0         ; the slot E is shown in (its driveType index)
+ownDesk:        .byte 0         ; $80: [system] desktop=geoultra (mount.s;
+                                ; EnterDeskTop starts GeoUltra's desktop)
 
         .segment "DATA"
 turboWant:      .byte $FF       ; $D031 at full speed; $FF: no turbo (speed.s)

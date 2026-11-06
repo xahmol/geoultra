@@ -1,0 +1,134 @@
+# GeoUltra Desktop (design and plan, milestone 1)
+
+GeoUltra's own desktop: a GEOS application that replaces GEOS 2.0's
+deskTop as the place `EnterDeskTop` leads to. Own design (DESIGN.md,
+"Desktop": decisions 2026-10-29 and 2026-11-06; mock-ups:
+https://claude.ai/artifact/2yrZuKGyDceuaFJ2Do4gsq, direction C "modern
+minimal"). Clean-room: no deskTop, TopDesk or MegaPatch code, icons or
+layouts copied; GEOS's own conventions (menu bar, geos menu with desk
+accessories, dialogs) are kept because applications and users expect
+them.
+
+## What milestone 1 is (user, 2026-11-06)
+
+- The **Modern** view with the **list** only: one full-screen view, a
+  menu bar on top, a sidebar on the left, the current folder as a list
+  of names on the right. The detailed and icon views, two panes and the
+  Classic style come later, each its own step; the core is written so
+  that they are only other ways of drawing the same list.
+- **Sidebar:** drives A-D, drive E (the system drive), the Ultimate's
+  roots (usb0, usb1, sd), favourite folders (kept in `SETTINGS.INI`) and
+  recent documents.
+- **Actions:** open (an application started, a document with its
+  application, a folder entered, a disk image mounted after asking for
+  the drive), copy or cut then paste in the destination, delete
+  (asking), rename, new folder; all through the file engine (FILE_ENGINE.md),
+  so the Ultimate's file system is a full peer of the drives (CVT as in
+  gush).
+- **Keys:** cursor up and down move the selection, SHIFT extends it,
+  RETURN opens, cursor left goes up a folder, DEL deletes (asking);
+  menu items with C= shortcuts (C=C copy, C=X cut, C=V paste, C=R
+  rename, C=N new folder, C=Q quit).
+- **Text:** GeoUltra's own system font, columns at fixed pixel
+  positions (name, type, size, date in later views), long names
+  clipped at their column.
+- **No task bar yet:** room kept at the bottom; it comes with the task
+  switcher.
+- **Opt-in while it is built:** `SETTINGS.INI` `[system]
+  desktop=geoultra` makes `EnterDeskTop` start it from drive E; without
+  it GEOS 2.0's deskTop is searched as before. The default changes when
+  the desktop is good enough.
+
+## Screen (320 x 200)
+
+```
++--------------------------------------------------------------+  0
+| geos  file  view  disk                         date  time     |  menu bar (GEOS menu)
++-------------+------------------------------------------------+ 14
+| DRIVES      | /b/Letters                  12 files   6 MB    |  path line
+|  A GEOS 64  +------------------------------------------------+ 26
+|  B Work     | Letter to Sue                                  |
+|  E System   | Invoice 0412           (selected: inverted)    |
+| ULTIMATE    | Notes                                          |
+|  usb0       | Recipes /                                      |  list, 9 px rows
+|  sd         |   ...                                          |
+| FAVOURITES  |                                                |
+| RECENT      |                                                | 
++-------------+------------------------------------------------+ 186
+| (task bar, later)                                            |
++--------------------------------------------------------------+ 199
+```
+
+Sidebar 80 pixels wide; list from x 82; rows of 9 pixels (the system
+font's height plus a gap): about 17 visible names; a scroll position
+moves the window over the folder's entries.
+
+## Structure
+
+- Assembler (ca65/ld65), a VLIR application like gush (gush's overlay
+  mechanism and VLIR CVT build reused): `src/desktop/`. Record 0 the
+  core (main loop hooks, drawing the list and sidebar, the selection,
+  the entry table); overlays for the actions (copy/paste, delete,
+  rename and new folder dialogs, mounting, starting programs), the
+  sidebar's favourites and recent list, and later the other views.
+- **Entries:** a folder's listing is read through `FE_OPENDIR` /
+  `FE_READDIR` into an entry table in the application's REU (no limit
+  of a page or a screen: thousands of entries on a native drive), a
+  record per entry (kind, GEOS type, size, date, short and long name);
+  the screen shows a window of it. In directory order, as GEOS 2.0's
+  deskTop shows it; sorting (name, type, size, date) comes with the
+  detailed view, where DESIGN.md's decision of 2026-10-29 puts it
+  ("detailed: sortable").
+- **Programs:** started as gush starts them (prog.s: `FE_SELECT` and
+  `GetFile`, a document passed as the deskTop passes one, programs on
+  drive E through `FE_RUNSYS`); shared code moves into an include when
+  both need it.
+- **Name on drive E:** `GeoUltra Desktop` (16 characters), in E's root.
+
+## Plan (sub-steps, each tested, committed and pushed)
+
+1. **D1 frame:** the application on drive E; `desktop=geoultra` in
+   `SETTINGS.INI`; menu bar (geos with the desk accessories, file,
+   view, disk), sidebar with the drives that are there and E, the list
+   area with the current folder's names (first window), quit.
+2. **D2 list:** the entry table in the REU, scrolling (mouse
+   on a scroll strip, keys), selection by click and keys (SHIFT
+   extends), the path line.
+3. **D3 open:** folders entered and left (cursor left, a ".." row),
+   sidebar clicks change drive or root, applications and documents
+   started, desk accessories run.
+4. **D4 actions:** copy/cut and paste, delete (asking), rename and new
+   folder (dialogs), with a progress line for long copies.
+5. **D5 sidebar:** the Ultimate's roots, favourites (add from the
+   current folder; `SETTINGS.INI`), recent documents.
+6. **D6 images:** opening a disk image on the Ultimate mounts it
+   (`FE_MOUNT`), asking for the drive letter.
+7. **Sweep** and the switch of the default (user's decision).
+
+## State of the work
+
+- **D1 (2026-11-06):** `src/desktop/desktop.s`, a sequential application
+  (5 blocks) in drive E's root as `GeoUltra Desktop`. The menu bar (geos
+  with "GeoUltra info" and the desk accessories, from `FindFTypes`, so
+  drive E's geoFolder is among them; file > gush; view > list; disk >
+  refresh), the sidebar with each drive that is there and its disk name
+  (`OpenDisk`, as GEOS 2.0's deskTop names its drives; the current
+  drive opened again after), then E, and the list area with the path
+  (`FE_PWD`) and the current folder's first 17 entries (`FE_OPENDIR`;
+  folders and drives with "/"). Drawn on both screens and
+  `RecoverVector` = `RecoverRectangle`, so menus and desk accessories
+  give back what was under them (GEOS's default 0 erases with white).
+  The kernal: `SETTINGS.INI` `[system] desktop=geoultra` (mount.s) sets
+  `ownDesk`; `EnterDeskTop` then starts the desktop through `FE_RUNSYS`
+  and falls back to GEOS 2.0's deskTop when that fails. Found on the
+  way: the name passed to the engine must not be in the calling overlay
+  module (the engine's modules overwrite the slot): copied to `$0400`
+  first. Tests: tests/desktop/d1.py (VICE, `make test-desktop`),
+  tests/desktop/du64.py (U64, `make test-desktop-u64`).
+
+## Tests
+
+VICE (the conformance harness's application runner; screens rendered
+and checked by the desktop's own state in memory: the current path,
+the entry table, the selection) for everything that needs no Ultimate;
+the U64 for the Ultimate's file system and mounting, as gush's gu64.py.

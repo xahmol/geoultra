@@ -27,7 +27,7 @@ JT_COPY         = $1000         ; its copy in REU bank 1
         .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
-        .import WriteBackNow, SysFindFile, AppGate, RefusedMsg
+        .import WriteBackNow, SysFindFile, AppGate, RefusedMsg, ownDesk, FileEngine
 
 DA_BANK         = 18
 MAX_SLEEP       = 20
@@ -578,6 +578,8 @@ OvFirstInit:
         rts
 
 EnterDeskTopVec = $C22C         ; the jump table entry (jmp EnterDeskTop)
+FE_RUNSYS       = 22            ; (engine.inc: an application from drive E)
+APP_RAM         = $0400
 
 ; EnterDeskTop: warm start and load the desktop ("DESK TOP", version 1.5
 ; or higher) from the current drive, else from the others; asks for it
@@ -592,7 +594,20 @@ OvEnterDeskTop:
         jsr InitMachine
         jsr Background
         jsr RefusedMsg          ; an application refused: why (sysdrive.s)
-        lda curDrive
+        bit ownDesk             ; [system] desktop=geoultra: GeoUltra's
+        bpl @old                ; desktop from drive E (FE_RUNSYS); back
+        ldx #OWN_LEN            ; only when it cannot start: then GEOS
+@name:  lda ownName,x           ; 2.0's deskTop as before. The name goes
+        sta APP_RAM,x           ; to application memory first: this
+        dex                     ; module's bytes are gone once the engine's
+        bpl @name               ; modules use the slot (and the
+        lda #<APP_RAM           ; application area is free here: a new
+        sta r0L                 ; one is about to load)
+        lda #>APP_RAM
+        sta r0H
+        lda #FE_RUNSYS
+        jsr FileEngine
+@old:   lda curDrive
         sta dtDrive
 @try:   lda dtDrive             ; the current drive first, then 8-11
         jsr TryDesk
@@ -669,6 +684,9 @@ Background:
 
 deskName:
         .byte "DESK TOP", 0
+ownName:
+        .byte "GeoUltra Desktop", 0
+OWN_LEN         = * - ownName - 1
 deskDlg:
         .byte DEF_DB_POS | 1
         .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6

@@ -28,7 +28,7 @@ def main():
     try:
         g.start()
         check("/ lists drive e", "e" in out("ls /").split(), True)
-        check("ls /e", sorted(out("ls /e").split()), ["bin", "geoFolder", "gush"])
+        check("ls /e", sorted(out("ls /e").split()), ["Desktop", "GeoUltra", "bin", "geoFolder", "gush"])
         check("ls /e/bin", out("ls /e/bin"), "wc")
         check("cd /e/bin, pwd, ls", out("cd /e/bin; pwd; ls", 2), ["/e/bin", "wc"])
         g.run("cd /b")
@@ -38,7 +38,7 @@ def main():
         check("cp from drive E", out("/b/wc2 WORDS").split(), ["2", "5", "28", "WORDS"])
         check("rm on drive E: refused", out("rm -f /e/gush").startswith("gush: rm: /e/gush: "), True)
         check("mkdir on drive E: refused", out("mkdir /e/x").startswith("gush: mkdir: /e/x: "), True)
-        check("ls /e unchanged", sorted(out("ls /e").split()), ["bin", "geoFolder", "gush"])
+        check("ls /e unchanged", sorted(out("ls /e").split()), ["Desktop", "GeoUltra", "bin", "geoFolder", "gush"])
         check("test -f /e/bin/wc", out("test -f /e/bin/wc; echo $?"), "0")
         g.run("/e/gush", settle=12)                       # FE_RUNSYS: a fresh gush
         rows = g.lines()

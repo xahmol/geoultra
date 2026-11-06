@@ -37,7 +37,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-desktop test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -59,7 +59,7 @@ checkcfg: check-deploy
 # GeoUltra's own GEOS files, assembled at $0400 and packed as CVT by
 # geos-oscar64's geosapp.py (0.1.2 or later: it pads desk accessories to
 # whole blocks), written to a D64 with VICE's c1541.
-SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt
+SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt
 
 build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	@mkdir -p build/tools
@@ -95,6 +95,14 @@ build/gush/gush.bin: $(GUSHOBJS) src/gush/gush.cfg
 build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/vlircvt.py
 	$(PYTHON) $(GEOSAPP) src/gush/gush.toml $< build/gush/gush-seq.cvt
 	$(PYTHON) tools/vlircvt.py build/gush/gush-seq.cvt $@ $<.1 $<.2 $<.3 $<.4
+
+# GeoUltra's desktop (docs/DESKTOP.md): src/desktop, on drive E.
+DESKSRCS = $(wildcard src/desktop/*.s)
+build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
+	@mkdir -p build/desktop
+	$(CA65) -g -I src/inc -o build/desktop/desktop.o src/desktop/desktop.s
+	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o
+	$(PYTHON) $(GEOSAPP) src/desktop/desktop.toml build/desktop/desktop.bin $@
 
 # External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
 # at gush's transient area (src/cmds/cmd.cfg), a GEOS APPL_DATA file of
@@ -399,8 +407,16 @@ test-sysfont: all
 
 # The GEOS 2.0 deskTop with a 1581 drive A (the driver called between
 # InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).
-test-desktop: all
+test-desktop81: all
 	$(PYTHON) tests/drives/desktop81.py
+
+# GeoUltra's own desktop (docs/DESKTOP.md): VICE; test-desktop-u64 on the
+# U64 (SETTINGS.INI desktop=geoultra, made and deleted again).
+test-desktop: all
+	$(PYTHON) tests/desktop/d1.py
+
+test-desktop-u64: check-deploy all
+	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt
 
 # Writing to a 1571 drive, on a D71 the test formats itself.
 test-d71: all

@@ -16,10 +16,11 @@ strict = true
 tools = "../build/tools"
 gush = "../build/gush"
 cmds = "../build/cmds"
+desktop = "../build/desktop"
 
 [[folder]]
 path = ""
-files = ["tools:geofolder.cvt", "gush:gush.cvt"]
+files = ["tools:geofolder.cvt", "gush:gush.cvt", "desktop:desktop.cvt"]
 
 [[folder]]
 path = "bin"
