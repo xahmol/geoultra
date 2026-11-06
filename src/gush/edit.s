@@ -159,7 +159,22 @@ EdKey:  lda #0                  ; the cursor off while the line changes
         lda CtrlDo,x
         pha
         rts
-@plain: ldx #Keys_n - 1         ; an editing key?
+@plain: cmp #KEY_UPARROW         ; up arrow: "|" (the C64 has no such
+        bne :+                  ; key; user, 2026-11-06)
+        lda #'|'
+        jmp Insert
+:       cmp #SHORTCUT           ; C= + a key: ASCII the C64 has no key
+        bcc @edit               ; for (CbmKeys)
+        and #$7F
+        ldx #CbmKeys_n - 1
+@cb:    cmp CbmKeys,x
+        beq @cbm
+        dex
+        bpl @cb
+        jmp Show
+@cbm:   lda CbmChars,x
+        jmp Insert
+@edit:  ldx #Keys_n - 1         ; an editing key?
 @key:   cmp Keys,x
         beq @do
         dex
@@ -183,6 +198,11 @@ Keys:   .byte CR, KEY_DELETE, KEY_INSERT, KEY_LEFT, KEY_RIGHT, KEY_HOME
 Keys_n = * - Keys
 KeyDo:  .word Enter-1, Back-1, Forward-1, Left-1, Right-1, Home-1
         .word Clear-1, Older-1, Newer-1, Drop-1, Complete-1
+CbmKeys:                        ; C= with these (SHIFT as on the key) ...
+        .byte "()-'", KEY_UPARROW
+CbmKeys_n = * - CbmKeys
+CbmChars:                       ; ... gives these
+        .byte "{}_`~"
 CtrlKeys:
         .byte "aekuc"
 CtrlKeys_n = * - CtrlKeys

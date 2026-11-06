@@ -50,6 +50,13 @@ def main():
         with_ctrl("k")
         g.keys("\r")
         check("CTRL+K", last(), "keep this+")
+        g.keys("echo a ")                       # up arrow: "|"; C= + ( ) - ' up: { } _ ` ~
+        g.keys([21])                            # (KEY_UPARROW; user, 2026-11-06)
+        g.keys(" cat\r")
+        check("up arrow types |", last(), "a")
+        g.keys("echo ")
+        g.keys([0x80 | ord("("), 0x80 | ord(")"), 0x80 | ord("-"), 0x80 | ord("'"), 0x80 | 21, 13])
+        check("C= keys type { } _ ` ~", last(), "{}_`~")
         g.keys("rubbish echo cut")
         g.keys([LEFT] * 8)
         with_ctrl("u")

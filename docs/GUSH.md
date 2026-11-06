@@ -47,6 +47,8 @@ GEOS 2.0's keyboard).
 | cursor up / down | history: the older / newer line |
 | HOME / CLR | the cursor to the start / the screen cleared |
 | `<-` (KEY_LARROW) | completion: the name under the cursor completed from the folder's listing (a list when more fit) |
+| `↑` (KEY_UPARROW) | `\|`, which the C64 keyboard lacks (user, 2026-11-06, found in the first hand test) |
+| C= + `(` `)` `-` `'` `↑` | `{` `}` `_` `` ` `` `~` (gush only: GEOS 2.0's keyboard gives none of these, and applications keep it) |
 | CTRL+A, CTRL+E | start / end of the line |
 | CTRL+K, CTRL+U | the line cut after / before the cursor |
 | CTRL+C, RUN/STOP | the line dropped; a running command stopped (`cp`'s progress routine, `ls`, `more`) |

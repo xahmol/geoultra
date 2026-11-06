@@ -45,6 +45,8 @@ accessory.
 | HOME | the cursor to the line's start |
 | CLR | clear the screen |
 | `<-` | complete the name before the cursor (below) |
+| `↑` (the key left of RESTORE) | types `\|` (the C64 has no such key) |
+| C= + `(` `)` `-` `'` `↑` | type `{` `}` `_` `` ` `` `~` |
 | CTRL+A / CTRL+E | the line's start / end |
 | CTRL+K / CTRL+U | cut the line after / before the cursor |
 | CTRL+C, RUN/STOP | drop the line; stop `ls`, `more`, a copy's progress |
