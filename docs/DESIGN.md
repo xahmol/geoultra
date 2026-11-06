@@ -418,6 +418,13 @@ could live on the system drive).
 
 ## Still open
 
+- The GEOS 2.0 deskTop's geos menu does not list drive E's desk
+  accessories (geoFolder): the deskTop collects them while reading drive
+  A's directory itself, not through `FindFTypes`, where the kernal adds
+  E's (applications such as geoWrite list them). GeoUltra's own desktop
+  will; until then geoFolder is reached from an application's geos menu
+  (user's hand test 2026-11-06).
+
 - The Command Interface unlock at boot (`$AB` to `$D038`, `$CD` to `$D036`,
   mount.s) did not bring the UCI up on the U64 on 2026-11-04 after a
   GDOS64 session had left it disabled in the running settings (nothing

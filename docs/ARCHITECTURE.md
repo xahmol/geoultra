@@ -222,6 +222,20 @@ applications call `$9030-$904D` directly.
   40 per track, native 256 per track) and an REU address: the drive's
   first bank (`ramBase`) plus the block number as bank and page. One block
   is one 256-byte DMA; the CPU port is `$35` only around the DMA.
+- **The KERNAL ROM window (2026-11-06):** applications call `ReadBlock`,
+  `WriteBlock` and `VerWriteBlock` between `InitForIO` and `DoneWithIO`,
+  which (as on GEOS 2.0, printer drivers rely on it) leaves the KERNAL
+  ROM over `$E000`. Whatever the driver uses above `$D000` (`Dir81`,
+  `folderT`/`folderS`, `sysActive`, the overlay stubs and `OvlLoad`)
+  is then ROM. So the header swap (`HeaderSwap`) and the header loading
+  (`DirHead`, behind `GetDirHead`/`PutDirHead`) run with the CPU port at
+  `$35` and give the caller's value back; the rest of the block path
+  (`Locate`, the DMA, `MarkDirty`) uses only driver and `$8000` data.
+  Found with the GEOS 2.0 deskTop on a 1581 drive A: it ran the ROM's
+  "BYTES FREE" text and its stack ran over (tests/drives/desktop81.py).
+  New driver code must keep to this: no kernal code or data above
+  `$D000` on the block path, or the port switched around it. `OpenDisk`
+  (never called in that window) is overlay module 82, for the room.
 - **Errors as GEOS 2.0:** track 0 or beyond the disk `INV_TRACK` (2), a
   sector beyond the track `$20` (what the 1541 turbo reports); GEOS 2.0
   then fills the buffer with the drive's stale buffer, GeoUltra leaves it

@@ -29,7 +29,7 @@
         .export DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite
         .export geosId, FindBAMBit, FreeBlock, AllocateBlock, DrvReadBuff, DrvWriteBuff
         .import natLoaded, sysActive
-        .import Trap, CopyFString, GetPtrCurDkNm, Ddiv
+        .import Trap, CopyFString, GetPtrCurDkNm, Ddiv, OvlCall
 
 FRST_FILE_ENTRY = 2
 DIR_TRACK       = 18            ; 1541
@@ -275,12 +275,27 @@ VerWriteBlock:
         ldx #WR_VER_ERR
         bne BlkEnd
 
-; HeaderSwap: block 40/0 of a 1581 image (1/1 of a native one) at r4:
-; bytes $04-$1C swapped with $90-$A8, so GEOS finds the disk name where a
-; 1541 keeps it (GEOS 2.0's 1581 driver does the same, mist64/geos
-; drv/drv1581.s; native: the same layout, own choice). Destroys A, X, Y.
+; HeaderSwap: Swap with the CPU port at RAM_IO. Dir81 and folderT/
+; folderS live above $D000, and an application may call ReadBlock and
+; WriteBlock between InitForIO and DoneWithIO, with the KERNAL ROM over
+; $E000: the GEOS 2.0 deskTop does on a 1581, and ran the ROM's "BYTES
+; FREE" text as code (since the code sweep of 2026-11-04 moved Dir81;
+; before, the ROM bytes there did no harm by chance). Destroys A, X, Y.
 HeaderSwap:
-        ldy curDrive
+        lda CPU_PORT
+        pha
+        lda #RAM_IO
+        sta CPU_PORT
+        jsr Swap
+        pla
+        sta CPU_PORT
+        rts
+
+; Swap: block 40/0 of a 1581 image (1/1 of a native one) at r4: bytes
+; $04-$1C swapped with $90-$A8, so GEOS finds the disk name where a 1541
+; keeps it (GEOS 2.0's 1581 driver does the same, mist64/geos
+; drv/drv1581.s; native: the same layout, own choice). Destroys A, X, Y.
+Swap:   ldy curDrive
         lda driveType-8,y
         and #$0F
         cmp #DRV_NATIVE         ; native: the header is 1/1
@@ -605,7 +620,15 @@ DrvPutDirHead:
 DirHead:
         sta DirOp+1
         sty DirOp+2
-        ldy curDrive
+        lda CPU_PORT            ; (the CPU port at RAM_IO meanwhile, as in
+        pha                     ; HeaderSwap: Patch81, folderT, sysActive
+        lda #RAM_IO             ; and the overlay stubs live above $D000)
+        sta CPU_PORT
+        jsr Head
+        pla
+        sta CPU_PORT
+        rts
+Head:   ldy curDrive
         lda driveType-8,y
         and #$0F
         bne @type
@@ -672,27 +695,9 @@ tNativeEnd:
 
 ; OpenDisk: header in, isGEOS set, disk name to DrXCurDkNm. Returns X =
 ; error, r5 = the name. Destroys A, Y, r0-r4.
-OpenDisk:
-        jsr DrvGetDirHead
-        txa
-        bne @end
-        lda #<curDirHead
-        sta r5L
-        lda #>curDirHead
-        sta r5H
-        jsr ChkDkGEOS
-        lda #<(curDirHead + OFF_DISK_NAME)
-        sta r4L
-        lda #>(curDirHead + OFF_DISK_NAME)
-        sta r4H
-        ldx #r5
-        jsr GetPtrCurDkNm
-        ldx #r4
-        ldy #r5
-        lda #18                 ; name and the two bytes after it
-        jsr CopyFString
-        ldx #0
-@end:   rts
+OpenDisk:                       ; (module 82, at the end of this file: the
+        jsr OvlCall             ; driver's bytes are few; never called
+        .byte 82, 0             ; between InitForIO and DoneWithIO)
 
 ; ChkDkGEOS: r5 = directory header. isGEOS = A = $FF when it carries the
 ; GEOS signature ("GEOS format"), else 0. Destroys A, Y.
@@ -2005,3 +2010,36 @@ D71BlkAlloc:
 D71DirFree:
         lda curDirHead + 4 * DIR_TRACK
         rts
+
+        .segment "OVL82"
+        .scope Mod82
+
+        jmp OvOpenDisk          ; entry 0
+
+; OpenDisk (the driver's vector; module 82 since 2026-11-06): header in,
+; isGEOS set, disk name to DrXCurDkNm. Returns X = error, r5 = the name.
+; Destroys A, Y, r0-r4.
+OvOpenDisk:
+        jsr DrvGetDirHead
+        txa
+        bne @end
+        lda #<curDirHead
+        sta r5L
+        lda #>curDirHead
+        sta r5H
+        jsr ChkDkGEOS
+        lda #<(curDirHead + OFF_DISK_NAME)
+        sta r4L
+        lda #>(curDirHead + OFF_DISK_NAME)
+        sta r4H
+        ldx #r5
+        jsr GetPtrCurDkNm
+        ldx #r4
+        ldy #r5
+        lda #18                 ; name and the two bytes after it
+        jsr CopyFString
+        ldx #0
+@end:   rts
+
+
+        .endscope

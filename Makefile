@@ -37,7 +37,7 @@ SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 
-.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-desktop test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -395,6 +395,11 @@ build/uciprobe.bin: tests/engine/uciprobe.s tests/engine/uciprobe.cfg src/inc/uc
 # GEOS_APPS_DISK); screens in build/harness/sysfont-*.png.
 test-sysfont: all
 	$(PYTHON) tests/drives/sysfont.py
+
+# The GEOS 2.0 deskTop with a 1581 drive A (the driver called between
+# InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).
+test-desktop: all
+	$(PYTHON) tests/drives/desktop81.py
 
 # Writing to a 1571 drive, on a D71 the test formats itself.
 test-d71: all
