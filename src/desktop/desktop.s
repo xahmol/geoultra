@@ -328,9 +328,10 @@ Ultimate:
         clc
         adc #ROW_H
         sta rowY
-        lda dname + 3           ; its code: "usb0" '0', "usb1" '1', "sd" 's'
-        bne :+
-        lda dname
+        lda dname               ; its code: "usb0" '0', "usb1" '1', "sd" 's'
+        ldx dname + 2           ; (a two-letter name: its first letter;
+        beq :+                  ; dname + 3 still holds an earlier name's)
+        lda dname + 3
 :       jsr SideLine
         lda #<dname
         ldx #>dname
