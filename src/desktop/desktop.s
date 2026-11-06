@@ -32,6 +32,10 @@ FE_ENTRY        = 30            ; (its file engine entry)
 
 ; The file engine (docs/FILE_ENGINE.md)
 FE_RUNSYS       = 22
+FE_OPENDIR      = 2
+FE_READDIR      = 3
+FE_CLOSE        = 4
+K_UDIR          = 6
 
 ; Layout (docs/DESKTOP.md, "Screen")
 MENU_BOTTOM     = 14
@@ -43,6 +47,7 @@ ROW_H           = 9
 SCREEN_RIGHT    = 319
 BASELINE        = 7             ; a row's baseline below its top
 SIDE_FIRST      = LIST_TOP      ; the sidebar's first drive line's top
+SIDE_MAX        = 8             ; sidebar lines a click can choose
 
 DA_MAX          = 8             ; desk accessories in the geos menu
 NAME_LEN        = 17            ; a GEOS name and its zero
@@ -91,20 +96,19 @@ Press:  lda mouseData
         lda mouseXPos
         cmp #SIDE_RIGHT
         bcs @end
+        ldx #0                  ; the line whose rows hold the pointer
+@line:  cpx sideCount
+        bcs @end
         lda mouseYPos
         sec
-        sbc #SIDE_FIRST
-        bcc @end
-        ldx #0
-@line:  cmp #ROW_H
-        bcc @got
-        sbc #ROW_H
-        inx
-        bne @line
-@got:   cpx sideCount
-        bcs @end
+        sbc sideTops,x
+        bcc @next
+        cmp #ROW_H
+        bcs @next
         lda sideLetters,x
         jmp Drive
+@next:  inx
+        bne @line
 @end:   rts
 
 ; Key (keyVector): the actions' keys (C= + c, x, v, r, n; DEL), else
@@ -227,9 +231,7 @@ Sidebar:
         txa                     ; (its letter kept for a click)
         clc
         adc #'a'
-        ldy sideCount
-        sta sideLetters,y
-        inc sideCount
+        jsr SideLine
         txa
         clc
         adc #'A'
@@ -255,9 +257,7 @@ Sidebar:
         jsr SetDevice
         jsr OpenDisk
         lda #'e'                ; drive E, as the others
-        ldy sideCount
-        sta sideLetters,y
-        inc sideCount
+        jsr SideLine
         lda #<ELetter
         ldx #>ELetter
         ldy rowY
@@ -265,7 +265,86 @@ Sidebar:
         lda #<SystemText
         ldx #>SystemText
         ldy rowY
-        jmp SideName
+        jsr SideName
+        jmp Ultimate
+
+; Ultimate: "ULTIMATE" and a line for each of the Ultimate's roots that
+; is there (the root listing's Ultimate folders: none without a Command
+; Interface); its sidebar code '0' (usb0), '1' (usb1), 's' (sd), for
+; Drive (open.s).
+Ultimate:
+        lda #<rootPath
+        sta r0L
+        lda #>rootPath
+        sta r0H
+        lda #FE_OPENDIR
+        jsr FileEngine
+        sta handle
+        txa
+        bne @end
+        lda #0
+        sta any
+@entry: lda #<uInfo
+        sta r1L
+        lda #>uInfo
+        sta r1H
+        lda #<dname
+        sta r2L
+        lda #>dname
+        sta r2H
+        lda #0
+        sta r3L
+        sta r3H
+        ldy handle
+        lda #FE_READDIR
+        jsr FileEngine
+        txa
+        bne @close
+        lda uInfo               ; (FI_KIND)
+        cmp #K_UDIR
+        bne @entry
+        lda any                 ; the heading before the first
+        bne @line
+        inc any
+        lda rowY
+        clc
+        adc #ROW_H + 2
+        sta rowY
+        lda #<UltText
+        ldx #>UltText
+        ldy rowY
+        jsr SideText
+@line:  lda rowY
+        clc
+        adc #ROW_H
+        sta rowY
+        lda dname + 3           ; its code: "usb0" '0', "usb1" '1', "sd" 's'
+        bne :+
+        lda dname
+:       jsr SideLine
+        lda #<dname
+        ldx #>dname
+        ldy rowY
+        jsr SideName
+        jmp @entry
+@close: ldy handle
+        lda #FE_CLOSE
+        jsr FileEngine
+@end:   rts
+
+; SideLine: a sidebar line for a click: code A (a drive letter, or an
+; Ultimate root's code; open.s, Drive), its top row from rowY.
+SideLine:
+        ldy sideCount
+        cpy #SIDE_MAX
+        bcs @end
+        sta sideLetters,y
+        lda rowY
+        sec
+        sbc #BASELINE
+        sta sideTops,y
+        inc sideCount
+@end:   rts
 
 ; SideText: the text at A/X at x 4, baseline Y. SideName: at x 20,
 ; clipped at the sidebar's edge (rightMargin).
@@ -433,6 +512,8 @@ DaHi:   .repeat DA_MAX, i
         .endrepeat
 
 DrivesText:     .byte BOLDON, "DRIVES", PLAINTEXT, 0
+UltText:        .byte BOLDON, "ULTIMATE", PLAINTEXT, 0
+rootPath:       .byte "/", 0
 ELetter:        .byte " E", 0
 SystemText:     .byte "System", 0
 GushName:       .byte "gush", 0
@@ -545,11 +626,15 @@ rowY:           .byte 0
 drv:            .byte 0
 homeDrive:      .byte 0
 sideCount:      .byte 0
-sideLetters:    .res 5
+sideLetters:    .res SIDE_MAX   ; each sidebar line's code (Drive)
+sideTops:       .res SIDE_MAX   ; and its top pixel row
+handle:         .byte 0
+any:            .byte 0
 tmp:            .byte 0
 daCount:        .byte 0
 
         .segment "BSS"
 
-dname:          .res NAME_LEN
+dname:          .res 64
+uInfo:          .res 16
 daNames:        .res DA_MAX * NAME_LEN

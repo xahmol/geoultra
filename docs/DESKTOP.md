@@ -171,6 +171,13 @@ moves the window over the folder's entries.
   GEOS returns `DBGETSTRING` then). Errors in a dialog (the name and
   the engine's error number) end the action. Not yet: a progress line
   for long copies, recursive delete. Test tests/desktop/d4.py (VICE).
+- **D5a (2026-11-06):** the sidebar's Ultimate roots: "ULTIMATE" and a
+  line for each of usb0, usb1 and sd that is there (the root listing's
+  Ultimate folders; none without a Command Interface, so none in
+  VICE); a click goes there. Every sidebar line keeps its code and its
+  top row, so clicks find their line across headings. Test
+  tests/desktop/du64.py (U64: usb0 listed, a click goes to /usb0).
+  Favourites and recent documents (D5b) next.
 
 ## Tests
 

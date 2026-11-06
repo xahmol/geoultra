@@ -85,11 +85,31 @@ Up:     lda path + 1
         jmp Into
 @end:   rts
 
-; Drive: A = a drive letter ('a'-'e'): its root.
-Drive:  sta drivePath + 1
+; Drive: A = a sidebar line's code: a drive letter ('a'-'e', its root)
+; or an Ultimate root ('0' usb0, '1' usb1, 's' sd).
+Drive:  cmp #'0'
+        beq @usb0
+        cmp #'1'
+        beq @usb1
+        cmp #'s'
+        beq @sd
+        sta drivePath + 1
         lda #<drivePath
         ldx #>drivePath
         jmp Into
+@usb0:  lda #<Usb0
+        ldx #>Usb0
+        jmp Into
+@usb1:  lda #<Usb1
+        ldx #>Usb1
+        jmp Into
+@sd:    lda #<Sd
+        ldx #>Sd
+        jmp Into
+
+Usb0:   .byte "/usb0", 0
+Usb1:   .byte "/usb1", 0
+Sd:     .byte "/sd", 0
 
 ; Program: entryName (in path) started (see above); a desk accessory
 ; comes back: the screen drawn again.

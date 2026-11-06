@@ -4,7 +4,8 @@
 test stick has no SETTINGS.INI (it is made and deleted again; an
 existing one stops the test). Boots the cartridge, calls EnterDeskTop
 (appMain), and checks that the desktop runs (its code at $0400, the
-path and the entries of the start folder in its memory).
+path and the entries of the start folder in its memory); the sidebar's
+Ultimate roots (D5): usb0 listed, a click on it goes there.
 Usage: tests/desktop/du64.py [build/geoultra64.crt]
 """
 import ftplib
@@ -53,6 +54,17 @@ def main():
         path = bytes(u.read(k["path"], 16)).split(b"\0")[0].decode("latin1")
         check("its path line", path.startswith("/"), True)
         check("entries listed", u.read(k["count"], 1)[0] > 0, True)
+        n = u.read(k["sideCount"], 1)[0]                # D5: the Ultimate's roots
+        codes = bytes(u.read(k["sideLetters"], n))
+        check("the sidebar lists usb0", b"0" in codes, True)
+        i = codes.index(b"0")
+        top = u.read(k["sideTops"] + i, 1)[0]
+        u.write(0x3A, bytes([20, 0, top + 4]))          # a press on its line
+        u.write(0x8505, b"\x00")
+        u.write(0x39, bytes([u.read(0x39, 1)[0] | 0x20]))
+        time.sleep(6)
+        path = bytes(u.read(k["path"], 16)).split(b"\0")[0].decode("latin1")
+        check("a click on usb0: there", path.lower(), "/usb0")
     finally:
         ftp.delete(SETTINGS)
         ftp.quit()
