@@ -159,6 +159,18 @@ moves the window over the folder's entries.
   `ST_LD_DATA`, `r2` the document disk's name and `r3` the document's
   name, as the deskTop passes one. Test tests/desktop/d3doc.py (VICE,
   the user's GEOS64.D81: "ReadMe 1581" opens in geoWrite 2.1).
+- **D4 (2026-11-06):** the actions (actions.s), in the file menu and
+  as keys: open C=O, copy C=C, cut C=X, paste C=V, delete DEL, rename
+  C=R, new folder C=N. Copy and cut keep the source folder and the
+  names of the selection (or the cursor's entry) in the application's
+  REU (bank 5); paste copies (`FE_COPY`) or moves (`FE_MOVE`) them into
+  the current folder, asking before a file of the same name is
+  replaced; after cut and paste the clipboard is empty. Delete asks
+  once, then removes files and empty folders. Rename and new folder
+  ask for the name (an input line; RETURN ends the dialog as OK does:
+  GEOS returns `DBGETSTRING` then). Errors in a dialog (the name and
+  the engine's error number) end the action. Not yet: a progress line
+  for long copies, recursive delete. Test tests/desktop/d4.py (VICE).
 
 ## Tests
 

@@ -417,6 +417,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d2.py
 	$(PYTHON) tests/desktop/d3.py
 	$(PYTHON) tests/desktop/d3doc.py
+	$(PYTHON) tests/desktop/d4.py
 
 test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt

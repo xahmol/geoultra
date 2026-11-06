@@ -8,7 +8,8 @@
 
         .include "geos.inc"
 
-        .import ListRead, ListDraw, ListPress, ListKey, Drive
+        .import ListRead, ListDraw, ListPress, ListKey, Drive, Open
+        .import Copy, Cut, Paste, Delete, Rename, NewFolder
         .export FileEngine, Redraw
 
 ; GEOS jump table
@@ -117,9 +118,47 @@ Press:  lda mouseData
         jmp Drive
 @end:   rts
 
-; Key (keyVector): the list's keys.
+; Key (keyVector): the actions' keys (C= + c, x, v, r, n; DEL), else
+; the list's.
 Key:    lda keyData
+        ldx #KeyActs_n - 1
+@k:     cmp KeyActs,x
+        beq @act
+        dex
+        bpl @k
         jmp ListKey
+@act:   txa
+        asl a
+        tax
+        lda ActDo+1,x
+        pha
+        lda ActDo,x
+        pha
+        rts
+
+KeyActs:
+        .byte SHORTCUT | 'c', SHORTCUT | 'x', SHORTCUT | 'v'
+        .byte SHORTCUT | 'r', SHORTCUT | 'n', KEY_DELETE, SHORTCUT | 'o'
+KeyActs_n = * - KeyActs
+ActDo:  .word Copy-1, Cut-1, Paste-1, Rename-1, NewFolder-1, Delete-1, Open-1
+
+; The file menu's items: the menus closed, then the action.
+MOpen:  jsr GotoFirstMenu
+        jmp Open
+MCopy:  jsr GotoFirstMenu
+        jmp Copy
+MCut:   jsr GotoFirstMenu
+        jmp Cut
+MPaste: jsr GotoFirstMenu
+        jmp Paste
+MDelete:
+        jsr GotoFirstMenu
+        jmp Delete
+MRename:
+        jsr GotoFirstMenu
+        jmp Rename
+MNew:   jsr GotoFirstMenu
+        jmp NewFolder
 
 ; FileEngine: A = function, Y = handle, r0-r4 (FILE_ENGINE.md).
 FileEngine:
@@ -439,9 +478,30 @@ geosItems:
         .res DA_MAX * 5         ; (the accessories, GeosMenu)
 
 fileMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 14
-        .word 30, 99
-        .byte VERTICAL | UN_CONSTRAINED | 1
+        .byte MENU_BOTTOM, MENU_BOTTOM + 8 * 14
+        .word 30, 129
+        .byte VERTICAL | UN_CONSTRAINED | 8
+        .word OpenItem
+        .byte MENU_ACTION
+        .word MOpen
+        .word CopyItem
+        .byte MENU_ACTION
+        .word MCopy
+        .word CutItem
+        .byte MENU_ACTION
+        .word MCut
+        .word PasteItem
+        .byte MENU_ACTION
+        .word MPaste
+        .word DeleteItem
+        .byte MENU_ACTION
+        .word MDelete
+        .word RenameItem
+        .byte MENU_ACTION
+        .word MRename
+        .word NewItem
+        .byte MENU_ACTION
+        .word MNew
         .word GushItem
         .byte MENU_ACTION
         .word Gush
@@ -477,6 +537,13 @@ ViewText:       .byte "view", 0
 DiskText:       .byte "disk", 0
 InfoText:       .byte "GeoUltra info", 0
 GushItem:       .byte "gush", 0
+OpenItem:       .byte "open      C=O", 0
+CopyItem:       .byte "copy      C=C", 0
+CutItem:        .byte "cut       C=X", 0
+PasteItem:      .byte "paste     C=V", 0
+DeleteItem:     .byte "delete    DEL", 0
+RenameItem:     .byte "rename    C=R", 0
+NewItem:        .byte "new folder C=N", 0
 ListItem:       .byte "* list", 0
 RefreshItem:    .byte "refresh", 0
 InfoLine1:      .byte BOLDON, "GeoUltra Desktop", PLAINTEXT, 0
