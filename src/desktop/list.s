@@ -13,7 +13,7 @@
 
         .include "geos.inc"
 
-        .import FileEngine
+        .import FileEngine, Open, Up
         .export ListRead, ListDraw, ListPress, ListKey, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
 
@@ -473,18 +473,20 @@ ListPress:
         bcc :+
 @out:   sec                     ; (not the list's)
         rts
+@toStrip:
+        jmp @strip
 :       lda mouseXPos+1         ; the strip?
         cmp #>STRIP_LEFT
         bcc @list
-        bne @strip
+        bne @toStrip
         lda mouseXPos
         cmp #<STRIP_LEFT
-        bcs @strip
+        bcs @toStrip
 @list:  lda mouseXPos+1
         bne :+
         lda mouseXPos
         cmp #LIST_LEFT
-        bcc @no
+        bcc @out
 :       lda mouseYPos           ; the row
         sec
         sbc #LIST_TOP
@@ -499,6 +501,8 @@ ListPress:
         bcs @done               ; (below the last entry)
         sta pick
         stx pick+1
+        jsr Double              ; (the same entry clicked again in time)
+        bcs @open
         jsr Modifiers
         lda mods
         and #MOD_CBM
@@ -527,6 +531,13 @@ ListPress:
 @done:  jsr ListDraw
         clc
         rts
+@open:  lda pick                ; a double click: the entry opened
+        sta cur
+        lda pick+1
+        sta cur+1
+        jsr Open
+        clc
+        rts
 @strip: lda mouseYPos           ; above or below the thumb: a page
         pha
         jsr ThumbRows
@@ -541,6 +552,29 @@ ListPress:
         clc
         rts
 @no:    sec
+        rts
+
+; Double: C set when pick is the entry clicked last and GEOS's double-
+; click count still runs; else that count started for this click.
+Double: lda dblClickCount
+        beq @new
+        lda pick
+        cmp last
+        bne @new
+        lda pick+1
+        cmp last+1
+        bne @new
+        lda #0
+        sta dblClickCount
+        sec
+        rts
+@new:   lda pick
+        sta last
+        lda pick+1
+        sta last+1
+        lda #CLICK_COUNT
+        sta dblClickCount
+        clc
         rts
 
 ; Range: entries cur to pick (either way round) selected.
@@ -664,7 +698,18 @@ ListKey:
         beq @up
         cmp #KEY_HOME
         beq @home
+        cmp #CR
+        beq @open
+        cmp #KEY_LEFT
+        beq @parent
         sec
+        rts
+@open:  jsr Open
+        clc
+        rts
+@parent:
+        jsr Up
+        clc
         rts
 @home:  lda #0
         sta cur
@@ -746,6 +791,7 @@ count:          .word 0         ; entries in the table
 top:            .word 0         ; the first shown
 cur:            .word 0         ; the cursor
 pick:           .word 0
+last:           .word $FFFF         ; the entry clicked last
 lo:             .word 0
 hi:             .word 0
 handle:         .byte 0

@@ -141,6 +141,16 @@ moves the window over the folder's entries.
   run with RAM over `$D000`: without it the matrix read RAM and every
   click looked like C=+SHIFT). Test tests/desktop/d2.py (VICE: 40
   files on drive B; reading, keys, C= extending, a click, a page).
+- **D3a (2026-11-06):** opening (open.s). RETURN or a double click
+  (GEOS's `dblClickCount`, the same entry clicked again in time) opens
+  the cursor's entry: a folder or drive is entered (`FE_CD`), an
+  application or auto-exec file started in the desktop's place, a desk
+  accessory run (the screen drawn again when it comes back); programs
+  start as gush starts them (`FE_SELECT`, `GetFile`; on drive E an
+  application through `FE_RUNSYS`, a desk accessory through `GetFile`
+  by its name). Cursor left goes to the parent folder; a click on a
+  sidebar line to that drive's root. Test tests/desktop/d3.py (VICE).
+  Documents (D3b) next.
 
 ## Tests
 

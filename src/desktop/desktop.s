@@ -8,8 +8,8 @@
 
         .include "geos.inc"
 
-        .import ListRead, ListDraw, ListPress, ListKey
-        .export FileEngine
+        .import ListRead, ListDraw, ListPress, ListKey, Drive
+        .export FileEngine, Redraw
 
 ; GEOS jump table
 Rectangle       = $C124
@@ -51,6 +51,7 @@ ROWS            = 17
 LIST_BOTTOM     = LIST_TOP + ROWS * ROW_H
 SCREEN_RIGHT    = 319
 BASELINE        = 7             ; a row's baseline below its top
+SIDE_FIRST      = LIST_TOP      ; the sidebar's first drive line's top
 
 DA_MAX          = 8             ; desk accessories in the geos menu
 NAME_LEN        = 17            ; a GEOS name and its zero
@@ -89,10 +90,31 @@ Start:  lda guExtTable          ; FileEngine: the extension table + 30
         lda #0
         jmp DoMenu
 
-; Press (otherPressVec): a press (not a release) in the list.
+; Press (otherPressVec): a press (not a release) in the list, else on a
+; sidebar line (its drive's root).
 Press:  lda mouseData
         bmi @end
         jsr ListPress
+        bcc @end
+        lda mouseXPos+1         ; the sidebar: x below SIDE_RIGHT, a line
+        bne @end
+        lda mouseXPos
+        cmp #SIDE_RIGHT
+        bcs @end
+        lda mouseYPos
+        sec
+        sbc #SIDE_FIRST
+        bcc @end
+        ldx #0
+@line:  cmp #ROW_H
+        bcc @got
+        sbc #ROW_H
+        inx
+        bne @line
+@got:   cpx sideCount
+        bcs @end
+        lda sideLetters,x
+        jmp Drive
 @end:   rts
 
 ; Key (keyVector): the list's keys.
@@ -103,8 +125,9 @@ Key:    lda keyData
 FileEngine:
         jmp (feVec)
 
-; Draw: the whole screen: background (the menu bar's row white across,
-; a line under it), sidebar, path, list.
+; Draw, Redraw: the whole screen: background (the menu bar's row white
+; across, a line under it), sidebar, path, list (read again).
+Redraw:
 Draw:   lda #0
         jsr SetPattern
         lda #0
@@ -165,12 +188,20 @@ Sidebar:
         jsr SideText
         lda curDrive            ; (DiskName opens each drive)
         sta homeDrive
-        lda #PATH_Y + ROW_H + 2
+        lda #SIDE_FIRST + BASELINE
         sta rowY
+        lda #0
+        sta sideCount
         ldx #0
 @drive: stx drv
         lda driveType,x
         beq @next
+        txa                     ; (its letter kept for a click)
+        clc
+        adc #'a'
+        ldy sideCount
+        sta sideLetters,y
+        inc sideCount
         txa
         clc
         adc #'A'
@@ -195,7 +226,11 @@ Sidebar:
         lda homeDrive           ; the current drive again
         jsr SetDevice
         jsr OpenDisk
-        lda #<ELetter           ; drive E, as the others
+        lda #'e'                ; drive E, as the others
+        ldy sideCount
+        sta sideLetters,y
+        inc sideCount
+        lda #<ELetter
         ldx #>ELetter
         ldy rowY
         jsr SideText
@@ -453,6 +488,8 @@ feVec:          .word 0
 rowY:           .byte 0
 drv:            .byte 0
 homeDrive:      .byte 0
+sideCount:      .byte 0
+sideLetters:    .res 5
 tmp:            .byte 0
 daCount:        .byte 0
 
