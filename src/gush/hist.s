@@ -31,9 +31,9 @@ HistSave:
         sta r2L
         lda #FE_OPEN
         jsr FileEngine
+        sta handle              ; (A: the handle; txa would lose it)
         txa
         bne @end
-        sta handle
         lda #0
         sta bufLen
         lda histCount           ; n = min(count, HIST_SAVE), oldest first
@@ -105,11 +105,11 @@ HistLoad:
         sta r2L
         lda #FE_OPEN
         jsr FileEngine
+        sta handle              ; (A: the handle; txa would lose it)
         txa
         beq :+
         rts
-:       sta handle
-        lda #0
+:       lda #0
         sta lineLen
 @chunk: lda #<buf               ; a page at a time
         sta r1L

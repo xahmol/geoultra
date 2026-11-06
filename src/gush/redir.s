@@ -74,9 +74,9 @@ Redirect:
         sta r2L
         lda #FE_OPEN
         jsr FileEngine
+        sta outHandle           ; (A: the handle; txa would lose it)
         txa
         bne @fail
-        sta outHandle
         lda depth
         sta sinkDepth
         lda #0
@@ -93,9 +93,9 @@ Redirect:
         sta r2L
         lda #FE_OPEN
         jsr FileEngine
+        sta inHandle            ; (A: the handle; txa would lose it)
         txa
         bne @fail
-        sta inHandle
         lda depth
         sta inDepth
 @drop:  ldx at                  ; the two words off: the rest down

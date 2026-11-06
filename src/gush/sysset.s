@@ -176,9 +176,9 @@ SaveStep:
         sta r2L
         lda #FE_OPEN
         jsr FileEngine
+        sta handle              ; (A: the handle; txa would lose it)
         txa
         bne @end
-        sta handle
         jsr Lines
         lda #FE_CLOSE
         ldy handle
@@ -240,11 +240,11 @@ ReadIni:
         sta r2L
         lda #FE_OPEN
         jsr FileEngine
+        sta handle              ; (A: the handle; txa would lose it)
         cpx #FILE_NOT_FOUND
         beq @none
         txa
         bne @end
-        sta handle
         lda #<text
         sta r1L
         lda #>text
