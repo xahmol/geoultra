@@ -418,8 +418,10 @@ word starting with `#` ends the line); `exit N` ends a script with
 status N (outside one: the desktop); variables shared with the caller;
 a redirection belongs to the level that made it (a script run with `>
 file` writes there to its end; a second output redirection inside it
-is refused); `HOME/gushrc` run at gush's start. Not yet: RUN/STOP
-ending a script. Tests g14.py, gu64.py (gushrc). **3.4 (2026-11-05)**:
+is refused); `HOME/gushrc` run at gush's start. Since 3.4 RUN/STOP held
+between statements ends a script or loop (flow.s `Stop`); not tested
+automatically (neither VICE's monitor nor the U64's interface can hold a
+key), so to try by hand. Tests g14.py, gu64.py (gushrc). **3.4 (2026-11-05)**:
 statements and control flow (flow.s): typed lines and scripts both run
 through one executor, statement by statement (a line's end or an
 unquoted `;` ends one; a typed line is copied to gush's REU bank 5 like
