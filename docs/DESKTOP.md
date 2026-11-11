@@ -495,9 +495,19 @@ colour is a property of an element, by name:
   published), as a native REU drive for tests, screenshots and videos
   (MOUNTS.INI `C=`, a copy in the test folder, rebuilt and uploaded by
   `make deploy`); tests that mount use D.
-- **Next, in this order:** the context menu and Info (the right
-  button's U64 check first); the icon
-  view; the theme editor (settings tool, phase 3).
+- **Sorting (the user, 2026-11-11):** the list sorted, folders first,
+  each group by name (case-insensitive), ".." on top; replaces the
+  directory order of the 2026-11-06 decision (a "disk order" choice for
+  hand-ordered disks may follow). The sort runs in an overlay, from
+  MainLoop right after a folder is read (reading only marks the list),
+  so the list is drawn once, sorted.
+- **Next, in this order:** copy, paste, move and delete onto drive C
+  (the apps DNP) tested on the U64; sorting; docs/DESKTOP_MANUAL.md
+  (with "Drives: what works where"); the context menu and Info; two
+  panes (the user, 2026-11-11: after the context menu, as both are about
+  moving files between places); the settings tool (the theme editor,
+  pointer designs, turbo and slow list, NTP and clock, the default
+  desktop); the Classic style.
 
 ## Open bugs
 
