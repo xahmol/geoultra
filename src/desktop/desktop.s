@@ -17,6 +17,7 @@
         .import Copy, Cut, Paste, Delete, Rename, NewFolder, path
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
+        .import HistAdd
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeSet, ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
         .import ThemeUse, themeNames, themeCount, curName, hasPal, PalReset
@@ -67,6 +68,7 @@ Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
         jsr ThemeSet
         jsr SideLoad            ; favourites, recent documents, the theme
         jsr Draw
+        jsr HistAdd             ; (the first place in the history)
         lda #<mainMenu
         sta r0L
         lda #>mainMenu

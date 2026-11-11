@@ -11,7 +11,8 @@
 
 TRANS           = $5000
 TRANS_SIZE      = $1000
-OVL_BANK        = 6             ; (1-4: the entry table, 5: the clipboard)
+OVL_BANK        = 6             ; (1-4: the entry table, 5: the clipboard;
+                                ; bank 6 from $8000: history.s)
 OVL_N           = 5
 
         .segment "CODE"

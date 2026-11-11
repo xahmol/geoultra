@@ -166,6 +166,28 @@ def main():
         check("toolbar view again: list", v.mem_get(k["viewMode"], k["viewMode"])[0], 0)
         button(7)                                           # root
         check("toolbar root: /", here(), "/")
+        button(1)                                           # back
+        check("toolbar back: /b", here(), "/b")
+        button(1)
+        check("toolbar back again: /b/dir1", here(), "/b/dir1")
+        button(3)                                           # forward
+        check("toolbar forward: /b", here(), "/b")
+        button(3)
+        check("toolbar forward again: /", here(), "/")
+        button(3)
+        check("toolbar forward at the end: still /", here(), "/")
+        button(1)                                           # back to /b, then
+        side(ord("a"))                                      # somewhere new:
+        button(3)                                           # nothing ahead
+        check("after back and a new place: forward does nothing", here(), "/a")
+        button(1)
+        check("back from there: /b", here(), "/b")
+        for i in range(18):                                 # more than 16 places:
+            side(ord("a") if i % 2 == 0 else ord("e"))      # the oldest dropped
+        check("history full: 16 places, the last current",
+              (v.mem_get(k["histLen"], k["histLen"])[0], v.mem_get(k["histPos"], k["histPos"])[0]), (16, 15))
+        button(1)
+        check("back in a full history: /a", here(), "/a")
         g.png("desktop-d5-toolbar")
         # view > toolbar > one line, off, two lines: the menu's routine
         # (A = the item) called once through appMain, as a menu click runs

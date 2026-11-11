@@ -16,6 +16,7 @@
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
         .import cur, count, path, Redraw, RecentAdd, Mount, Neutral, SideArrows
         .export Open, Up, Drive, Into, Document, Back
+        .import HistAdd
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
 ST_LD_DATA      = $80
@@ -63,6 +64,7 @@ Into:   sta r0L                 ; FE_CD (A/X), then the list read again
         txa
         bne @end
         jsr ListRead
+        jsr HistAdd             ; (history.s: the toolbar's back, forward)
         jsr SideArrows          ; (desktop.s: the open drive's arrow)
         jmp ListDraw
 @end:   rts

@@ -434,8 +434,8 @@ colour is a property of an element, by name:
   shifted into it). Actions: up, root "/", home (FE_HOME; nothing
   without an Ultimate), top, end, view (list and detailed in turn; icons
   with the icon view), refresh, new folder, select all (all but ".."),
-  copy, paste, delete. Back and forward (T2, the history) and info (with
-  the context menu) do nothing yet. The toolbar has the menu bar's
+  copy, paste, delete; back and forward with T2 (below). Info (with
+  the context menu) does nothing yet. The toolbar has the menu bar's
   colours for now; its own theme colour line is a step of its own (it
   changes the theme files). Tests: d5.py (the buttons pressed, the three
   heights through the menu's routine).
@@ -446,13 +446,19 @@ colour is a property of an element, by name:
   with the right button's code an opcode sat there and the driver ran
   into garbage that wrote over the desktop's code. The boot ROM now
   writes back the byte it reads, as hibernation already did.
-- **Room:** the desktop's core ends at `$4F77` of `$4FFF` (136 bytes
-  left): the history (T2) and the toolbar's theme colour need room made
-  first (candidates: the toolbar's drawing or the sidebar's lists into
-  an overlay).
-- **Next, in this order:** the toolbar's history (back, forward); the
-  context menu and Info (the right button's U64 check first); the
-  icon view; the theme editor (settings tool, phase 3).
+- **Room (2026-11-11):** the toolbar's drawing moved to overlay 5
+  (tooldraw.s); the core ends at `$4EAF` of `$4FFF` with the history.
+- **Toolbar, step T2 (2026-11-11):** back and forward (history.s, core:
+  `Into` records each folder, and `Into` is also called from
+  overlays). The last 16 places, a ring in the REU (bank 6 at `$8000`,
+  256 bytes a path; the overlays use `$0000`-`$4FFF`); going somewhere
+  new after going back drops the places ahead, as a web browser does;
+  the same folder twice in a row is recorded once (a check value per
+  slot: the path's length and byte sum). Tests: d5.py (back, forward,
+  the end of the history, a new place after back, a full ring).
+- **Next, in this order:** the context menu and Info (the right
+  button's U64 check first); the toolbar's own theme colour; the icon
+  view; the theme editor (settings tool, phase 3).
 
 ## Open bugs
 

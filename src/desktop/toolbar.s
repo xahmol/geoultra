@@ -8,9 +8,9 @@
 ; on two cards (BitmapUp places bitmaps on cards), 16 px apart from x 8
 ; with 8 px between the groups (the mock-up: 4 and 6, not on cards).
 ; The drawing is overlay 5 (tooldraw.s); here the presses, the colours
-; and the buttons' places (Cards, used by both). Back, forward and info
-; do nothing yet (the history and the Info dialog are later steps). Own
-; design.
+; and the buttons' places (Cards, used by both). Back and forward:
+; history.s. Info does nothing yet (the Info dialog comes with the
+; context menu). Own design.
 
         .include "geos.inc"
         .include "desktop.inc"
@@ -18,6 +18,7 @@
         .import tbMode, topY, cMenu, Paint, px0, px1, py0, py1, pcol
         .import Up, Into, ListKey, ListEnd, SelAll, ListRead, ListDraw
         .import View, viewMode, NewFolder, Copy, Paste, Delete, FileEngine
+        .import HistBack, HistForward
         .export ToolPress, ToolPaint, Cards
 
         .segment "CODE"
@@ -121,7 +122,7 @@ Refresh:
 Nothing:
         rts
 
-Acts:   .word Nothing-1, Nothing-1, Up-1, Root-1, Home-1   ; back, forward: T2
+Acts:   .word HistBack-1, HistForward-1, Up-1, Root-1, Home-1
         .word Top-1, ListEnd-1
         .word ViewNext-1, Refresh-1
         .word NewFolder-1, Nothing-1, SelAll-1, Copy-1, Paste-1, Delete-1
