@@ -1110,8 +1110,9 @@ Status: lda tStatus
         jmp InvertRectangle
 
 ; ProgressStart: "Copying 3 of 12: name" on the status line (A = the
-; verb: 0 copying, 1 moving, 2 deleting; progN of progTotal; the name in
-; entryName), its length kept for ProgressBlock.
+; verb: 0 copying, 1 moving, 2 deleting; progN of progTotal, "Copying
+; 14: name" when progTotal is 0; the name in entryName), its length kept
+; for ProgressBlock.
 ProgressStart:
         tax
         ldy VerbAt,x
@@ -1127,12 +1128,15 @@ ProgressStart:
         lda progN
         ldx progN+1
         jsr Dec16
+        lda progTotal           ; (a total not known: "Copying 14: name")
+        ora progTotal+1
+        beq :+
         ldx #OfWord
         jsr Words
         lda progTotal
         ldx progTotal+1
         jsr Dec16
-        ldx #ColonWord
+:       ldx #ColonWord
         jsr Words
         ldx #0
 @name:  lda entryName,x

@@ -894,8 +894,8 @@ ThemeSave:
 ViewSave:
         lda viewMode
         ldx #KEY_VIEW
-        ldy #ViewWords - Words
-        bne Word
+        ldy #ViewWords - Words  ; (0: no branch on Z)
+        jmp Word
 ClockSave:
         lda clockMode
         ldx #KEY_CLOCK

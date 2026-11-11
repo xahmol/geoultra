@@ -101,17 +101,23 @@ build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/vlircvt.py
 
 # GeoUltra's desktop (docs/DESKTOP.md): src/desktop, on drive E.
 DESKSRCS = $(wildcard src/desktop/*.s)
+# The question's "Yes to all" button (64 pixels), drawn like the system icons.
+build/gen/yesall.inc: tools/mkicons.py tools/fonts/system9.py
+	@mkdir -p build/gen
+	$(PYTHON) tools/mkicons.py --icon $@ YesAllIcon "Yes to all" 64
+
 # The mount dialog's drive buttons, drawn like the system icons.
 DRVICONS = $(patsubst %,build/gen/drvicon_%.inc,A B C D)
 build/gen/drvicon_%.inc: tools/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
 	$(PYTHON) tools/mkicons.py --icon $@ DriveIcon$* $*
 
-build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
+build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) build/gen/yesall.inc src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/desktop
 	for f in $(DESKSRCS); do $(CA65) -g -I src/inc -I build/gen -o build/desktop/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o $(patsubst src/desktop/%.s,build/desktop/%.o,$(filter-out src/desktop/desktop.s,$(DESKSRCS)))
-	$(PYTHON) $(GEOSAPP) src/desktop/desktop.toml build/desktop/desktop.bin $@
+	$(PYTHON) $(GEOSAPP) src/desktop/desktop.toml build/desktop/desktop.bin build/desktop/desktop-seq.cvt
+	$(PYTHON) tools/vlircvt.py build/desktop/desktop-seq.cvt $@ build/desktop/desktop.bin.1 build/desktop/desktop.bin.2 build/desktop/desktop.bin.3
 
 # External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
 # at gush's transient area (src/cmds/cmd.cfg), a GEOS APPL_DATA file of
@@ -432,6 +438,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d3doc.py
 	$(PYTHON) tests/desktop/d4.py
 	$(PYTHON) tests/desktop/d5.py
+	$(PYTHON) tests/desktop/d8.py
 
 test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt

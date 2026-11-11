@@ -120,8 +120,9 @@ OvlReu: sta r1H                 ; ((n - 1) * 2 * TRANS_SIZE / 2 / 256)
 
 ; OvlGo (from a stub: jsr OvlGo / .byte overlay / .addr routine): the
 ; overlay fetched when another one is there, then the routine with A, X,
-; Y and the flags as the stub got them (r0-r3 are not kept: the routines
-; behind stubs take no r registers). It returns to the stub's caller.
+; Y, the flags and r0-r3 as the stub got them (kept across the fetch,
+; which uses them: the desktop's ThemeUse takes r0; found 2026-11-11).
+; It returns to the stub's caller.
 ; Without the overlays: OvlFail (the includer's), back to the caller.
 OvlGo:  sta keepA
         stx keepX
@@ -140,11 +141,22 @@ OvlGo:  sta keepA
         ldx ovlOk
         beq @fail
         sta curOvl
+        ldx #7                  ; r0-r3 kept across the fetch
+@keep:  lda r0L,x
+        sta keepR,x
+        dex
+        bpl @keep
+        lda curOvl
         sec                     ; (n - 1) * 2
         sbc #1
         asl
         jsr OvlReu
         jsr FetchRAM
+        ldx #7
+@back:  lda keepR,x
+        sta r0L,x
+        dex
+        bpl @back
 @go:    ldy #2
         lda (ovlP),y
         sta ovlJmp
@@ -179,6 +191,7 @@ keepX:          .byte 0
 keepY:          .byte 0
 keepP:          .byte 0
 ovlJmp:         .word 0
+keepR:          .res 8          ; r0-r3 across a fetch
 ovlTS:          .res OVL_N * 2
 
         .segment "CODE"

@@ -358,9 +358,29 @@ colour is a property of an element, by name:
   REU bank 6: overlay 1 the theme files, overlay 2 the actions and
   mounting. The borders of the built-in themes match their desk's
   background (user, 2026-11-11).
-- **Next:** folders copied, moved and deleted recursively with a
-  Yes / Yes to all / No question (user, 2026-11-11); the icon view;
-  the theme editor (settings tool, phase 3).
+- **Folders with everything in them (2026-11-11, user's request):**
+  copy, cut and paste and delete work on folders recursively
+  (tree.s, overlay 2; the walk follows gush's `cp -r`: each folder's
+  listing read whole into REU bank 7 before anything in it is touched,
+  8 levels deep). A move tries `FE_MOVE` first, else copies and
+  deletes. A file that exists is replaced only after "Replace it?"
+  answered **Yes** or **Yes to all** (for the rest of that paste);
+  **No** leaves it. A folder that is not empty is deleted only after
+  "Delete everything in it?" with the same three answers. A folder
+  pasted into itself is refused. The progress line counts the files
+  ("Copying 14: name, 40 blocks"); RUN/STOP stops. On the Ultimate's
+  own file system the engine cannot yet copy files from one Ultimate
+  path to another, nor move a folder there: such a folder paste is
+  refused before anything is made (`FE_NOT_SUPPORTED`). Mounting moved
+  to overlay 3; the error dialog and `Append` to the core
+  (errors.s). `OvlGo` keeps r0-r3 across a fetch now (`ThemeUse` takes
+  r0; a theme chosen while another overlay was in place got a broken
+  name). Tests: tests/desktop/d8.py (VICE: a tree copied, pasted again
+  with Yes to all, deleted, moved), d8u64.py (U64: a tree deleted on
+  the Ultimate, a folder move there refused with nothing changed).
+- **Next:** in the file engine, copies between Ultimate paths and
+  moving folders there; the icon view; the theme editor (settings
+  tool, phase 3).
 
 ## Open bugs
 

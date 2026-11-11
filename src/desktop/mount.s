@@ -7,8 +7,8 @@
 ; the sidebar its disk name. Unmount (user, 2026-11-06): an eject icon at
 ; the right end of each sidebar drive line that holds an image (drawn by
 ; desktop.s through HasImage); a click on it asks, then FE_UMOUNT.
-; Errors are shown (actions.s, Error) and change nothing. Mount and
-; Eject live in overlay 2 with the actions (ovl.s); IsImage, HasImage,
+; Errors are shown (errors.s, Error) and change nothing. Mount and
+; Eject live in overlay 3 (ovl.s); IsImage, HasImage,
 ; Info, Letter and the eject icon in the core (the list and the sidebar
 ; call them while drawing). Own code.
 
@@ -16,7 +16,7 @@
         .include "desktop.inc"
 
         .import FileEngine, Into, Drive, ListRead, ListDraw, SideRedraw
-        .import Error, Append, full, entryName, path
+        .import Error, Append, full, entryName, path   ; (errors.s, actions.s)
         .import Busy, Idle
         .import Dialog
         .export Ov_Mount, Ov_Eject, HasImage, EjectIcon, IsImage
@@ -32,7 +32,7 @@ ROW_STEP        = 18            ; buttons 16 high, 2 apart
 TEXT_X          = 64            ; a line's x, right of its button
 TEXT_DY         = 11            ; its baseline below the button's top
 
-        .segment "OV2"
+        .segment "OV3"
 
 ; Mount: entryName (a file in the current Ultimate folder) mounted on
 ; the drive asked for, when it is a disk image; else nothing.
@@ -117,7 +117,7 @@ IsImage:
 @no:    sec
         rts
 
-        .segment "OV2"
+        .segment "OV3"
 
 ; Lines: drive X's line in the dialog: the name of the image mounted
 ; there (the part after its path's last "/", cut to fit), or "free".
@@ -198,7 +198,7 @@ HasImage:
         cpx #1                  ; (X = 0: C clear)
         rts
 
-        .segment "OV2"
+        .segment "OV3"
 
 ; Eject: A = a sidebar drive line's letter ('a'-'d'), clicked on its
 ; eject icon: the drive's image unmounted after asking; a drive without
@@ -284,7 +284,7 @@ Pick:   sta choice
         .segment "CODE"
 Exts:   .byte "d64", "d71", "d81", "dnp"
 Exts_n = * - Exts
-        .segment "OV2"
+        .segment "OV3"
 LineAt: .repeat DRIVES, i
         .byte i * LINE_LEN
         .endrepeat
@@ -313,7 +313,7 @@ EjectIcon:
         .byte %11111110
         .byte %00000000
 
-        .segment "OV2"
+        .segment "OV3"
 
         .include "drvicon_A.inc"
         .include "drvicon_B.inc"

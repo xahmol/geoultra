@@ -32,10 +32,19 @@ NIGHT_PAL = ("12151A E8ECF2 8D2F34 4FC7C2 9835A4 4CB442 2C29B1 F2C94C "
 CMD, REPLY, STUB = 0x5E00, 0x5E80, 0xC0A0
 
 
-def palette(u):
+
+def fe(u, k, *args, **kw):
+    """An engine call through feu64 (its stub and results at $5000-$50FF,
+    the desktop's overlay area): the overlay there then marked as gone
+    (curOvl $FF), so the desktop's next stub fetches a clean one."""
+    r = u.fe(*args, **kw)
+    u.write(k["curOvl"], b"\xff")
+    return r
+
+def palette(u, k):
     """The U64's current palette (GET_PALETTE through FE_UCI), as hex."""
     u.write(CMD, bytes([0x04, 0x51]))
-    u.fe(30, r0=CMD, r1=2, r2=REPLY, r3=48)
+    fe(u, k, 30, r0=CMD, r1=2, r2=REPLY, r3=48)
     return bytes(u.read(REPLY, 48)).hex().upper()
 
 
@@ -69,7 +78,7 @@ def main():
     night = get(HOME + "THEMES/Night.ini").decode("latin1").replace("\r", "").split("\n")
     check("Night.ini in words", all(line in night for line in NIGHT), True)
     check("Night.ini: its palette", "palette=" + NIGHT_PAL in night, True)
-    default = palette(u)
+    default = palette(u, k)
     check("the desktop lists them", u.read(k["themeCount"], 1)[0], 7)
     custom = get(HOME + "THEMES/Custom.ini")
     edited = []
@@ -82,15 +91,25 @@ def main():
         ftp.storbinary("STOR " + HOME + "SETTINGS.INI", io.BytesIO(b"[desktop]\r\ntheme=Night\r\n"))
         u.boot()
         time.sleep(15)
-        check("theme=Night: its palette on the U64", palette(u), NIGHT_PAL.replace(" ", ""))
+        check("theme=Night: its palette on the U64", palette(u, k), NIGHT_PAL.replace(" ", ""))
         names = [bytes(u.read(k["themeNames"] + 15 * i, 15)).split(b"\0")[0] for i in range(7)]
         tick = k["ClockTick"]
         u.write(STUB, bytes([0xA9, tick & 0xFF, 0x8D, 0x9B, 0x84, 0xA9, tick >> 8, 0x8D, 0x9C, 0x84,
                              0xA9, names.index(b"GeoUltra"), 0x4C, k["Theme"] & 0xFF, k["Theme"] >> 8]))
         u.write(0x849B, bytes([STUB & 0xFF, STUB >> 8]))    # appMain: Theme(GeoUltra), once
         time.sleep(8)
-        check("to GeoUltra: the Ultimate's own palette back", palette(u), default)
-        check("SETTINGS.INI: theme=GeoUltra", b"theme=GeoUltra" in get(HOME + "SETTINGS.INI"), True)
+        check("to GeoUltra: the Ultimate's own palette back", palette(u, k), default)
+        saved = b""
+        for _ in range(10):                             # (written twice in a row:
+            try:                                        # a moment between)
+                saved = get(HOME + "SETTINGS.INI")
+            except ftplib.error_perm:
+                saved = b""
+            if b"theme=GeoUltra" in saved and b"view=list" in saved:
+                break
+            time.sleep(2)
+        check("SETTINGS.INI: theme=GeoUltra, view=list", (b"theme=GeoUltra" in saved, b"view=list" in saved),
+              (True, True))
         ftp.storbinary("STOR " + HOME + "THEMES/Custom.ini", io.BytesIO("\r\n".join(edited).encode("latin1")))
         ftp.storbinary("STOR " + HOME + "SETTINGS.INI", io.BytesIO(b"[desktop]\r\ntheme=Custom\r\n"))
         u.boot()

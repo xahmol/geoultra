@@ -31,6 +31,15 @@ DLG_X, DLG_Y = 64, 32           # DEF_DB_POS's top left
 OUT = os.path.join(ROOT, "build", "harness", "gush")
 
 
+
+def fe(u, k, *args, **kw):
+    """An engine call through feu64 (its stub and results at $5000-$50FF,
+    the desktop's overlay area): the overlay there then marked as gone
+    (curOvl $FF), so the desktop's next stub fetches a clean one."""
+    r = u.fe(*args, **kw)
+    u.write(k["curOvl"], b"\xff")
+    return r
+
 def labels():
     out = {}
     for line in open(os.path.join(ROOT, "build", "desktop", "desktop.lbl")):
@@ -113,7 +122,7 @@ def main():
         shot("mounted")
         check("mounted on C: the list at /c", path(), "/c")
         info = 0x5F00
-        x = u.fe(23, s0="/c", r1=info)[0]               # FE_MOUNTINFO
+        x = fe(u, k, 23, s0="/c", r1=info)[0]               # FE_MOUNTINFO
         got = bytes(u.read(info, 64)).split(b"\0")[0].decode("latin1").lower()
         check("FE_MOUNTINFO /c: the test image", (x, got), (0, "/usb0/geoultra/test/" + IMAGE))
         letters, tops = side()
@@ -123,7 +132,7 @@ def main():
         press(DLG_X + 8 + 20, DLG_Y + 72 + 8, 20)       # YES
         letters, tops = side()
         check("unmounted: C gone from the sidebar", b"c" in letters, False)
-        check("FE_MOUNTINFO /c: nothing", u.fe(23, s0="/c", r1=info)[0], 13)
+        check("FE_MOUNTINFO /c: nothing", fe(u, k, 23, s0="/c", r1=info)[0], 13)
         shot("after")
     finally:
         ftp.delete(HOME + "SETTINGS.INI")

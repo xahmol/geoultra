@@ -2,10 +2,11 @@
 ; Copy and cut keep the source folder (srcPath) and the names of the
 ; selected entries (or the cursor's, when none is selected) in the
 ; application's REU (bank CLIP_BANK, CLIP_SIZE bytes each); paste copies
-; (FE_COPY) or moves (FE_MOVE) them into the current folder, asking
-; before an existing file is replaced; after a cut-and-paste the
-; clipboard is empty. Delete asks once for the selection, then removes
-; files (FE_DELETE) and empty folders (FE_RMDIR). Rename (the cursor's
+; (FE_COPY) or moves (FE_MOVE) them into the current folder, folders
+; with everything in them (tree.s), asking before anything is replaced;
+; after a cut-and-paste the clipboard is empty. Delete asks once for the
+; selection, then removes files and folders (a folder that is not empty
+; after a second question). Rename (the cursor's
 ; entry) and new folder ask for a name (a dialog with an input line).
 ; Errors are shown in a dialog and end the action. Through the file
 ; engine, so the Ultimate's file system is a peer of the drives (CVT on
@@ -16,7 +17,8 @@
 
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
         .import entryInfo, entryName, cur, count, path, IsDotDot
-        .import Busy, Idle, ProgressStart, ProgressBlock, progN, progTotal, SelCount
+        .import Busy, Idle
+        .import TreeStart, PasteItem, DeleteItem   ; (tree.s, the same overlay)
         .import text            ; (side.s's INI text holds `full` while one
 full = text                     ; engine call copies, moves or mounts it)
         .import Dialog
@@ -29,7 +31,8 @@ Ov_Delete = Delete
 Ov_Rename = Rename
 Ov_NewFolder = NewFolder
 Ov_Ask = Ask
-        .export Error, Append, full     ; (mount.s: an image's path, errors)
+        .import Error, Append   ; (errors.s, in the core)
+        .export full            ; (mount.s: an image's path)
 
 FILE_EXISTS     = $40           ; (the engine's errors)
 FE_CANCELLED    = $47
@@ -160,9 +163,12 @@ ClipPlace:
         sta r3L
         rts
 
-; Paste: each clipboard name copied or moved into the current folder;
-; a file there of the same name replaced after asking (NO: left out).
+; Paste: each clipboard entry copied or moved into the current folder
+; (tree.s, PasteItem: folders with everything in them; "Replace it?"
+; with Yes / Yes to all / No); after a cut-and-paste the clipboard is
+; empty. Stops at RUN/STOP or an error (shown).
 Paste:  jsr Busy                ; (the hourglass, the progress line)
+        jsr TreeStart
         lda #0
         sta n
         sta n+1
@@ -171,61 +177,19 @@ Paste:  jsr Busy                ; (the hourglass, the progress line)
         bne :+
         lda n+1
         cmp clipCount+1
-        bne :+
-        jmp @done
+        beq @done
 :       lda n
         ldx n+1
         jsr ClipPlace
         jsr FetchRAM
         jsr Source              ; srcPath "/" entryName to full
-        lda clipCount           ; "Copying 3 of 12: name"
-        sta progTotal
-        lda clipCount+1
-        sta progTotal+1
-        jsr ProgN
         lda clipMode
-        jsr ProgressStart
-        lda #0
-        sta flags
-@try:   lda #<full
-        sta r0L
-        lda #>full
-        sta r0H
-        lda #<path
-        sta r1L
-        lda #>path
-        sta r1H
-        lda flags
-        sta r2L
-        lda #<ProgressBlock     ; (list.s: the blocks, RUN/STOP stops)
-        sta r3L
-        lda #>ProgressBlock
-        sta r3H
-        lda clipMode
-        clc
-        adc #FE_COPY            ; (FE_MOVE = FE_COPY + 1)
-        jsr FileEngine
-        txa
-        beq @next
-        cpx #FE_CANCELLED       ; (RUN/STOP: the rest left, no error)
-        beq @done
-        cpx #FILE_EXISTS
-        bne @fail
-        lda flags               ; (asked already: an error)
-        bne @fail
-        lda #<ReplaceText
-        ldx #>ReplaceText
-        jsr Ask
-        bne @next               ; (NO: this one left out)
-        lda #FC_OVERWRITE
-        sta flags
-        bne @try
-@fail:  jsr Error
-        jmp @reread
-@next:  inc n
-        bne :+
+        jsr PasteItem
+        bcs @reread             ; (stopped)
+        inc n
+        bne @name
         inc n+1
-:       jmp @name
+        jmp @name
 @done:  lda clipMode            ; moved: the clipboard is empty
         beq @reread
         lda #0
@@ -236,16 +200,6 @@ Paste:  jsr Busy                ; (the hourglass, the progress line)
         jsr ListDraw
         jmp Idle
 
-; ProgN: progN = n + 1 (the item being worked on).
-ProgN:  lda n
-        clc
-        adc #1
-        sta progN
-        lda n+1
-        adc #0
-        sta progN+1
-        rts
-
 ; Source: full = srcPath, "/" (unless it ends in one), entryName.
 Source: ldy #0
 @p:     lda srcPath,y
@@ -255,30 +209,10 @@ Source: ldy #0
         bne @p
 @end:   jmp Append
 
-; Append: "/" (unless full ends in one, Y its end) and entryName to full,
-; cut at its 255th character (a path that long fails in the engine, with
-; an error shown, rather than running past full).
-Append: lda full-1,y
-        cmp #'/'
-        beq @name
-        lda #'/'
-        sta full,y
-        iny
-@name:  ldx #0
-@n:     cpy #255
-        bcs @cut
-        lda entryName,x
-        sta full,y
-        beq @end
-        iny
-        inx
-        bne @n
-@cut:   lda #0
-        sta full,y
-@end:   rts
-
-; Delete: after one question, each entry taking part removed (a folder
-; must be empty).
+; Delete: after one question, each entry taking part deleted (tree.s,
+; DeleteItem: a folder that is not empty with everything in it after
+; "Delete everything in it?" with Yes / Yes to all / No). Stops at an
+; error (shown).
 Delete: jsr AnySelected
         sta some
         lda count
@@ -291,20 +225,10 @@ Delete: jsr AnySelected
         beq :+
         rts                     ; (NO)
 :       jsr Busy
-        lda #1                  ; "Deleting 3 of 12": the selected ones
-        sta progTotal           ; (or the cursor's one)
+        jsr TreeStart
         lda #0
-        sta progTotal+1
-        lda some
-        beq :+
-        jsr SelCount
-        sta progTotal
-        stx progTotal+1
-:       lda #0
         sta n
         sta n+1
-        sta done
-        sta done+1
 @entry: lda n
         cmp count
         bne :+
@@ -320,32 +244,8 @@ Delete: jsr AnySelected
         jsr Fetch
         jsr IsDotDot            ; (".." not deleted)
         beq @next
-        inc done
-        bne :+
-        inc done+1
-:       lda done
-        sta progN
-        lda done+1
-        sta progN+1
-        lda #2                  ; (Deleting)
-        jsr ProgressStart
-        lda #<entryName
-        sta r0L
-        lda #>entryName
-        sta r0H
-        ldy #FE_DELETE
-        lda entryInfo + FI_KIND
-        cmp #K_FOLDER
-        beq @dir
-        cmp #K_UDIR
-        bne :+
-@dir:   ldy #FE_RMDIR
-:       tya
-        jsr FileEngine
-        txa
-        beq @next
-        jsr Error
-        jmp @reread
+        jsr DeleteItem
+        bcs @reread             ; (stopped)
 @next:  inc n
         bne @entry
         inc n+1
@@ -354,7 +254,6 @@ Delete: jsr AnySelected
         jsr ListRead
         jsr ListDraw
         jmp Idle
-@end:   rts
 
 ; Rename: the cursor's entry gets the name asked for.
 Rename: lda count
@@ -458,35 +357,6 @@ AskName:
         lda #1
         rts
 
-; Error: X = the engine's error, shown (entryName on the first line).
-Error:  txa
-        jsr Hex
-        lda #<errDlg
-        sta r0L
-        lda #>errDlg
-        sta r0H
-        jmp Dialog
-
-; Hex: A as two hex digits into errCode.
-Hex:    pha
-        lsr a
-        lsr a
-        lsr a
-        lsr a
-        jsr @d
-        sta errCode
-        pla
-        and #$0F
-        jsr @d
-        sta errCode+1
-        rts
-@d:     cmp #10
-        bcc :+
-        adc #'A' - '0' - 10 - 1
-:       adc #'0'
-        rts
-
-ReplaceText:    .byte BOLDON, "Replace it?", PLAINTEXT, 0
 DeleteText:     .byte BOLDON, "Delete the selection?", PLAINTEXT, 0
 RenameText:     .byte BOLDON, "Rename to:", PLAINTEXT, 0
 NewText:        .byte BOLDON, "New folder:", PLAINTEXT, 0
@@ -507,15 +377,6 @@ nameDlg:
         .byte OK, DBI_X_0, DBI_Y_2
         .byte CANCEL, DBI_X_2, DBI_Y_2
         .byte 0
-errDlg: .byte DEF_DB_POS | 1
-        .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
-        .word entryName
-        .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
-        .word errText
-        .byte OK, DBI_X_2, DBI_Y_2
-        .byte 0
-errText:        .byte "failed: error $"
-errCode:        .byte "00", 0
 
         .segment "BSS"
 
@@ -525,5 +386,3 @@ clipMode:       .res 1
 clipCount:      .res 2
 n:              .res 2
 some:           .res 1
-flags:          .res 1
-done:           .res 2         ; Delete: the entries done so far

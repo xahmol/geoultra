@@ -238,7 +238,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 76-79 | `FE_NTP` (enginentp.s; from GeoUTime, GeoUTools, and ntp2ultimate by MaxPlap): the exchange, SETTINGS.INI read, the date and the clocks, its `[time]` lines (`fehome.inc` shared with module 75) |
 | 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |
 
-Still to come (estimate): Ultimate to Ultimate copies.
+Still to come (estimate): Ultimate to Ultimate copies, and moving folders (on the Ultimate and between GEOS folders: `FE_MOVE` answers `FE_IS_FOLDER` for a folder, `FE_RENAME` takes a name, not a path; the desktop copies and deletes on GEOS drives, and refuses on the Ultimate until then, 2026-11-11).
 
 Shared code goes into includes assembled into each module that needs it
 (`engine.inc`: constants, the work area, the REU layout; `fereu.inc`:
