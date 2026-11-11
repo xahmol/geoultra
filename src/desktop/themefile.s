@@ -10,6 +10,7 @@
 ;   menubar=clock, dark grey on light grey
 ;   ...
 ;   status=on, white on grey
+;   toolbar=dark grey on light grey
 ;
 ; ThemeFiles (at the desktop's start) makes THEMES with the six built-in
 ; themes and Custom (a copy of GeoUltra) when it is not there, and lists
@@ -36,7 +37,7 @@ Ov_ThemeUse = ThemeUse
 Ov_PalReset = PalReset
 
 FO_READ_        = FO_READ
-LINES_N         = 13            ; the file's lines after name=
+LINES_N         = 14            ; the file's lines after name=
 NAME_MAX        = 15            ; a theme's name (and its zero)
 THEMES_MAX      = 8             ; files the view menu lists
 FILE_MAX        = 1024          ; a theme file's bytes, at most (Write's
@@ -960,18 +961,19 @@ K_SELECTION:    .byte "selection", 0
 K_CURSOR:       .byte "cursor", 0
 K_SCROLLBAR:    .byte "scrollbar", 0
 K_STATUS:       .byte "status", 0
+K_TOOLBAR:      .byte "toolbar", 0
 KeyLo:  .byte <K_BORDER, <K_DESK, <K_MENUBAR, <K_SIDEBAR, <K_HEADINGS
         .byte <K_TITLEBAR, <K_ROWS, <K_COLUMNS, <K_ICONS, <K_SELECTION
-        .byte <K_CURSOR, <K_SCROLLBAR, <K_STATUS, <PalKey
+        .byte <K_CURSOR, <K_SCROLLBAR, <K_STATUS, <K_TOOLBAR, <PalKey
 KeyHi:  .byte >K_BORDER, >K_DESK, >K_MENUBAR, >K_SIDEBAR, >K_HEADINGS
         .byte >K_TITLEBAR, >K_ROWS, >K_COLUMNS, >K_ICONS, >K_SELECTION
-        .byte >K_CURSOR, >K_SCROLLBAR, >K_STATUS, >PalKey
-LStyle: .byte NO_STYLE, NO_STYLE, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+        .byte >K_CURSOR, >K_SCROLLBAR, >K_STATUS, >K_TOOLBAR, >PalKey
+LStyle: .byte NO_STYLE, NO_STYLE, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, NO_STYLE
 LColKind:
         .byte CK_PAPER, CK_PAIR, CK_PAIR, CK_PAIR, CK_PAIR, CK_PAIR
-        .byte CK_NONE, CK_NONE, CK_INK, CK_PAIR, CK_INK, CK_NONE, CK_PAIR
+        .byte CK_NONE, CK_NONE, CK_INK, CK_PAIR, CK_INK, CK_NONE, CK_PAIR, CK_PAIR
 LColour:                        ; (offsets from tMenu: 11 the border ...)
-        .byte 11, 12, 13, 14, 15, 16, 0, 0, 17, 18, 19, 0, 20
+        .byte 11, 12, 13, 14, 15, 16, 0, 0, 17, 18, 19, 0, 20, 21
 W_NONE:         .byte 0
 W_MENUBAR:      .byte "plain", 0, "clock", 0, 0
 W_SIDEBAR:      .byte "wide", 0, "narrow", 0, 0
@@ -985,10 +987,10 @@ W_CURSOR:       .byte "dotted", 0, "mark", 0, "underline", 0, 0
 W_SCROLLBAR:    .byte "arrows", 0, "thin", 0, 0
 WordsLo:        .byte <W_NONE, <W_NONE, <W_MENUBAR, <W_SIDEBAR, <W_HEADINGS
                 .byte <W_TITLEBAR, <W_ROWS, <W_COLUMNS, <W_ONOFF, <W_SELECTION
-                .byte <W_CURSOR, <W_SCROLLBAR, <W_ONOFF
+                .byte <W_CURSOR, <W_SCROLLBAR, <W_ONOFF, <W_NONE
 WordsHi:        .byte >W_NONE, >W_NONE, >W_MENUBAR, >W_SIDEBAR, >W_HEADINGS
                 .byte >W_TITLEBAR, >W_ROWS, >W_COLUMNS, >W_ONOFF, >W_SELECTION
-                .byte >W_CURSOR, >W_SCROLLBAR, >W_ONOFF
+                .byte >W_CURSOR, >W_SCROLLBAR, >W_ONOFF, >W_NONE
 RowsVal:        .byte 9, 8
 ColourNames:    .byte "black", 0, "white", 0, "red", 0, "cyan", 0, "purple", 0
                 .byte "green", 0, "blue", 0, "yellow", 0, "orange", 0, "brown", 0
@@ -1030,3 +1032,5 @@ lineAt:         .res 2
 tmpX:           .res 1
 hasPal:         .res 1         ; 1: the theme in use carries a palette
 custom:         .res 1         ; 1: writing Custom (its palette note)
+        .assert LColour - LColKind = LINES_N, error, "LColKind: a kind per line"
+        .assert WordsHi - WordsLo = LINES_N, error, "WordsLo: a list per line"

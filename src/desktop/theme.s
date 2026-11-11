@@ -16,7 +16,7 @@
 
         .export ThemeSet, ThemeByName, ThemeName, themeNo, ThemePal
         .export tMenu, tSide, tHead, tTitle, tRows, tCols, tIcons, tSel, tCur, tScroll, tStatus
-        .export cDesk, cMenu, cSide, cHead, cTitle, cSel, cStatus, cHeadP
+        .export cDesk, cMenu, cSide, cHead, cTitle, cSel, cStatus, cHeadP, cToolbar
         .export cIconP, cSideIconP, cAccentP, cSideAccentP
         .export sideW, listL, ejectCard, pathY, listTop, rowH, rows, bottom
         .export trackTop, trackBot, trackH, iconCard, nameX, sideTx, stY0, stY1
@@ -31,7 +31,7 @@ CPU_PORT        = $01
 RAM_IO          = $35
 VIC_BORDER      = $D020
 THM_STYLES      = 11            ; style bytes, then colour bytes
-THM_LEN         = 21
+THM_LEN         = 22
 STRIP_TOP_PAD   = 9             ; an arrow box's height (8) and a line
 
         .segment "ZEROPAGE"
@@ -881,28 +881,28 @@ MonHi:          .repeat 12, i
 ; bar, frame), cursor (dotted, mark, underline), scrollbar (arrows,
 ; thin), status (on, off). Colours: border, desk, menu, side, heading,
 ; title (ink << 4 | paper), icon (ink), select (pair), accent (ink),
-; status (pair). C64 colours: 0 black, 1 white, 3 cyan, 4 purple, 6
+; status (pair), toolbar (pair; the menu bar's, as the mock-up has it). C64 colours: 0 black, 1 white, 3 cyan, 4 purple, 6
 ; blue, 7 yellow, 8 orange, 11 dark grey, 12 grey, 14 light blue, 15
 ; light grey.
 Themes:
         ; GeoUltra (the default)
         .byte 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0
-        .byte 15, $BF, $BF, $BF, $1E, $BF, 6, $14, 6, $1C
+        .byte 15, $BF, $BF, $BF, $1E, $BF, 6, $14, 6, $1C, $BF
         ; GEOS classic
         .byte 0, 0, 2, 0, 9, 0, 1, 0, 0, 0, 1
-        .byte 1, $61, $61, $61, $61, $61, 6, $16, 6, $63
+        .byte 1, $61, $61, $61, $61, $61, 6, $16, 6, $63, $61
         ; Flat
         .byte 1, 0, 1, 1, 8, 0, 0, 1, 1, 1, 0
-        .byte 15, $BF, $0F, $BF, $16, $1B, 11, $1E, 8, $1B
+        .byte 15, $BF, $0F, $BF, $16, $1B, 11, $1E, 8, $1B, $0F
         ; Detailed
         .byte 1, 1, 0, 1, 9, 1, 0, 0, 2, 0, 0
-        .byte 15, $0F, $0F, $BF, $1B, $1B, 11, $16, 6, $1C
+        .byte 15, $0F, $0F, $BF, $1B, $1B, 11, $16, 6, $1C, $0F
         ; Night
         .byte 1, 0, 1, 2, 8, 0, 0, 1, 1, 1, 0
-        .byte 11, $FB, $10, $F0, $03, $3B, 3, $07, 7, $30
+        .byte 11, $FB, $10, $F0, $03, $3B, 3, $07, 7, $30, $10
         ; Mono
         .byte 0, 0, 3, 2, 9, 0, 1, 2, 2, 1, 1
-        .byte 1, $01, $01, $01, $01, $01, 0, $01, 0, $01
+        .byte 1, $01, $01, $01, $01, $01, 0, $01, 0, $01, $01
 
 ; The built-in themes' palettes (user, 2026-11-11: GeoUltra keeps the
 ; C64's own, the others tuned freely in RGB): 16 RRGGBB triplets in
@@ -969,6 +969,7 @@ cIcon:          .byte 0
 cSel:           .byte 0
 cAccent:        .byte 0
 cStatus:        .byte 0
+cToolbar:       .byte 0         ; (the toolbar's row: ink << 4 | paper)
 
 ; Derived (Derive)
 themeNo:        .byte 0

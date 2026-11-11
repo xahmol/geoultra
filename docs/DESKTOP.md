@@ -435,9 +435,8 @@ colour is a property of an element, by name:
   without an Ultimate), top, end, view (list and detailed in turn; icons
   with the icon view), refresh, new folder, select all (all but ".."),
   copy, paste, delete; back and forward with T2 (below). Info (with
-  the context menu) does nothing yet. The toolbar has the menu bar's
-  colours for now; its own theme colour line is a step of its own (it
-  changes the theme files). Tests: d5.py (the buttons pressed, the three
+  the context menu) does nothing yet. Its colours: the theme's
+  `toolbar=` line (below). Tests: d5.py (the buttons pressed, the three
   heights through the menu's routine).
   Found on the way: the boot ROM started each REU transfer by storing
   `RAM_ALL` (`$30`) at `$FF00`, inside the input driver once an earlier
@@ -456,8 +455,15 @@ colour is a property of an element, by name:
   the same folder twice in a row is recorded once (a check value per
   slot: the path's length and byte sum). Tests: d5.py (back, forward,
   the end of the history, a new place after back, a full ring).
+- **The toolbar's theme colour (2026-11-11):** a `toolbar=ink on
+  paper` line in the theme files (after `status=`) and a colour byte in
+  the theme record (22 bytes now). The built-in themes give it their
+  menu bar's colours, as the mock-up has it; theme files written before
+  lack the line and keep the built-in colour (a file needs only the
+  lines it changes). Tests: d7u64.py (Custom.ini with `toolbar=white on
+  red`: the record and the toolbar's row in the colour matrix).
 - **Next, in this order:** the context menu and Info (the right
-  button's U64 check first); the toolbar's own theme colour; the icon
+  button's U64 check first); the icon
   view; the theme editor (settings tool, phase 3).
 
 ## Open bugs

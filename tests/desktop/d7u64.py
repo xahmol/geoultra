@@ -86,7 +86,10 @@ def main():
         key = line.split("=")[0]
         line = {"desk": "desk=white on blue", "sidebar": "sidebar=narrow, light grey on blue",
                 "headings": "headings=band, white on red"}.get(key, line)
-        edited.append(line)
+        if key != "toolbar":                            # (added below)
+            edited.append(line)
+    edited.insert(len(edited) - 1 if edited and edited[-1] == "" else len(edited),
+                  "toolbar=white on red")                    # (the line is new)
     try:
         ftp.storbinary("STOR " + HOME + "SETTINGS.INI", io.BytesIO(b"[desktop]\r\ntheme=Night\r\n"))
         u.boot()
@@ -119,6 +122,9 @@ def main():
         check("sidebar=narrow", u.read(k["tSide"], 1)[0], 1)
         check("headings=band, white on red", (u.read(k["tHead"], 1)[0], u.read(k["cHead"], 1)[0]), (1, 0x12))
         check("its band painted red, the text white (swapped)", u.read(k["cHeadP"], 1)[0], 0x21)
+        check("toolbar=white on red", u.read(k["cToolbar"], 1)[0], 0x12)
+        check("the toolbar's row painted so (colour matrix row 2)",
+              set(u.read(0x8C00 + 2 * 40, 40)), {0x12})
     finally:
         ftp.storbinary("STOR " + HOME + "THEMES/Custom.ini", io.BytesIO(custom))
         ftp.delete(HOME + "SETTINGS.INI")

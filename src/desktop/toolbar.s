@@ -15,7 +15,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import tbMode, topY, cMenu, Paint, px0, px1, py0, py1, pcol
+        .import tbMode, topY, cToolbar, Paint, px0, px1, py0, py1, pcol
         .import Up, Into, ListKey, ListEnd, SelAll, ListRead, ListDraw
         .import View, viewMode, NewFolder, Copy, Paste, Delete, FileEngine
         .import HistBack, HistForward
@@ -23,8 +23,8 @@
 
         .segment "CODE"
 
-; ToolPaint: the toolbar's cells in the menu bar's colours (theme.s's
-; PaintAll; a theme colour of its own is a later step).
+; ToolPaint: the toolbar's cells in the theme's toolbar colours
+; (cToolbar; theme.s's PaintAll).
 ToolPaint:
         lda topY
         lsr a
@@ -41,7 +41,7 @@ ToolPaint:
         sta px0
         lda #39
         sta px1
-        lda cMenu
+        lda cToolbar
         sta pcol
         jmp Paint
 @end:   rts
