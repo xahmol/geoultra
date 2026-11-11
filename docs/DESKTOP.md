@@ -387,8 +387,29 @@ colour is a property of an element, by name:
   gush's `cp -r` and the desktop (an include), one retry in `FE_NTP`
   after a lost reply, and copies within one Ultimate folder made
   possible (through a temporary folder; a new engine module).
-- **Next:** the eighth sweep with those extras; then the icon view;
-  the theme editor (settings tool, phase 3).
+- **Toolbar and right-click (user, 2026-11-11):** a separate toolbar
+  row under the menu bar, the full screen width (over the sidebar too;
+  the sidebar and the list start one row lower; the path line keeps its
+  full width): 16 x 8 framed buttons (an 8 x 8 icon in a 2-card frame
+  with a shadow, own drawings) in groups: navigation (back, forward,
+  up, root, home), list position (top, end), view and refresh (the
+  view toggle list / icons / detailed, refresh), actions (new folder,
+  info, select all, copy, paste, delete). A theme element like the
+  title bar: styles framed, flat, off (off gives the row back), ink on
+  paper colours, a line in the theme files. Back and forward keep a
+  short history of the folders visited. The right mouse button opens a
+  context menu at the pointer with what fits the entry (open, copy,
+  cut, paste, rename, delete, info, favourite, mount or eject); the
+  1351 driver reports the right button in a GeoUltra variable (GEOS
+  applications see nothing new); to be checked first on the U64 (its
+  USB mouse as a 1351). Info: a dialog with the entry's size, type,
+  date and GEOS class. Room: the desktop's core has about 150 bytes
+  left, so the INI file handling (side.s) moves to an overlay first;
+  the context menu and Info are an overlay.
+- **Next, in this order:** the eighth sweep with its extras (and the
+  INI code into an overlay); the right button in the driver, checked on
+  the U64; the toolbar with the history; the context menu and Info; the
+  icon view; the theme editor (settings tool, phase 3).
 
 ## Open bugs
 
