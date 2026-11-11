@@ -143,7 +143,10 @@ Loader: ldx #0                  ; the splash: CPU copies from the ROM
         sta reuCmd
         lda #RAM_ALL
         sta CPU_PORT
-        sta REU_TRIGGER         ; the write starts the DMA
+        lda REU_TRIGGER         ; the write starts the DMA: the byte that
+        sta REU_TRIGGER         ; is there written back (it is the input
+                                ; driver's, $FE80-: storing A put $30 into
+                                ; it once an earlier image had loaded it)
         lda #RAM_IO
         sta CPU_PORT
         txa
