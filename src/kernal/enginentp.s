@@ -33,6 +33,7 @@ TEXT            = diskBlkBuf    ; SETTINGS.INI's first 511 bytes (modules
 TEXT_MAX        = $1FF          ; 77, 79; fileHeader after diskBlkBuf)
         .assert fileHeader = diskBlkBuf + $100, error, "TEXT: two pages"
 
+NTP_ROUNDS      = 2             ; the exchange tried this often
         .segment "OVL76"
         .scope Mod76
 
@@ -50,7 +51,8 @@ Clocks: jsr OvlCall             ; (module 78: the date, the clocks; a stub)
 ; ntp=. Its time, with [time] offset= (seconds from UTC, signed; else
 ; 0), to GEOS's clock, the CIA's time of day and the Ultimate's clock.
 ; X = 0, or FILE_NOT_FOUND (no server: none given, none set), or the
-; Ultimate's error (no network, no answer: FE_ULTIMATE).
+; Ultimate's error (no network, no answer: FE_ULTIMATE). Tried twice:
+; one lost reply happens (gu64.py, 2026-11-11).
 OvNtp:  jsr Settings
         txa
         bne @end
@@ -71,8 +73,10 @@ OvNtp:  jsr Settings
 @which: ldx #FILE_NOT_FOUND
         lda nHost
         beq @end
-        jsr Connect
-        bne @end
+        lda #NTP_ROUNDS         ; the whole exchange, once more after a
+@round: pha                     ; failed one (a lost reply; the count on the
+        jsr Connect             ; stack: module variables are reloaded after
+        bne @noSock             ; each nested engine call)
         jsr Ask
         bne @close
         jsr Answer
@@ -84,8 +88,15 @@ OvNtp:  jsr Settings
         jsr UNoData
         jsr UExec
         ldx feM
-        bne @end
-        jmp Clocks
+@noSock:
+        pla
+        cpx #0
+        beq @ok
+        sec
+        sbc #1
+        bne @round
+        rts
+@ok:    jmp Clocks
 @end:   rts
 
 ; Connect: a UDP socket to nHost, port NTP_PORT: nSock. Z set when it
