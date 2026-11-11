@@ -3,13 +3,10 @@
 ; "Yes", "Yes to all", "No". Overlay 2 with the actions (actions.s calls
 ; PasteItem and DeleteItem per clipboard or selected entry).
 ;
-; The walk follows gush's cp -r (src/gush/tree.s, own code of the same
-; project): a folder's listing is read whole into the application's REU
-; (bank TREE_BANK, one TREE_SLOT slot per entry, each level after the one
-; above it) before anything in it is touched, so no listing stays open
-; (the engine has few handles) and folders can nest TREE_DEPTH deep. One
-; walk for both jobs: copying (each folder made first, then its
-; entries) and deleting (the entries first, then the folder). A move of
+; The walk is src/inc/treewalk.inc, shared with gush's cp -r: each
+; folder's listing read whole into the application's REU (bank
+; TREE_BANK) before anything in it is touched, TREE_DEPTH deep; copying
+; makes each folder first, deleting removes the entries first. A move of
 ; a folder tries FE_MOVE first (one step on the same drive), else copies
 ; and deletes. A file that exists is replaced only after "Yes" (or "Yes
 ; to all" earlier in the same paste); a folder that is not empty is
@@ -32,9 +29,7 @@ TREE_BANK       = 7             ; (1-4 the entry table, 5 the clipboard,
                                 ; 6 the overlays)
 TREE_SLOT       = 64            ; the kind, the name (61 bytes), tracks
 TREE_DEPTH      = 8
-TREE_SLOTS      = $10000 / TREE_SLOT
-OP_COPY         = 0             ; Walk's jobs
-OP_DELETE       = 1
+TREE_TOO_MANY   = FE_BAD_PATH   ; (treewalk.inc: a level too long)
 ANS_ALL         = 20            ; Ask3: YES, NO or this
 VERB_DELETING   = 2             ; (list.s, ProgressStart)
 FILE_EXISTS     = $40           ; the engine's errors
@@ -176,110 +171,36 @@ DeleteItem:
         lda #OP_DELETE
         jmp WalkTop
 
-; Stop: C set (the walk stops; already said). Here, not between
-; WalkTop and Walk: WalkTop runs on into Walk.
-Stop:   sec
-        rts
-
 ; TreeCopy: the folder at tSrc copied as tDst (made the same size when
 ; it is a 1581 partition). C set: stop.
 TreeCopy:
         jsr StatSrc
-        jsr Tracks
+        jsr WalkTracks
         sta mkTracks
         lda #OP_COPY
-; WalkTop: the walk A (OP_COPY, OP_DELETE) from tSrc (and tDst) down.
-WalkTop:
-        sta op
-        lda #0
-        sta depth
-        sta lvSlotLo
-        sta lvSlotHi
-; Walk: one level: tDst made (copying), tSrc's listing read, each entry
-; copied or deleted (folders one level deeper), tSrc removed afterwards
-; (deleting). C set: stop.
-Walk:   lda op
-        bne :+
-        jsr MakeDst
-        bcs Stop
-:       jsr List
-        bcs Stop
-        ldx depth
-        lda #0
-        sta lvIndex,x
-@entry: ldx depth
-        lda lvIndex,x
-        cmp lvCount,x
-        bcs @end
-        jsr Fetch
-        ldx depth
-        lda srcLen
-        sta lvSrcLen,x
-        lda dstLen
-        sta lvDstLen,x
-        jsr Extend              ; the paths one part longer
-        bcs @fail
-        lda entry
-        cmp #K_FOLDER
-        beq @sub
-        cmp #K_UDIR
-        beq @sub
-        jsr OneFile
-        bcs @fail
-        jmp @next
-@sub:   ldx depth
-        cpx #TREE_DEPTH - 1
-        bcc :+
-        ldx #FE_BAD_PATH        ; (deeper than the walk goes)
-        jmp Fail
-:       lda lvSlotLo,x          ; the next level's slots after this one's
-        clc
-        adc lvCount,x
-        sta lvSlotLo + 1,x
-        lda lvSlotHi,x
-        adc #0
-        sta lvSlotHi + 1,x
-        lda entry + TREE_SLOT - 1
-        sta mkTracks
-        inc depth
-        jsr Walk
-        php
-        dec depth
-        plp
-        bcs @fail
-@next:  ldx depth               ; the paths as they were, the next entry
-        ldy lvSrcLen,x
-        sty srcLen
-        lda #0
-        sta tSrc,y
-        ldy lvDstLen,x
-        sty dstLen
-        sta tDst,y
-        inc lvIndex,x
-        jmp @entry
-@end:   lda op                  ; deleting: the folder itself, now empty
-        beq @ok
-        lda #<tSrc
-        sta r0L
-        lda #>tSrc
-        sta r0H
-        lda #FE_RMDIR
-        jsr FileEngine
-        txa
-        beq @ok
+        jmp WalkTop
+
+; The walk (src/inc/treewalk.inc, shared with gush's cp -r) and its
+; hooks: WalkFile does a file (OneFile); WalkFail and WalkSkip show the
+; error about the entry (entryName: tSrc's last part) and stop the walk.
+WalkFile = OneFile
+WalkFailDst:
+WalkFail:
+WalkSkip:
+        stx errX                ; (LastToEntry uses X)
         jsr LastToEntry
+        ldx errX
         jmp Fail
-@ok:    clc
-        rts
-@fail:  sec
-        rts
+
+        .include "treewalk.inc"
 
 ; OneFile: the file at tSrc copied to tDst (copying) or deleted.
 OneFile:
         lda op
         bne @del
         jmp OneCopy
-@del:   jsr Counted
+@del:   jsr LastToEntry         ; ("Deleting 5: name")
+        jsr Counted
         lda #<tSrc
         sta r0L
         lda #>tSrc
@@ -363,147 +284,6 @@ Counted:
         lda #VERB_DELETING
         jmp ProgressStart
 
-; MakeDst: tDst made (FE_MKDIR; there already: used). C set: stop.
-MakeDst:
-        lda #<tDst
-        sta r0L
-        lda #>tDst
-        sta r0H
-        lda mkTracks            ; (a 1581 partition: the source's size)
-        sta r2L
-        lda #FE_MKDIR
-        jsr FileEngine
-        txa
-        beq @ok
-        cpx #FILE_EXISTS
-        beq @ok
-        jmp Fail
-@ok:    clc
-        rts
-
-; List: tSrc's entries (kind, name, tracks) into this level's slots;
-; lvCount their number (at most 255). C set: stop.
-List:   lda #<tSrc
-        sta r0L
-        lda #>tSrc
-        sta r0H
-        lda #FE_OPENDIR
-        jsr FileEngine
-        sta handle              ; (A: the handle; txa would lose it)
-        txa
-        beq :+
-        jsr LastToEntry
-        jmp Fail
-:       ldx depth
-        sta lvCount,x
-@read:  lda #<tinfo
-        sta r1L
-        lda #>tinfo
-        sta r1H
-        lda #<(entry + 1)
-        sta r2L
-        lda #>(entry + 1)
-        sta r2H
-        lda #0
-        sta r3L
-        sta r3H
-        ldy handle
-        lda #FE_READDIR
-        jsr FileEngine
-        txa
-        bne @close
-        ldx depth               ; room: 255 here, the bank's slots in all
-        lda lvCount,x
-        cmp #255
-        bcs @full
-        clc
-        adc lvSlotLo,x
-        lda lvSlotHi,x
-        adc #0
-        cmp #>TREE_SLOTS
-        bcs @full
-        lda tinfo + FI_KIND
-        sta entry
-        jsr Tracks
-        sta entry + TREE_SLOT - 1
-        ldx depth
-        lda lvCount,x
-        jsr SlotRegs
-        jsr StashRAM
-        ldx depth
-        inc lvCount,x
-        jmp @read
-@close: ldy handle
-        lda #FE_CLOSE
-        jsr FileEngine
-        clc
-        rts
-@full:  ldy handle              ; (too many entries: the walk stops)
-        lda #FE_CLOSE
-        jsr FileEngine
-        jsr LastToEntry
-        ldx #FE_BAD_PATH
-        jmp Fail
-
-; Fetch: this level's entry lvIndex into entry.
-Fetch:  ldx depth
-        lda lvIndex,x
-        jsr SlotRegs
-        jmp FetchRAM
-
-; SlotRegs: r0-r3L for slot A of this level (lvSlotLo/Hi + A) <-> entry
-; (slot * 64: the slot number's bytes shifted right by two).
-SlotRegs:
-        ldx depth
-        clc
-        adc lvSlotLo,x
-        sta r1H
-        lda lvSlotHi,x
-        adc #0
-        sta r2L
-        lda #0
-        lsr r2L
-        ror r1H
-        ror a
-        lsr r2L
-        ror r1H
-        ror a
-        sta r1L
-        lda #<entry
-        sta r0L
-        lda #>entry
-        sta r0H
-        lda #TREE_SLOT
-        sta r2L
-        lda #0
-        sta r2H
-        lda #TREE_BANK
-        sta r3L
-        rts
-        .assert TREE_SLOT = 64, error, "SlotRegs: 64 bytes a slot"
-
-; Tracks: A = tinfo's size in blocks / 40 (a 1581 partition's tracks;
-; at most 255). Destroys X, Y.
-Tracks: lda tinfo + FI_SIZE
-        sta r2L
-        lda tinfo + FI_SIZE + 1
-        sta r2H
-        ldx #0
-@sub:   lda r2L
-        sec
-        sbc #40
-        tay
-        lda r2H
-        sbc #0
-        bcc @end
-        sta r2H
-        sty r2L
-        inx
-        bne @sub
-        dex
-@end:   txa
-        rts
-
 ; StatSrc: FE_STAT of tSrc into tinfo. C set: a folder (or a drive).
 StatSrc:
         lda #<tSrc
@@ -560,22 +340,6 @@ Paths:  lda #<tSrc
         sta r1H
         rts
 
-; Extend: "/" and entry's name after tSrc and (copying) tDst; entryName
-; = the name. C set: a path too long (the error shown).
-Extend: ldy #$FF                ; entryName = the name
-@n:     iny
-        lda entry + 1,y
-        sta entryName,y
-        bne @n
-        jsr NameToSrc
-        bcs @end
-        lda op
-        bne @end                ; (deleting: no target)
-        jmp NameToDst
-@end:   rts
-
-; NameToSrc, NameToDst: "/" (unless the path ends in one) and entryName
-; after tSrc / tDst. C set: too long (FE_BAD_PATH shown).
 NameToSrc:
         ldx srcLen
         ldy #0
@@ -686,6 +450,7 @@ EverythingText: .byte BOLDON, "Delete everything in it?", PLAINTEXT, 0
 ; nothing else fetches an overlay meanwhile).
 op:             .byte 0
 mode:           .byte 0         ; 0 copy, 1 move
+errX:           .byte 0         ; WalkFail: the error meanwhile
 depth:          .byte 0
 handle:         .byte 0
 flags:          .byte 0
