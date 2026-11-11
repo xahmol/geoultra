@@ -24,7 +24,8 @@
         .export ListRead, ListDraw, ListPress, ListKey, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot, ListEnd, SelAll, row, RowEntry
-        .import IconsForget, DrawCell, CellAt, step
+        .import IconsForget, DrawCell, CellAt, step, tbMode
+        .export Frame
         .import topY, titleEnd
         .export ProgressStart, ProgressBlock, progN, progTotal, SelCount
         .import Busy, Idle
@@ -206,11 +207,15 @@ ListDraw:
         ldy pathY
         jsr Text
         jsr Header
-        lda pathY
-        clc
+        lda pathY               ; (to the frame's right edge: the scroll
+        clc                     ; strip starts below it)
         adc #2
         sta r11L
         jsr ListSpan
+        lda #<SCREEN_RIGHT
+        sta r4L
+        lda #>SCREEN_RIGHT
+        sta r4H
         lda #$FF
         jsr HorizontalLine
         lda #0
@@ -225,7 +230,55 @@ ListDraw:
         inc row
         bne @row
 @strip: jsr Strip
-        jmp Status
+        jsr Status
+        jmp Frame
+
+; Frame (ListDraw; desktop.s, SideRedraw): the lines that box the
+; desktop's areas (the user, 2026-11-11): the screen's left and right
+; edges from under the menu bar's line to the bottom, the line above the
+; status line, and the line under the toolbar (none when it is off: the
+; menu bar's line is the top then). With the sidebar's line they frame
+; the toolbar, the sidebar and the list. Drawn again after each of them,
+; as their clearing takes the lines away. Destroys A, X, Y, r3, r4, r11.
+Frame:  lda #0
+        jsr Edge
+        lda #<SCREEN_RIGHT
+        ldx #>SCREEN_RIGHT
+        jsr Edge2
+        lda bottom
+        jsr Across
+        lda tbMode
+        cmp #TB_OFF
+        beq @end
+        ldx topY
+        dex
+        txa
+        jmp Across
+@end:   rts
+
+; Edge, Edge2: a line at x A (Edge2: A/X) from under the menu bar's line
+; to bottom.
+Edge:   ldx #0
+Edge2:  sta r4L
+        stx r4H
+        lda #MENU_BOTTOM + 1
+        sta r3L
+        lda bottom
+        sta r3H
+        lda #$FF
+        jmp VerticalLine
+
+; Across: a line across the screen at y A.
+Across: sta r11L
+        lda #0
+        sta r3L
+        sta r3H
+        lda #<SCREEN_RIGHT
+        sta r4L
+        lda #>SCREEN_RIGHT
+        sta r4H
+        lda #$FF
+        jmp HorizontalLine
 
 ; DrawEntry: row `row` drawn as a row of the list or a cell of the
 ; icon view (iconview.s).

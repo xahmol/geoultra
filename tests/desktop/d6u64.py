@@ -3,9 +3,10 @@
 A favourite (SETTINGS.INI, made for the test and deleted again) takes the
 desktop to /usb0/geoultra/test; the cursor walks to geopub.d64 (its name
 read back through the clipboard, C=C) and RETURN opens the mount dialog;
-drive C's button (a free letter) mounts it: the list at /c, FE_MOUNTINFO's
-path, the sidebar's line for C with its eject icon. Then a click on that
-icon and YES unmount it: C gone from the sidebar. The images are test
+drive D's button (a free letter; C holds the system DNP for testing)
+mounts it: the list at /d, FE_MOUNTINFO's
+path, the sidebar's line for D with its eject icon. Then a click on that
+icon and YES unmount it: D gone from the sidebar. The images are test
 copies (/USB0/GEOULTRA/test); MOUNTS.INI is put back as it was at the
 end. Screens: build/harness/gush/d6u64-*.png.
 Usage: tests/desktop/d6u64.py [build/geoultra64.crt]
@@ -103,7 +104,7 @@ def main():
         code = open(os.path.join(ROOT, "build", "desktop", "desktop.bin"), "rb").read()[:32]
         check("the cold start ends in GeoUltra's desktop", bytes(u.read(0x0400, 32)), code)
         letters, tops = side()
-        check("drive C free at the start", b"c" in letters, False)
+        check("drive D free at the start", b"d" in letters, False)
         press(20, tops[letters.index(b"\x80")] + 4)     # the favourite
         check("the favourite: the test folder", path().lower(), "/usb0/geoultra/test")
         key(KEY_HOME)
@@ -118,21 +119,21 @@ def main():
         check("geopub.d64 under the cursor", found, True)
         key(CR, 8)                                      # the mount dialog
         shot("dialog")
-        press(DLG_X + 8 + 20, DLG_Y + 20 + 2 * 18 + 8, 25)   # drive C's button
+        press(DLG_X + 8 + 20, DLG_Y + 20 + 3 * 18 + 8, 25)   # drive D's button
         shot("mounted")
-        check("mounted on C: the list at /c", path(), "/c")
+        check("mounted on D: the list at /d", path(), "/d")
         info = 0x5F00
-        x = fe(u, k, 23, s0="/c", r1=info)[0]               # FE_MOUNTINFO
+        x = fe(u, k, 23, s0="/d", r1=info)[0]               # FE_MOUNTINFO
         got = bytes(u.read(info, 64)).split(b"\0")[0].decode("latin1").lower()
-        check("FE_MOUNTINFO /c: the test image", (x, got), (0, "/usb0/geoultra/test/" + IMAGE))
+        check("FE_MOUNTINFO /d: the test image", (x, got), (0, "/usb0/geoultra/test/" + IMAGE))
         letters, tops = side()
-        check("the sidebar's line for C", b"c" in letters, True)
-        press(67, tops[letters.index(b"c")] + 4, 4)     # its eject icon
+        check("the sidebar's line for D", b"d" in letters, True)
+        press(67, tops[letters.index(b"d")] + 4, 4)     # its eject icon
         shot("eject")
         press(DLG_X + 8 + 20, DLG_Y + 72 + 8, 20)       # YES
         letters, tops = side()
-        check("unmounted: C gone from the sidebar", b"c" in letters, False)
-        check("FE_MOUNTINFO /c: nothing", fe(u, k, 23, s0="/c", r1=info)[0], 13)
+        check("unmounted: D gone from the sidebar", b"d" in letters, False)
+        check("FE_MOUNTINFO /d: nothing", fe(u, k, 23, s0="/d", r1=info)[0], 13)
         shot("after")
     finally:
         ftp.delete(HOME + "SETTINGS.INI")

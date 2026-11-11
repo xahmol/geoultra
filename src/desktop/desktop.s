@@ -17,7 +17,7 @@
         .import Copy, Cut, Paste, Delete, Rename, NewFolder, path
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
-        .import HistAdd, BigInit
+        .import HistAdd, BigInit, Frame
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
         .import ThemeUse, themeNames, themeCount, curName, hasPal, PalReset
@@ -411,7 +411,8 @@ SideRedraw:
         sta r4L
         dec r4L
         jsr Rectangle
-        jmp Sidebar
+        jsr Sidebar
+        jmp Frame               ; (list.s: the lines round the areas)
 
 ; SideArrows: the open drive's arrow moved to the line of the drive or
 ; root the list is in now (open.s, Into; side.s): column 0 of each
@@ -768,8 +769,8 @@ DiskName:
 @end:   rts
 
 ; --- Menus --------------------------------------------------------------
-; Every submenu is a DYN_SUB_MENU: its routine paints GEOS's colours
-; under it (MenuNeutral) before GEOS draws it.
+; Every submenu is a DYN_SUB_MENU: its routine paints the menu bar's
+; colours under it (MenuNeutral) before GEOS draws it.
 
 ; GeosMenu: "GeoUltra info" and the desk accessories (FindFTypes; drive
 ; E's added by the kernal) into geosMenu. r0 = it.
@@ -836,8 +837,8 @@ MenuBottom:
         adc #MENU_BOTTOM
         rts
 
-; FileMenu, ViewMenu, DiskMenu: r0 = their tables, GEOS's colours under
-; them. ViewMenu marks the theme in use with "*".
+; FileMenu, ViewMenu, DiskMenu: r0 = their tables, the menu bar's
+; colours under them. ViewMenu marks the theme in use with "*".
 FileMenu:
         lda #<fileMenu
         ldx #>fileMenu
@@ -915,7 +916,8 @@ ClockMenu:
         lda #<clockMenu
         ldx #>clockMenu
 ; Marks: the menu at A/X (three items): its items' first character "*"
-; for item Y, " " for the others; then r0 = it, GEOS's colours under it.
+; for item Y, " " for the others; then r0 = it, the menu bar's colours
+; under it.
 Marks:  sta r0L
         stx r0H
         sty at

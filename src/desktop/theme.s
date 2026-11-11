@@ -5,9 +5,9 @@
 ; the layout the drawing routines use (sidebar width, title bar, row
 ; height, list top, rows, status line, scroll track). Colours: every
 ; cell the desktop paints goes to the colour matrix and to a shadow copy
-; (Paint); dialogs (Dialog), the desktop's menus (MenuNeutral, from their
-; DYN_SUB_MENU routines), desk accessories and programs (Neutral) get
-; GEOS's own colours, and Recover (RecoverVector) gives a rectangle back
+; (Paint); dialogs (Dialog) and the desktop's menus (MenuNeutral, from
+; their DYN_SUB_MENU routines) get the menu bar's colours, desk
+; accessories and programs (Neutral) GEOS's own, and Recover (RecoverVector) gives a rectangle back
 ; its bitmap and its shadow colours. The clock in the menu bar is drawn
 ; by ClockDraw, kept current by ClockTick (appMain). Own design and code.
 
@@ -413,13 +413,15 @@ Neutral:
         plp
         rts
 
-; NeutralCells: cells px0-px1 by py0-py1 in GEOS's colours (the matrix
-; only: the shadow keeps the desktop's).
-NeutralCells:
+; MenuCells: cells px0-px1 by py0-py1 in the menu bar's colours (the
+; matrix only: the shadow keeps the desktop's), under a menu or one of
+; the desktop's dialogs (the user, 2026-11-11: themed, with any palette;
+; desk accessories and programs keep GEOS's, Neutral).
+MenuCells:
         ldx py0
 @row:   jsr RowAt
         ldy px0
-@cell:  lda screencolors
+@cell:  lda cMenu
         sta (cp),y
         cpy px1
         iny
@@ -446,8 +448,8 @@ ShadowCells:
         bcc @row
         rts
 
-; Dialog: DoDlgBox (r0 = the dialog) with GEOS's colours under it (a
-; DEF_DB_POS box and its shadow); the desktop's back afterwards. r0L =
+; Dialog: DoDlgBox (r0 = the dialog) with the menu bar's colours under
+; it (a DEF_DB_POS box and its shadow); the desktop's back afterwards. r0L =
 ; DoDlgBox's result, as from DoDlgBox.
 Dialog: lda #DLG_X0
         sta px0
@@ -457,7 +459,7 @@ Dialog: lda #DLG_X0
         sta py0
         lda #DLG_Y1
         sta py1
-        jsr NeutralCells
+        jsr MenuCells
         jsr BusyPause           ; (icons.s: the arrow while it is open)
         jsr DoDlgBox
         jsr BusyResume
@@ -476,7 +478,7 @@ DLG_Y0          = 32 / 8
 DLG_Y1          = (127 + 8) / 8
 
 ; MenuNeutral: the menu table at r0 (a DYN_SUB_MENU routine's result)
-; gets GEOS's colours under it before GEOS draws it; Recover gives the
+; gets the menu bar's colours under it before GEOS draws it; Recover gives the
 ; desktop's back when it closes. r0 kept.
 MenuNeutral:
         ldy #0                  ; top, bottom, left (word), right (word)
@@ -502,7 +504,7 @@ MenuNeutral:
         lsr a
         lsr a
         sta px1
-        jmp NeutralCells
+        jmp MenuCells
 
 ; Recover (RecoverVector): RecoverRectangle, then the rectangle's cells
 ; back from the shadow (menus and dialogs closing). r2-r4 as GEOS

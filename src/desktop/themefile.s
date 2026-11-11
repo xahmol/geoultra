@@ -1037,7 +1037,9 @@ ThemePal:
 ; bar, frame), cursor (dotted, mark, underline), scrollbar (arrows,
 ; thin), status (on, off). Colours: border, desk, menu, side, heading,
 ; title (ink << 4 | paper), icon (ink), select (pair), accent (ink),
-; status (pair), toolbar (pair; the menu bar's, as the mock-up has it). C64 colours: 0 black, 1 white, 3 cyan, 4 purple, 6
+; status (pair), toolbar (pair; the menu bar's, as the mock-up has it).
+; The border: the menu bar's paper (the user, 2026-11-11: the bar with
+; the date, not the list's background). C64 colours: 0 black, 1 white, 3 cyan, 4 purple, 6
 ; blue, 7 yellow, 8 orange, 11 dark grey, 12 grey, 14 light blue, 15
 ; light grey.
 Themes:
@@ -1055,7 +1057,7 @@ Themes:
         .byte 15, $0F, $0F, $BF, $1B, $1B, 11, $16, 6, $1C, $0F
         ; Night
         .byte 1, 0, 1, 2, 8, 0, 0, 1, 1, 1, 0
-        .byte 11, $FB, $10, $F0, $03, $3B, 3, $07, 7, $30, $10
+        .byte 0, $FB, $10, $F0, $03, $3B, 3, $07, 7, $30, $10
         ; Mono
         .byte 0, 0, 3, 2, 9, 0, 1, 2, 2, 1, 1
         .byte 1, $01, $01, $01, $01, $01, 0, $01, 0, $01, $01

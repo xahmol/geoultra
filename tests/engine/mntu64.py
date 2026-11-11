@@ -97,28 +97,28 @@ class Test:
 
     def body(self, saved):
         fe, check, info = self.fe, self.check, self.info
-        check("FE_MOUNTINFO /a, /c", (info("/a"), info("/c")),
+        check("FE_MOUNTINFO /a, /d", (info("/a"), info("/d")),
               ((0, 3, TEST + "/GEOS64.D81"), (DEV_NOT_FOUND,)))
-        check("errors: drive E, a file that is no image, /c empty",
-              (fe(FE_MOUNT, s0="/e", s1=TEST + "/" + D64)[0], fe(FE_MOUNT, s0="/c", s1=INI)[0],
-               fe(FE_UMOUNT, s0="/c")[0]), (BAD_PATH, NOT_SUPPORTED, DEV_NOT_FOUND))
-        x = fe(FE_MOUNT, s0="/c", s1="/usb0/geoultra/test/" + D64, timeout=120)[0]
-        check("FE_MOUNT %s into /c" % D64, (x, info("/c")), (0, (0, 1, "/usb0/geoultra/test/" + D64)))
+        check("errors: drive E, a file that is no image, /d empty",
+              (fe(FE_MOUNT, s0="/e", s1=TEST + "/" + D64)[0], fe(FE_MOUNT, s0="/d", s1=INI)[0],
+               fe(FE_UMOUNT, s0="/d")[0]), (BAD_PATH, NOT_SUPPORTED, DEV_NOT_FOUND))
+        x = fe(FE_MOUNT, s0="/d", s1="/usb0/geoultra/test/" + D64, timeout=120)[0]
+        check("FE_MOUNT %s into /d" % D64, (x, info("/d")), (0, (0, 1, "/usb0/geoultra/test/" + D64)))
         img = Image(os.path.join(OUT, "mnt-save-" + D64))
         names = sorted(e[3:19].split(b"\xA0")[0].decode("latin1") for e in img.entries())
-        check("/c lists the image's files", self.listing("/c"), names)
+        check("/d lists the image's files", self.listing("/d"), names)
         check("MOUNTS.INI written anew", self.ini(),
-              saved[INI] + b"C=/usb0/geoultra/test/" + D64.encode() + b"\r\n")
-        x, h, _ = fe(FE_OPEN, s0="/c/MNTTEST", r2=FO_WRITE)
+              saved[INI] + b"D=/usb0/geoultra/test/" + D64.encode() + b"\r\n")
+        x, h, _ = fe(FE_OPEN, s0="/d/MNTTEST", r2=FO_WRITE)
         self.u.write(DATA, b"mounted\r")
         fe(FE_WRITE, y=h, r1=DATA, r2=8)
         fe(FE_CLOSE, y=h)
-        check("a file written on /c", (x, fe(FE_STAT, s0="/c/MNTTEST", r1=INFO)[0]), (0, 0))
-        check("FE_UMOUNT /c", (fe(FE_UMOUNT, s0="/c", timeout=120)[0], info("/c")), (0, (DEV_NOT_FOUND,)))
+        check("a file written on /d", (x, fe(FE_STAT, s0="/d/MNTTEST", r1=INFO)[0]), (0, 0))
+        check("FE_UMOUNT /d", (fe(FE_UMOUNT, s0="/d", timeout=120)[0], info("/d")), (0, (DEV_NOT_FOUND,)))
         img = Image(self.get(TEST + "/" + D64, "mnt-after.d64"))
         e = img.entry("MNTTEST")
         check("written back into the image", e is not None and img.contents(e)[0], b"mounted\r")
-        check("MOUNTS.INI without /c again", self.ini(), saved[INI])
+        check("MOUNTS.INI without /d again", self.ini(), saved[INI])
         x = fe(FE_MOUNT, s0="/d", s1=TEST + "/" + DNP, timeout=300)[0]
         i = info("/d")
         check("FE_MOUNT a DNP into /d (native)", (x, i[:2]), (0, (0, 4)))
@@ -152,15 +152,15 @@ class Test:
         x = fe(FE_MKIMG, s0=MK + "/new.dnp", r1=DATA, r2=4, timeout=120)[0]
         check("FE_MKIMG new.dnp (4 tracks)", (x, os.path.getsize(self.get("/USB0/GEOULTRA/test/mk/new.dnp",
                                                                          "mk-ours.dnp"))), (0, 4 * 65536))
-        x = fe(FE_MOUNT, s0="/c", s1=MK + "/new.dnp", timeout=120)[0]
-        df = fe(FE_DF, s0="/c")
-        check("mounted: native, empty, %d blocks free" % (4 * 256 - 35), (x, info("/c")[:2], self.listing("/c"),
+        x = fe(FE_MOUNT, s0="/d", s1=MK + "/new.dnp", timeout=120)[0]
+        df = fe(FE_DF, s0="/d")
+        check("mounted: native, empty, %d blocks free" % (4 * 256 - 35), (x, info("/d")[:2], self.listing("/d"),
               df[0], df[2][1]), (0, (0, 4), [], 0, 4 * 256 - 35))
-        x, h, _ = fe(FE_OPEN, s0="/c/NEWFILE", r2=FO_WRITE)
+        x, h, _ = fe(FE_OPEN, s0="/d/NEWFILE", r2=FO_WRITE)
         self.u.write(DATA, b"native\r")                 # ($6000: as above; the deskTop
         fe(FE_WRITE, y=h, r1=DATA, r2=7)                # changes bytes further on)
         fe(FE_CLOSE, y=h)
-        check("a file written there, unmounted", (x, fe(FE_UMOUNT, s0="/c", timeout=120)[0]), (0, 0))
+        check("a file written there, unmounted", (x, fe(FE_UMOUNT, s0="/d", timeout=120)[0]), (0, 0))
         img = open(self.get("/USB0/GEOULTRA/test/mk/new.dnp", "mk-after.dnp"), "rb").read()
         check("its bytes in the DNP", b"native\r" in img, True)
         check("FE_DELETE of the images (files, though the firmware enters them)",
