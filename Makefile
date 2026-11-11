@@ -307,12 +307,18 @@ smoke-vice: $(SMOKE)/gusmoke.crt
 		-limitcycles 4000000 -exitscreenshot $(SMOKE)/vice.png; true
 
 # The cartridge where the user starts it from (user, 2026-11-11).
-deploy: check-deploy build/geoultra64.crt build/sysdrive.dnp
+# Drive C for testing (the user, 2026-11-11): the user's own GEOS software
+# sorted into folders, private/geoultra-apps.dnp from private/apps.toml
+# (tools/mkappsdnp.py; private, never committed), as a native REU drive:
+# a copy in the test folder (MOUNTS.INI C=). A running session writes its
+# own copy back over it, so a new one counts from the next boot.
+APPS_DNP := $(if $(wildcard private/apps.toml),private/geoultra-apps.dnp)
+private/geoultra-apps.dnp: private/apps.toml tools/mkappsdnp.py
+	$(PYTHON) tools/mkappsdnp.py private/apps.toml
+
+deploy: check-deploy build/geoultra64.crt $(APPS_DNP)
 	curl -s --ftp-create-dirs -T build/geoultra64.crt ftp://$(ULTIP1)$(DEPLOYDIR)
-	# drive C for testing (the user, 2026-11-11): the system DNP as a native
-	# REU drive, a copy in the test folder (MOUNTS.INI C=); a running session
-	# writes its own copy back over it, so it counts from the next boot.
-	curl -s -T build/sysdrive-plain.dnp ftp://$(ULTIP1)/USB0/GEOULTRA/test/sysdrive.dnp
+	$(if $(APPS_DNP),curl -s -T $(APPS_DNP) ftp://$(ULTIP1)/USB0/GEOULTRA/test/geoultra-apps.dnp)
 
 check-deploy:
 	@curl -s --connect-timeout 3 $(REST)/info >/dev/null 2>&1 || \

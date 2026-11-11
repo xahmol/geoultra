@@ -489,9 +489,12 @@ colour is a property of an element, by name:
   (the Ultimate's listings give none; it showed 0), the Info dialog will
   show the real size. A user manual, docs/DESKTOP_MANUAL.md, gets a
   section on what works on which kind of drive.
-- **Drive C for testing (the user, 2026-11-11):** the system DNP as a
-  native REU drive (MOUNTS.INI `C=`, a copy in the test folder, made
-  by `make deploy`); tests that mount use D.
+- **Drive C for testing (the user, 2026-11-11):** the user's own GEOS
+  software sorted into folders, `private/geoultra-apps.dnp` from
+  `private/apps.toml` (tools/mkappsdnp.py; private, never committed or
+  published), as a native REU drive for tests, screenshots and videos
+  (MOUNTS.INI `C=`, a copy in the test folder, rebuilt and uploaded by
+  `make deploy`); tests that mount use D.
 - **Next, in this order:** the context menu and Info (the right
   button's U64 check first); the icon
   view; the theme editor (settings tool, phase 3).
