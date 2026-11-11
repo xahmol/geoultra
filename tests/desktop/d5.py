@@ -141,6 +141,21 @@ def main():
         side(0x80)
         check("a click on the first: there", here(), "/b/dir1")
         g.png("desktop-d5")
+        # The clock's longest text (12-hour, "Wed 11 Nov 2026  12:42 pm",
+        # 25 characters and its zero) stays in clockText: before the eighth
+        # sweep it ran 2 bytes into curName, the theme in use.
+        name = bytes(v.mem_get(k["curName"], k["curName"] + 14))
+        v.mem_set(0x8516, bytes([26, 11, 11, 12, 42]))     # year .. minutes
+        v.mem_set(k["clockMode"], b"\x01")
+        tramp = harness.TRAMPOLINE
+        cd = k["ClockDraw"]
+        v.mem_set(tramp, bytes([0x78, 0x20, cd & 0xFF, cd >> 8, 0x4C, (tramp + 4) & 0xFF, (tramp + 4) >> 8]))
+        v.regs_set({"PC": tramp})
+        v.resume()
+        settle(2)
+        text = bytes(v.mem_get(k["clockText"], k["clockText"] + 25)).split(b"\0")[0]
+        check("the 12-hour clock's longest text", text, b"Wed 11 Nov 2026  12:42 pm")
+        check("the theme's name untouched by it", bytes(v.mem_get(k["curName"], k["curName"] + 14)), name)
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)
