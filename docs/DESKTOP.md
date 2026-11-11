@@ -378,7 +378,17 @@ colour is a property of an element, by name:
   name). Tests: tests/desktop/d8.py (VICE: a tree copied, pasted again
   with Yes to all, deleted, moved), d8u64.py (U64: a tree copied on
   the Ultimate with its bytes checked, deleted, a folder moved).
-- **Next:** the icon view; the theme editor (settings tool, phase 3).
+- **Decisions (user, 2026-11-11):** the icon view shows the GEOS file
+  headers' own 24 x 21 icons, read only for the entries on the screen
+  and kept in an REU cache (Ultimate files and folders: the generic
+  icons); a scrolling grid (about 6 x 4, the name under each icon, the
+  same scroll strip, keys and selection as the list). Before it, the
+  eighth code sweep, with three extras: one shared folder walk for
+  gush's `cp -r` and the desktop (an include), one retry in `FE_NTP`
+  after a lost reply, and copies within one Ultimate folder made
+  possible (through a temporary folder; a new engine module).
+- **Next:** the eighth sweep with those extras; then the icon view;
+  the theme editor (settings tool, phase 3).
 
 ## Open bugs
 
