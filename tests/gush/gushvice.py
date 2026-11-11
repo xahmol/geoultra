@@ -35,8 +35,9 @@ def labels():
 
 
 class Gush:
-    def __init__(self, name, port, files=()):
-        """A D81 with gush and FILES (paths of .cvt or plain files)."""
+    def __init__(self, name, port, files=(), extra=()):
+        """A D81 with gush and FILES (paths of .cvt or plain files); EXTRA:
+        more VICE arguments."""
         os.makedirs(OUT, exist_ok=True)
         self.ok = True
         disk = os.path.join(OUT, name + ".d81")
@@ -57,7 +58,7 @@ class Gush:
         cmd = [harness.VICE, "-default", "+sound", "-sounddev", "dummy", "-warp", "-binarymonitor",
                "-binarymonitoraddress", "127.0.0.1:%d" % port,
                "-cartcrt", os.path.join(ROOT, "build", "geoultra64.crt"),
-               "-reu", "-reusize", "16384", "-reuimage", apprun.REU_IMAGE, "-reuimagerw"]
+               "-reu", "-reusize", "16384", "-reuimage", apprun.REU_IMAGE, "-reuimagerw"] + list(extra)
         self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self.v = Vice(port=port)
 

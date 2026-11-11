@@ -19,6 +19,9 @@ from gushvice import Gush, OUT, harness  # noqa: E402
 KEY_DOWN, KEY_UP, KEY_HOME, KEY_LEFT, CR, DEL = 17, 16, 18, 8, 13, 29
 C = 0x80
 YES_XY = (90, 110)              # the dialog's left icon (DBI_X_0, DBI_Y_2)
+JOY_IDLE, JOY_UP = 0xFF, 0xFE   # port 1's lines (active low; all eight, or the
+                                # keyboard scan sees a joystick): the 1351's
+                                # right button is "up"
 
 
 def main():
@@ -36,9 +39,11 @@ def main():
     for line in open(os.path.join(ROOT, "build", "kernal64.lbl")):
         p = line.split()
         kern.setdefault(p[2].lstrip("."), int(p[1], 16))
-    g = Gush("desktop-d5", 6641, files)
+    g = Gush("desktop-d5", 6641, files, extra=["-controlport1device", "37"])
     check = g.check
     v = g.v
+    v.joyport_set(0, JOY_IDLE)                          # (the simulation: lines
+                                                        # as set, so idle first)
 
     def word(name):
         return int.from_bytes(bytes(v.mem_get(k[name], k[name] + 1)), "little")
@@ -156,6 +161,25 @@ def main():
         text = bytes(v.mem_get(k["clockText"], k["clockText"] + 25)).split(b"\0")[0]
         check("the 12-hour clock's longest text", text, b"Wed 11 Nov 2026  12:42 pm")
         check("the theme's name untouched by it", bytes(v.mem_get(k["curName"], k["curName"] + 14)), name)
+        # The right mouse button (the 1351's "up" line on port 1) reaches
+        # only guMouse2 ($C0E6): bit 7 clear while held, bit 6 at a press.
+        # A running desktop needed: the pointer's driver runs in its IRQ.
+        v.mem_set(tramp, bytes([0x58, 0x4C, (tramp + 1) & 0xFF, (tramp + 1) >> 8]))
+        v.regs_set({"PC": tramp})                           # (cli, a loop: the
+                                                            # IRQ runs the driver)
+        left = v.mem_get(0x8505, 0x8505)[0]
+        v.mem_set(0xC0E6, b"\x80")                        # (a press seen at the
+                                                            # boot, lines not set yet)
+        check("guMouse2 at rest", v.mem_get(0xC0E6, 0xC0E6)[0], 0x80)
+        v.joyport_set(0, JOY_UP)
+        v.resume()
+        settle(1)
+        check("right button held: bits 7 clear, 6 set", v.mem_get(0xC0E6, 0xC0E6)[0], 0x40)
+        v.joyport_set(0, JOY_IDLE)
+        v.resume()
+        settle(1)
+        check("released: bit 7 set, the press kept", v.mem_get(0xC0E6, 0xC0E6)[0], 0xC0)
+        check("GEOS's button untouched", v.mem_get(0x8505, 0x8505)[0], left)
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

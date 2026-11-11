@@ -3,6 +3,7 @@
 
 ; GEOS jump table (and GeoUltra's extension table)
 guExtTable      = $C0E4         ; GeoUltra: the extension table
+guMouse2        = $C0E6         ; GeoUltra: the right mouse button (info.s)
 Rectangle       = $C124
 FrameRectangle  = $C127
 InvertRectangle = $C12A

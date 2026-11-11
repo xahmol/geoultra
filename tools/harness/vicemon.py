@@ -182,6 +182,13 @@ class Vice:
         name = path.encode()
         self.request(CMD_UNDUMP, bytes([len(name)]) + name)
 
+    def joyport_set(self, port, value):
+        """Joystick port `port` (0: port 1) set to `value`: the lines'
+        levels, active low (bit 0 up, 1 down, 2 left, 3 right, 4 fire;
+        $FF all released: bits 5-7 low would read as keys held). Needs `-controlportNdevice 37` (VICE's joyport
+        I/O simulation)."""
+        self.request(0xA2, struct.pack("<HH", port, value))
+
     def resume(self):
         self.request(CMD_EXIT)
 

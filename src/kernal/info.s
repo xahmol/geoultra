@@ -5,7 +5,7 @@
         .include "hw.inc"
 
         .import ExtTable
-        .export Trap, sysFlgCopy, BootGEOS, basicBuf
+        .export Trap, sysFlgCopy, BootGEOS, basicBuf, guMouse2
 
         .segment "INFO"
         .org $C000                      ; fixed addresses in this block
@@ -35,6 +35,9 @@ basicBuf:       .res 46                 ; ToBASIC: command, saved bytes
 guSignature:    .byte "GU"              ; $C0E0: GeoUltra present
 guVersion:      .byte 0, 1              ; $C0E2: major, minor
 guExtTable:     .word ExtTable          ; $C0E4: extension jump table (folders.s)
+guMouse2:       .byte $80               ; $C0E6: the right mouse button (the 1351
+                                        ; driver): bit 7 clear while held, bit 6
+                                        ; set at each press (the reader clears it)
                 .res $C0F1 - *, 0
 trapAddress:    .word 0                 ; $C0F1: entry hit by Trap
         .reloc

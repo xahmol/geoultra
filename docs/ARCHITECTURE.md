@@ -135,6 +135,18 @@ and redraws the parent. The interrupt level clamps the pointer to the
 mouse limits and sets `faultData` (the 1351 driver does not clamp);
 MainLoop calls `mouseFaultVec` while `faultData` is set and clears it.
 
+The right mouse button (2026-11-11, for the desktop's context menu):
+the 1351 driver reads it from port 1's "up" line (CIA 1 port B bit 0,
+read with no keyboard column driven, as the left button) and reports it
+only in GeoUltra's info block: `guMouse2` (`$C0E6`), bit 7 clear while
+it is held (as `mouseData`), bit 6 set at each press until the reader
+clears it (a click between two reads is kept). GEOS applications see
+nothing new; with another input driver loaded the byte stays `$80`.
+Tests: d5.py in VICE (port 1 as VICE's joyport I/O simulation,
+`-controlport1device 37`, all eight lines high when idle or the
+keyboard scan sees a joystick); tests/desktop/mouse2u64.py on the U64
+by hand.
+
 ## Icons
 
 As GEOS 2.0 (`src/kernal/icon.s`): `DoIcons` draws the enabled icons with
