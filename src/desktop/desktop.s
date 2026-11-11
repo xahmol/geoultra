@@ -19,7 +19,7 @@
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd
         .import Eject, HasImage, EjectIcon, IconUp
-        .import ThemeSet, ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
+        .import ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
         .import ThemeUse, themeNames, themeCount, curName, hasPal, PalReset
         .import PaintAll, PaintSide, Neutral, Dialog, MenuNeutral, Recover
         .import ClockDraw, ClockTick, TextWidth, boldOn, clockMode, viewMode
@@ -64,8 +64,8 @@ Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
         sta RecoverVector       ; under them, colours too (theme.s)
         lda #>Recover
         sta RecoverVector+1
-        lda #0                  ; the default theme, then SETTINGS.INI's
-        jsr ThemeSet
+        jsr Derive              ; the default theme (theme.s's record starts
+                                ; as GeoUltra's), then SETTINGS.INI's
         jsr SideLoad            ; favourites, recent documents, the theme
         jsr Draw
         jsr HistAdd             ; (the first place in the history)

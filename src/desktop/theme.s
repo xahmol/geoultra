@@ -14,7 +14,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .export ThemeSet, ThemeByName, ThemeName, themeNo, ThemePal
+        .export ThemeName, themeNo, tCols
         .export tMenu, tSide, tHead, tTitle, tRows, tCols, tIcons, tSel, tCur, tScroll, tStatus
         .export cDesk, cMenu, cSide, cHead, cTitle, cSel, cStatus, cHeadP, cToolbar
         .export cIconP, cSideIconP, cAccentP, cSideAccentP
@@ -30,8 +30,6 @@
 CPU_PORT        = $01
 RAM_IO          = $35
 VIC_BORDER      = $D020
-THM_STYLES      = 11            ; style bytes, then colour bytes
-THM_LEN         = 22
 STRIP_TOP_PAD   = 9             ; an arrow box's height (8) and a line
 
         .segment "ZEROPAGE"
@@ -40,32 +38,6 @@ cp:             .res 2          ; a colour matrix row (Paint)
 shp:            .res 2          ; its shadow row
 
         .segment "CODE"
-
-; ThemeSet: built-in theme A (0 to THEMES_N - 1) into the record, its
-; layout derived, the border set. Destroys A, X, Y.
-ThemeSet:
-        sta themeNo
-        tax                     ; its bytes: A * THM_LEN
-        lda #0
-@mul:   dex
-        bmi @copy
-        clc
-        adc #THM_LEN
-        bne @mul
-@copy:  tax
-        ldy #0
-@b:     lda Themes,x
-        sta tMenu,y
-        inx
-        iny
-        cpy #THM_LEN
-        bcc @b
-        lda #VIEW_LIST          ; the theme's view (its columns style)
-        ldx tCols
-        beq :+
-        lda #VIEW_DETAILED
-:       sta viewMode
-        jmp Derive
 
 ; Derive: the layout from the record; a colour bar selection forces
 ; 8-pixel rows (9-pixel rows cross the 8 x 8 cells).
@@ -243,63 +215,6 @@ OnPaper:
         asl a
         asl a
         ora tmp
-        rts
-
-; ThemeByName: the built-in theme whose name is at r0 (any case, ended
-; by 0, CR or LF) set; C set when there is none.
-ThemeByName:
-        lda #0
-        sta at
-@theme: lda at
-        cmp #THEMES_N
-        bcs @none
-        jsr ThemeName           ; r1 = its name
-        ldy #0
-@ch:    lda (r1),y
-        beq @end
-        jsr Lower
-        sta tmp
-        lda (r0),y
-        jsr Lower
-        cmp tmp
-        bne @next
-        iny
-        bne @ch
-@end:   lda (r0),y              ; (the given name must end here too)
-        beq @yes
-        cmp #CR
-        beq @yes
-        cmp #10
-        beq @yes
-@next:  inc at
-        bne @theme
-@none:  sec
-        rts
-@yes:   lda at
-        jsr ThemeSet
-        clc
-        rts
-
-; Lower: A in lower case (letters only).
-Lower:  cmp #'A'
-        bcc @end
-        cmp #'Z' + 1
-        bcs @end
-        ora #$20
-@end:   rts
-
-; ThemePal: r1 = built-in theme A's palette (48 bytes), C clear; C set
-; when it has none (GeoUltra: the C64's own). Destroys X.
-ThemePal:
-        tax
-        lda PalHi,x
-        beq @none
-        sta r1H
-        lda PalLo,x
-        sta r1L
-        clc
-        rts
-@none:  sec
         rts
 
 ; ThemeName: r1 = built-in theme A's name. Destroys X.
@@ -874,68 +789,6 @@ MonHi:          .repeat 12, i
                 .byte >(MonNames + 3 * i)
                 .endrepeat
 
-; The built-in themes (the mock-up, approved 2026-11-06). Styles:
-; menubar (plain, clock), sidebar (wide, narrow), headings (inverted,
-; band, underlined, plain), titlebar (stripes, solid, line, none), rows
-; (9, 8), columns (name, detailed), icons (on, off), selection (invert,
-; bar, frame), cursor (dotted, mark, underline), scrollbar (arrows,
-; thin), status (on, off). Colours: border, desk, menu, side, heading,
-; title (ink << 4 | paper), icon (ink), select (pair), accent (ink),
-; status (pair), toolbar (pair; the menu bar's, as the mock-up has it). C64 colours: 0 black, 1 white, 3 cyan, 4 purple, 6
-; blue, 7 yellow, 8 orange, 11 dark grey, 12 grey, 14 light blue, 15
-; light grey.
-Themes:
-        ; GeoUltra (the default)
-        .byte 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0
-        .byte 15, $BF, $BF, $BF, $1E, $BF, 6, $14, 6, $1C, $BF
-        ; GEOS classic
-        .byte 0, 0, 2, 0, 9, 0, 1, 0, 0, 0, 1
-        .byte 1, $61, $61, $61, $61, $61, 6, $16, 6, $63, $61
-        ; Flat
-        .byte 1, 0, 1, 1, 8, 0, 0, 1, 1, 1, 0
-        .byte 15, $BF, $0F, $BF, $16, $1B, 11, $1E, 8, $1B, $0F
-        ; Detailed
-        .byte 1, 1, 0, 1, 9, 1, 0, 0, 2, 0, 0
-        .byte 15, $0F, $0F, $BF, $1B, $1B, 11, $16, 6, $1C, $0F
-        ; Night
-        .byte 1, 0, 1, 2, 8, 0, 0, 1, 1, 1, 0
-        .byte 11, $FB, $10, $F0, $03, $3B, 3, $07, 7, $30, $10
-        ; Mono
-        .byte 0, 0, 3, 2, 9, 0, 1, 2, 2, 1, 1
-        .byte 1, $01, $01, $01, $01, $01, 0, $01, 0, $01, $01
-
-; The built-in themes' palettes (user, 2026-11-11: GeoUltra keeps the
-; C64's own, the others tuned freely in RGB): 16 RRGGBB triplets in
-; the C64 colours' order; each colour keeps its character, as programs
-; started from the desktop see the palette too.
-PalLo:  .byte 0, <Pal1, <Pal2, <Pal3, <Pal4, <Pal5
-PalHi:  .byte 0, >Pal1, >Pal2, >Pal3, >Pal4, >Pal5
-Pal1:   ; GEOS classic
-        .byte $00, $00, $00, $FF, $FF, $FF, $8D, $2F, $34, $A6, $DC, $E8
-        .byte $98, $35, $A4, $4C, $B4, $42, $2A, $3A, $9E, $EF, $EF, $5D
-        .byte $98, $4E, $20, $5B, $38, $00, $D1, $67, $6D, $4A, $4A, $4A
-        .byte $7B, $7B, $7B, $9F, $EF, $93, $7A, $86, $E0, $B2, $B2, $B2
-Pal2:   ; Flat
-        .byte $1A, $1C, $20, $FF, $FF, $FF, $8D, $2F, $34, $6A, $D4, $CD
-        .byte $98, $35, $A4, $4C, $B4, $42, $2F, $6F, $D6, $EF, $EF, $5D
-        .byte $F0, $8A, $24, $5B, $38, $00, $D1, $67, $6D, $3C, $40, $48
-        .byte $9A, $A0, $A8, $9F, $EF, $93, $5B, $9B, $F0, $E6, $E8, $EB
-Pal3:   ; Detailed
-        .byte $20, $22, $26, $FF, $FF, $FF, $8D, $2F, $34, $6A, $D4, $CD
-        .byte $98, $35, $A4, $4C, $B4, $42, $33, $66, $CC, $EF, $EF, $5D
-        .byte $98, $4E, $20, $5B, $38, $00, $D1, $67, $6D, $50, $55, $5C
-        .byte $8A, $90, $98, $9F, $EF, $93, $6F, $95, $E0, $DC, $DF, $E3
-Pal4:   ; Night
-        .byte $12, $15, $1A, $E8, $EC, $F2, $8D, $2F, $34, $4F, $C7, $C2
-        .byte $98, $35, $A4, $4C, $B4, $42, $2C, $29, $B1, $F2, $C9, $4C
-        .byte $98, $4E, $20, $5B, $38, $00, $D1, $67, $6D, $23, $28, $30
-        .byte $6B, $72, $80, $9F, $EF, $93, $6D, $6A, $EF, $C5, $CA, $D3
-Pal5:   ; Mono
-        .byte $10, $10, $10, $FA, $FA, $F5, $8D, $2F, $34, $6A, $D4, $CD
-        .byte $98, $35, $A4, $4C, $B4, $42, $2C, $29, $B1, $EF, $EF, $5D
-        .byte $98, $4E, $20, $5B, $38, $00, $D1, $67, $6D, $3A, $3A, $3A
-        .byte $8C, $8C, $8C, $9F, $EF, $93, $6D, $6A, $EF, $D0, $D0, $D0
-
 Name0:  .byte "GeoUltra", 0
 Name1:  .byte "GEOS classic", 0
 Name2:  .byte "Flat", 0
@@ -947,29 +800,30 @@ NameHi: .byte >Name0, >Name1, >Name2, >Name3, >Name4, >Name5
 
         .segment "DATA"
 
-; The theme record (THM_LEN bytes, in Themes' order)
-tMenu:          .byte 0
+; The theme record (THM_LEN bytes, in Themes' order; themefile.s): at
+; the start GeoUltra's, the built-in default
+tMenu:          .byte 1
 tSide:          .byte 0
 tHead:          .byte 0
 tTitle:         .byte 0
-tRows:          .byte 0
+tRows:          .byte 9
 tCols:          .byte 0
 tIcons:         .byte 0
 tSel:           .byte 0
 tCur:           .byte 0
 tScroll:        .byte 0
 tStatus:        .byte 0
-cBorder:        .byte 0
-cDesk:          .byte 0
-cMenu:          .byte 0
-cSide:          .byte 0
-cHead:          .byte 0
-cTitle:         .byte 0
-cIcon:          .byte 0
-cSel:           .byte 0
-cAccent:        .byte 0
-cStatus:        .byte 0
-cToolbar:       .byte 0         ; (the toolbar's row: ink << 4 | paper)
+cBorder:        .byte 15
+cDesk:          .byte $BF
+cMenu:          .byte $BF
+cSide:          .byte $BF
+cHead:          .byte $1E
+cTitle:         .byte $BF
+cIcon:          .byte 6
+cSel:           .byte $14
+cAccent:        .byte 6
+cStatus:        .byte $1C
+cToolbar:       .byte $BF         ; (the toolbar's row: ink << 4 | paper)
 
 ; Derived (Derive)
 themeNo:        .byte 0

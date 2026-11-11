@@ -120,6 +120,8 @@ ST_THIN         = 1             ; scrollbar: 0 arrows
 ST_OFF          = 1             ; icons, status: 0 on
 
 ; The view (theme.s viewMode) and the clock (clockMode)
+THM_STYLES      = 11            ; a theme record: style bytes, then colour
+THM_LEN         = 22            ; bytes (theme.s's record, themefile.s's)
 TB_TWO          = 0             ; the toolbar (tbMode): two lines, 16 px,
 TB_ONE          = 1             ; one line, 8 px,
 TB_OFF          = 2             ; none

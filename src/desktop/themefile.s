@@ -27,7 +27,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, ThemeSet, ThemeName, ThemeByName, ThemePal, Derive, tMenu
+        .import FileEngine, ThemeName, Derive, tMenu, themeNo
         .import tCols, viewMode
         .import text            ; (side.s's INI text: never in use at the same time)
         .export Ov_ThemeFiles, Ov_ThemeUse, Ov_PalReset   ; (overlay 1: ovl.s)
@@ -942,6 +942,156 @@ Append: sta r2L
         sta path,x
 @end:   stx pathEnd
         rts
+
+
+; --- The built-in themes (moved from theme.s on 2026-11-11: room in the
+; core; ThemeName and the names stay there for the menu's texts) ------
+
+; ThemeSet: built-in theme A (0 to THEMES_N - 1) into the record, its
+; layout derived, the border set. Destroys A, X, Y.
+ThemeSet:
+        sta themeNo
+        tax                     ; its bytes: A * THM_LEN
+        lda #0
+@mul:   dex
+        bmi @copy
+        clc
+        adc #THM_LEN
+        bne @mul
+@copy:  tax
+        ldy #0
+@b:     lda Themes,x
+        sta tMenu,y
+        inx
+        iny
+        cpy #THM_LEN
+        bcc @b
+        lda #VIEW_LIST          ; the theme's view (its columns style)
+        ldx tCols
+        beq :+
+        lda #VIEW_DETAILED
+:       sta viewMode
+        jmp Derive
+
+; ThemeByName: the built-in theme whose name is at r0 (any case, ended
+; by 0, CR or LF) set; C set when there is none.
+ThemeByName:
+        lda #0
+        sta at
+@theme: lda at
+        cmp #THEMES_N
+        bcs @none
+        jsr ThemeName           ; r1 = its name
+        ldy #0
+@ch:    lda (r1),y
+        beq @end
+        jsr Lower
+        sta tmp
+        lda (r0),y
+        jsr Lower
+        cmp tmp
+        bne @next
+        iny
+        bne @ch
+@end:   lda (r0),y              ; (the given name must end here too)
+        beq @yes
+        cmp #CR
+        beq @yes
+        cmp #10
+        beq @yes
+@next:  inc at
+        bne @theme
+@none:  sec
+        rts
+@yes:   lda at
+        jsr ThemeSet
+        clc
+        rts
+
+; Lower: A in lower case (letters only).
+Lower:  cmp #'A'
+        bcc @end
+        cmp #'Z' + 1
+        bcs @end
+        ora #$20
+@end:   rts
+
+; ThemePal: r1 = built-in theme A's palette (48 bytes), C clear; C set
+; when it has none (GeoUltra: the C64's own). Destroys X.
+ThemePal:
+        tax
+        lda PalHi,x
+        beq @none
+        sta r1H
+        lda PalLo,x
+        sta r1L
+        clc
+        rts
+@none:  sec
+        rts
+
+; The built-in themes (the mock-up, approved 2026-11-06). Styles:
+; menubar (plain, clock), sidebar (wide, narrow), headings (inverted,
+; band, underlined, plain), titlebar (stripes, solid, line, none), rows
+; (9, 8), columns (name, detailed), icons (on, off), selection (invert,
+; bar, frame), cursor (dotted, mark, underline), scrollbar (arrows,
+; thin), status (on, off). Colours: border, desk, menu, side, heading,
+; title (ink << 4 | paper), icon (ink), select (pair), accent (ink),
+; status (pair), toolbar (pair; the menu bar's, as the mock-up has it). C64 colours: 0 black, 1 white, 3 cyan, 4 purple, 6
+; blue, 7 yellow, 8 orange, 11 dark grey, 12 grey, 14 light blue, 15
+; light grey.
+Themes:
+        ; GeoUltra (the default)
+        .byte 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0
+        .byte 15, $BF, $BF, $BF, $1E, $BF, 6, $14, 6, $1C, $BF
+        ; GEOS classic
+        .byte 0, 0, 2, 0, 9, 0, 1, 0, 0, 0, 1
+        .byte 1, $61, $61, $61, $61, $61, 6, $16, 6, $63, $61
+        ; Flat
+        .byte 1, 0, 1, 1, 8, 0, 0, 1, 1, 1, 0
+        .byte 15, $BF, $0F, $BF, $16, $1B, 11, $1E, 8, $1B, $0F
+        ; Detailed
+        .byte 1, 1, 0, 1, 9, 1, 0, 0, 2, 0, 0
+        .byte 15, $0F, $0F, $BF, $1B, $1B, 11, $16, 6, $1C, $0F
+        ; Night
+        .byte 1, 0, 1, 2, 8, 0, 0, 1, 1, 1, 0
+        .byte 11, $FB, $10, $F0, $03, $3B, 3, $07, 7, $30, $10
+        ; Mono
+        .byte 0, 0, 3, 2, 9, 0, 1, 2, 2, 1, 1
+        .byte 1, $01, $01, $01, $01, $01, 0, $01, 0, $01, $01
+
+; The built-in themes' palettes (user, 2026-11-11: GeoUltra keeps the
+; C64's own, the others tuned freely in RGB): 16 RRGGBB triplets in
+; the C64 colours' order; each colour keeps its character, as programs
+; started from the desktop see the palette too.
+PalLo:  .byte 0, <Pal1, <Pal2, <Pal3, <Pal4, <Pal5
+PalHi:  .byte 0, >Pal1, >Pal2, >Pal3, >Pal4, >Pal5
+Pal1:   ; GEOS classic
+        .byte $00, $00, $00, $FF, $FF, $FF, $8D, $2F, $34, $A6, $DC, $E8
+        .byte $98, $35, $A4, $4C, $B4, $42, $2A, $3A, $9E, $EF, $EF, $5D
+        .byte $98, $4E, $20, $5B, $38, $00, $D1, $67, $6D, $4A, $4A, $4A
+        .byte $7B, $7B, $7B, $9F, $EF, $93, $7A, $86, $E0, $B2, $B2, $B2
+Pal2:   ; Flat
+        .byte $1A, $1C, $20, $FF, $FF, $FF, $8D, $2F, $34, $6A, $D4, $CD
+        .byte $98, $35, $A4, $4C, $B4, $42, $2F, $6F, $D6, $EF, $EF, $5D
+        .byte $F0, $8A, $24, $5B, $38, $00, $D1, $67, $6D, $3C, $40, $48
+        .byte $9A, $A0, $A8, $9F, $EF, $93, $5B, $9B, $F0, $E6, $E8, $EB
+Pal3:   ; Detailed
+        .byte $20, $22, $26, $FF, $FF, $FF, $8D, $2F, $34, $6A, $D4, $CD
+        .byte $98, $35, $A4, $4C, $B4, $42, $33, $66, $CC, $EF, $EF, $5D
+        .byte $98, $4E, $20, $5B, $38, $00, $D1, $67, $6D, $50, $55, $5C
+        .byte $8A, $90, $98, $9F, $EF, $93, $6F, $95, $E0, $DC, $DF, $E3
+Pal4:   ; Night
+        .byte $12, $15, $1A, $E8, $EC, $F2, $8D, $2F, $34, $4F, $C7, $C2
+        .byte $98, $35, $A4, $4C, $B4, $42, $2C, $29, $B1, $F2, $C9, $4C
+        .byte $98, $4E, $20, $5B, $38, $00, $D1, $67, $6D, $23, $28, $30
+        .byte $6B, $72, $80, $9F, $EF, $93, $6D, $6A, $EF, $C5, $CA, $D3
+Pal5:   ; Mono
+        .byte $10, $10, $10, $FA, $FA, $F5, $8D, $2F, $34, $6A, $D4, $CD
+        .byte $98, $35, $A4, $4C, $B4, $42, $2C, $29, $B1, $EF, $EF, $5D
+        .byte $98, $4E, $20, $5B, $38, $00, $D1, $67, $6D, $3A, $3A, $3A
+        .byte $8C, $8C, $8C, $9F, $EF, $93, $6D, $6A, $EF, $D0, $D0, $D0
+
 
 ; --- Tables ------------------------------------------------------------------
 
