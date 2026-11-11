@@ -185,6 +185,7 @@ Icons:  .byte $88, $00, $70, $8F, $81, $81, $81, $FF, $00     ; folder
         .byte $88, $00, $20, $30, $38, $30, $20, $00, $00     ; the open drive
         .byte $88, $00, $10, $38, $7C, $10, $10, $00, $00     ; scroll up
         .byte $88, $00, $10, $10, $7C, $38, $10, $00, $00     ; scroll down
+        .assert * - Icons < 256, error, "IconUp: A * ICON_BYTES in a byte"
 
         .segment "DATA"
 

@@ -1,11 +1,10 @@
 ; GeoUltra Desktop: overlays (docs/DESKTOP.md, "Structure"). The
 ; desktop is a VLIR file: record 0 the core at $0400-$4FFF, records 1
-; to 3 overlays at TRANS ($5000-$5FFF): 1 the theme files
+; to 4 overlays at TRANS ($5000-$5FFF): 1 the theme files
 ; (themefile.s), 2 the actions with the recursion into folders
 ; (actions.s, tree.s), 3 mounting (mount.s), 4 the INI files
-; (inifile.s). The
-; loader and OvlGo are ovlcore.inc (shared with gush); this file names
-; the bank and the stubs. Own code.
+; (inifile.s). The loader and OvlGo are ovlcore.inc (shared with gush);
+; this file names the bank and the stubs. Own code.
 
         .include "geos.inc"
         .include "desktop.inc"
