@@ -280,6 +280,42 @@ colour is a property of an element, by name:
   eject icon and YES, C gone; `MOUNTS.INI` put back). In VICE (no
   Ultimate files) the eject question is checked by hand.
 
+- **D7a (2026-11-11):** the look (theme.s, icons.s; the drawing in
+  desktop.s and list.s). The theme record (a style byte per element, a
+  colour byte per colour) and the six built-in themes of the mock-up;
+  the layout derived from it (sidebar 80 or 64 pixels, title bar,
+  9- or 8-pixel rows, list top, rows, status line, scroll track). The
+  elements: menu bar with the clock, sidebar headings (inverted, band,
+  underlined, plain), items with icons and the open drive's arrow,
+  the title bar (stripes, solid, line, none) with the folder's name,
+  the rows with 8 x 8 icons (BitmapUp: on a card, one in from the
+  list's edge), the selection (inverted, colour bar, frame), the
+  cursor (dotted, mark, underline), the scroll strip (arrows with a
+  grey thumb, or thin; arrows a line, the track a page), the status
+  line (entries, selection, free space). Colours: every cell the
+  desktop paints also goes to a shadow copy; dialogs (Dialog), the
+  desktop's menus (all DYN_SUB_MENU: MenuNeutral) and programs and
+  desk accessories (Neutral) get GEOS's own colours, RecoverVector
+  (Recover) gives back bitmap and colours. Changed with the user
+  while it was built (2026-11-11): the clock "Wed 11 Nov 2026  21:42",
+  12- or 24-hour or off (24 the default); the view menu with
+  submenus theme, view (list, icons, detailed; icons is a later step
+  and draws the list for now) and clock; the detailed view (size in KB
+  or MB, the date of GEOS files: "6 Nov 26"); **all UI text in
+  sentence case** ("Drives", "21 entries, 2 selected", "1 entry",
+  "B: 766 KB free"), not the mock-up's capitals. Settings in
+  SETTINGS.INI `[desktop]`: `theme=` a theme's name, `view=` list,
+  icons or detailed, `clock=` 24, 12 or off (side.s keeps the
+  section's other lines). Tests: test-desktop (VICE) with the layout
+  read from the desktop's memory; d6u64.py on the U64; the themes
+  checked by screenshots in VICE and on the U64.
+- **Next (user, 2026-11-11):** every theme a file in
+  `GEOULTRA/THEMES/` (the six built-in ones written there when
+  missing, so they can be edited), plus a custom theme that the theme
+  editor starts from one of them; the built-in table only as the
+  fallback (VICE, no Ultimate). Then the busy pointer and the copy
+  progress line.
+
 ## Open bugs
 
 - **geoFolder garbled when opened from the desktop (2026-11-06, the

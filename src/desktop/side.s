@@ -11,25 +11,30 @@
 ; Ultimate (VICE) the files cannot be read or written: the lists then
 ; live until the desktop starts again. A click on a favourite goes
 ; there, C=+click asks to remove it; a click on a recent document opens
-; it in its folder. Own code.
+; it in its folder. SETTINGS.INI's [desktop] lines are kept the same
+; way (a third list, not shown): `theme=` names the built-in theme in use
+; (theme.s), `clock=` 12 or 24 (DeskLoad, ThemeSave, ClockSave, step
+; D7a); other lines stay as they are. Own code.
 
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, SideText, SideLine, SideRedraw, rowY
+        .import FileEngine, SideRedraw, SideHeading, SideItem, SideGap, SideArrows
+        .import itemText, itemName, itemIcon, itemEject
+        .import ThemeByName, ThemeName, themeNo, clockMode, viewMode
         .import ListRead, ListDraw, Fetch, IsSelected, Modifiers, mods
         .import IsDotDot
         .import Into, Document, Ask
         .import path, entryInfo, entryName, cur, count
-        .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
+        .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd, ThemeSave, ClockSave, ViewSave
 
-SIDE_LAST       = 196           ; the lowest baseline in the sidebar
-LIST_MAX        = 4             ; favourites, recent documents
+LIST_MAX        = 4             ; favourites, recent documents, [desktop] lines
 PATH_LEN        = 63            ; a path and its zero (entryName's size:
                                 ; SidePress shows one in the question)
 TEXT_MAX        = 3072          ; an INI file's bytes, at most
 L_FAV           = 0             ; the lists ("which")
 L_REC           = 1
+L_DESK          = 2             ; SETTINGS.INI's [desktop] lines
 CODE_FAV        = $80           ; sidebar codes (desktop.s, Press):
 CODE_REC        = $90           ; the list's base + the index
 
@@ -40,12 +45,17 @@ sp:             .res 2          ; its section line ("[favourites]")
 
         .segment "CODE"
 
-; SideLoad: both lists from their files (empty when a file is not there
-; or cannot be read).
+; SideLoad: the lists from their files (empty when a file is not there
+; or cannot be read), then the theme SETTINGS.INI names.
 SideLoad:
         ldx #L_FAV
         jsr Load
         ldx #L_REC
+        jsr Load
+        ldx #L_DESK
+        jsr Load
+        jmp DeskLoad
+
 ; Load: list X from its file's section.
 Load:   jsr Setup
         lda #0
@@ -635,9 +645,9 @@ Store:  ldy #$FF
 ; --- The sidebar ---------------------------------------------------------------
 
 ; SideLists (desktop.s, Sidebar): "FAVOURITES" and "RECENT", each with a
-; line per path (its last part shown), when there are any, under the
-; lines drawn so far (rowY: the last one's baseline); lines that would
-; pass SIDE_LAST left out.
+; line per path (its last part shown, a folder's or a document's icon),
+; when there are any, after the sidebar's lines so far; lines that do
+; not fit above the bottom left out.
 SideLists:
         ldx #L_FAV
         jsr List
@@ -646,41 +656,36 @@ List:   jsr Setup
         ldx which
         lda counts,x
         beq @end
-        lda rowY
-        clc
-        adc #ROW_H + 2
-        cmp #SIDE_LAST + 1
-        bcs @end
-        sta rowY
+        jsr SideGap
         ldx which
         lda HeadLo,x
         pha
         lda HeadHi,x
         tax
         pla
-        ldy rowY
-        jsr SideText
+        jsr SideHeading
+        bcs @end                ; (no room)
         lda #0
         sta at
 @line:  lda at
         ldx which
         cmp counts,x
         bcs @end
-        lda rowY
-        clc
-        adc #ROW_H
-        cmp #SIDE_LAST + 1
-        bcs @end
-        sta rowY
-        ldx which
-        lda Codes,x
-        ora at
-        jsr SideLine
         lda at
         jsr Slot
         jsr LastPart
-        ldy rowY
-        jsr SideText            ; (fully left, as the heading)
+        sta itemText
+        stx itemText+1
+        lda #0
+        sta itemName+1
+        sta itemEject
+        ldx which
+        lda ItemIcons,x
+        sta itemIcon
+        lda Codes,x
+        ora at
+        jsr SideItem
+        bcs @end                ; (no room)
         inc at
         bne @line
 @end:   rts
@@ -792,6 +797,7 @@ SidePress:
         txa
         bne @end                ; (gone: nothing)
         jsr ListRead
+        jsr SideArrows
         jsr ListDraw
         ldx #PATH_LEN - 1       ; the name to entryName now (ListDraw's
 @doc:   lda docName,x           ; Fetches fill it)
@@ -801,14 +807,209 @@ SidePress:
         jmp Document
 @end:   rts
 
-ListLo:         .byte <favs, <recents
-ListHi:         .byte >favs, >recents
-SectLo:         .byte <FavSect, <RecSect
-SectHi:         .byte >FavSect, >RecSect
-NameLo:         .byte <IniName, <RecName
-NameHi:         .byte >IniName, >RecName
-TmpLo:          .byte <IniTmp, <RecTmp
-TmpHi:          .byte >IniTmp, >RecTmp
+; --- The desktop's settings in SETTINGS.INI [desktop] ----------------------
+; theme= a built-in theme's name (theme.s); view= list, icons or
+; detailed; clock= 24, 12 or off (24 the default; user, 2026-11-11).
+; Each a line of the [desktop] list (L_DESK); other lines there stay as
+; they are. A value is known by its first letter or digit.
+
+; DeskLoad (SideLoad): the theme, the view and the clock the lines name;
+; nothing for a line that is not there or names nothing known.
+DeskLoad:
+        ldx #L_DESK
+        jsr Setup
+        ldx #KEY_THEME
+        jsr FindKey
+        bcs @view
+        jsr Value               ; r0 = the name after "theme="
+        jsr ThemeByName         ; (C set: no such theme, the default kept)
+@view:  ldx #KEY_VIEW
+        jsr FindKey
+        bcs @clock
+        jsr Value
+        ldx #ViewFirst - First
+        jsr Pick
+        bcs @clock
+        sta viewMode
+@clock: ldx #KEY_CLOCK
+        jsr FindKey
+        bcs @end
+        jsr Value
+        ldx #ClockFirst - First
+        jsr Pick
+        bcs @end
+        sta clockMode
+@end:   rts
+
+; Pick: A = the index of the value at r0 among the first characters at
+; First + X (three, zero after them); C set when none matches.
+Pick:   ldy #0
+        lda (r0),y
+        ora #$20                ; (lower case; digits keep their bit 5)
+        sta key
+        ldy #0
+@try:   lda First,x
+        beq @none
+        cmp key
+        beq @got
+        inx
+        iny
+        bne @try
+@got:   tya
+        clc
+        rts
+@none:  sec
+        rts
+
+; Value: r0 = the value of slot A's line (after its key, keyLen
+; characters, FindKey).
+Value:  jsr Slot
+        lda r6L
+        clc
+        adc keyLen
+        sta r0L
+        lda r6H
+        adc #0
+        sta r0H
+        rts
+
+; ThemeSave: "theme=" and the theme in use, then "view=" and its view
+; (a theme brings its own); ViewSave: "view=" and viewMode; ClockSave:
+; "clock=" and clockMode; each as a [desktop] line, SETTINGS.INI
+; written (an error: the setting lasts until the desktop starts again).
+ThemeSave:
+        lda themeNo
+        jsr ThemeName           ; r1 = its name
+        ldx #KEY_THEME
+        jsr SetLine
+ViewSave:
+        lda viewMode
+        ldx #KEY_VIEW
+        ldy #ViewWords - Words
+        bne Word
+ClockSave:
+        lda clockMode
+        ldx #KEY_CLOCK
+        ldy #ClockWords - Words
+; Word: key X with word A of the words at Words + Y (zero-ended, one
+; after the other) as its value: SetLine.
+Word:   sta at
+@skip:  lda at                  ; word A: past A zeros
+        beq @here
+@ch:    lda Words,y
+        iny
+        cmp #0
+        bne @ch
+        dec at
+        jmp @skip
+@here:  tya
+        clc
+        adc #<Words
+        sta r1L
+        lda #>Words
+        adc #0
+        sta r1H
+; SetLine: key X (KEY_THEME, KEY_VIEW, KEY_CLOCK) and the value at r1 as
+; a [desktop] line: the one there replaced, else added (the last
+; replaced when the list is full); SETTINGS.INI written.
+SetLine:
+        stx key
+        ldx #L_DESK
+        jsr Setup
+        ldx key
+        ldy #0                  ; work = the key and the value
+@key:   lda Keys,x
+        beq @val0
+        sta work,y
+        inx
+        iny
+        bne @key
+@val0:  sty keyLen
+        tya
+        tax                     ; X: in work, Y: in the value
+        ldy #0
+@val:   lda (r1),y
+        sta work,x
+        beq @slot
+        iny
+        inx
+        cpx #PATH_LEN - 1
+        bcc @val
+        lda #0
+        sta work + PATH_LEN - 1
+@slot:  ldx key                 ; its slot: the old line's, else the next
+        jsr FindKey
+        bcc @store
+        lda counts + L_DESK
+        cmp #LIST_MAX
+        bcc :+
+        lda #LIST_MAX - 1       ; (full: the last one replaced)
+        bne @store
+:       inc counts + L_DESK
+@store: jsr Slot
+        jsr Store
+        ldx #L_DESK
+        jmp Save
+
+; FindKey: C clear and A = the slot of the current list (Setup) whose
+; line starts with key X (Keys + X, zero-ended, any case), keyLen its
+; length; C set when none does.
+FindKey:
+        stx key
+        lda #0
+        sta at
+@slot:  lda at
+        ldx which
+        cmp counts,x
+        bcs @none
+        jsr Slot
+        ldy #0
+        ldx key
+@ch:    lda Keys,x
+        beq @found
+        lda (r6),y
+        cmp #'A'
+        bcc :+
+        cmp #'Z' + 1
+        bcs :+
+        ora #$20
+:       cmp Keys,x
+        bne @next
+        inx
+        iny
+        bne @ch
+@found: sty keyLen
+        lda at
+        clc
+        rts
+@next:  inc at
+        bne @slot
+@none:  sec
+        rts
+
+KEY_THEME = 0
+Keys:           .byte "theme=", 0
+KEY_VIEW = * - Keys
+                .byte "view=", 0
+KEY_CLOCK = * - Keys
+                .byte "clock=", 0
+First:                                  ; a value's first character
+ViewFirst:      .byte "lid", 0          ; list, icons, detailed
+ClockFirst:     .byte "21o", 0          ; 24, 12, off
+Words:
+ViewWords:      .byte "list", 0, "icons", 0, "detailed", 0
+ClockWords:     .byte "24", 0, "12", 0, "off", 0
+
+ListLo:         .byte <favs, <recents, <desks
+ListHi:         .byte >favs, >recents, >desks
+SectLo:         .byte <FavSect, <RecSect, <DeskSect
+SectHi:         .byte >FavSect, >RecSect, >DeskSect
+NameLo:         .byte <IniName, <RecName, <IniName
+NameHi:         .byte >IniName, >RecName, >IniName
+TmpLo:          .byte <IniTmp, <RecTmp, <IniTmp
+TmpHi:          .byte >IniTmp, >RecTmp, >IniTmp
+ItemIcons:      .byte IC_FOLDER, IC_DOC
+DeskSect:       .byte "[desktop]", 0
 HeadLo:         .byte <FavHead, <RecHead
 HeadHi:         .byte >FavHead, >RecHead
 Codes:          .byte CODE_FAV, CODE_REC
@@ -818,14 +1019,14 @@ IniName:        .byte "SETTINGS.INI", 0
 IniTmp:         .byte "SETTINGS.TMP", 0
 RecName:        .byte "RECENT.INI", 0
 RecTmp:         .byte "RECENT.TMP", 0
-FavHead:        .byte BOLDON, "FAVOURITES", PLAINTEXT, 0
-RecHead:        .byte BOLDON, "RECENT", PLAINTEXT, 0
+FavHead:        .byte "Favourites", 0
+RecHead:        .byte "Recent", 0
 RemoveText:     .byte BOLDON, "Remove from favourites?", PLAINTEXT, 0
 CrLf:           .byte CR, 10, 0
 
         .segment "DATA"
 
-counts:         .byte 0, 0      ; favourites, recent documents
+counts:         .byte 0, 0, 0   ; favourites, recent documents, [desktop]
 which:          .byte 0
 handle:         .byte 0
 failed:         .byte 0
@@ -836,6 +1037,8 @@ at:             .byte 0
 last:           .byte 0
 code:           .byte 0
 workLen:        .byte 0
+key:            .byte 0         ; FindKey, SetLine: the key's offset
+keyLen:         .byte 0         ; and its length
 textLen:        .word 0
 textEnd:        .word 0
 
@@ -843,6 +1046,7 @@ textEnd:        .word 0
 
 favs:           .res LIST_MAX * (PATH_LEN + 1)
 recents:        .res LIST_MAX * (PATH_LEN + 1)
+desks:          .res LIST_MAX * (PATH_LEN + 1)
 work:           .res PATH_LEN + 1
 docName:        .res PATH_LEN   ; (entryName's size)
 iniPath:        .res 48

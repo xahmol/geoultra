@@ -16,6 +16,7 @@
 
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
         .import entryInfo, entryName, cur, count, path, IsDotDot
+        .import Dialog
         .export Copy, Cut, Paste, Delete, Rename, NewFolder, Ask
         .export Error, Append, full     ; (mount.s: an image's path, errors)
 
@@ -366,7 +367,7 @@ Ask:    sta askLine
         sta r0L
         lda #>askDlg
         sta r0H
-        jsr DoDlgBox
+        jsr Dialog
         lda r0L
         cmp #YES
         rts
@@ -384,7 +385,7 @@ AskName:
         sta r0L
         lda #>nameDlg
         sta r0H
-        jsr DoDlgBox
+        jsr Dialog
         lda r0L
         cmp #DBGETSTRING        ; (RETURN in the input line ends the
         beq :+                  ; dialog with DBGETSTRING)
@@ -405,7 +406,7 @@ Error:  txa
         sta r0L
         lda #>errDlg
         sta r0H
-        jmp DoDlgBox
+        jmp Dialog
 
 ; Hex: A as two hex digits into errCode.
 Hex:    pha

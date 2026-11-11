@@ -74,3 +74,55 @@ ROW_H           = 9
 SCREEN_RIGHT    = 319
 SIDE_RIGHT      = 79            ; the sidebar: x 0-79
 STRIP_LEFT      = 312           ; the scroll strip: x 312-319
+
+; GEOS's date and time (year in geos.inc)
+month           = $8517
+day             = $8518
+hour            = $8519
+minutes         = $851A
+
+; The icons (icons.s)
+IC_FOLDER       = 0
+IC_APP          = 1
+IC_DOC          = 2
+IC_DA           = 3
+IC_FONT         = 4
+IC_IMAGE        = 5
+IC_FILE         = 6
+IC_DRIVE        = 7
+IC_RAM          = 8
+IC_USB          = 9
+IC_SD           = 10
+IC_ARROW        = 11
+IC_UP           = 12
+IC_DOWN         = 13
+
+; More file engine functions
+FE_DF           = 16
+HorizontalLine  = $C118
+VerticalLine    = $C121
+
+; Theme styles (theme.s; the mock-up's buttons in order, 0 the first)
+THEMES_N        = 6             ; built-in themes
+ST_CLOCK        = 1             ; menubar: 0 plain
+ST_NARROW       = 1             ; sidebar: 0 wide
+ST_UNDERLINED   = 2             ; headings: 0 inverted, 1 band
+ST_PLAIN        = 3
+ST_LINE         = 2             ; titlebar: 0 stripes, 1 solid
+ST_NONE         = 3
+ST_BAR          = 1             ; selection: 0 invert
+ST_FRAME        = 2
+ST_MARK         = 1             ; cursor: 0 dotted, 2 underline
+ST_THIN         = 1             ; scrollbar: 0 arrows
+ST_OFF          = 1             ; icons, status: 0 on
+
+; The view (theme.s viewMode) and the clock (clockMode)
+VIEW_LIST       = 0
+VIEW_ICONS      = 1
+VIEW_DETAILED   = 2
+CLOCK_24        = 0
+CLOCK_12        = 1
+CLOCK_OFF       = 2
+FI_SIZE         = 4             ; 4 bytes: blocks (GEOS drives), bytes (Ultimate)
+FI_DATE         = 8             ; year, month, day, hour, minute (GEOS files)
+K_CBM           = 4

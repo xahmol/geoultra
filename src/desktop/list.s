@@ -1,12 +1,14 @@
 ; GeoUltra Desktop: the list (docs/DESKTOP.md, step D2). A folder's
 ; entries are read once (FE_OPENDIR, FE_READDIR) into an entry table in
 ; the application's REU, ENTRY_SIZE bytes each from bank ENTRY_BANK on
-; (up to ENTRY_MAX), in directory order; the list area shows ROWS of
-; them from `top`, with a scroll strip at the right edge. The selection
+; (up to ENTRY_MAX), in directory order; the list area shows `rows`
+; of them from `top`, with a scroll strip at the right edge, drawn in
+; the theme's look (theme.s, step D7a: title bar, icons, selection and
+; cursor styles, the status line). The selection
 ; is a bit per entry (`sel`), the cursor (`cur`) the entry the keys move.
 ; Mouse: a click selects the entry under it alone, SHIFT+click the range
-; from the cursor, C=+click toggles it; in the strip, above or below its
-; thumb a page up or down. Keys: cursor up and down move the cursor (the
+; from the cursor, C=+click toggles it; in the strip, its arrows a line,
+; above or below its thumb a page. Keys: cursor up and down move the cursor (the
 ; selection follows), with C= held they extend the selection (on the
 ; C64 cursor up is SHIFT + CRSR DOWN, so SHIFT cannot extend), HOME to
 ; the first entry. Own design and code.
@@ -15,13 +17,21 @@
         .include "desktop.inc"
 
         .import FileEngine, Open, Up, Into
+        .import IconUp, IconFor, TextWidth, Paint, PaintList, px0, px1, py0, py1, pcol
+        .import tTitle, tIcons, tSel, tCur, tScroll, tStatus, cSel, cAccentP
+        .import listL, iconCard, nameX, pathY, listTop, rowH, rows, bottom
+        .import stY0, stY1, trackTop, trackBot, trackH, viewMode, MonthName
         .export ListRead, ListDraw, ListPress, ListKey, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot
 
-; The list's rows (desktop.inc has the rest of the layout)
-ROWS            = 17
-LIST_BOTTOM     = LIST_TOP + ROWS * ROW_H - 1
+; The list's right edge (the strip from STRIP_LEFT), the status line
+LIST_RIGHT      = STRIP_LEFT - 3
+STATUS_Y        = 192
+FREE_PRE_MAX    = 5             ; "USB0" and ":"
+COL_SIZE        = 246           ; the detailed view: sizes end here,
+COL_DATE        = 254           ; dates start here,
+COL_NAME_END    = 202           ; names are clipped here
 
 ; The entry table
 ENTRY_SIZE      = 128           ; info (16), long name (61), spare
@@ -41,8 +51,11 @@ RAM_IO          = $35
 ; ListRead: the current folder (FE_PWD to path) read into the entry
 ; table; count entries, top, cur 0, nothing selected. Below "/" the
 ; first entry is "..", a folder (Open goes up; the actions leave it out,
-; IsDotDot).
+; IsDotDot). Then its free space for the status line (FreeRead).
 ListRead:
+        jsr ReadList
+        jmp FreeRead
+ReadList:
         lda #<path
         sta r0L
         lda #>path
@@ -146,16 +159,18 @@ Place:  sta r1H                 ; n * 128: low byte (n & 1) << 7, high
         sta r2H
         rts
 
-; ListDraw: the path line, ROWS entries from top (each inverted when
-; selected), and the scroll strip.
+; ListDraw: the list area in the theme's look: the title bar, the path
+; line, the rows from top (icon, name, selection, cursor), the scroll
+; strip and the status line.
 ListDraw:
+        jsr PaintList
         lda #0
         jsr SetPattern
-        lda #MENU_BOTTOM + 1
+        lda #MENU_BOTTOM + 2    ; title, path and rows cleared
         sta r2L
-        lda #LIST_BOTTOM
+        lda bottom
         sta r2H
-        lda #LIST_LEFT
+        lda listL
         sta r3L
         lda #0
         sta r3H
@@ -164,35 +179,432 @@ ListDraw:
         lda #>(STRIP_LEFT - 1)
         sta r4H
         jsr Rectangle
+        jsr Title
+        jsr NameClip
+        lda listL               ; the path line, a line under it
+        clc
+        adc #4
+        sta textX
         lda #<path
         ldx #>path
-        ldy #PATH_Y
+        ldy pathY
         jsr Text
+        jsr Header
+        lda pathY
+        clc
+        adc #2
+        sta r11L
+        jsr ListSpan
+        lda #$FF
+        jsr HorizontalLine
         lda #0
         sta row
-@row:   jsr RowEntry            ; entry top + row (C set: past the end)
+@row:   lda row
+        cmp rows
+        bcs @strip
+        jsr RowEntry            ; (C set: past the end)
         bcs @strip
         jsr Fetch
-        jsr Mark
+        jsr DrawRow
+        inc row
+        bne @row
+@strip: jsr Strip
+        jmp Status
+
+; ListSpan: r3 = listL, r4 = LIST_RIGHT (the list's width).
+ListSpan:
+        lda listL
+        sta r3L
+        lda #0
+        sta r3H
+        lda #<LIST_RIGHT
+        sta r4L
+        lda #>LIST_RIGHT
+        sta r4H
+        rts
+
+; DrawRow: row `row`, its entry fetched: the selection's colour bar,
+; the icon (or "/" after a folder without icons), the name, the
+; selection inverted or framed, the cursor.
+DrawRow:
         lda row
         jsr RowY
+        sta ry
+        lda row
+        jsr RowEntry
+        jsr IsSelected
+        sta selNow
+        beq @icon
+        lda tSel
+        cmp #ST_BAR
+        bne @icon
+        lda listL               ; the bar: the row's cells (8-pixel rows)
+        lsr a
+        lsr a
+        lsr a
+        sta px0
+        lda #LIST_RIGHT / 8
+        sta px1
+        lda ry
+        lsr a
+        lsr a
+        lsr a
+        sta py0
+        sta py1
+        lda cSel
+        sta pcol
+        jsr Paint
+@icon:  lda tIcons
+        bne @mark
+        jsr IconFor
+        ldx iconCard
+        ldy ry
+        jsr IconUp
+        jsr IsDotDot            ; ("..", two dots: "../" with the icon too)
+        bne @name
+@mark:  jsr Mark
+@name:  lda nameX
+        sta textX
+        lda ry
         clc
         adc #BASELINE
         tay
         lda #<entryName
         ldx #>entryName
         jsr Text
-        lda row                 ; selected: inverted
+        lda viewMode            ; the detailed view: size and date
+        cmp #VIEW_DETAILED
+        bne :+
+        jsr Columns
+:       lda selNow
+        beq @cursor
+        jsr RowBox
+        lda tSel
+        beq @inv
+        cmp #ST_FRAME
+        bne @cursor
+        lda #$FF
+        jsr FrameRectangle
+        jmp @cursor
+@inv:   jsr InvertRectangle
+@cursor:
+        lda row
         jsr RowEntry
-        jsr IsSelected
+        cmp cur
+        bne @none
+        cpx cur+1
         beq :+
-        lda row
-        jsr Invert
-:       inc row
-        lda row
-        cmp #ROWS
-        bcc @row
-@strip: jmp Strip
+@none:  rts
+:       lda tCur
+        beq @dotted
+        cmp #ST_MARK
+        beq @side
+        lda #<entryName         ; underline: under the name
+        sta r0L
+        lda #>entryName
+        sta r0H
+        jsr TextWidth
+        lda nameX
+        sta r3L
+        clc
+        adc r2L
+        sta r4L
+        lda #0
+        sta r3H
+        adc r2H
+        sta r4H
+        cmp #>LIST_RIGHT        ; (clipped at the list's edge)
+        bne :+
+        lda r4L
+        cmp #<LIST_RIGHT
+:       bcc :+
+        lda #<LIST_RIGHT
+        sta r4L
+        lda #>LIST_RIGHT
+        sta r4H
+:       lda ry
+        clc
+        adc #7
+        ldx rowH
+        cpx #9
+        bne :+
+        adc #1
+:       sta r11L
+        lda #$FF
+        jmp HorizontalLine
+@dotted:
+        jsr RowBox
+        lda #$AA
+        jmp FrameRectangle
+@side:  lda listL               ; a mark at the left edge, accent colour
+        lsr a
+        lsr a
+        lsr a
+        sta px0
+        sta px1
+        lda ry
+        lsr a
+        lsr a
+        lsr a
+        sta py0
+        lda ry
+        clc
+        adc #7
+        lsr a
+        lsr a
+        lsr a
+        sta py1
+        lda cAccentP
+        sta pcol
+        jsr Paint
+        lda #1
+        jsr SetPattern
+        lda ry
+        sta r2L
+        clc
+        adc #7
+        sta r2H
+        lda listL
+        clc
+        adc #1
+        sta r3L
+        adc #1
+        sta r4L
+        lda #0
+        sta r3H
+        sta r4H
+        jsr Rectangle
+        lda #0
+        jmp SetPattern
+@end:   rts
+
+; NameClip: textClip = the list's right edge, or before the columns in
+; the detailed view.
+NameClip:
+        lda #<LIST_RIGHT
+        ldx #>LIST_RIGHT
+        ldy viewMode
+        cpy #VIEW_DETAILED
+        bne :+
+        lda #COL_NAME_END
+        ldx #0
+:       sta textClip
+        stx textClip+1
+        rts
+
+; Header: "Size" and "Date" over the detailed view's columns, on the
+; path line's right.
+Header: lda viewMode
+        cmp #VIEW_DETAILED
+        bne @end
+        ldy #0
+        ldx #SizeWord
+        jsr Words
+        lda #0
+        sta stBuf,y
+        jsr RightAtSize
+        ldy pathY
+        jsr ColText
+        ldy #0
+        ldx #DateWord
+        jsr Words
+        lda #0
+        sta stBuf,y
+        lda #COL_DATE
+        sta textX
+        ldy pathY
+        jmp ColText
+@end:   rts
+
+; Columns: the entry's size (KB or MB; not for folders and drives) right-
+; aligned at COL_SIZE, its date (GEOS files) at COL_DATE, on row ry.
+Columns:
+        jsr SizeKB
+        bcs @date
+        ldy #0
+        jsr Dec16
+        lda #' '
+        sta stBuf,y
+        iny
+        lda unit
+        sta stBuf,y
+        iny
+        lda #'B'
+        sta stBuf,y
+        iny
+        lda #0
+        sta stBuf,y
+        jsr RightAtSize
+        jsr RowBase
+        jsr ColText
+@date:  lda entryInfo + FI_KIND
+        cmp #K_GEOS
+        bne @end
+        ldx entryInfo + FI_DATE + 1     ; "12 Nov 26"
+        beq @end
+        cpx #13
+        bcs @end
+        ldy #0
+        lda entryInfo + FI_DATE + 2
+        ldx #0
+        jsr Dec16
+        lda #' '
+        sta stBuf,y
+        iny
+        lda entryInfo + FI_DATE + 1
+        jsr MonthName           ; r1 (theme.s)
+        sty tmp
+        ldx tmp
+        ldy #0
+@mon:   lda (r1),y
+        sta stBuf,x
+        inx
+        iny
+        cpy #3
+        bcc @mon
+        txa
+        tay
+        lda #' '
+        sta stBuf,y
+        iny
+        lda entryInfo + FI_DATE         ; the year: two digits
+        ldx #'0' - 1
+@ten:   inx
+        sec
+        sbc #10
+        bcs @ten
+        adc #10 + '0'
+        pha
+        txa
+        sta stBuf,y
+        iny
+        pla
+        sta stBuf,y
+        iny
+        lda #0
+        sta stBuf,y
+        lda #COL_DATE
+        sta textX
+        jsr RowBase
+        jmp ColText
+@end:   rts
+
+; RightAtSize: textX = COL_SIZE - the width of stBuf.
+RightAtSize:
+        lda #<stBuf
+        sta r0L
+        lda #>stBuf
+        sta r0H
+        jsr TextWidth
+        lda #COL_SIZE
+        sec
+        sbc r2L
+        sta textX
+        rts
+
+; RowBase: Y = row ry's baseline.
+RowBase:
+        lda ry
+        clc
+        adc #BASELINE
+        tay
+        rts
+
+; ColText: stBuf at textX, baseline Y, clipped at the list's right edge.
+ColText:
+        lda #<LIST_RIGHT
+        sta textClip
+        lda #>LIST_RIGHT
+        sta textClip+1
+        lda #<stBuf
+        ldx #>stBuf
+        jsr Text
+        jmp NameClip
+
+; SizeKB: A/X = the entry's size in KB (unit 'K'), or in MB (unit 'M')
+; from 10240 KB; C set for an entry without a size (folders, drives).
+; GEOS and CBM files: blocks / 4, rounded up; Ultimate files: bytes /
+; 1024, rounded up.
+SizeKB: lda entryInfo + FI_KIND
+        cmp #K_GEOS
+        beq @blocks
+        cmp #K_CBM
+        beq @blocks
+        cmp #K_UFILE
+        beq @bytes
+        sec
+        rts
+@blocks:
+        lda entryInfo + FI_SIZE         ; (blocks + 3) / 4
+        clc
+        adc #3
+        sta numL
+        lda entryInfo + FI_SIZE + 1
+        adc #0
+        sta numH
+        lsr numH
+        ror numL
+        lsr numH
+        ror numL
+        jmp @unit
+@bytes: lda entryInfo + FI_SIZE         ; (bytes + 1023) / 1024: bits
+        clc                             ; 10-25 of the sum
+        adc #<1023
+        lda entryInfo + FI_SIZE + 1
+        adc #>1023
+        sta numL
+        lda entryInfo + FI_SIZE + 2
+        adc #0
+        sta numH
+        lda entryInfo + FI_SIZE + 3
+        adc #0
+        lsr a
+        ror numH
+        ror numL
+        lsr a
+        ror numH
+        ror numL
+@unit:  lda #'K'
+        sta unit
+        lda numH                ; 10240 KB and more: MB (KB / 1024)
+        cmp #>10240
+        bcc @end
+        lsr a
+        lsr a
+        sta numL
+        lda #0
+        sta numH
+        lda #'M'
+        sta unit
+@end:   lda numL
+        ldx numH
+        clc
+        rts
+
+; RowBox: r2-r4 = row ry's box: from the gap above it on 9-pixel rows to
+; its last line, x listL + 2 to LIST_RIGHT - 1.
+RowBox: lda ry
+        ldx rowH
+        cpx #9
+        bne :+
+        sec
+        sbc #1
+:       sta r2L
+        lda ry
+        clc
+        adc #7
+        sta r2H
+        lda listL
+        clc
+        adc #2
+        sta r3L
+        lda #0
+        sta r3H
+        lda #<(LIST_RIGHT - 1)
+        sta r4L
+        lda #>(LIST_RIGHT - 1)
+        sta r4H
+        rts
 
 ; RowEntry: A/X = entry top + row; C set when it is past the last.
 RowEntry:
@@ -209,45 +621,30 @@ RowEntry:
         cmp count
 :       rts
 
-; RowY: A = row A's top pixel row.
-RowY:   sta tmp
-        asl a
-        asl a
-        asl a
+; RowY: A = row A's top pixel row (listTop + A * rowH).
+RowY:   tax
+        lda listTop
+@add:   dex
+        bmi @end
         clc
-        adc tmp                 ; (* 9)
-        adc #LIST_TOP
-        rts
+        adc rowH
+        bne @add
+@end:   rts
 
-; Invert: row A inverted (selected, or the cursor's frame).
-Invert: jsr RowY
-        sta r2L
-        clc
-        adc #ROW_H - 1
-        sta r2H
-        lda #LIST_LEFT
-        sta r3L
-        lda #0
-        sta r3H
-        lda #<(STRIP_LEFT - 2)
-        sta r4L
-        lda #>(STRIP_LEFT - 2)
-        sta r4H
-        jmp InvertRectangle
-
-; Text: the text at A/X at the list's left edge + 2, baseline Y, clipped
-; before the strip.
+; Text: the text at A/X at x textX, baseline Y, clipped at textClip
+; (the list's right edge, or before the detailed view's columns).
 Text:   sta r0L
         stx r0H
         sty r1H
-        lda #LIST_LEFT + 2
+        lda textX
         sta r11L
         lda #0
         sta r11H
-        lda #<(STRIP_LEFT - 2)
+        lda textClip
         sta rightMargin
-        lda #>(STRIP_LEFT - 2)
+        lda textClip+1
         sta rightMargin+1
+PutWhole:
         jsr PutString
         lda #<SCREEN_RIGHT
         sta rightMargin
@@ -275,39 +672,236 @@ Mark:   lda entryInfo + FI_KIND
         sta entryName + 1,y
 @end:   rts
 
-; Strip: the scroll strip: a frame, its thumb at top / count of its
-; height (the whole strip when everything fits).
+; Title: the title bar (y 16-23) with the folder's name: the path's last
+; part ("GeoUltra" at "/"), by the theme's style.
+Title:  lda tTitle
+        cmp #ST_NONE
+        bne :+
+        rts
+:       jsr TitleName           ; r0
+        lda tTitle
+        cmp #ST_LINE
+        bne :+
+        jmp @line
+:       jsr TextWidth           ; cx = the bar's middle - width / 2
+        lda r2L
+        sta tw
+        lda listL
+        clc
+        adc #<SCREEN_RIGHT
+        sta cx
+        lda #>SCREEN_RIGHT
+        adc #0
+        lsr a
+        ror cx                  ; (listL + 319) / 2
+        lda tw
+        lsr a
+        sta tmp
+        lda cx
+        sec
+        sbc tmp
+        sta cx
+        lda tTitle
+        bne @solid
+        ldx #16                 ; stripes: every other line
+@stripe:
+        stx r11L
+        stx tmp
+        jsr TitleSpan
+        lda #$FF
+        jsr HorizontalLine
+        ldx tmp
+        inx
+        inx
+        cpx #24
+        bcc @stripe
+        lda #0                  ; a gap for the name
+        jsr SetPattern
+        lda #16
+        sta r2L
+        lda #23
+        sta r2H
+        lda cx
+        sec
+        sbc #5
+        sta r3L
+        lda #0
+        sta r3H
+        lda cx
+        clc
+        adc tw
+        sta r4L
+        lda #0
+        adc #0
+        sta r4H
+        lda r4L
+        clc
+        adc #4
+        sta r4L
+        bcc :+
+        inc r4H
+:       jsr Rectangle
+        jmp TitleText
+@solid: jsr TitleText           ; solid: the name, then the bar inverted
+        lda #16
+        sta r2L
+        lda #23
+        sta r2H
+        jsr TitleSpan
+        jmp InvertRectangle
+@line:  lda listL               ; line: the name in bold at the left, a
+        clc                     ; line under the bar
+        adc #4
+        sta cx
+        lda #SET_BOLD
+        sta currentMode
+        jsr TitleText
+        lda #0
+        sta currentMode
+        lda #23
+        sta r11L
+        jsr TitleSpan
+        lda #$FF
+        jmp HorizontalLine
+
+; TitleSpan: r3 = listL, r4 = the screen's right edge.
+TitleSpan:
+        lda listL
+        sta r3L
+        lda #0
+        sta r3H
+        lda #<SCREEN_RIGHT
+        sta r4L
+        lda #>SCREEN_RIGHT
+        sta r4H
+        rts
+
+; TitleText: the title's name at x cx, baseline 22.
+TitleText:
+        jsr TitleName
+        lda cx
+        sta r11L
+        lda #0
+        sta r11H
+        lda #22
+        sta r1H
+        jmp PutString
+
+; TitleName: r0 = the path's last part, or "GeoUltra" at "/".
+TitleName:
+        lda path + 1
+        bne :+
+        lda #<RootTitle
+        sta r0L
+        lda #>RootTitle
+        sta r0H
+        rts
+:       ldy #0
+        ldx #1
+@ch:    lda path,y
+        beq @end
+        iny
+        cmp #'/'
+        bne @ch
+        tya
+        tax
+        bne @ch
+@end:   txa
+        clc
+        adc #<path
+        sta r0L
+        lda #>path
+        adc #0
+        sta r0H
+        rts
+
+; Strip: the scroll strip (x STRIP_LEFT-319, stY0-stY1): arrows in boxes
+; and a grey thumb, or a thin line with a black one.
 Strip:  lda #0
         jsr SetPattern
         jsr StripRect
         jsr Rectangle
-        jsr StripRect
+        lda tScroll
+        bne @thin
+        lda #IC_UP
+        ldx #STRIP_LEFT / 8
+        ldy stY0
+        iny
+        jsr IconUp
+        lda stY1
+        sec
+        sbc #8
+        tay
+        lda #IC_DOWN
+        ldx #STRIP_LEFT / 8
+        jsr IconUp
+        jsr StripRect           ; the frame, the arrows' boxes
         lda #$FF
         jsr FrameRectangle
-        lda count+1             ; everything on one screen: no thumb
+        jsr StripRect
+        lda stY0
+        clc
+        adc #8
+        sta r2H
+        lda #$FF
+        jsr FrameRectangle
+        jsr StripRect
+        lda stY1
+        sec
+        sbc #8
+        sta r2L
+        lda #$FF
+        jsr FrameRectangle
+        lda #2                  ; the thumb: grey
+        ldx #STRIP_LEFT + 1 - 256
+        ldy #<(SCREEN_RIGHT - 1)
         bne @thumb
-        lda count
-        cmp #ROWS + 1
-        bcs @thumb
-        rts
-@thumb: jsr ThumbRows           ; r2L-r2H the thumb's rows
-        lda #1
-        jsr SetPattern
-        lda #<(STRIP_LEFT + 1)
+@thin:  lda stY0                ; a line in the middle
         sta r3L
-        lda #>(STRIP_LEFT + 1)
+        lda stY1
         sta r3H
-        lda #<(SCREEN_RIGHT - 1)
+        lda #<(STRIP_LEFT + 4)
         sta r4L
-        lda #>(SCREEN_RIGHT - 1)
+        lda #>(STRIP_LEFT + 4)
         sta r4H
-        jmp Rectangle
+        lda #$FF
+        jsr VerticalLine
+        lda #1                  ; the thumb: black, 3 pixels
+        ldx #STRIP_LEFT + 3 - 256
+        ldy #STRIP_LEFT + 5 - 256
+@thumb: sta tmp                 ; (pattern), x1 and x2 low bytes (high 1)
+        stx r3L
+        sty r4L
+        lda #1
+        sta r3H
+        sta r4H
+        lda count
+        ora count+1
+        beq @end                ; (nothing listed: no thumb)
+        lda r3L
+        pha
+        lda r4L
+        pha
+        jsr ThumbRows
+        pla
+        sta r4L
+        pla
+        sta r3L
+        lda #1
+        sta r3H
+        sta r4H
+        lda tmp
+        jsr SetPattern
+        jsr Rectangle
+        lda #0
+        jmp SetPattern
+@end:   rts
 
 ; StripRect: r2-r4 = the strip.
 StripRect:
-        lda #LIST_TOP
+        lda stY0
         sta r2L
-        lda #LIST_BOTTOM
+        lda stY1
         sta r2H
         lda #<STRIP_LEFT
         sta r3L
@@ -319,38 +913,39 @@ StripRect:
         sta r4H
         rts
 
-; ThumbRows: r2L/r2H = the thumb's first and last pixel row: the strip's
-; height (H) times top / count and (top + ROWS) / count. Counts above 255
-; are scaled down by 8 first (an approximate thumb is enough).
+; ThumbRows: r2L/r2H = the thumb's first and last pixel row: the
+; track's height times top / count and (top + rows) / count. Counts
+; above 255 are scaled down first (an approximate thumb is enough).
 ThumbRows:
         lda top
         ldx top+1
         jsr Scale
+        clc
+        adc trackTop
         sta r2L
         lda top
         clc
-        adc #ROWS
+        adc rows
         tay
         lda top+1
         adc #0
         tax
         tya
         jsr Scale
-        sta r2H
-        lda r2L
         clc
-        adc #LIST_TOP
-        sta r2L
-        lda r2H
-        clc
-        adc #LIST_TOP - 1
-        cmp #LIST_BOTTOM
+        adc trackTop
+        sec
+        sbc #1
+        cmp trackBot
         bcc :+
-        lda #LIST_BOTTOM
+        lda trackBot
+:       cmp r2L                 ; (at least a line)
+        bcs :+
+        lda r2L
 :       sta r2H
         rts
 
-; Scale: A/X (an entry number) * H / count, H = the strip's height.
+; Scale: A/X (an entry number) * trackH / count; at most trackH.
 Scale:  sta numL
         stx numH
         lda count
@@ -365,23 +960,26 @@ Scale:  sta numL
         lsr numH
         ror numL
         jmp @fit
-@mul:   lda numL                ; numL * H (16 bits) / denL
+@mul:   lda numL                ; numL > denL (past the end): the whole
+        cmp denL
+        bcc :+
+        lda trackH
+        rts
+:       lda #0                  ; numL * trackH (16 bits) / denL
         sta mulL
-        lda #0
         sta mulH
-        ldx #LIST_BOTTOM - LIST_TOP     ; H - 1 additions
-        lda numL
-@add:   pha
+        ldx trackH
+        beq @done0
+@add:   lda numL
         clc
         adc mulL
         sta mulL
         bcc :+
         inc mulH
-:       pla
-        dex
+:       dex
         bne @add
-        lda denL                ; mulH:mulL / denL
-        beq @zero
+        lda denL
+        beq @done0
         ldx #0
 @div:   lda mulL
         sec
@@ -396,8 +994,289 @@ Scale:  sta numL
         bne @div
 @done:  txa
         rts
-@zero:  lda #0
+@done0: lda #0
         rts
+
+; Status: the status line (y 192-199): entries and selected ones at the
+; left, the free space of the current drive or Ultimate root at the
+; right (FreeRead), inverted in the status colours.
+Status: lda tStatus
+        beq :+
+        rts
+:       lda #0
+        jsr SetPattern
+        lda #STATUS_Y
+        sta r2L
+        lda #199
+        sta r2H
+        jsr FullSpan
+        jsr Rectangle
+        lda count               ; "21 entries, 2 selected" (".." not
+        ldx count+1             ; counted; "1 entry"; no selection: no
+        ldy path + 1            ; second part)
+        beq :+
+        sec
+        sbc #1
+        bcs :+
+        dex
+:       ldy #EntryWord          ; (one: the singular)
+        cpx #0
+        bne :+
+        cmp #1
+        beq @one
+:       ldy #EntriesWord
+@one:   sty word
+        ldy #0
+        jsr Dec16
+        ldx word
+        jsr Words
+        jsr SelCount
+        cmp #0
+        bne :+
+        cpx #0
+        beq @left
+:       pha
+        txa
+        pha
+        ldx #CommaWord
+        jsr Words
+        pla
+        tax
+        pla
+        jsr Dec16
+        ldx #SelectedWord
+        jsr Words
+@left:  lda #0
+        sta stBuf,y
+        lda #4
+        sta textX
+        lda #<stBuf
+        ldx #>stBuf
+        jsr StatusText
+        lda freeOK              ; the free space, right-aligned
+        beq @inv
+        ldy #0
+@pre:   lda freePre,y
+        beq :+
+        sta stBuf,y
+        iny
+        bne @pre
+:       lda #' '
+        sta stBuf,y
+        iny
+        lda freeVal
+        ldx freeVal+1
+        jsr Dec16
+        lda #' '
+        sta stBuf,y
+        iny
+        lda freeMB
+        sta stBuf,y
+        iny
+        ldx #FreeWord
+        jsr Words               ; "B free"
+        lda #0
+        sta stBuf,y
+        lda #<stBuf
+        sta r0L
+        lda #>stBuf
+        sta r0H
+        jsr TextWidth
+        lda #<316               ; x = 316 - the width
+        sec
+        sbc r2L
+        sta r11L
+        lda #>316
+        sbc r2H
+        sta r11H
+        lda #198
+        sta r1H
+        jsr PutString
+@inv:   lda #STATUS_Y
+        sta r2L
+        lda #199
+        sta r2H
+        jsr FullSpan
+        jmp InvertRectangle
+
+; StatusText: the text at A/X at x textX (< 256), baseline 198.
+StatusText:
+        sta r0L
+        stx r0H
+        lda textX
+        sta r11L
+        lda #0
+        sta r11H
+        lda #198
+        sta r1H
+        jmp PutString
+
+; FullSpan: r3-r4 = x 0 to 319.
+FullSpan:
+        lda #0
+        sta r3L
+        sta r3H
+        lda #<SCREEN_RIGHT
+        sta r4L
+        lda #>SCREEN_RIGHT
+        sta r4H
+        rts
+
+; Words: the zero-ended text at StatusWords + X to stBuf + Y (Y on).
+Words:  lda StatusWords,x
+        beq @end
+        sta stBuf,y
+        iny
+        inx
+        bne Words
+@end:   rts
+
+; SelCount: A/X = the selected entries (the bits set in sel). Keeps Y.
+SelCount:
+        sty tmp
+        lda #0
+        sta numL
+        sta numH
+        ldy #0
+@byte:  lda sel,y
+        beq @next
+@bit:   asl a
+        bcc :+
+        inc numL
+        bne :+
+        inc numH
+:       cmp #0
+        bne @bit
+@next:  iny
+        bne @byte
+        ldy tmp
+        lda numL
+        ldx numH
+        rts
+
+; Dec16: A/X (low, high) in decimal to stBuf + Y, without leading
+; zeros; Y on.
+Dec16:  sta numL
+        stx numH
+        lda #0
+        sta any
+        ldx #0                  ; the powers of ten, 10000 down to 10
+@pow:   lda #'0'
+        sta digit
+@sub:   lda numL
+        sec
+        sbc PowLo,x
+        sta tmp
+        lda numH
+        sbc PowHi,x
+        bcc @put
+        sta numH
+        lda tmp
+        sta numL
+        inc digit
+        bne @sub
+@put:   lda digit           ; (leading zeros left out)
+        cmp #'0'
+        bne @out
+        lda any
+        beq @skip
+        lda digit
+@out:   sta stBuf,y
+        iny
+        sta any
+@skip:  inx
+        cpx #4
+        bcc @pow
+        lda numL                ; the units, always
+        ora #'0'
+        sta stBuf,y
+        iny
+        rts
+
+; FreeRead: the free space of the current folder's drive or Ultimate
+; root for the status line (FE_DF; nothing at "/" or on an error):
+; freePre its name ("B:", "USB0:"), freeVal and freeMB the amount in KB
+; or MB ('K' or 'M').
+FreeRead:
+        lda #0
+        sta freeOK
+        lda path + 1
+        beq @end
+        ldy #1                  ; the name: the path's first part, upper case
+        ldx #0
+@pre:   lda path,y
+        beq :+
+        cmp #'/'
+        beq :+
+        cmp #'a'
+        bcc @keep
+        cmp #'z' + 1
+        bcs @keep
+        and #$DF
+@keep:  sta freePre,x
+        inx
+        iny
+        cpx #FREE_PRE_MAX
+        bcc @pre
+:       lda #':'
+        sta freePre,x
+        lda #0
+        sta freePre + 1,x
+        stx tmp                 ; (its length: 1 for a drive)
+        lda #<path
+        sta r0L
+        lda #>path
+        sta r0H
+        lda #FE_DF
+        jsr FileEngine
+        txa
+        bne @end
+        lda r1L                 ; a drive's blocks: / 4 for KB
+        sta freeVal
+        lda r1H
+        sta freeVal+1
+        lda tmp
+        cmp #1
+        bne @kb
+        lsr freeVal+1
+        ror freeVal
+        lsr freeVal+1
+        ror freeVal
+@kb:    lda #'K'
+        sta freeMB
+        lda freeVal+1           ; 10240 KB and more: MB
+        cmp #>10240
+        bcc @ok
+        lda #'M'
+        sta freeMB
+        lda freeVal+1           ; KB / 1024 = the high byte / 4
+        lsr a
+        lsr a
+        sta freeVal
+        lda #0
+        sta freeVal+1
+@ok:    lda #1
+        sta freeOK
+@end:   rts
+
+PowLo:  .byte <10000, <1000, <100, <10
+PowHi:  .byte >10000, >1000, >100, >10
+StatusWords:                    ; (sentence case: the user, 2026-11-11)
+EntryWord = * - StatusWords
+        .byte " entry", 0
+EntriesWord = * - StatusWords
+        .byte " entries", 0
+CommaWord = * - StatusWords
+        .byte ", ", 0
+SelectedWord = * - StatusWords
+        .byte " selected", 0
+FreeWord = * - StatusWords
+        .byte "B free", 0
+SizeWord = * - StatusWords
+        .byte "Size", 0
+DateWord = * - StatusWords
+        .byte "Date", 0
+RootTitle:      .byte "GeoUltra", 0
 
 ; --- The selection -----------------------------------------------------
 
@@ -473,7 +1352,9 @@ IsDotDot:
 ; line's start); the last part, the current folder, does nothing. C
 ; clear (the list's).
 PathPress:
-        lda #LIST_LEFT + 2      ; (Text's x)
+        lda listL               ; (Text's x for the path)
+        clc
+        adc #4
         sta numL
         lda #0
         sta numH
@@ -523,49 +1404,54 @@ PathPress:
 @done:  clc
         rts
 
-; ListPress (a mouse press in the list area or the strip; desktop.s).
-; C clear when it was the list's.
+; ListPress (a mouse press right of the sidebar; desktop.s). C clear
+; when it was the list's: the path line, a row, the scroll strip (its
+; arrows a line, above or below the thumb a page).
 ListPress:
-        lda mouseYPos
-        cmp #LIST_TOP
-        bcs :+
-        cmp #MENU_BOTTOM + 2    ; the path line
-        bcc @out
         lda mouseXPos+1
-        bne PathPress
+        bne :+
         lda mouseXPos
-        cmp #LIST_LEFT
-        bcs PathPress
+        cmp listL
+        bcc @out                ; (the sidebar)
+:       lda mouseYPos
+        cmp #MENU_BOTTOM + 2
         bcc @out
-:
-        cmp #LIST_BOTTOM + 1
-        bcc :+
-@out:   sec                     ; (not the list's)
+        cmp listTop
+        bcs @below
+        lda pathY               ; above the rows: the path line, else the
+        sec                     ; title bar (nothing)
+        sbc #8
+        cmp mouseYPos
+        bcs @title
+        jmp PathPress
+@title: clc
         rts
-@toStrip:
-        jmp @strip
+@below: lda bottom              ; (below it: the status line, not ours)
+        cmp mouseYPos
+        bcs :+
+@out:   sec
+        rts
 :       lda mouseXPos+1         ; the strip?
         cmp #>STRIP_LEFT
         bcc @list
-        bne @toStrip
-        lda mouseXPos
+        beq :+
+        jmp @strip
+:       lda mouseXPos
         cmp #<STRIP_LEFT
-        bcs @toStrip
-@list:  lda mouseXPos+1
-        bne :+
-        lda mouseXPos
-        cmp #LIST_LEFT
-        bcc @out
-:       lda mouseYPos           ; the row
+        bcc @list
+        jmp @strip
+@list:  lda mouseYPos           ; the row
         sec
-        sbc #LIST_TOP
+        sbc listTop
         ldx #0
-@r:     cmp #ROW_H
+@r:     cmp rowH
         bcc @got
-        sbc #ROW_H
+        sbc rowH
         inx
         bne @r
-@got:   stx row
+@got:   cpx rows
+        bcs @none               ; (below the last whole row)
+        stx row
         jsr RowEntry
         bcs @done               ; (below the last entry)
         sta pick
@@ -598,7 +1484,7 @@ ListPress:
         lda pick+1
         sta cur+1
 @done:  jsr ListDraw
-        clc
+@none:  clc
         rts
 @open:  lda pick                ; a double click: the entry opened
         sta cur
@@ -607,7 +1493,26 @@ ListPress:
         jsr Open
         clc
         rts
-@strip: lda mouseYPos           ; above or below the thumb: a page
+@strip: lda tScroll             ; the arrows (their boxes: 9 lines)
+        bne @page
+        lda mouseYPos
+        sec
+        sbc stY0
+        cmp #9
+        bcs :+
+        jsr LineUp
+        jmp @redraw
+:       lda stY1
+        sec
+        sbc mouseYPos
+        cmp #9
+        bcs @page
+        jsr LineDown
+        jmp @redraw
+@page:  lda count               ; above or below the thumb: a page
+        ora count+1
+        beq @none
+        lda mouseYPos
         pha
         jsr ThumbRows
         pla
@@ -620,6 +1525,31 @@ ListPress:
         jsr ListDraw
         clc
         rts
+
+; LineUp, LineDown: top a row up or down (within the table).
+LineUp: lda top
+        ora top+1
+        beq @end
+        lda top
+        bne :+
+        dec top+1
+:       dec top
+@end:   rts
+LineDown:
+        lda top                 ; top + rows < count: one on
+        clc
+        adc rows
+        tax
+        lda top+1
+        adc #0
+        cmp count+1
+        bne :+
+        cpx count
+:       bcs @end
+        inc top
+        bne @end
+        inc top+1
+@end:   rts
 
 ; Double: C set when pick is the entry clicked last and GEOS's double-
 ; click count still runs; else that count started for this click.
@@ -686,7 +1616,7 @@ Range:  lda cur
 ; PageUp, PageDown: top a screen up or down (within the table).
 PageUp: lda top
         sec
-        sbc #ROWS
+        sbc rows
         tax
         lda top+1
         sbc #0
@@ -699,7 +1629,7 @@ PageUp: lda top
 PageDown:
         lda top
         clc
-        adc #ROWS
+        adc rows
         tax
         lda top+1
         adc #0
@@ -842,9 +1772,9 @@ Follow: lda cur+1               ; cur < top: top = cur
         lda cur+1
         sta top+1
         rts
-@below: lda top                 ; cur >= top + ROWS: top = cur - ROWS + 1
+@below: lda top                 ; cur >= top + rows: top = cur - rows + 1
         clc
-        adc #ROWS
+        adc rows
         tax
         lda top+1
         adc #0
@@ -855,11 +1785,14 @@ Follow: lda cur+1               ; cur < top: top = cur
         bcs @end
 @move:  lda cur
         sec
-        sbc #ROWS - 1
+        sbc rows
         sta top
         lda cur+1
         sbc #0
         sta top+1
+        inc top
+        bne @end
+        inc top+1
 @end:   rts
 
 
@@ -886,6 +1819,20 @@ denL:           .byte 0
 denH:           .byte 0
 mulL:           .byte 0
 mulH:           .byte 0
+textX:          .byte 0         ; Text's x
+textClip:       .word LIST_RIGHT ; and its right edge
+unit:           .byte 'K'       ; SizeKB
+word:           .byte 0         ; Status: the entries' word
+ry:             .byte 0         ; DrawRow's top
+selNow:         .byte 0
+cx:             .byte 0         ; the title's x
+tw:             .byte 0         ; its width
+digit:          .byte 0
+any:            .byte 0
+freeOK:         .byte 0         ; FreeRead: 1 when freeVal holds the space
+freeVal:        .word 0
+freeMB:         .byte 'K'
+freePre:        .res FREE_PRE_MAX + 2
 
         .segment "BSS"
 
@@ -894,3 +1841,4 @@ entryInfo:      .res INFO_LEN
 entryName:      .res NAME_LEN + 2
 sel:            .res ENTRY_MAX / 8
 cutPath:        .res 256        ; (PathPress)
+stBuf:          .res 48         ; the status line's text

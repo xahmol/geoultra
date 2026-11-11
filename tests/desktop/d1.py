@@ -36,7 +36,8 @@ def main():
         check("started from drive E (FE_RUNSYS does not return)", g.runsys("GeoUltra Desktop", wait=6), None)
         v = g.v
         check("both screens drawn on", v.mem_get(0x2F, 0x2F)[0] & 0xC0, 0xC0)
-        check("RecoverVector: RecoverRectangle", bytes(v.mem_get(0x84B1, 0x84B2)), b"\x2D\xC1")
+        check("RecoverVector: the desktop's Recover (bitmap and colours)",
+              bytes(v.mem_get(0x84B1, 0x84B2)), bytes([k["Recover"] & 0xFF, k["Recover"] >> 8]))
         check("the path: /", bytes(v.mem_get(k["path"], k["path"] + 1)), b"/\0")
         check("the entries of /: a, b, e", v.mem_get(k["count"], k["count"])[0], 3)
         g.png("desktop-d1")

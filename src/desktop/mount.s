@@ -14,7 +14,8 @@
 
         .import FileEngine, Into, Drive, ListRead, ListDraw, SideRedraw
         .import Error, Append, full, entryName, path
-        .export Mount, Eject, HasImage, EjectIcon
+        .import Dialog
+        .export Mount, Eject, HasImage, EjectIcon, IsImage
 
 DRIVES          = 4             ; A-D (E is the system drive: no image)
 LINE_LEN        = 12            ; a drive's line in the dialog: 11
@@ -49,7 +50,7 @@ Mount:  jsr IsImage
         sta r0L
         lda #>mountDlg
         sta r0H
-        jsr DoDlgBox
+        jsr Dialog
         lda r0L
         cmp #OK                 ; (a drive button ends it with OK)
         bne @end
@@ -212,7 +213,7 @@ Eject:  sta letter
         sta r0L
         lda #>ejectDlg
         sta r0H
-        jsr DoDlgBox
+        jsr Dialog
         lda r0L
         cmp #YES
         bne @end

@@ -17,7 +17,6 @@ sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
 from gushvice import Gush  # noqa: E402
 
 KEY_DOWN, KEY_LEFT, CR = 17, 8, 13
-LIST_TOP, ROW_H = 28, 9
 DBL = 0x8515                    # dblClickCount
 
 
@@ -52,6 +51,7 @@ def main():
 
         try:
             check("the desktop started", g.runsys("GeoUltra Desktop", wait=6), None)
+            LIST_TOP, ROW_H = (v.mem_get(k[n], k[n])[0] for n in ("listTop", "rowH"))
             if run == "b":
                 g.keys([KEY_DOWN, CR], settle=0.5)          # "/": a, b, e
                 time.sleep(3)
@@ -61,7 +61,10 @@ def main():
                 time.sleep(2)
                 v.ping()
                 check("cursor left: / again", path(), "/")
-                press(30, LIST_TOP + 1 * ROW_H + 4, wait=3)   # sidebar line 2: B
+                n = v.mem_get(k["sideCount"], k["sideCount"])[0]   # B's sidebar line
+                codes = bytes(v.mem_get(k["sideLetters"], k["sideLetters"] + n - 1))
+                top = v.mem_get(k["sideTops"] + codes.index(b"b"), k["sideTops"] + codes.index(b"b"))[0]
+                press(30, top + 4, wait=3)
                 check("a click on drive B's line: /b", path(), "/b")
                 press(150, LIST_TOP + ROW_H + 4, wait=0.3)  # gush: after "..",
                 v.mem_set(DBL, bytes([30]))                 # (VICE runs in warp: the

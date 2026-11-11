@@ -19,7 +19,6 @@ from vicemon import RESP_CHECKPOINT  # noqa: E402
 
 KEY_DOWN, KEY_UP, KEY_HOME = 17, 16, 18
 FILES = 40
-ROWS, LIST_TOP, ROW_H = 17, 28, 9
 
 
 def labels(name):
@@ -81,6 +80,8 @@ def main():
         v.resume()
         time.sleep(8)
         v.ping()
+        ROWS, LIST_TOP, ROW_H = (v.mem_get(k[n], k[n])[0] for n in ("rows", "listTop", "rowH"))
+        st_y1 = v.mem_get(k["stY1"], k["stY1"])[0]          # (theme.s's layout)
         check("FE_CD /b, then the desktop started (FE_RUNSYS no return)",
               bytes(v.mem_get(0x02F0, 0x02F1)), b"\x00\xEE")
         check("all entries of /b read (\"..\", gush and the files)", word("count"), FILES + 2)
@@ -100,7 +101,7 @@ def main():
         sel = bytes(v.mem_get(k["sel"], k["sel"] + 5))
         check("a click on row 3: entry 3 alone selected, the cursor there",
               (sel, word("cur")), (bytes([0x08, 0, 0, 0, 0, 0]), 3))
-        press(315, LIST_TOP + ROWS * ROW_H - 4)             # strip, at its bottom
+        press(315, st_y1 - 12)                  # strip, low: above its down arrow
         check("a click in the strip below the thumb: a page down", word("top"), ROWS)
         g.png("desktop-d2-paged")
     finally:

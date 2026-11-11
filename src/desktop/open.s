@@ -14,8 +14,8 @@
         .include "desktop.inc"
 
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
-        .import cur, count, path, Redraw, RecentAdd, Mount
-        .export Open, Up, Drive, Into, Document
+        .import cur, count, path, Redraw, RecentAdd, Mount, Neutral, SideArrows
+        .export Open, Up, Drive, Into, Document, Back
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
 ST_LD_DATA      = $80
@@ -63,6 +63,7 @@ Into:   sta r0L                 ; FE_CD (A/X), then the list read again
         txa
         bne @end
         jsr ListRead
+        jsr SideArrows          ; (desktop.s: the open drive's arrow)
         jmp ListDraw
 @end:   rts
 
@@ -113,12 +114,14 @@ Program:
 @e:     lda entryInfo + FI_GTYPE
         cmp #DESK_ACC
         beq @byName
+        jsr Neutral             ; (theme.s: GEOS's colours for it)
         lda #<entryName         ; an application: FE_RUNSYS (back only
         sta r0L                 ; with an error)
         lda #>entryName
         sta r0H
         lda #FE_RUNSYS
-        jmp FileEngine
+        jsr FileEngine
+        jmp Back
 @byName:
         lda #<entryName         ; (E's names are short names)
         sta r6L
@@ -143,7 +146,8 @@ Program:
         sta r6L
         lda #>shortName
         sta r6H
-Start:  lda #0                  ; GetFile (an application does not come
+Start:  jsr Neutral             ; (theme.s: GEOS's colours for it)
+        lda #0                  ; GetFile (an application does not come
         sta r0L                 ; back)
         jsr GetFile
         jmp Back                ; (a desk accessory came back)
@@ -248,6 +252,7 @@ Launch: ldx docDrive
         sta r6L
         lda #>appName
         sta r6H
+        jsr Neutral             ; (theme.s: GEOS's colours for it)
         lda #ST_LD_DATA
         sta r0L
         jsr GetFile
