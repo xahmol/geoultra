@@ -406,6 +406,15 @@ colour is a property of an element, by name:
   date and GEOS class. Room: the desktop's core has about 150 bytes
   left, so the INI file handling (side.s) moves to an overlay first;
   the context menu and Info are an overlay.
+- **Toolbar, after the mock-up (user, 2026-11-11; mock-up:
+  https://claude.ai/artifact/ECimQq7UX37FcgWScJuR7u):** the height is a
+  view option, not a theme style: view > toolbar > two-line (16 px,
+  framed 16 x 14 buttons, the default), one-line (8 px, flat 8 x 8 icons
+  12 px apart, dotted lines between the groups, one list row more) or
+  off; saved as SETTINGS.INI `[desktop] toolbar=`. A theme gives the
+  toolbar its colours only. The icons and their order as drawn there:
+  back, forward, up, root ("/"), home | top, end | view, refresh | new
+  folder, info, select all, copy, paste, delete.
 - **Next, in this order:** the eighth sweep with its extras (and the
   INI code into an overlay); the right button in the driver, checked on
   the U64; the toolbar with the history; the context menu and Info; the
