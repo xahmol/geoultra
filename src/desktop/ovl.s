@@ -2,7 +2,8 @@
 ; desktop is a VLIR file: record 0 the core at $0400-$4FFF, records 1
 ; to 3 overlays at TRANS ($5000-$5FFF): 1 the theme files
 ; (themefile.s), 2 the actions with the recursion into folders
-; (actions.s, tree.s), 3 mounting (mount.s). The
+; (actions.s, tree.s), 3 mounting (mount.s), 4 the INI files
+; (inifile.s). The
 ; loader and OvlGo are ovlcore.inc (shared with gush); this file names
 ; the bank and the stubs. Own code.
 
@@ -12,7 +13,7 @@
 TRANS           = $5000
 TRANS_SIZE      = $1000
 OVL_BANK        = 6             ; (1-4: the entry table, 5: the clipboard)
-OVL_N           = 3
+OVL_N           = 4
 
         .segment "CODE"
 
@@ -35,3 +36,8 @@ OvlFail:
         Stub Ask, 2
         Stub Mount, 3           ; overlay 3: mount.s
         Stub Eject, 3
+        Stub LoadAll, 4         ; overlay 4: inifile.s
+        Stub Save, 4
+        Stub ThemeSave, 4
+        Stub ViewSave, 4
+        Stub ClockSave, 4

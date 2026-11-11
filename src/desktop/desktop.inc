@@ -126,3 +126,13 @@ CLOCK_OFF       = 2
 FI_SIZE         = 4             ; 4 bytes: blocks (GEOS drives), bytes (Ultimate)
 FI_DATE         = 8             ; year, month, day, hour, minute (GEOS files)
 K_CBM           = 4
+
+; The sidebar's lists and the INI files (side.s, inifile.s)
+LIST_MAX        = 4             ; favourites, recent documents, [desktop] lines
+PATH_LEN        = 63            ; a path and its zero (entryName's size:
+                                ; SidePress shows one in the question)
+TEXT_MAX        = 3072          ; an INI file's bytes, at most
+L_FAV           = 0             ; the lists ("which")
+L_REC           = 1
+L_DESK          = 2             ; SETTINGS.INI's [desktop] lines
+WANT_LEN        = 16            ; the theme's name a [desktop] line names
