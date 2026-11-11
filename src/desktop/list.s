@@ -35,6 +35,8 @@ LIST_RIGHT      = STRIP_LEFT - 3
 STATUS_Y        = 192
 FREE_PRE_MAX    = 5             ; "USB0" and ":"
 PROG_NAME_END   = 34            ; the progress line: the name cut here
+ST_BUF_LEN      = PROG_NAME_END + 2 + 5 + 7 + 1 ; stBuf: the progress
+                                ; line's name, ", 65535 blocks" and the zero
 R_LEN           = 32            ; r0-r15
 RAM_ALL         = $30
 COL_SIZE        = 246           ; the detailed view: sizes end here,
@@ -2004,4 +2006,4 @@ path:           .res 256
 entryInfo:      .res INFO_LEN
 entryName:      .res NAME_LEN + 2
 sel:            .res ENTRY_MAX / 8
-stBuf:          .res 48         ; the status line's text
+stBuf:          .res ST_BUF_LEN ; the status line's text
