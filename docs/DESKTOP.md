@@ -93,7 +93,8 @@ colour is a property of an element, by name:
   background); `SETTINGS.INI` `[desktop] theme=` names the one in use.
   All themes are files, the built-in ones included (made at the first
   start), plus Custom to edit (user, 2026-11-11). Colour names map to the 16 colours; on an Ultimate 64 or C64
-  Ultimate a theme may carry a palette (firmware 3.15), which changes
+  Ultimate a theme may carry a palette (firmware 3.15a on the Ultimate 64;
+  not yet released for the C64 Ultimate, user 2026-11-11), which changes
   what a name looks like, not which element uses it.
 - In memory a theme record: a style byte per element, a colour byte
   per colour. Combinations the cell grid cannot draw are corrected
