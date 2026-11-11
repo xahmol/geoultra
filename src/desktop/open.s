@@ -11,30 +11,13 @@
 ; application (Document, step D3b). Own code.
 
         .include "geos.inc"
+        .include "desktop.inc"
 
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
         .import cur, count, path, Redraw, RecentAdd, Mount
         .export Open, Up, Drive, Into, Document
 
-GetFile         = $C208         ; GEOS jump table
-ReDoMenu        = $C193
-FindFTypes      = $C23B
-SetDevice       = $C2B0
-OpenDisk        = $C2A1
-guExtTable      = $C0E4         ; GeoUltra's extension table: DirRoot at +15
-DIR_ROOT        = 15
-
-FE_STAT         = 1
-FE_CD           = 11
-FE_SELECT       = 21
-FE_RUNSYS       = 22
-FI_KIND         = 0
-FI_GTYPE        = 3
-K_DRIVE         = 1
-K_FOLDER        = 2
-K_GEOS          = 3
-K_UFILE         = 5
-K_UDIR          = 6
+DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
 ST_LD_DATA      = $80
 O_GHP_FNAME     = $75           ; a document's parent application's name
 CLASS_LEN       = 12

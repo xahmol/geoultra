@@ -12,34 +12,19 @@
 ; the way, as in gush). Own code.
 
         .include "geos.inc"
+        .include "desktop.inc"
 
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
         .import entryInfo, entryName, cur, count, path, IsDotDot
         .export Copy, Cut, Paste, Delete, Rename, NewFolder, Ask
         .export Error, Append, full     ; (mount.s: an image's path, errors)
 
-DoDlgBox        = $C256         ; GEOS jump table
-StashRAM        = $C2C8
-FetchRAM        = $C2CB
-
-FE_COPY         = 5
-FE_MOVE         = 6
-FE_DELETE       = 7
-FE_MKDIR        = 8
-FE_RMDIR        = 9
-FE_RENAME       = 10
-FC_OVERWRITE    = $01
-FILE_EXISTS     = $40
-FI_KIND         = 0
-K_DRIVE         = 1
-K_FOLDER        = 2
-K_UDIR          = 6
+FILE_EXISTS     = $40           ; (the engine's error)
 
 CLIP_BANK       = 5             ; (1-4: the entry table, list.s)
 CLIP_SIZE       = 64            ; a name and its zero
 CLIP_MAX        = 1024
 NAME_MAX        = 40            ; an input line's characters
-DBI_X_0         = 1             ; the left icon's place in a dialog
 
         .segment "ZEROPAGE"
 

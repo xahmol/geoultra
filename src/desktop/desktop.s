@@ -9,6 +9,7 @@
 ; under them. Own design and code.
 
         .include "geos.inc"
+        .include "desktop.inc"
 
         .import ListRead, ListDraw, ListPress, ListKey, Drive, Open
         .import Copy, Cut, Paste, Delete, Rename, NewFolder
@@ -17,47 +18,16 @@
         .export FileEngine, Redraw, SideText, SideName, SideLine, SideRedraw
         .export rowY
 
-; GEOS jump table
-Rectangle       = $C124
-FrameRectangle  = $C127
-SetPattern      = $C139
-PutString       = $C148
-BitmapUp        = $C142
-UseSystemFont   = $C14B
-DoMenu          = $C151
-GotoFirstMenu   = $C1BD
-GetFile         = $C208
-FindFTypes      = $C23B
-DoDlgBox        = $C256
-RecoverRectangle = $C12D
-SetDevice       = $C2B0
-OpenDisk        = $C2A1
-guExtTable      = $C0E4         ; GeoUltra: the extension table
-FE_ENTRY        = 30            ; (its file engine entry)
+FE_ENTRY        = 30            ; the file engine: guExtTable + 30
 
-; The file engine (docs/FILE_ENGINE.md)
-FE_RUNSYS       = 22
-FE_OPENDIR      = 2
-FE_READDIR      = 3
-FE_CLOSE        = 4
-K_UDIR          = 6
-
-; Layout (docs/DESKTOP.md, "Screen")
-MENU_BOTTOM     = 14
-SIDE_RIGHT      = 79            ; the sidebar: x 0-79
-LIST_LEFT       = 82
-PATH_Y          = 24            ; the path line's baseline
-LIST_TOP        = 28            ; the list: rows of ROW_H pixels
-ROW_H           = 9
-SCREEN_RIGHT    = 319
-BASELINE        = 7             ; a row's baseline below its top
+; Layout (desktop.inc has the shared part)
 SIDE_FIRST      = LIST_TOP      ; the sidebar's first drive line's top
 SIDE_MAX        = 16            ; sidebar lines a click can choose
 EJECT_CARD      = 8             ; the eject icon: x 64-71 (mount.s)
 EJECT_X         = EJECT_CARD * 8
 
 DA_MAX          = 8             ; desk accessories in the geos menu
-NAME_LEN        = 17            ; a GEOS name and its zero
+DA_NAME_LEN     = 17            ; a GEOS name and its zero
 
         .segment "CODE"
 
@@ -460,7 +430,7 @@ DiskName:
         beq @zero
         sta dname,y
         iny
-        cpy #NAME_LEN - 1
+        cpy #DA_NAME_LEN - 1
         bcc @ch
 @zero:  lda #0
         sta dname,y
@@ -571,12 +541,12 @@ Refresh:
 Nothing:
         jmp GotoFirstMenu
 
-; The accessories' names in daNames, NAME_LEN apart.
+; The accessories' names in daNames, DA_NAME_LEN apart.
 DaLo:   .repeat DA_MAX, i
-        .byte <(daNames + i * NAME_LEN)
+        .byte <(daNames + i * DA_NAME_LEN)
         .endrepeat
 DaHi:   .repeat DA_MAX, i
-        .byte >(daNames + i * NAME_LEN)
+        .byte >(daNames + i * DA_NAME_LEN)
         .endrepeat
 
 DrivesText:     .byte BOLDON, "DRIVES", PLAINTEXT, 0
@@ -709,4 +679,4 @@ daCount:        .byte 0
 
 dname:          .res 64
 uInfo:          .res 16
-daNames:        .res DA_MAX * NAME_LEN
+daNames:        .res DA_MAX * DA_NAME_LEN

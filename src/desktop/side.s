@@ -14,6 +14,7 @@
 ; it in its folder. Own code.
 
         .include "geos.inc"
+        .include "desktop.inc"
 
         .import FileEngine, SideText, SideLine, SideRedraw, rowY
         .import ListRead, ListDraw, Fetch, IsSelected, Modifiers, mods
@@ -22,25 +23,6 @@
         .import path, entryInfo, entryName, cur, count
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
 
-MoveData        = $C17E         ; GEOS jump table
-
-FE_CLOSE        = 4
-FE_DELETE       = 7
-FE_RENAME       = 10
-FE_CD           = 11
-FE_OPEN         = 13
-FE_READ         = 14
-FE_WRITE        = 15
-FE_HOME         = 26
-FO_READ         = 0
-FO_WRITE        = 1
-FE_ULTIMATE     = $4F
-FI_KIND         = 0
-K_FOLDER        = 2
-K_UDIR          = 6
-MOD_CBM         = 2             ; (list.s, Modifiers)
-
-ROW_H           = 9             ; (desktop.s)
 SIDE_LAST       = 196           ; the lowest baseline in the sidebar
 LIST_MAX        = 4             ; favourites, recent documents
 PATH_LEN        = 63            ; a path and its zero (entryName's size:

@@ -10,26 +10,20 @@
 ; Errors are shown (actions.s, Error) and change nothing. Own code.
 
         .include "geos.inc"
+        .include "desktop.inc"
 
         .import FileEngine, Into, Drive, ListRead, ListDraw, SideRedraw
         .import Error, Append, full, entryName, path
         .export Mount, Eject, HasImage, EjectIcon
 
-DoDlgBox        = $C256         ; GEOS jump table
-RstrFrmDialogue = $C2BF
-
-FE_MOUNT        = 17
-FE_UMOUNT       = 18
-FE_MOUNTINFO    = 23
 DRIVES          = 4             ; A-D (E is the system drive: no image)
 LINE_LEN        = 12            ; a drive's line in the dialog: 11
                                 ; characters (clear of CANCEL) and the zero
-INFO_LEN        = 64            ; FE_MOUNTINFO's buffer
+MINFO_LEN       = 64            ; FE_MOUNTINFO's buffer
 ROW0            = 20            ; the dialog's first drive button's top
 ROW_STEP        = 18            ; buttons 16 high, 2 apart
 TEXT_X          = 64            ; a line's x, right of its button
 TEXT_DY         = 11            ; its baseline below the button's top
-DBI_X_0         = 1             ; the left icon's place in a dialog
 
         .segment "CODE"
 
@@ -207,7 +201,7 @@ Eject:  sta letter
         beq @ask
         iny
         inx
-        cpy #INFO_LEN - 1
+        cpy #MINFO_LEN - 1
         bcc @n
         lda #0
         sta ejectName,y
@@ -349,6 +343,6 @@ letter:         .byte 'a'
 
         .segment "BSS"
 
-info:           .res INFO_LEN
+info:           .res MINFO_LEN
 lines:          .res DRIVES * LINE_LEN
-ejectName:      .res INFO_LEN
+ejectName:      .res MINFO_LEN

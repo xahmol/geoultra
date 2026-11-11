@@ -12,49 +12,21 @@
 ; the first entry. Own design and code.
 
         .include "geos.inc"
+        .include "desktop.inc"
 
         .import FileEngine, Open, Up, Into
         .export ListRead, ListDraw, ListPress, ListKey, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot
 
-; GEOS jump table
-Rectangle       = $C124
-InvertRectangle = $C12A
-SetPattern      = $C139
-PutString       = $C148
-FrameRectangle  = $C127
-GetCharWidth    = $C1C9
-StashRAM        = $C2C8
-FetchRAM        = $C2CB
-
-FE_OPENDIR      = 2
-FE_READDIR      = 3
-FE_CLOSE        = 4
-FE_PWD          = 12
-FI_KIND         = 0
-K_DRIVE         = 1
-K_FOLDER        = 2
-K_UDIR          = 6
-
-; Layout (desktop.s and docs/DESKTOP.md, "Screen")
-MENU_BOTTOM     = 14
-LIST_LEFT       = 82
-STRIP_LEFT      = 312           ; the scroll strip: x 312-319
-SCREEN_RIGHT    = 319
-PATH_Y          = 24
-LIST_TOP        = 28
-ROW_H           = 9
+; The list's rows (desktop.inc has the rest of the layout)
 ROWS            = 17
 LIST_BOTTOM     = LIST_TOP + ROWS * ROW_H - 1
-BASELINE        = 7
 
 ; The entry table
 ENTRY_SIZE      = 128           ; info (16), long name (61), spare
 ENTRY_BANK      = 1             ; banks 1-4 of the application's REU
 ENTRY_MAX       = 2048
-INFO_LEN        = 16
-NAME_LEN        = 61
 ENTRY_LEN       = INFO_LEN + NAME_LEN
 
 ; CIA 1 for SHIFT and C= at a click (the keyboard matrix, as gush reads
@@ -892,8 +864,6 @@ Follow: lda cur+1               ; cur < top: top = cur
         sta top+1
 @end:   rts
 
-MOD_SHIFT       = 1
-MOD_CBM         = 2
 
         .segment "DATA"
 
