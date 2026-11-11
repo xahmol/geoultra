@@ -48,8 +48,8 @@ ListRead:
         lda #>path
         sta r0H
         lda #FE_PWD
-        jsr FileEngine
-        lda #0
+        jsr FileEngine          ; (an error left: path keeps the folder it
+        lda #0                  ; held, which the listing below then reads)
         sta count
         sta count+1
         sta top
@@ -619,8 +619,6 @@ ListPress:
 @redraw:
         jsr ListDraw
         clc
-        rts
-@no:    sec
         rts
 
 ; Double: C set when pick is the entry clicked last and GEOS's double-

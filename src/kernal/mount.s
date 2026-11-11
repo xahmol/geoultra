@@ -520,7 +520,7 @@ ReadSettings:
         jsr Match
         beq @slow
         jsr KeyBack
-        ldx #startKey - keys    ; "TART=GUSH": gush instead of the banner
+        ldx #startKey - keys    ; "TART=GUSH": gush instead of the desktop
         jsr Match
         bne @skip0
         lda #$80

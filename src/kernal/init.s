@@ -7,7 +7,7 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .import IrqEntry, InterruptMain, MainLoop, DefMouseVector, DefFaultVector
+        .import IrqEntry, InterruptMain, DefMouseVector, DefFaultVector
         .import Rectangle, FrameRectangle, SetPattern
         .import pointerPic, UseSystemFont, PutString, RecoverRectangle
         .import StringWidth, sysFlgCopy, DiskInit, ExtraColours, ClockInit
