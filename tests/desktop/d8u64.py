@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """GeoUltra's desktop on the U64: folders on the Ultimate's own file
 system copied, deleted and moved with everything in them (src/desktop/
-tree.s). A scratch folder /USB0/GEOULTRA/test/d8 made over FTP (SRC and
-OUT each with one.txt, two.txt and SUB/three.txt; MOVED empty) and
-removed at the end; a favourite (SETTINGS.INI, made and deleted) takes
-the desktop there. OUT deleted ("Delete everything in it?": Yes); SRC
-cut and pasted into MOVED: refused (FE_NOT_SUPPORTED) with nothing
-changed, as copies from one Ultimate path to another and folder moves
-there are not in the file engine yet (FILE_ENGINE.md); the copy and move
-of a tree are tested between GEOS drives in VICE, tests/desktop/d8.py.
+tree.s; the engine's modules 83 and 84). A scratch folder
+/USB0/GEOULTRA/test/d8 made over FTP (SRC with one.txt, two.txt and
+SUB/three.txt; OUT and MOVED empty) and removed at the end; a favourite
+(SETTINGS.INI, made and deleted) takes the desktop there. SRC copied
+into OUT (the tree and a file's bytes checked over FTP); OUT deleted
+("Delete everything in it?": Yes); SRC cut and pasted into MOVED (one
+rename on the Ultimate).
 Usage: tests/desktop/d8u64.py [build/geoultra64.crt]
 """
 import ftplib
@@ -98,12 +97,11 @@ def main():
     if ls(BASE) is not None:
         rmtree(BASE)
     ftp.mkd(BASE)
-    for d in ("SRC", "SRC/SUB", "OUT", "OUT/SUB", "MOVED"):
+    for d in ("SRC", "SRC/SUB", "OUT", "MOVED"):
         ftp.mkd(BASE + "/" + d)
-    for top in ("SRC", "OUT"):
-        for name, data in (("one.txt", b"first\r"), ("two.txt", b"second\r"),
-                           ("SUB/three.txt", b"third\r")):
-            ftp.storbinary("STOR " + BASE + "/" + top + "/" + name, io.BytesIO(data))
+    for name, data in (("one.txt", b"first\r"), ("two.txt", b"second\r"),
+                       ("SUB/three.txt", b"third\r")):
+        ftp.storbinary("STOR " + BASE + "/SRC/" + name, io.BytesIO(data))
     ftp.storbinary("STOR " + HOME + "SETTINGS.INI",
                    io.BytesIO(b"[favourites]\r\n/usb0/geoultra/test/d8\r\n"))
     try:
@@ -113,6 +111,16 @@ def main():
         letters = bytes(u.read(k["sideLetters"], n))
         press((20, u.read(k["sideTops"] + letters.index(b"\x80"), 1)[0] + 4), 6)
         check("the favourite: the scratch folder", path().lower(), "/usb0/geoultra/test/d8")
+        here = names()
+        cursor("src", here)                                  # copy SRC into OUT
+        key(C | ord("c"))
+        cursor("out", here)
+        key(CR, 5)
+        key(C | ord("v"), 25)
+        check("SRC copied into OUT", (ls(BASE + "/OUT/SRC"), ls(BASE + "/OUT/SRC/SUB")),
+              (["one.txt", "sub", "two.txt"], ["three.txt"]))
+        check("the copy's bytes", _get(ftp, BASE + "/OUT/SRC/SUB/three.txt"), b"third\r")
+        key(KEY_LEFT, 5)
         here = names()                                       # delete OUT
         cursor("out", here)
         key(DEL, 3)
@@ -125,9 +133,8 @@ def main():
         cursor("moved", here)
         key(CR, 5)
         key(C | ord("v"), 25)
-        press((220, 112), 4)                                 # (the error's OK)
-        check("a folder move on the Ultimate: refused, nothing changed",
-              (ls(BASE + "/MOVED"), ls(BASE + "/SRC")), ([], ["one.txt", "sub", "two.txt"]))
+        check("SRC moved into MOVED", (ls(BASE + "/MOVED/SRC/SUB"), "src" in (ls(BASE) or [])),
+              (["three.txt"], False))
     finally:
         ftp.delete(HOME + "SETTINGS.INI")
         if ls(BASE) is not None:

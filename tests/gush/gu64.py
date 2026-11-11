@@ -368,7 +368,9 @@ def main():
     ftp.quit()
     g.run("reboot", settle=1)                       # (last: it ends the session)
     time.sleep(25)
-    check("reboot: GEOS started afresh (keyVector cleared)", bytes(u.read(0x84A3, 2)), b"\0\0")
+    desk = open(os.path.join(ROOT, "build", "desktop", "desktop.bin"), "rb").read()[:16]
+    check("reboot: GeoUltra started afresh (the cold start ends in the desktop)",
+          bytes(u.read(0x0400, 16)), desk)
     g.start()                                       # (step 3.6: the history kept)
     lb = g.lbl["lineBuf"]
     got = []

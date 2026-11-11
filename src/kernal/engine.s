@@ -65,6 +65,8 @@
 ;   78 enginentp.s   the time as a date, the clocks set
 ;   79 enginentp.s   SETTINGS.INI's [time] lines
 ;   80 enginenet.s   FE_UCI: a command to the Ultimate, its reply
+;   83 engineuu.s    FE_MOVE on one Ultimate volume: a rename from its top
+;   84 engineuu.s    FE_COPY from the Ultimate onto it: its own COPY
 ; Shared: engine.inc (constants, work area, REU layout), feblock.inc,
 ; fecd.inc, fecvtout.inc, fecvtread.inc, fecvtwrite.inc, fedrive.inc,
 ; fefat.inc, fefmt.inc, fehome.inc, felong.inc, femount.inc, fepath.inc,

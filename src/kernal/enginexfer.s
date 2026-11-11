@@ -253,18 +253,24 @@ Target: jsr OvlCall             ; (module 30: the target, checked)
         .byte 30, 0
 Blocks: jsr OvlCall             ; (module 57: the blocks, the entry; a
         .byte 57, 0             ; CVT converted, else module 44)
+UMove:  jsr OvlCall             ; (module 83: a move on the same volume,
+        .byte 83, 0             ; a rename from its top)
+UCopy:  jsr OvlCall             ; (module 84: a copy onto the Ultimate)
+        .byte 84, 0
 
 ; OvUFrom (FE_COPY, FE_MOVE from the Ultimate; the source path resolved):
 ; the file opened, the new entry's fields from its name, size and date,
 ; the target checked (module 30), the blocks written (module 44), the
-; file closed; for FE_MOVE then deleted. X = 0 or the error.
+; file closed; onto the Ultimate the Ultimate's own COPY (module 84); for
+; FE_MOVE then deleted (on the same volume a rename first, module 83). X
+; = 0 or the error.
 OvUFrom:
         ldx #FE_BAD_PATH
         lda feName
         beq @end                ; (the top)
-        lda cMove               ; FE_MOVE in one Ultimate folder: a rename
-        beq @copy
-        jsr Rename
+        lda cMove               ; FE_MOVE on the same volume: a rename
+        beq @copy               ; (module 83)
+        jsr UMove
         bcc @end                ; (done, or its error)
         jsr Resolve             ; else the source again (a copy)
         txa
@@ -306,8 +312,8 @@ OvUFrom:
         jsr Target
         txa
         bne @close
-        ldx #FE_NOT_SUPPORTED   ; onto the Ultimate too: not yet
-        lda cToU
+        ldx #0                  ; onto the Ultimate too: after the close,
+        lda cToU                ; module 84
         bne @close
         lda #<curDirHead        ; room for all its blocks
         sta r5L
@@ -331,7 +337,12 @@ OvUFrom:
         tax
 :       txa
         bne @ret
-        lda cMove
+        lda cToU                ; onto the Ultimate: its own COPY
+        beq :+
+        jsr UCopy
+        txa
+        bne @ret
+:       lda cMove
         beq @ret
         lda argR0               ; FE_MOVE: the source deleted
         sta r0L
@@ -352,99 +363,6 @@ OvUFrom:
 Resolve:
         jsr OvlCall
         .byte 23, 0
-
-; Rename (FE_MOVE, the source resolved): when the target is a new name in
-; the source's folder on the Ultimate, RENAME there: C clear, X its
-; result. Else C set (r0 = the caller's r0 again, for Resolve). The
-; source's path kept in diskBlkBuf meanwhile.
-Rename: ldx #0                  ; the source's path aside
-@save:  lda fePath,x
-        sta diskBlkBuf,x
-        beq @saved
-        inx
-        bne @save
-@saved: lda fePos
-        sta cSrcFT              ; (its folder's length; no GEOS source)
-        lda argR1
-        sta r0L
-        lda argR1+1
-        sta r0H
-        jsr Resolve
-        txa
-        bne @no
-        lda feKind
-        cmp #FE_P_ULTIMATE
-        bne @no
-        lda feName              ; (a top: no)
-        beq @no
-        lda fePos               ; the same folder?
-        cmp cSrcFT
-        bne @no
-        ldy #0
-@same:  cpy fePos
-        beq @folder
-        lda fePath,y
-        cmp diskBlkBuf,y
-        bne @no
-        iny
-        bne @same
-@folder:
-        jsr UCdAll              ; the target an existing folder: no
-        txa
-        beq @no
-        jsr UCd
-        txa
-        bne @done
-        jsr Fits
-        bcs @done
-        lda #U_RENAME           ; RENAME old, new
-        jsr UBegin
-        ldx cSrcFT
-@old:   inx
-        lda diskBlkBuf,x
-        beq @new
-        stx cSrcFS
-        jsr UPut
-        ldx cSrcFS
-        bne @old
-@new:   jsr UPut                ; (the zero between them)
-        jsr UPutName
-        jsr UNoData
-        jsr UExec
-@done:  clc
-        rts
-@no:    lda argR0               ; (for the copy: the source again)
-        sta r0L
-        lda argR0+1
-        sta r0H
-        sec
-        rts
-
-; Fits: C clear when the old name (diskBlkBuf after cSrcFT) and the new
-; one (fePath after fePos) fit in one RENAME command, measured before it
-; is built (uCmd is followed by dirEntryBuf); else C set, X = FE_BAD_PATH.
-; Destroys A, X; cSrcFS.
-Fits:   ldx #$FF
-@olen:  inx
-        lda diskBlkBuf,x
-        bne @olen
-        txa
-        sec
-        sbc cSrcFT              ; (old name + 1)
-        sta cSrcFS
-        ldx #$FF
-@nlen:  inx
-        lda fePath,x
-        bne @nlen
-        txa
-        sec
-        sbc fePos               ; (new name + 1)
-        clc
-        adc cSrcFS
-        ldx #FE_BAD_PATH
-        bcs @end
-        cmp #U_CMD_MAX - 2 + 1  ; (2 bytes target, command)
-@end:   rts
 
         .endscope
 

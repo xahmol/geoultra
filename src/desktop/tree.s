@@ -13,7 +13,9 @@
 ; a folder tries FE_MOVE first (one step on the same drive), else copies
 ; and deletes. A file that exists is replaced only after "Yes" (or "Yes
 ; to all" earlier in the same paste); a folder that is not empty is
-; deleted with its contents only after "Yes" (or "Yes to all"). RUN/STOP
+; deleted with its contents only after "Yes" (or "Yes to all"). On the
+; Ultimate a folder move is one rename and files copy with the
+; Ultimate's own COPY (engine modules 83 and 84). RUN/STOP
 ; during a copy stops everything (ProgressBlock, FE_CANCELLED); an error
 ; is shown (Error) and stops it too. Own code.
 
@@ -102,49 +104,12 @@ PasteItem:
         cpx #FE_NOT_SUPPORTED
         bne Fail
 @copyDel:
-        jsr BothUlt             ; (not on the Ultimate alone: refused)
-        bcs Fail
         jsr TreeCopy
         bcs @end
         lda #OP_DELETE
         jmp WalkTop
-@copy:  jsr BothUlt
-        bcs Fail
-        jmp TreeCopy
+@copy:  jmp TreeCopy
 @end:   rts
-
-; BothUlt: C set, X = FE_NOT_SUPPORTED, when tSrc and tDst both lie on
-; the Ultimate's file system: the engine copies no files from one
-; Ultimate path to another yet (FILE_ENGINE.md), so a folder is refused
-; there before anything is made (no empty tree left behind).
-BothUlt:
-        lda #<tSrc
-        ldx #>tSrc
-        jsr IsUlt
-        bcc @no
-        lda #<tDst
-        ldx #>tDst
-        jsr IsUlt
-        bcc @no
-        ldx #FE_NOT_SUPPORTED
-        sec
-        rts
-@no:    clc
-        rts
-
-; IsUlt: C set when the path at A/X lies on the Ultimate (its first
-; part longer than a drive's letter: "/usb0", "/sd").
-IsUlt:  sta r5L
-        stx r5H
-        ldy #2
-        lda (r5),y
-        beq @no                 ; ("/b")
-        cmp #'/'
-        beq @no                 ; ("/b/...")
-        sec
-        rts
-@no:    clc
-        rts
 
 ; Fail: error X shown (entryName: the entry), C set: stop.
 Fail:   cpx #FE_CANCELLED       ; (RUN/STOP: no error to show)

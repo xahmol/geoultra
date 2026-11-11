@@ -238,7 +238,25 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 76-79 | `FE_NTP` (enginentp.s; from GeoUTime, GeoUTools, and ntp2ultimate by MaxPlap): the exchange, SETTINGS.INI read, the date and the clocks, its `[time]` lines (`fehome.inc` shared with module 75) |
 | 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |
 
-Still to come (estimate): Ultimate to Ultimate copies, and moving folders (on the Ultimate and between GEOS folders: `FE_MOVE` answers `FE_IS_FOLDER` for a folder, `FE_RENAME` takes a name, not a path; the desktop copies and deletes on GEOS drives, and refuses on the Ultimate until then, 2026-11-11).
+From one Ultimate path to another (2026-11-11, modules 83 and 84,
+engineuu.s): `FE_MOVE` on the same volume is one RENAME from the
+volume's top with both paths relative (measured on 3.15a: it moves files
+and folders, with everything in them, into other folders; an absolute
+path is refused), into an existing folder under the source's name, an
+existing file replaced only with `FC_OVERWRITE`; to another volume a
+copy and a delete. `FE_COPY` of a file uses the Ultimate's own COPY from
+the source's folder into the target's (it keeps the name and does not
+overwrite: an existing target is deleted first with `FC_OVERWRITE`,
+else `FILE_EXISTS`), then a RENAME there for another name. Not
+possible with COPY, so `FE_NOT_SUPPORTED`: a copy into the source's own
+folder (COPY does nothing there; measured: with the rename after it a
+copy became a move, now refused before anything happens), and a copy
+under another name into a folder that already has a file of the
+source's name. A copy onto itself: `FE_BAD_PATH`. Folders are copied
+by the caller, file by file (the desktop's tree.s, gush's `cp -r`).
+
+Still to come (estimate): moving folders on GEOS drives (`FE_MOVE`
+answers `FE_IS_FOLDER`; the desktop copies and deletes).
 
 Shared code goes into includes assembled into each module that needs it
 (`engine.inc`: constants, the work area, the REU layout; `fereu.inc`:

@@ -369,18 +369,16 @@ colour is a property of an element, by name:
   "Delete everything in it?" with the same three answers. A folder
   pasted into itself is refused. The progress line counts the files
   ("Copying 14: name, 40 blocks"); RUN/STOP stops. On the Ultimate's
-  own file system the engine cannot yet copy files from one Ultimate
-  path to another, nor move a folder there: such a folder paste is
-  refused before anything is made (`FE_NOT_SUPPORTED`). Mounting moved
+  own file system a folder move is one rename and files copy with the
+  Ultimate's own COPY (the engine's new modules 83 and 84,
+  FILE_ENGINE.md). Mounting moved
   to overlay 3; the error dialog and `Append` to the core
   (errors.s). `OvlGo` keeps r0-r3 across a fetch now (`ThemeUse` takes
   r0; a theme chosen while another overlay was in place got a broken
   name). Tests: tests/desktop/d8.py (VICE: a tree copied, pasted again
-  with Yes to all, deleted, moved), d8u64.py (U64: a tree deleted on
-  the Ultimate, a folder move there refused with nothing changed).
-- **Next:** in the file engine, copies between Ultimate paths and
-  moving folders there; the icon view; the theme editor (settings
-  tool, phase 3).
+  with Yes to all, deleted, moved), d8u64.py (U64: a tree copied on
+  the Ultimate with its bytes checked, deleted, a folder moved).
+- **Next:** the icon view; the theme editor (settings tool, phase 3).
 
 ## Open bugs
 
