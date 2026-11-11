@@ -4,6 +4,8 @@
 #   make              build build/geoultra64.crt
 #   make vice         run it in VICE 3.10 (16 MB REU, 1351 mouse in port 1)
 #   make vice-shot    run unattended, screenshot to build/vice.png
+#   make deploy       the cartridge to the Ultimate's /SD/idi8b/geoultra/
+#                     (ULTIP1 in .env), to start it from there
 #   make conformance81  the same for 1581 images (GEOS 2.0 on a 1581)
 #   make conformance  compare kernal routines with GEOS 2.0 in VICE
 #                     (tests/conformance/*.py; your own GEOS 2.0 disk:
@@ -36,8 +38,9 @@ UCILIB  = lib/ultimate-uci-oscar64/include
 SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
+DEPLOYDIR = /SD/idi8b/geoultra/
 
-.PHONY: all checkcfg vice vice-shot conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot deploy conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -98,9 +101,15 @@ build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/vlircvt.py
 
 # GeoUltra's desktop (docs/DESKTOP.md): src/desktop, on drive E.
 DESKSRCS = $(wildcard src/desktop/*.s)
-build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
+# The mount dialog's drive buttons, drawn like the system icons.
+DRVICONS = $(patsubst %,build/gen/drvicon_%.inc,A B C D)
+build/gen/drvicon_%.inc: tools/mkicons.py tools/fonts/system9.py
+	@mkdir -p build/gen
+	$(PYTHON) tools/mkicons.py --icon $@ DriveIcon$* $*
+
+build/desktop/desktop.cvt: $(DESKSRCS) $(DRVICONS) src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/desktop
-	for f in $(DESKSRCS); do $(CA65) -g -I src/inc -o build/desktop/$$(basename $$f .s).o $$f || exit 1; done
+	for f in $(DESKSRCS); do $(CA65) -g -I src/inc -I build/gen -o build/desktop/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o $(patsubst src/desktop/%.s,build/desktop/%.o,$(filter-out src/desktop/desktop.s,$(DESKSRCS)))
 	$(PYTHON) $(GEOSAPP) src/desktop/desktop.toml build/desktop/desktop.bin $@
 
@@ -286,6 +295,10 @@ $(SMOKE)/gud64.prg: tests/smoke/gud64.c $(UCILIB)/ultimate_common_lib.c \
 smoke-vice: $(SMOKE)/gusmoke.crt
 	$(VICEHL) -default -sounddev dummy -warp +sound -cartcrt $< -reu -reusize 16384 \
 		-limitcycles 4000000 -exitscreenshot $(SMOKE)/vice.png; true
+
+# The cartridge where the user starts it from (user, 2026-11-11).
+deploy: check-deploy build/geoultra64.crt
+	curl -s --ftp-create-dirs -T build/geoultra64.crt ftp://$(ULTIP1)$(DEPLOYDIR)
 
 check-deploy:
 	@curl -s --connect-timeout 3 $(REST)/info >/dev/null 2>&1 || \

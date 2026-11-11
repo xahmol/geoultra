@@ -34,10 +34,12 @@ them.
   clipped at their column.
 - **No task bar yet:** room kept at the bottom; it comes with the task
   switcher.
-- **Opt-in while it is built:** `SETTINGS.INI` `[system]
-  desktop=geoultra` makes `EnterDeskTop` start it from drive E; without
-  it GEOS 2.0's deskTop is searched as before. The default changes when
-  the desktop is good enough.
+- **The default since 2026-11-11 (user):** `EnterDeskTop` starts it
+  from drive E, and the cold start ends in `EnterDeskTop` (the kernal's
+  temporary banner is gone). `SETTINGS.INI` `[system] desktop=geos`
+  brings back GEOS 2.0's deskTop (searched on the drives as before);
+  `start=gush` still starts gush instead. Until 2026-11-11 it was
+  opt-in (`desktop=geoultra`, still accepted).
 
 ## Screen (320 x 200)
 
@@ -173,7 +175,7 @@ colour is a property of an element, by name:
   folders and drives with "/"). Drawn on both screens and
   `RecoverVector` = `RecoverRectangle`, so menus and desk accessories
   give back what was under them (GEOS's default 0 erases with white).
-  The kernal: `SETTINGS.INI` `[system] desktop=geoultra` (mount.s) sets
+  The kernal (then; the default since 2026-11-11): `SETTINGS.INI` `[system] desktop=geoultra` (mount.s) sets
   `ownDesk`; `EnterDeskTop` then starts the desktop through `FE_RUNSYS`
   and falls back to GEOS 2.0's deskTop when that fails. Found on the
   way: the name passed to the engine must not be in the calling overlay
@@ -257,6 +259,26 @@ colour is a property of an element, by name:
   "ReadMe 1581" opens in geoWrite and goes to the top of `RECENT.INI`;
   both files deleted again). C=+click removal is for the hand test
   (the harness cannot hold C=).
+- **D6 (2026-11-11):** disk images (mount.s). Opening a file on the
+  Ultimate whose name ends in `.d64`, `.d71`, `.d81` or `.dnp` (any
+  case) asks for the drive: "Mount on drive:" with a button per letter
+  A-D (drawn by tools/mkicons.py like the system icons) and next to
+  each the name of the image mounted there now (its path's last part,
+  cut at 11 characters, clear of CANCEL) or "free". A button mounts it
+  (`FE_MOUNT`: the old image written back first, `MOUNTS.INI` anew),
+  the sidebar is drawn again and the list goes to the drive's root.
+  Each sidebar line A-D with an image (`FE_MOUNTINFO`) has an eject
+  icon (8 x 8, x 64-71; the disk names are clipped before it); a click
+  on it asks "Unmount drive C?" with the image's name, YES unmounts
+  (`FE_UMOUNT`) and redraws the sidebar; a list on that drive goes to
+  "/". Errors in the dialog of actions.s (the image's name, the code).
+  Found on the way: with no drive mounted at all the desktop could not
+  start from E (the REU driver refused every block of an empty drive,
+  E's tracks too); now an empty drive serves E's tracks. Tests:
+  tests/desktop/d6u64.py (U64: a favourite to the test folder,
+  geopub.d64 opened, drive C chosen, `/c` and `FE_MOUNTINFO`, the
+  eject icon and YES, C gone; `MOUNTS.INI` put back). In VICE (no
+  Ultimate files) the eject question is checked by hand.
 
 ## Open bugs
 

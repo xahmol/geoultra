@@ -16,6 +16,7 @@
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
         .import entryInfo, entryName, cur, count, path, IsDotDot
         .export Copy, Cut, Paste, Delete, Rename, NewFolder, Ask
+        .export Error, Append, full     ; (mount.s: an image's path, errors)
 
 DoDlgBox        = $C256         ; GEOS jump table
 StashRAM        = $C2C8

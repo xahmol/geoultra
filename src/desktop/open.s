@@ -13,7 +13,7 @@
         .include "geos.inc"
 
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
-        .import cur, count, path, Redraw, RecentAdd
+        .import cur, count, path, Redraw, RecentAdd, Mount
         .export Open, Up, Drive, Into, Document
 
 GetFile         = $C208         ; GEOS jump table
@@ -33,6 +33,7 @@ FI_GTYPE        = 3
 K_DRIVE         = 1
 K_FOLDER        = 2
 K_GEOS          = 3
+K_UFILE         = 5
 K_UDIR          = 6
 ST_LD_DATA      = $80
 O_GHP_FNAME     = $75           ; a document's parent application's name
@@ -40,8 +41,8 @@ CLASS_LEN       = 12
 
         .segment "CODE"
 
-; Open: the cursor's entry opened (see above). Nothing for other kinds
-; yet.
+; Open: the cursor's entry opened (see above); a file on the Ultimate
+; that is a disk image is mounted (mount.s). Nothing for other kinds.
 Open:   lda count               ; (an empty folder: nothing)
         ora count+1
         beq @end
@@ -55,6 +56,10 @@ Open:   lda count               ; (an empty folder: nothing)
         beq @enter
         cmp #K_DRIVE
         beq @enter
+        cmp #K_UFILE            ; (a disk image: mounted, mount.s)
+        bne :+
+        jmp Mount
+:
         cmp #K_GEOS
         bne @end
         lda entryInfo + FI_GTYPE

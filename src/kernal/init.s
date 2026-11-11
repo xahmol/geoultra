@@ -1,4 +1,6 @@
-; Cold start: hardware, screen, mouse pointer, IRQ, then MainLoop. Runs
+; Cold start: hardware, screen, mouse pointer, IRQ, then EnterDeskTop
+; (GeoUltra's desktop, or GEOS 2.0's with SETTINGS.INI desktop=geos;
+; gush with start=gush). Runs
 ; once from $4F00 (segment INIT, loaded by the boot ROM; applications
 ; overwrite it later), so cold-start-only code costs no kernal space.
 
@@ -17,6 +19,7 @@ DEFAULT_COLORS  = $BF             ; dark grey pixels on light grey
 DEFAULT_BORDER  = $0F             ; light grey
 POINTER_COLOR   = $06             ; blue
 IRQ_LINE        = 250             ; lower border
+EnterDeskTop    = $C22C           ; GEOS jump table
 
         .segment "INIT"
 
@@ -182,7 +185,6 @@ ColdStart:                      ; $4F00: the boot ROM jumps here
         lda #>(SC_PIX_WIDTH - 1)
         sta rightMargin+1
         jsr UseSystemFont
-        jsr DrawBanner
         jsr DiskInit            ; drives from the REU mount table
         jsr SerialFromDisk      ; the user's GEOS serial, when a boot disk is in
         jsr SaveJumpTab         ; the copy that StartAppl/EnterDeskTop restore
@@ -200,81 +202,9 @@ ColdStart:                      ; $4F00: the boot ROM jumps here
         sta r0H
         lda #FE_RUNSYS
         jsr FileEngine
-@loop:  jmp MainLoop
+@loop:  jmp EnterDeskTop          ; (no return)
 
 gushName:
         .byte "gush", 0
 FE_RUNSYS       = 22            ; (engine.inc)
 FE_NTP          = 29
-
-bannerText:
-        .byte "GeoUltra ", BOLDON, "kernal", PLAINTEXT, " - ", ULINEON, "own font", ULINEOFF, ", 1.0", 0
-
-; Boot screen: the banner text centred in a white framed box that is
-; sized by the measured text (BANNER_PAD pixels left and right).
-BANNER_PAD      = 10
-BANNER_TOP      = 88
-BANNER_HEIGHT   = 24
-DrawBanner:
-        lda #<bannerText
-        sta r0L
-        lda #>bannerText
-        sta r0H
-        jsr StringWidth         ; r2 = text width
-        lda r2L                 ; r11 = text x = 160 - width / 2
-        sta r5L
-        lda r2H
-        lsr
-        sta r5H
-        ror r5L
-        sec
-        lda #<(SC_PIX_WIDTH / 2)
-        sbc r5L
-        sta r11L
-        lda #>(SC_PIX_WIDTH / 2)
-        sbc r5H
-        sta r11H
-        sec                     ; box: text +- BANNER_PAD
-        lda r11L
-        sbc #BANNER_PAD
-        sta r3L
-        lda r11H
-        sbc #0
-        sta r3H
-        clc
-        lda r11L
-        adc r2L
-        sta r4L
-        lda r11H
-        adc r2H
-        sta r4H
-        clc
-        lda r4L
-        adc #BANNER_PAD - 1
-        sta r4L
-        bcc @box
-        inc r4H
-@box:   lda r11L                ; keep the text x over the drawing
-        pha
-        lda r11H
-        pha
-        lda #BANNER_TOP
-        sta r2L
-        lda #BANNER_TOP + BANNER_HEIGHT - 1
-        sta r2H
-        lda #0
-        jsr SetPattern
-        jsr Rectangle
-        lda #$FF
-        jsr FrameRectangle
-        pla
-        sta r11H
-        pla
-        sta r11L
-        lda #<bannerText        ; baseline: the font's 9 lines centred
-        sta r0L
-        lda #>bannerText
-        sta r0H
-        lda #BANNER_TOP + (BANNER_HEIGHT - 9) / 2 + 6
-        sta r1H
-        jmp PutString

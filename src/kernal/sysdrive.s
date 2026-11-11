@@ -74,8 +74,9 @@ sysTracks:      .byte 0
 sysFolderT:     .byte 0
 sysFolderS:     .byte 0
 sysSlot:        .byte 0         ; the slot E is shown in (its driveType index)
-ownDesk:        .byte 0         ; $80: [system] desktop=geoultra (mount.s;
-                                ; EnterDeskTop starts GeoUltra's desktop)
+ownDesk:        .byte $80       ; $80: EnterDeskTop starts GeoUltra's desktop
+                                ; (the default since 2026-11-11, user);
+                                ; 0: [system] desktop=geos (mount.s)
 
         .segment "DATA"
 turboWant:      .byte $FF       ; $D031 at full speed; $FF: no turbo (speed.s)

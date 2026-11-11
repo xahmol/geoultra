@@ -63,7 +63,7 @@ section 2). GeoUltra's own use of the system areas:
 
 | Range | GeoUltra |
 | --- | --- |
-| `$4F00-$5FFF` | at boot only: the cold start (`INIT`, `build/init64.bin`: `ColdStart`, banner, `DiskInit`, `ClockInit`), loaded by the boot ROM and started at `$4F00` (moved down from `$5000` on 2026-11-04 when it had grown; `$4000-$4E7F` holds mount.s's buffers); applications overwrite it later |
+| `$4F00-$5FFF` | at boot only: the cold start (`INIT`, `build/init64.bin`: `ColdStart`, `DiskInit`, `ClockInit`; it ends in `EnterDeskTop`, the banner is gone since 2026-11-11), loaded by the boot ROM and started at `$4F00` (moved down from `$5000` on 2026-11-04 when it had grown; `$4000-$4E7F` holds mount.s's buffers); applications overwrite it later |
 | `$9000-$9A7F` | disk driver: vectors `$9000-$902F`, jump table `$9030-$904D`, REU image driver (now to about `$97EB`); planned: the **overlay slot**, rarely used kernal code fetched from the REU on demand |
 | `$9A80-$9C7F` | `KEXT`: resident kernal code that no longer fits at `$C000-$FFFF` (the clock, the file list's click and arrow routines) |
 | `$9D80-$9FFF` | the **overlay slot**: one overlay module at a time (src/kernal/overlay.s) |

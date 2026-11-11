@@ -356,11 +356,16 @@ BufPtr: lda #<diskBlkBuf
 ; valid; else C clear and X = error. Tracks SYSDRV_TRACK+1 and up (to 255)
 ; are drive E's blocks (docs/ARCHITECTURE.md "System drive"): its native
 ; image at SYSDRV_BANK, track - SYSDRV_TRACK, on every drive but a native
-; one that large (locSys = $80 then).
+; one that large (locSys = $80 then). An empty drive has only E's
+; tracks (type 0 takes the @sys way below): the desktop starts from E
+; at the cold start before any image is mounted.
 Locate: ldy curDrive
         lda driveType-8,y
         and #$0F
         bne @type
+        ldx r1L
+        cpx #SYSDRV_TRACK + 1
+        bcs @type
         ldx #DEV_NOT_FOUND
         clc
         rts

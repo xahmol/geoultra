@@ -13,6 +13,7 @@
         .import ListRead, ListDraw, ListPress, ListKey, Drive, Open
         .import Copy, Cut, Paste, Delete, Rename, NewFolder
         .import SideLoad, SideLists, SidePress, FavAdd
+        .import Eject, HasImage, EjectIcon
         .export FileEngine, Redraw, SideText, SideName, SideLine, SideRedraw
         .export rowY
 
@@ -21,6 +22,7 @@ Rectangle       = $C124
 FrameRectangle  = $C127
 SetPattern      = $C139
 PutString       = $C148
+BitmapUp        = $C142
 UseSystemFont   = $C14B
 DoMenu          = $C151
 GotoFirstMenu   = $C1BD
@@ -51,6 +53,8 @@ SCREEN_RIGHT    = 319
 BASELINE        = 7             ; a row's baseline below its top
 SIDE_FIRST      = LIST_TOP      ; the sidebar's first drive line's top
 SIDE_MAX        = 16            ; sidebar lines a click can choose
+EJECT_CARD      = 8             ; the eject icon: x 64-71 (mount.s)
+EJECT_X         = EJECT_CARD * 8
 
 DA_MAX          = 8             ; desk accessories in the geos menu
 NAME_LEN        = 17            ; a GEOS name and its zero
@@ -111,7 +115,15 @@ Press:  lda mouseData
         bcs @next
         lda sideLetters,x
         bmi @lists
-        jmp Drive
+        cmp #'e'                ; A-D: on the eject icon (mount.s; a
+        bcs @drive              ; drive without an image: entered)
+        cmp #'a'
+        bcc @drive
+        ldy mouseXPos
+        cpy #EJECT_X
+        bcc @drive
+        jmp Eject
+@drive: jmp Drive
 @lists: jmp SidePress           ; (a favourite or recent document)
 @next:  inx
         bne @line
@@ -255,7 +267,11 @@ Sidebar:
         ldx #>dname
         ldy rowY
         jsr SideName
-        lda rowY
+        lda drv                 ; an image there: the eject icon
+        jsr HasImage
+        bcs :+
+        jsr EjectUp
+:       lda rowY
         clc
         adc #ROW_H
         sta rowY
@@ -376,15 +392,38 @@ SideLine:
         inc sideCount
 @end:   rts
 
+; EjectUp: the eject icon on the drive line whose baseline is rowY.
+EjectUp:
+        lda #<EjectIcon
+        sta r0L
+        lda #>EjectIcon
+        sta r0H
+        lda #EJECT_CARD
+        sta r1L
+        lda rowY
+        sec
+        sbc #BASELINE
+        sta r1H
+        lda #1
+        sta r2L
+        lda #8
+        sta r2H
+        jmp BitmapUp
+
 ; SideText: the text at A/X at x 4, baseline Y (headings and the lines
-; under ULTIMATE, FAVOURITES, RECENT). SideName: at x 14, after a drive
-; letter (at x 4, fully left). Both clipped at the sidebar's edge (rightMargin).
+; under ULTIMATE, FAVOURITES, RECENT), clipped at the sidebar's edge.
+; SideName: at x 14, after a drive letter (at x 4, fully left), clipped
+; before the eject icon (rightMargin).
 SideText:
         pha
+        lda #SIDE_RIGHT - 2
+        sta rightMargin
         lda #4
         bne SideAt
 SideName:
         pha
+        lda #EJECT_X - 2
+        sta rightMargin
         lda #14
 SideAt: sta r11L
         pla
@@ -393,8 +432,6 @@ SideAt: sta r11L
         sty r1H
         lda #0
         sta r11H
-        lda #SIDE_RIGHT - 2
-        sta rightMargin
         lda #0
         sta rightMargin+1
         jsr PutString

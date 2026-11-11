@@ -18,7 +18,12 @@ lists what was tested.
 
 **Status: in development.** The kernal implements all GEOS 2.0 jump table
 entries; GEOS 2.0's deskTop, geoWrite and geoPaint run on it in VICE, and
-the deskTop runs on an Ultimate 64 from disk images mounted at boot. The
+the deskTop runs on an Ultimate 64 from disk images mounted at boot.
+GeoUltra starts in its own desktop (in development: a list of the
+drives' and the Ultimate's files, open, copy, delete, rename, new
+folders, favourites, mounting and unmounting disk images); `[system]
+desktop=geos` in `GEOULTRA/SETTINGS.INI` starts GEOS 2.0's deskTop
+instead. The
 decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -100,6 +105,8 @@ interface (deploying builds, changing settings, reading memory, taking
 screenshots), while Xander does the physical steps (power cycles, keys)
 and judges what is on the screen. gush, the shell, has its own suites:
 `make test-gush` in VICE and `tests/gush/gu64.py` on the Ultimate 64.
+The desktop likewise: `make test-desktop` in VICE and
+`tests/desktop/du64.py` and `d6u64.py` on the Ultimate 64.
 Some steps are done unattended: on Xander's instruction the AI works
 through steps he decided on, testing, committing and pushing each one,
 and he reviews the result afterwards (the commits and docs/GUSH.md say

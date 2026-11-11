@@ -454,13 +454,18 @@ ReadSettings:
 .endif
         cmp #'D'
         bne @hib
-        ldx #deskKey - keys     ; "ESKTOP=GEOULTRA": EnterDeskTop starts
-        jsr Match               ; GeoUltra's desktop (docs/DESKTOP.md)
+        ldx #deskKey - keys     ; "ESKTOP=GEOS": GEOS 2.0's deskTop, unless
+        jsr Match               ; "ULTRA" follows (GeoUltra's desktop, the
+        beq :+                  ; default: docs/DESKTOP.md). The next
+        jmp @skip               ; character only looked at, not read: the
+:       ldy #0                  ; line's end stays for SkipLine
+        lda (r1),y
+        and #$DF
+        cmp #'U'
         beq :+
-        jmp @skip
-:       lda #$80
+        lda #0
         sta ownDesk
-        jmp @skip
+:       jmp @skip
 @hib:   cmp #'H'
         bne @serial2
         ldx #hibKey - keys      ; "IBERNATE=" seconds after a change (0:
@@ -562,7 +567,7 @@ hibKey:         .byte "IBERNATE=", 0
 turboKey:       .byte "URBO=", 0
 slowKey:        .byte "LOW=", 0
 startKey:       .byte "TART=GUSH", 0
-deskKey:        .byte "ESKTOP=GEOULTRA", 0
+deskKey:        .byte "ESKTOP=GEOS", 0
 .ifdef BYPASS
 protKey:        .byte "ROTECTION=BYPASS", 0
 .endif
