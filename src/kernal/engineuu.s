@@ -159,10 +159,10 @@ Resolve:
 ; 43, the source file closed again): the Ultimate's COPY from the
 ; source's folder into the target's folder, then a RENAME there when the
 ; target has another name. An existing target file: FILE_EXISTS, or with
-; FC_OVERWRITE deleted first. COPY keeps the source's name, so a copy
-; under another name into a folder that already has a file of the
-; source's name gives FE_NOT_SUPPORTED, and so does a copy into the
-; source's own folder (COPY does nothing there). X = 0 or the error.
+; FC_OVERWRITE deleted first. COPY keeps the source's name and does
+; nothing in the source's own folder, so a copy under another name
+; (every copy within one folder among them) goes through a temporary
+; folder (module 85). X = 0 or the error.
 OvUCopy:
         lda argR0
         sta r0L
@@ -185,18 +185,7 @@ OvUCopy:
         bne :+
         ldx #FE_BAD_PATH
         rts
-:       ldx #FE_NOT_SUPPORTED   ; in its own folder: COPY would do nothing
-        lda fePos               ; and the rename below would take the
-        cmp cSrcFT              ; source itself (measured: a copy became
-        bne :+                  ; a move), so refused
-        tay
-@same:  dey
-        bmi @end                ; (the same folder)
-        lda fePath,y
-        cmp diskBlkBuf,y
-        beq @same
-:
-        jsr UCd                 ; the target's folder
+:       jsr UCd                 ; the target's folder
         txa
         bne @end
         lda argR2               ; an existing target: replaced when
@@ -225,8 +214,11 @@ OvUCopy:
 @end:   rts
 @long:  ldx #FE_BAD_PATH
         rts
-@copy:  jsr CdSrc               ; COPY name, the target's folder "/"
-        txa
+@copy:  jsr SameName            ; another name (so also any copy in its
+        bcs :+                  ; own folder): through a temporary folder
+        jmp Via                 ; (module 85)
+:       jsr CdSrc               ; the same name: COPY name, the target's
+        txa                     ; folder "/"
         bne @end
         lda #U_COPY
         jsr UBegin
@@ -249,50 +241,10 @@ OvUCopy:
         jsr PutChk
         bcs @long
         jsr UNoData
-        jsr UExec
-        txa
-        beq :+
-        cpx #FILE_EXISTS        ; (another name, and the source's name
-        bne @end                ; already in that folder: COPY keeps the
-        jsr SameName            ; name, so this copy cannot be made)
-        ldx #FILE_EXISTS        ; (SameName uses X)
-        bcs @end                ; (C set: the same name)
-        ldx #FE_NOT_SUPPORTED
-        rts
-:       jsr SameName            ; another name: renamed in the target's
-        ldx #0                  ; folder (SameName uses X)
-        bcs @end
-        jsr UCd
-        txa
-        bne @end
-        lda #U_RENAME
-        jsr UBegin
-        ldx cSrcFT
-@old:   inx
-        lda diskBlkBuf,x
-        jsr PutChk
-        bcs @long
-        cmp #0
-        bne @old
-        jsr UPutName
-        jsr UNoData
         jmp UExec
 
-; CdSrc: into the source's folder (diskBlkBuf's first cSrcFT
-; characters). X = 0 or the error.
-CdSrc:  lda #U_CD
-        jsr UBegin
-        ldx #$FF
-@ch:    inx
-        cpx cSrcFT
-        beq @send
-        lda diskBlkBuf,x
-        jsr PutChk
-        bcc @ch
-        ldx #FE_BAD_PATH
-        rts
-@send:  jsr UNoData
-        jmp UExec
+Via:    jsr OvlCall             ; (module 85: through GU.TMP)
+        .byte 85, 0
 
 ; SameName: C set when the target's last part (fePath after fePos) is
 ; the source's (diskBlkBuf after cSrcFT), C clear when not. Destroys X.
@@ -310,6 +262,141 @@ SameName:
         rts
 @no:    clc
         rts
+
+        .include "feuu.inc"
+
+        .endscope
+
+        .segment "OVL85"
+        .scope Mod85
+
+        jmp OvUVia              ; entry 0
+
+        .include "feult.inc"
+        .include "fecd.inc"
+
+; OvUVia (module 84: a copy under another name on the Ultimate, its
+; checks done; the source's path in diskBlkBuf, cSrcFT the "/" before
+; its name; the target's in fePath): COPY into a temporary folder
+; TMP_DIR at the top of the target's volume (made when missing; a file
+; of the same name left there earlier deleted), RENAME from the
+; volume's top to the target's path (a move, measured), the temporary
+; folder removed again. X = 0 or the error (the first one counts).
+OvUVia:
+        ldx #0                  ; the target's volume: fePath's first part
+@vol:   inx
+        lda fePath,x
+        beq :+
+        cmp #'/'
+        bne @vol
+:       stx cSrcFS
+        jsr Top
+        txa
+        beq :+
+        rts
+:       lda #U_MKDIR            ; TMP_DIR made (there already: fine)
+        jsr UBegin
+        jsr PutTmp
+        jsr Exec
+        lda #U_DELETE           ; a file of that name left in it: away
+        jsr UBegin
+        jsr PutTmpName
+        bcs @long
+        jsr Exec
+        jsr CdSrc               ; COPY name, the volume "/" TMP_DIR "/"
+        txa
+        bne @clean
+        lda #U_COPY
+        jsr UBegin
+        jsr PutName
+        bcs @long
+        lda #0
+        jsr PutChk
+        ldx #$FF
+@top:   inx
+        cpx cSrcFS
+        beq :+
+        lda fePath,x
+        jsr PutChk
+        bcc @top
+        bcs @long
+:       lda #'/'
+        jsr PutChk
+        jsr PutTmp
+        lda #'/'
+        jsr PutChk
+        bcs @long
+        jsr Exec
+        txa
+        bne @clean
+        jsr Top                 ; RENAME TMP_DIR/name, the target's path
+        txa
+        bne @clean
+        lda #U_RENAME
+        jsr UBegin
+        jsr PutTmpName
+        bcs @long
+        lda #0
+        jsr PutChk
+        ldx cSrcFS
+@new:   inx
+        lda fePath,x
+        beq :+
+        jsr PutChk
+        bcc @new
+        bcs @long
+:       jsr Exec
+@clean: txa                     ; TMP_DIR removed (the result kept on the
+        pha                     ; stack: module data is reloaded after
+        jsr Top                 ; each nested call)
+        lda #U_DELETE
+        jsr UBegin
+        jsr PutTmp
+        jsr Exec
+        pla
+        tax
+@end:   rts
+@long:  ldx #FE_BAD_PATH
+        bne @clean
+
+; Top: into the volume's top (fePath's first cSrcFS characters). X = 0
+; or the error.
+Top:    ldx cSrcFS
+        jmp UCdX
+
+; Exec: the command in uCmd sent, no data. X = 0 or the error.
+Exec:   jsr UNoData
+        jmp UExec
+
+; PutTmp: TMP_DIR to uCmd. PutName: the source's name. PutTmpName:
+; TMP_DIR "/" and the source's name. C set: no room.
+PutTmp: ldx #0
+@ch:    lda TmpDir,x
+        beq @end
+        jsr PutChk
+        inx
+        bcc @ch
+        rts
+@end:   clc
+        rts
+PutTmpName:
+        jsr PutTmp
+        bcs PutEnd
+        lda #'/'
+        jsr PutChk
+        bcs PutEnd
+PutName:
+        ldx cSrcFT
+@ch:    inx
+        lda diskBlkBuf,x
+        beq PutOk
+        jsr PutChk
+        bcc @ch
+PutEnd: rts
+PutOk:  clc
+        rts
+
+TmpDir: .byte "GU.TMP", 0
 
         .include "feuu.inc"
 

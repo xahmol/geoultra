@@ -1,4 +1,4 @@
-; File engine: helpers for the Ultimate-to-Ultimate modules 83 and 84
+; File engine: helpers for the Ultimate-to-Ultimate modules 83 to 85
 ; (engineuu.s), assembled into each (feult.inc and fecd.inc first). The
 ; source's path is kept in diskBlkBuf (cSrcFT: the "/" before its last
 ; part), the target's in fePath (fePos: the "/" before its last part).
@@ -64,3 +64,19 @@ EndOf:  ldy #$FF
         lda fePath,y
         bne @ch
         rts
+
+; CdSrc: into the source's folder (diskBlkBuf's first cSrcFT
+; characters). X = 0 or the error.
+CdSrc:  lda #U_CD
+        jsr UBegin
+        ldx #$FF
+@ch:    inx
+        cpx cSrcFT
+        beq @send
+        lda diskBlkBuf,x
+        jsr PutChk
+        bcc @ch
+        ldx #FE_BAD_PATH
+        rts
+@send:  jsr UNoData
+        jmp UExec

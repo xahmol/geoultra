@@ -199,9 +199,9 @@ class Test:
                                                  stat(HOME + "/cancel")[0]), (CANCELLED, FILE_NOT_FOUND))
         check("FE_COPY a folder from the Ultimate", fe(FE_COPY, s0="/usb0/geoultra/test", s1="/a")[0],
               IS_FOLDER)
-        check("FE_COPY the Ultimate -> the Ultimate, in one folder: refused (COPY cannot)",
-              (fe(FE_COPY, s0=HOME + "/XFER1", s1=HOME + "/x")[0], stat(HOME + "/XFER1")[0]),
-              (NOT_SUPPORTED, 0))
+        check("FE_COPY the Ultimate -> the Ultimate, in one folder (through GU.TMP)",
+              (fe(FE_COPY, s0=HOME + "/XFER1", s1=HOME + "/x")[0], stat(HOME + "/XFER1")[0],
+               stat(HOME + "/x")[0]), (0, 0, 0))
         geos = [n for n in listing("/a") if stat("/a/" + n)[1:2] == (K_GEOS,)]
         check("FE_COPY a GEOS file without FC_RAW: as CVT (e4u64.py)", fe(FE_COPY, s0="/a/" + geos[0],
                                                                          s1=HOME)[0], 0)

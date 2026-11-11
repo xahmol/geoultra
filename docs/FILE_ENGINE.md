@@ -238,7 +238,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 76-79 | `FE_NTP` (enginentp.s; from GeoUTime, GeoUTools, and ntp2ultimate by MaxPlap): the exchange, SETTINGS.INI read, the date and the clocks, its `[time]` lines (`fehome.inc` shared with module 75) |
 | 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |
 
-From one Ultimate path to another (2026-11-11, modules 83 and 84,
+From one Ultimate path to another (2026-11-11, modules 83 to 85,
 engineuu.s): `FE_MOVE` on the same volume is one RENAME from the
 volume's top with both paths relative (measured on 3.15a: it moves files
 and folders, with everything in them, into other folders; an absolute
@@ -247,12 +247,15 @@ existing file replaced only with `FC_OVERWRITE`; to another volume a
 copy and a delete. `FE_COPY` of a file uses the Ultimate's own COPY from
 the source's folder into the target's (it keeps the name and does not
 overwrite: an existing target is deleted first with `FC_OVERWRITE`,
-else `FILE_EXISTS`), then a RENAME there for another name. Not
-possible with COPY, so `FE_NOT_SUPPORTED`: a copy into the source's own
-folder (COPY does nothing there; measured: with the rename after it a
-copy became a move, now refused before anything happens), and a copy
-under another name into a folder that already has a file of the
-source's name. A copy onto itself: `FE_BAD_PATH`. Folders are copied
+else `FILE_EXISTS`). A copy under another name goes through a
+temporary folder (module 85, eighth sweep): COPY into `GU.TMP` at the
+top of the target's volume (made when missing), a RENAME from there to
+the target's path, `GU.TMP` removed again. So a copy within one folder
+works too (COPY itself does nothing there; measured: a direct rename
+after it turned the copy into a move), and so does a copy under another
+name into a folder that already has a file of the source's name. The
+name `GU.TMP` at a volume's top is GeoUltra's. A copy onto itself:
+`FE_BAD_PATH`. Folders are copied
 by the caller, file by file (the desktop's tree.s, gush's `cp -r`).
 
 Still to come (estimate): moving folders on GEOS drives (`FE_MOVE`
