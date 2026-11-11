@@ -351,7 +351,16 @@ colour is a property of an element, by name:
   Tests: test-desktop (VICE); the progress line and pointer checked
   in VICE at a checkpoint in ProgressBlock; d7u64.py (U64: the files'
   palettes, Night's sent, the reset on leaving it).
-- **Next:** the icon view; the theme editor (settings tool, phase 3).
+- **Overlays (2026-11-11):** the desktop ran out of room, so it is now
+  a VLIR file as DESKTOP.md "Structure" planned: record 0 the core at
+  `$0400-$4FFF`, overlays at `$5000-$5FFF` (ovl.s; the loader and stubs
+  shared with gush in `src/inc/ovlcore.inc`), kept in the application's
+  REU bank 6: overlay 1 the theme files, overlay 2 the actions and
+  mounting. The borders of the built-in themes match their desk's
+  background (user, 2026-11-11).
+- **Next:** folders copied, moved and deleted recursively with a
+  Yes / Yes to all / No question (user, 2026-11-11); the icon view;
+  the theme editor (settings tool, phase 3).
 
 ## Open bugs
 

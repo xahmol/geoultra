@@ -7,7 +7,10 @@
 ; the sidebar its disk name. Unmount (user, 2026-11-06): an eject icon at
 ; the right end of each sidebar drive line that holds an image (drawn by
 ; desktop.s through HasImage); a click on it asks, then FE_UMOUNT.
-; Errors are shown (actions.s, Error) and change nothing. Own code.
+; Errors are shown (actions.s, Error) and change nothing. Mount and
+; Eject live in overlay 2 with the actions (ovl.s); IsImage, HasImage,
+; Info, Letter and the eject icon in the core (the list and the sidebar
+; call them while drawing). Own code.
 
         .include "geos.inc"
         .include "desktop.inc"
@@ -16,7 +19,9 @@
         .import Error, Append, full, entryName, path
         .import Busy, Idle
         .import Dialog
-        .export Mount, Eject, HasImage, EjectIcon, IsImage
+        .export Ov_Mount, Ov_Eject, HasImage, EjectIcon, IsImage
+Ov_Mount = Mount                ; (ovl.s: the stubs Mount and Eject)
+Ov_Eject = Eject
 
 DRIVES          = 4             ; A-D (E is the system drive: no image)
 LINE_LEN        = 12            ; a drive's line in the dialog: 11
@@ -27,7 +32,7 @@ ROW_STEP        = 18            ; buttons 16 high, 2 apart
 TEXT_X          = 64            ; a line's x, right of its button
 TEXT_DY         = 11            ; its baseline below the button's top
 
-        .segment "CODE"
+        .segment "OV2"
 
 ; Mount: entryName (a file in the current Ultimate folder) mounted on
 ; the drive asked for, when it is a disk image; else nothing.
@@ -74,6 +79,8 @@ Mount:  jsr IsImage
         jmp Into
 @end:   rts
 
+        .segment "CODE"
+
 ; IsImage: C clear when entryName ends in .d64, .d71, .d81 or .dnp (any
 ; case).
 IsImage:
@@ -109,6 +116,8 @@ IsImage:
         bcc @try
 @no:    sec
         rts
+
+        .segment "OV2"
 
 ; Lines: drive X's line in the dialog: the name of the image mounted
 ; there (the part after its path's last "/", cut to fit), or "free".
@@ -160,6 +169,8 @@ NamePart:
         bne @ch
 @end:   rts
 
+        .segment "CODE"
+
 ; Info: FE_MOUNTINFO for drive A (0-3) into info. X = 0 when it holds
 ; an image, else the error (DEV_NOT_FOUND: none). drivePath set for it.
 Info:   jsr Letter
@@ -186,6 +197,8 @@ HasImage:
         jsr Info
         cpx #1                  ; (X = 0: C clear)
         rts
+
+        .segment "OV2"
 
 ; Eject: A = a sidebar drive line's letter ('a'-'d'), clicked on its
 ; eject icon: the drive's image unmounted after asking; a drive without
@@ -268,8 +281,10 @@ Pick:   sta choice
         sta sysDBData
         jmp RstrFrmDialogue
 
+        .segment "CODE"
 Exts:   .byte "d64", "d71", "d81", "dnp"
 Exts_n = * - Exts
+        .segment "OV2"
 LineAt: .repeat DRIVES, i
         .byte i * LINE_LEN
         .endrepeat
@@ -282,6 +297,8 @@ RootPath:       .byte "/", 0
 MountText:      .byte BOLDON, "Mount on drive:", PLAINTEXT, 0
 EjectText:      .byte BOLDON, "Unmount drive "
 EjectLetter:    .byte "A?", PLAINTEXT, 0
+
+        .segment "CODE"
 
 ; EjectIcon: the sidebar's eject icon, 8 x 8 (one card), own drawing,
 ; GEOS compacted bitmap (8 unique bytes).
@@ -296,12 +313,12 @@ EjectIcon:
         .byte %11111110
         .byte %00000000
 
+        .segment "OV2"
+
         .include "drvicon_A.inc"
         .include "drvicon_B.inc"
         .include "drvicon_C.inc"
         .include "drvicon_D.inc"
-
-        .segment "DATA"
 
 mountDlg:
         .byte DEF_DB_POS | 1
@@ -342,13 +359,15 @@ ejectDlg:
         .byte NO, DBI_X_2, DBI_Y_2
         .byte 0
 
+        .segment "DATA"
+
 drivePath:      .byte "/a", 0
-drv:            .byte 0
-choice:         .byte 0
-letter:         .byte 'a'
 
         .segment "BSS"
 
 info:           .res MINFO_LEN
 lines:          .res DRIVES * LINE_LEN
 ejectName:      .res MINFO_LEN
+drv:            .res 1
+choice:         .res 1
+letter:         .res 1

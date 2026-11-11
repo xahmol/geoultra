@@ -17,157 +17,24 @@
         .include "gush.inc"
 
         .import failed
-        .export OvlInit, ovlOk, OvlDrop
 
-ReadFile        = $C1FF         ; GEOS jump table
-GetBlock        = $C1E4
-StashRAM        = $C2C8
+StashRAM        = $C2C8         ; GEOS jump table
 FetchRAM        = $C2CB
 OVL_BANK        = 7             ; (1-6: history, cp -r, HIGH, scripts,
                                 ; lines, pipes; the last free bank)
 OVL_N           = 4             ; overlay records
 
-        .segment "ZEROPAGE"
-
-ovlP:           .res 2          ; OvlGo: the stub's bytes
-
         .segment "CODE"
 
-; OvlInit: the overlay records (gush's index block, from its directory
-; entry) read and kept in the REU. ovlOk set when all were.
-OvlInit:
-        lda #0
-        sta ovlOk
-        lda #$FF
-        sta curOvl
-        lda dirEntryBuf + OFF_GSTRUC_TYPE
-        cmp #VLIR
-        bne @end
-        lda dirEntryBuf + OFF_DE_TR_SC
-        sta r1L
-        lda dirEntryBuf + OFF_DE_TR_SC + 1
-        sta r1H
-        lda #<diskBlkBuf
-        sta r4L
-        lda #>diskBlkBuf
-        sta r4H
-        jsr GetBlock
-        txa
-        bne @end
-        ldx #OVL_N * 2 - 1      ; records 1.. (record 0 at bytes 2-3)
-@ts:    lda diskBlkBuf + 4,x
-        sta ovlTS,x
-        dex
-        bpl @ts
-        ldy #0
-@rec:   sty ovlAt               ; (record n: ovlAt = (n - 1) * 2)
-        lda ovlTS,y
-        beq @end                ; (no such record)
-        sta r1L
-        lda ovlTS + 1,y
-        sta r1H
-        lda #<TRANS
-        sta r7L
-        lda #>TRANS
-        sta r7H
-        lda #<TRANS_SIZE
-        sta r2L
-        lda #>TRANS_SIZE
-        sta r2H
-        jsr ReadFile
-        txa
-        bne @end
-        lda ovlAt
-        jsr Reu
-        jsr StashRAM
-        ldy ovlAt
-        iny
-        iny
-        cpy #OVL_N * 2
-        bcc @rec
-        inc ovlOk
-@end:   rts
+        .include "ovlcore.inc"  ; (the loader, OvlGo, the Stub macro)
 
-; OvlDrop: no overlay in the area any more (an external command loaded
-; there: module.s); the next stub fetches its own.
-OvlDrop:
-        lda #$FF
-        sta curOvl
-        rts
-
-; Reu: r0-r3 for overlay (A / 2 + 1) between TRANS and its REU place
-; (bank OVL_BANK, (n - 1) * 4 KB).
-Reu:    asl                     ; ((n - 1) * 2 * 8 = (n - 1) * $10 pages)
-        asl
-        asl
-        sta r1H
-        lda #0
-        sta r1L
-        lda #<TRANS
-        sta r0L
-        lda #>TRANS
-        sta r0H
-        lda #<TRANS_SIZE
-        sta r2L
-        lda #>TRANS_SIZE
-        sta r2H
-        lda #OVL_BANK
-        sta r3L
-        rts
-
-; OvlGo (from a stub: jsr OvlGo / .byte overlay / .addr routine): the
-; overlay fetched when another one is there, then the routine with A, X,
-; Y and the flags as the stub got them (r0-r3 are not kept: the routines
-; behind stubs take no r registers). It returns to the stub's caller.
-; Without the overlays: failed = 1, back to the caller.
-OvlGo:  sta keepA
-        stx keepX
-        sty keepY
-        php
-        pla
-        sta keepP
-        pla                     ; (the stub's bytes, after its jsr)
-        sta ovlP
-        pla
-        sta ovlP + 1
-        ldy #1
-        lda (ovlP),y
-        cmp curOvl
-        beq @go
-        ldx ovlOk
-        beq @fail
-        sta curOvl
-        sec                     ; (n - 1) * 2
-        sbc #1
-        asl
-        jsr Reu
-        jsr FetchRAM
-@go:    ldy #2
-        lda (ovlP),y
-        sta ovlJmp
-        iny
-        lda (ovlP),y
-        sta ovlJmp + 1
-        lda keepP
-        pha
-        lda keepA
-        ldx keepX
-        ldy keepY
-        plp
-        jmp (ovlJmp)
-@fail:  lda #1
+; OvlFail: a stub without the overlays: the line failed.
+OvlFail:
+        lda #1
         sta failed
         rts
 
 ; The stubs: a routine's name in the core, Ov_name in its overlay.
-.macro Stub name, ovl
-        .export name
-        .import .ident(.concat("Ov_", .string(name)))
-name:   jsr OvlGo
-        .byte ovl
-        .addr .ident(.concat("Ov_", .string(name)))
-.endmacro
-
         Stub CmdCp, 1           ; overlay 1: files.s, tree.s, sys.s, hist.s
         Stub CmdMv, 1
         Stub CmdRm, 1
@@ -195,14 +62,3 @@ name:   jsr OvlGo
         Stub CmdIfconfig, 4     ; overlay 4: net.s
         Stub CmdWget, 4
 
-        .segment "DATA"
-
-ovlOk:          .byte 0
-curOvl:         .byte $FF
-ovlAt:          .byte 0
-keepA:          .byte 0
-keepX:          .byte 0
-keepY:          .byte 0
-keepP:          .byte 0
-ovlJmp:         .word 0
-ovlTS:          .res OVL_N * 2

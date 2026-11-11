@@ -20,7 +20,15 @@
         .import text            ; (side.s's INI text holds `full` while one
 full = text                     ; engine call copies, moves or mounts it)
         .import Dialog
-        .export Copy, Cut, Paste, Delete, Rename, NewFolder, Ask
+        .export Ov_Copy, Ov_Cut, Ov_Paste, Ov_Delete, Ov_Rename, Ov_NewFolder, Ov_Ask
+        .export clipCount       ; (desktop.s: 0 at the start)
+Ov_Copy = Copy                  ; (overlay 2: the stubs in ovl.s)
+Ov_Cut = Cut
+Ov_Paste = Paste
+Ov_Delete = Delete
+Ov_Rename = Rename
+Ov_NewFolder = NewFolder
+Ov_Ask = Ask
         .export Error, Append, full     ; (mount.s: an image's path, errors)
 
 FILE_EXISTS     = $40           ; (the engine's errors)
@@ -36,7 +44,7 @@ NAME_MAX        = 40            ; an input line's characters
 askLine:        .res 2          ; (DBVARSTR: zero page pointers)
 nameLine:       .res 2
 
-        .segment "CODE"
+        .segment "OV2"
 
 ; Copy, Cut: the selection to the clipboard (mode 0: copy, 1: move).
 Copy:   lda #0
@@ -483,7 +491,7 @@ DeleteText:     .byte BOLDON, "Delete the selection?", PLAINTEXT, 0
 RenameText:     .byte BOLDON, "Rename to:", PLAINTEXT, 0
 NewText:        .byte BOLDON, "New folder:", PLAINTEXT, 0
 
-        .segment "DATA"
+        .segment "OV2"                 ; (dialogs, scratch text)
 
 askDlg: .byte DEF_DB_POS | 1
         .byte DBVARSTR, TXT_LN_X, TXT_LN_1_Y + 6, askLine
@@ -509,14 +517,13 @@ errDlg: .byte DEF_DB_POS | 1
 errText:        .byte "failed: error $"
 errCode:        .byte "00", 0
 
-clipMode:       .byte 0
-clipCount:      .word 0
-n:              .word 0
-some:           .byte 0
-flags:          .byte 0
-done:           .word 0         ; Delete: the entries done so far
-
         .segment "BSS"
 
 srcPath:        .res 256
 input:          .res NAME_MAX + 1
+clipMode:       .res 1
+clipCount:      .res 2
+n:              .res 2
+some:           .res 1
+flags:          .res 1
+done:           .res 2         ; Delete: the entries done so far

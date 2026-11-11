@@ -29,8 +29,11 @@
         .import FileEngine, ThemeSet, ThemeName, ThemeByName, ThemePal, Derive, tMenu
         .import tCols, viewMode
         .import text            ; (side.s's INI text: never in use at the same time)
-        .export ThemeFiles, ThemeUse, themeNames, themeCount, curName
-        .export hasPal, PalReset
+        .export Ov_ThemeFiles, Ov_ThemeUse, Ov_PalReset   ; (overlay 1: ovl.s)
+        .export themeNames, themeCount, curName, hasPal
+Ov_ThemeFiles = ThemeFiles
+Ov_ThemeUse = ThemeUse
+Ov_PalReset = PalReset
 
 FO_READ_        = FO_READ
 LINES_N         = 13            ; the file's lines after name=
@@ -54,7 +57,7 @@ REC_ROWS        = 4             ; tRows: 9 or 8, the words' index 0 or 1
 
 tp:             .res 2          ; the text being read or written
 
-        .segment "CODE"
+        .segment "OV1"
 
 ; ThemeFiles: THEMES made with the built-in themes and Custom when it is
 ; not there; themeNames = the files' names (themeCount, at most
@@ -74,7 +77,9 @@ ThemeFiles:
 
 ; Make: THEMES made, each built-in theme written, then Custom (GeoUltra's
 ; record under its own name).
-Make:   jsr DirPath
+Make:   lda #0                  ; (not Custom until its turn)
+        sta custom
+        jsr DirPath
         lda #<path
         sta r0L
         lda #>path
@@ -1002,21 +1007,6 @@ PalNote:        .byte "; palette=RRGGBB x 16 (black ... light grey): the colours
 HOME_LEN        = 32
 PATH_BUF        = 80
 
-        .segment "DATA"
-
-themeCount:     .byte 0         ; the theme files listed
-handle:         .byte 0
-at:             .byte 0
-kind:           .byte 0         ; the line kind being read or written
-idx:            .byte 0
-tmp:            .byte 0
-tmpY:           .byte 0
-pathEnd:        .byte 0
-lineAt:         .word 0
-tmpX:           .byte 0
-hasPal:         .byte 0         ; 1: the theme in use carries a palette
-custom:         .byte 0         ; 1: writing Custom (its palette note)
-
         .segment "BSS"
 
 curName:        .res NAME_MAX   ; the theme in use (its file's name)
@@ -1027,3 +1017,15 @@ path:           .res PATH_BUF
 info:           .res 16
 name:           .res 64
 buf = text                      ; (side.s, TEXT_MAX + 1 >= FILE_MAX + 1)
+themeCount:     .res 1         ; the theme files listed
+handle:         .res 1
+at:             .res 1
+kind:           .res 1         ; the line kind being read or written
+idx:            .res 1
+tmp:            .res 1
+tmpY:           .res 1
+pathEnd:        .res 1
+lineAt:         .res 2
+tmpX:           .res 1
+hasPal:         .res 1         ; 1: the theme in use carries a palette
+custom:         .res 1         ; 1: writing Custom (its palette note)

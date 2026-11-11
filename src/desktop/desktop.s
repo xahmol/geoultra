@@ -13,6 +13,7 @@
         .include "desktop.inc"
 
         .import ListRead, ListDraw, ListPress, ListKey, Drive, Open, Back
+        .import OvlInit, clipCount
         .import Copy, Cut, Paste, Delete, Rename, NewFolder, path
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave
@@ -44,7 +45,11 @@ MENU_ITEMS      = 7             ; a menu table's first item (after its frame)
 ; Start: the theme (the built-in default, or SETTINGS.INI's, side.s),
 ; the screen drawn, the menu installed, the clock ticking (appMain);
 ; back to MainLoop.
-Start:  lda guExtTable          ; FileEngine: the extension table + 30
+Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
+        lda #0                  ; dirEntryBuf still holds our entry)
+        sta clipCount           ; (actions.s: an empty clipboard)
+        sta clipCount+1
+        lda guExtTable          ; FileEngine: the extension table + 30
         clc
         adc #FE_ENTRY
         sta feVec
