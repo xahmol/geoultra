@@ -21,7 +21,7 @@
 
         .import FileEngine, SideRedraw, SideHeading, SideItem, SideGap, SideArrows
         .import itemText, itemName, itemIcon, itemEject
-        .import ThemeByName, ThemeName, themeNo, clockMode, viewMode
+        .import ThemeFiles, ThemeUse, curName, clockMode, viewMode
         .import ListRead, ListDraw, Fetch, IsSelected, Modifiers, mods
         .import IsDotDot
         .import Into, Document, Ask
@@ -54,6 +54,7 @@ SideLoad:
         jsr Load
         ldx #L_DESK
         jsr Load
+        jsr ThemeFiles          ; (themefile.s: THEMES made or listed)
         jmp DeskLoad
 
 ; Load: list X from its file's section.
@@ -819,10 +820,15 @@ DeskLoad:
         ldx #L_DESK
         jsr Setup
         ldx #KEY_THEME
-        jsr FindKey
-        bcs @view
+        jsr FindKey             ; (A: its slot)
+        bcs :+
         jsr Value               ; r0 = the name after "theme="
-        jsr ThemeByName         ; (C set: no such theme, the default kept)
+        jmp @use
+:       lda #<DefaultTheme      ; (none: GeoUltra, from its file when
+        sta r0L                 ; there is one)
+        lda #>DefaultTheme
+        sta r0H
+@use:   jsr ThemeUse
 @view:  ldx #KEY_VIEW
         jsr FindKey
         bcs @clock
@@ -878,8 +884,10 @@ Value:  jsr Slot
 ; "clock=" and clockMode; each as a [desktop] line, SETTINGS.INI
 ; written (an error: the setting lasts until the desktop starts again).
 ThemeSave:
-        lda themeNo
-        jsr ThemeName           ; r1 = its name
+        lda #<curName           ; (themefile.s: the name in use)
+        sta r1L
+        lda #>curName
+        sta r1H
         ldx #KEY_THEME
         jsr SetLine
 ViewSave:
@@ -987,6 +995,7 @@ FindKey:
 @none:  sec
         rts
 
+DefaultTheme:   .byte "GeoUltra", 0
 KEY_THEME = 0
 Keys:           .byte "theme=", 0
 KEY_VIEW = * - Keys

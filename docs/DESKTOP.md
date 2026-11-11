@@ -88,9 +88,11 @@ colour is a property of an element, by name:
 | scrollbar | arrows (with a thumb), thin | - |
 | status | on, off (entries, selection, free space) | ink on paper |
 
-- A theme is a file `THEMES/<name>.INI` in GEOULTRA, in words
-  (`selection=invert, white on purple`); `SETTINGS.INI` names the one
-  in use. Colour names map to the 16 colours; on an Ultimate 64 or C64
+- A theme is a file `THEMES/<name>.ini` in GEOULTRA, in words
+  (`selection=invert, white on purple`; "X on Y": X text on a Y
+  background); `SETTINGS.INI` `[desktop] theme=` names the one in use.
+  All themes are files, the built-in ones included (made at the first
+  start), plus Custom to edit (user, 2026-11-11). Colour names map to the 16 colours; on an Ultimate 64 or C64
   Ultimate a theme may carry a palette (firmware 3.15), which changes
   what a name looks like, not which element uses it.
 - In memory a theme record: a style byte per element, a colour byte
@@ -309,12 +311,26 @@ colour is a property of an element, by name:
   section's other lines). Tests: test-desktop (VICE) with the layout
   read from the desktop's memory; d6u64.py on the U64; the themes
   checked by screenshots in VICE and on the U64.
-- **Next (user, 2026-11-11):** every theme a file in
-  `GEOULTRA/THEMES/` (the six built-in ones written there when
-  missing, so they can be edited), plus a custom theme that the theme
-  editor starts from one of them; the built-in table only as the
-  fallback (VICE, no Ultimate). Then the busy pointer and the copy
-  progress line.
+- **D7 theme files (2026-11-11, user's request):** every theme is a
+  file `GEOULTRA/THEMES/<name>.ini` in words (themefile.s), the
+  mock-up's format: `[theme]`, `name=`, then `border=`, `desk=`,
+  `menubar=`, `sidebar=`, `headings=`, `titlebar=`, `rows=`,
+  `columns=`, `icons=`, `selection=`, `cursor=`, `scrollbar=`,
+  `status=` (a style word, then `ink on paper`, or one colour). The
+  desktop makes THEMES at its start when it holds no theme: the six
+  built-in themes and **Custom** (a copy of GeoUltra, to edit; the
+  theme editor will start it from any theme). The view menu's theme
+  submenu lists the files (up to 8); a theme in use is its built-in
+  record with its file read on top (lines left out keep the built-in
+  values), so the built-in themes are editable too; without an
+  Ultimate (VICE) the built-in table alone. **"X on Y" means X text on
+  a Y background** (user, 2026-11-11): elements drawn inverted (heading
+  boxes and bands, the solid title bar, the status line) get their
+  colours swapped when painted. Test: tests/desktop/d7u64.py (U64: the
+  files there, Night.ini in words, an edited Custom.ini in use;
+  Custom.ini and SETTINGS.INI put back).
+- **Next:** the busy pointer and the copy progress line; the icon
+  view; the theme editor (settings tool, phase 3).
 
 ## Open bugs
 

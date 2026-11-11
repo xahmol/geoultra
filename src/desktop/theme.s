@@ -16,13 +16,13 @@
 
         .export ThemeSet, ThemeByName, ThemeName, themeNo
         .export tMenu, tSide, tHead, tTitle, tRows, tCols, tIcons, tSel, tCur, tScroll, tStatus
-        .export cDesk, cMenu, cSide, cHead, cTitle, cSel, cStatus
+        .export cDesk, cMenu, cSide, cHead, cTitle, cSel, cStatus, cHeadP
         .export cIconP, cSideIconP, cAccentP, cSideAccentP
         .export sideW, listL, ejectCard, pathY, listTop, rowH, rows, bottom
         .export trackTop, trackBot, trackH, iconCard, nameX, sideTx, stY0, stY1
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList
         .export Neutral, Dialog, MenuNeutral, Recover, ClockDraw, ClockTick
-        .export TextWidth, boldOn, clockMode, viewMode, MonthName
+        .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
 
 CPU_PORT        = $01
 RAM_IO          = $35
@@ -163,6 +163,21 @@ Derive: lda tSel
         sec
         sbc trackTop
         sta trackH
+        lda cHead               ; elements drawn inverted (heading boxes
+        ldx tHead               ; and bands, the solid title bar, the
+        cpx #ST_UNDERLINED      ; status line): their colours swapped, so
+        bcs :+                  ; "white on red" is white text on red
+        jsr Swap                ; (the user's reading, 2026-11-11)
+:       sta cHeadP
+        lda cTitle
+        ldx tTitle
+        cpx #1                  ; (solid)
+        bne :+
+        jsr Swap
+:       sta cTitleP
+        lda cStatus
+        jsr Swap
+        sta cStatusP
         lda cDesk               ; the ink-only colours on their papers
         and #$0F
         sta tmp
@@ -197,6 +212,15 @@ Derive: lda tSel
         pla
         sta CPU_PORT
         plp
+        rts
+
+; Swap: A's ink and paper exchanged.
+Swap:   asl a                   ; (the nibble swap: twice asl, adc #$80,
+        adc #$80                ; rol)
+        rol a
+        asl a
+        adc #$80
+        rol a
         rts
 
 ; OnPaper: A = ink A on the paper in tmp (a colour byte).
@@ -373,7 +397,7 @@ PaintList:
         lda #2
         sta py0
         sta py1
-        lda cTitle
+        lda cTitleP
         sta pcol
         jsr Paint
 @icons: lda tIcons
@@ -400,7 +424,7 @@ PaintList:
         lda #24
         sta py0
         sta py1
-        lda cStatus
+        lda cStatusP
         sta pcol
         jmp Paint
 @end:   rts
@@ -882,6 +906,9 @@ cIconP:         .byte 0         ; icon ink on the desk's paper
 cSideIconP:     .byte 0         ; and on the sidebar's
 cAccentP:       .byte 0
 cSideAccentP:   .byte 0
+cHeadP:         .byte 0         ; the colours painted for headings, the
+cTitleP:        .byte 0         ; title bar and the status line (swapped
+cStatusP:       .byte 0         ; where drawn inverted)
 sideW:          .byte 80        ; the sidebar's width (its line at sideW - 1)
 listL:          .byte 80        ; the list area's left edge
 ejectCard:      .byte 8         ; the eject icon's card in the sidebar

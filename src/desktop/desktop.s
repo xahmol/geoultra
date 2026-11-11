@@ -18,9 +18,10 @@
         .import ViewSave
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeSet, ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
+        .import ThemeUse, themeNames, themeCount, curName
         .import PaintAll, PaintSide, Neutral, Dialog, MenuNeutral, Recover
         .import ClockDraw, ClockTick, TextWidth, boldOn, clockMode, viewMode
-        .import tHead, tIcons, cHead, cSide, cSideIconP, cSideAccentP
+        .import tHead, tIcons, cHeadP, cSide, cSideIconP, cSideAccentP
         .import sideW, ejectCard, sideTx, rowH, bottom
         .export FileEngine, Redraw, SideRedraw, SideHeading, SideItem, SideGap
         .export SideArrows
@@ -34,6 +35,8 @@ NAME_DX         = 10            ; a drive's disk name after its letter
 DA_MAX          = 8             ; desk accessories in the geos menu
 DA_NAME_LEN     = 17            ; a GEOS name and its zero
 THEME_ITEM      = 16            ; a view menu theme item: "* " and a name
+THEME_NAME      = 15            ; a theme's name (themefile.s NAME_MAX)
+THEMES_MAX      = 8             ; theme files the menu lists
 MENU_ITEMS      = 7             ; a menu table's first item (after its frame)
 
         .segment "CODE"
@@ -491,7 +494,7 @@ SideHeading:
         lsr a
         sta py0
         sta py1
-        lda cHead
+        lda cHeadP
         sta pcol
         jsr Paint
 @text:  lda tHead               ; bold when underlined or plain
@@ -838,24 +841,31 @@ MenuR0: sta r0L
         stx r0H
         jmp MenuNeutral
 
-; ThemeMenu (view > theme): each theme's item "* " or "  " and its name.
+; ThemeMenu (view > theme): the theme files in THEMES (themefile.s), or
+; the built-in themes without them; each item "* " (the one in use,
+; curName) or "  " and its name.
 ThemeMenu:
+        lda themeCount
+        bne :+
+        lda #THEMES_N
+:       sta nThemes
+        jsr MenuBottom
+        sta themeMenu + 1
+        lda nThemes
+        ora #VERTICAL | UN_CONSTRAINED
+        sta themeMenu + 6
         ldx #0
 @theme: stx at
         txa
-        jsr ThemeName           ; r1 = its name
+        jsr ThemeAt             ; r1 = its name
         lda at
         asl a                   ; its item: themeItems + at * THEME_ITEM
         asl a
         asl a
         asl a
         tax
-        lda #' '
-        ldy at
-        cpy themeNo
-        bne :+
-        lda #'*'
-:       sta themeItems,x
+        jsr IsCurrent           ; (A: "*" or " "; keeps X)
+        sta themeItems,x
         lda #' '
         sta themeItems + 1,x
         ldy #0
@@ -870,7 +880,7 @@ ThemeMenu:
         sta themeItems + 2,x
 :       ldx at
         inx
-        cpx #THEMES_N
+        cpx nThemes
         bcc @theme
         lda #<themeMenu
         ldx #>themeMenu
@@ -942,15 +952,63 @@ RunDA:  sta tmp
         jsr GetFile
         jmp Back                ; (open.s: Redraw and the menu bar)
 
-; Theme (view > theme > a theme; A = the item, 0 the first): set with
-; its view, saved (side.s, SETTINGS.INI [desktop]), the screen drawn in
-; it.
+; Theme (view > theme > a theme; A = the item, 0 the first): in use
+; (themefile.s: its file over the built-in theme) with its view, saved
+; (side.s, SETTINGS.INI [desktop]), the screen drawn in it.
 Theme:  sta tmp
         jsr GotoFirstMenu
         lda tmp
-        jsr ThemeSet
+        jsr ThemeAt
+        lda r1L
+        sta r0L
+        lda r1H
+        sta r0H
+        jsr ThemeUse
         jsr ThemeSave
         jmp Back
+
+; ThemeAt: r1 = the name of the theme menu's item A (a file's, or a
+; built-in theme's without files). Keeps nothing.
+ThemeAt:
+        ldx themeCount
+        beq @built
+        tax                     ; themeNames + A * THEME_NAME
+        lda #<themeNames
+        sta r1L
+        lda #>themeNames
+        sta r1H
+@add:   dex
+        bmi @end
+        lda r1L
+        clc
+        adc #THEME_NAME
+        sta r1L
+        bcc @add
+        inc r1H
+        bne @add
+@end:   rts
+@built: jmp ThemeName
+
+; IsCurrent: A = "*" when the name at r1 is curName (any case), else
+; " ". Keeps X.
+IsCurrent:
+        ldy #0
+@ch:    lda (r1),y
+        beq @end
+        ora #$20
+        sta tmp
+        lda curName,y
+        ora #$20
+        cmp tmp
+        bne @no
+        iny
+        bne @ch
+@end:   lda curName,y           ; (both end here)
+        bne @no
+        lda #'*'
+        rts
+@no:    lda #' '
+        rts
 
 ; View (view > view > list, icons, detailed; A = the item): the list
 ; drawn that way (icons: the list for now, a later step), saved.
@@ -1077,11 +1135,11 @@ viewMenu:
         .byte DYN_SUB_MENU
         .word ClockMenu
 
-themeMenu:                              ; (beside the view menu's items)
-        .byte MENU_BOTTOM, MENU_BOTTOM + THEMES_N * 14
-        .word 110, 199
+themeMenu:                              ; (beside the view menu's items;
+        .byte MENU_BOTTOM, MENU_BOTTOM + THEMES_N * 14  ; ThemeMenu sets the
+        .word 110, 199                                  ; bottom and count)
         .byte VERTICAL | UN_CONSTRAINED | THEMES_N
-        .repeat THEMES_N, i
+        .repeat THEMES_MAX, i
         .word themeItems + i * THEME_ITEM
         .byte MENU_ACTION
         .word Theme
@@ -1172,6 +1230,7 @@ any:            .byte 0
 tmp:            .byte 0
 at:             .byte 0
 daCount:        .byte 0
+nThemes:        .byte 0         ; the theme menu's items
 openCode:       .byte 0         ; the drive or root the list is in
 code:           .byte 0
 tx:             .byte 0         ; SideText's x
@@ -1187,4 +1246,4 @@ itemEject:      .byte 0
 dname:          .res 64
 uInfo:          .res 16
 daNames:        .res DA_MAX * DA_NAME_LEN
-themeItems:     .res THEMES_N * THEME_ITEM
+themeItems:     .res THEMES_MAX * THEME_ITEM
