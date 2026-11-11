@@ -9,7 +9,7 @@
         .include "desktop.inc"
 
         .import entryInfo, entryName, IsImage
-        .export IconUp, IconFor, Busy, Idle, BusyPause, BusyResume
+        .export IconUp, IconFor, Busy, Idle, BusyPause, BusyResume, Icons
 
 FONT            = 8             ; GEOS file type
 ICON_BYTES      = 9             ; the packet's count byte and 8 rows

@@ -1159,18 +1159,22 @@ PalNote:        .byte "; palette=RRGGBB x 16 (black ... light grey): the colours
 HOME_LEN        = 32
 PATH_BUF        = 80
 
-        .segment "BSS"
+        .segment "BSS"          ; (kept: the core reads them)
 
 curName:        .res NAME_MAX   ; the theme in use (its file's name)
-palCmd:         .res 2 + PAL_LEN ; SET_PALETTE and the theme's palette
 themeNames:     .res THEMES_MAX * NAME_MAX
+themeCount:     .res 1         ; the theme files listed
+hasPal:         .res 1         ; 1: the theme in use carries a palette
+
+        .segment "OV1"          ; scratch: set anew in each call that uses it
+
+palCmd:         .res 2 + PAL_LEN ; SET_PALETTE and the theme's palette
 home:           .res HOME_LEN
 path:           .res PATH_BUF
 info:           .res 16
 name:           .res 64
 buf = text                      ; (side.s's INI text, TEXT_MAX + 1 bytes)
         .assert FILE_MAX <= TEXT_MAX, error, "a theme file must fit side.s's text"
-themeCount:     .res 1         ; the theme files listed
 handle:         .res 1
 at:             .res 1
 kind:           .res 1         ; the line kind being read or written
@@ -1180,7 +1184,6 @@ tmpY:           .res 1
 pathEnd:        .res 1
 lineAt:         .res 2
 tmpX:           .res 1
-hasPal:         .res 1         ; 1: the theme in use carries a palette
 custom:         .res 1         ; 1: writing Custom (its palette note)
         .assert LColour - LColKind = LINES_N, error, "LColKind: a kind per line"
         .assert WordsHi - WordsLo = LINES_N, error, "WordsLo: a list per line"

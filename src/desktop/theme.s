@@ -24,7 +24,7 @@
         .export Neutral, Dialog, MenuNeutral, Recover, ClockDraw, ClockTick
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
         .export tbMode, topY, titleEnd
-        .import ToolPaint
+        .import ToolPaint, IconLayout, step
         .import BusyPause, BusyResume
 
 CPU_PORT        = $01
@@ -127,6 +127,13 @@ Derive: lda tSel
         bne @rows
 :       inx
         stx rows
+        lda #1                  ; scrolling a row at a time; the icon view:
+        sta step                ; its grid (iconview.s)
+        lda viewMode
+        cmp #VIEW_ICONS
+        bne :+
+        jsr IconLayout
+:
         lda listTop             ; the scroll strip and its track
         sta stY0
         sta trackTop

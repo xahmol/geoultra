@@ -160,10 +160,12 @@ def main():
         button(26)                                          # select all
         bits = bytes(v.mem_get(k["sel"], k["sel"] + 31))
         check("toolbar select all: all but \"..\"", sum(bin(b).count("1") for b in bits), n - 1)
-        button(17)                                          # view
-        check("toolbar view: detailed", v.mem_get(k["viewMode"], k["viewMode"])[0], 2)
-        button(17)
-        check("toolbar view again: list", v.mem_get(k["viewMode"], k["viewMode"])[0], 0)
+        button(17)                                          # view: list ->
+        check("toolbar view: icons", v.mem_get(k["viewMode"], k["viewMode"])[0], 1)
+        button(17)                                          # icons -> detailed
+        check("toolbar view again: detailed", v.mem_get(k["viewMode"], k["viewMode"])[0], 2)
+        button(17)                                          # -> list
+        check("toolbar view a third time: list", v.mem_get(k["viewMode"], k["viewMode"])[0], 0)
         button(7)                                           # root
         check("toolbar root: /", here(), "/")
         button(1)                                           # back

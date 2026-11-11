@@ -23,7 +23,8 @@
         .import stY0, stY1, trackTop, trackBot, trackH, viewMode, MonthName
         .export ListRead, ListDraw, ListPress, ListKey, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
-        .export Modifiers, mods, IsDotDot, ListEnd, SelAll
+        .export Modifiers, mods, IsDotDot, ListEnd, SelAll, row, RowEntry
+        .import IconsForget, DrawCell, CellAt, step
         .import topY, titleEnd
         .export ProgressStart, ProgressBlock, progN, progTotal, SelCount
         .import Busy, Idle
@@ -65,6 +66,7 @@ RAM_IO          = $35
 ; IsDotDot). Then its free space for the status line (FreeRead).
 ListRead:
         jsr Busy                ; (icons.s: the hourglass meanwhile)
+        jsr IconsForget         ; (iconview.s: a new folder, new icons)
         jsr ReadList
         jsr FreeRead
         jmp Idle
@@ -176,6 +178,7 @@ Place:  sta r1H                 ; n * 128: low byte (n & 1) << 7, high
 ; line, the rows from top (icon, name, selection, cursor), the scroll
 ; strip and the status line.
 ListDraw:
+        jsr AlignTop            ; (the icon view: a whole row of cells)
         jsr PaintList
         lda #0
         jsr SetPattern
@@ -218,11 +221,47 @@ ListDraw:
         jsr RowEntry            ; (C set: past the end)
         bcs @strip
         jsr Fetch
-        jsr DrawRow
+        jsr DrawEntry
         inc row
         bne @row
 @strip: jsr Strip
         jmp Status
+
+; DrawEntry: row `row` drawn as a row of the list or a cell of the
+; icon view (iconview.s).
+DrawEntry:
+        lda viewMode
+        cmp #VIEW_ICONS
+        bne DrawRow
+        jmp DrawCell
+
+; AlignTop: top a multiple of step (the icon view's columns; 1 in the
+; list, nothing to do).
+AlignTop:
+        lda step
+        cmp #2
+        bcc @end
+        lda top                 ; tmp/tmpH = top mod step
+        sta tmp
+        lda top+1
+        sta tmpH
+@sub:   lda tmp
+        sec
+        sbc step
+        tax
+        lda tmpH
+        sbc #0
+        bcc @mod
+        sta tmpH
+        stx tmp
+        jmp @sub
+@mod:   lda top                 ; top -= it
+        sec
+        sbc tmp
+        sta top
+        bcs @end
+        dec top+1
+@end:   rts
 
 ; ListSpan: r3 = listL, r4 = LIST_RIGHT (the list's width).
 ListSpan:
@@ -1614,7 +1653,13 @@ ListPress:
         cmp #<STRIP_LEFT
         bcc @list
         jmp @strip
-@list:  lda mouseYPos           ; the row
+@list:  lda viewMode              ; the icon view: the cell
+        cmp #VIEW_ICONS
+        bne @rows
+        jsr CellAt
+        bcs @none
+        bcc @got
+@rows:  lda mouseYPos           ; the row
         sec
         sbc listTop
         ldx #0
@@ -1700,17 +1745,22 @@ ListPress:
         clc
         rts
 
-; LineUp, LineDown: top a row up or down (within the table).
+; LineUp, LineDown: top a row up or down (within the table; step
+; entries: one, or the icon view's row of cells).
 LineUp: lda top
-        ora top+1
-        beq @end
-        lda top
-        bne :+
-        dec top+1
-:       dec top
-@end:   rts
+        sec
+        sbc step
+        tax
+        lda top+1
+        sbc #0
+        bcs :+
+        lda #0                  ; (above the first: the first)
+        tax
+:       stx top
+        sta top+1
+        rts
 LineDown:
-        lda top                 ; top + rows < count: one on
+        lda top                 ; top + rows < count: a step on
         clc
         adc rows
         tax
@@ -1720,8 +1770,11 @@ LineDown:
         bne :+
         cpx count
 :       bcs @end
-        inc top
-        bne @end
+        lda top
+        clc
+        adc step
+        sta top
+        bcc @end
         inc top+1
 @end:   rts
 
@@ -2024,15 +2077,18 @@ Follow: lda cur+1               ; cur < top: top = cur
         cpx cur
 :       beq @move
         bcs @end
-@move:  lda cur
-        sec
+@move:  lda cur                 ; (+ step: the cursor's row of cells the
+        sec                     ; last, once AlignTop rounds down)
         sbc rows
         sta top
         lda cur+1
         sbc #0
         sta top+1
-        inc top
-        bne @end
+        lda top
+        clc
+        adc step
+        sta top
+        bcc @end
         inc top+1
 @end:   rts
 

@@ -145,7 +145,7 @@ nothing new; with another input driver loaded the byte stays `$80`.
 Tests: d5.py in VICE (port 1 as VICE's joyport I/O simulation,
 `-controlport1device 37`, all eight lines high when idle or the
 keyboard scan sees a joystick); tests/desktop/mouse2u64.py on the U64
-by hand.
+by hand (passed 2026-11-11 with the U64's USB mouse).
 
 ## Icons
 

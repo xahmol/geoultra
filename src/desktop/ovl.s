@@ -12,7 +12,9 @@
 TRANS           = $5000
 TRANS_SIZE      = $1000
 OVL_BANK        = 6             ; (1-4: the entry table, 5: the clipboard;
-                                ; bank 6 from $8000: history.s)
+                                ; bank 6: the overlays $0000-$4FFF, the
+                                ; big icons $7000 (tooldraw.s), the history
+                                ; $8000 (history.s), icons $9000 (iconview.s))
 OVL_N           = 5
 
         .segment "CODE"
@@ -43,3 +45,4 @@ OvlFail:
         Stub ClockSave, 4
         Stub ToolbarSave, 4
         Stub ToolDraw, 5        ; overlay 5: tooldraw.s
+        Stub BigInit, 5

@@ -18,7 +18,8 @@
         .import tbMode, topY, cToolbar, Paint, px0, px1, py0, py1, pcol
         .import Up, Into, ListKey, ListEnd, SelAll, ListRead, ListDraw
         .import View, viewMode, NewFolder, Copy, Paste, Delete, FileEngine
-        .import HistBack, HistForward
+        .import HistBack, HistForward, text
+homePath        = text          ; (side.s's text buffer: free between actions)
         .export ToolPress, ToolPaint, Cards
 
         .segment "CODE"
@@ -109,11 +110,12 @@ Home:   lda #<homePath          ; FE_HOME ("/USB0/GEOULTRA/"; none
         jmp Into
 Top:    lda #KEY_HOME           ; (the list's own key)
         jmp ListKey
-ViewNext:                       ; list -> detailed -> list (icons: a
-        lda #VIEW_DETAILED      ; later step)
+ViewNext:                       ; list -> icons -> detailed -> list
         ldx viewMode
-        cpx #VIEW_LIST
-        beq :+
+        inx
+        txa
+        cmp #VIEW_DETAILED + 1
+        bcc :+
         lda #VIEW_LIST
 :       jmp View
 Refresh:
@@ -138,4 +140,3 @@ RootPath:       .byte "/", 0
         .segment "BSS"
 
 card:           .res 1
-homePath:       .res 64

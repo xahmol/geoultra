@@ -30,7 +30,7 @@
         .export text            ; (themefile.s reads and writes a theme in it)
         .export Setup, Slot, Store, counts, which, at, work, wantTheme, wantView
         .export wantToolbar
-        .import tbMode
+        .import tbMode, Derive
         .exportzp lp, sp        ; (inifile.s, overlay 4, uses them)
 
 CODE_FAV        = $80           ; sidebar codes (desktop.s, Press):
@@ -65,6 +65,7 @@ SideLoad:
         lda wantView            ; (a view named: it wins over the theme's)
         bmi :+
         sta viewMode
+        jmp Derive              ; (the icon view: its grid)
 :       rts
 
 ; Setup: which = X; lp, sp for list X.
@@ -491,4 +492,11 @@ recents:        .res LIST_MAX * (PATH_LEN + 1)
 desks:          .res LIST_MAX * (PATH_LEN + 1)
 work:           .res PATH_LEN + 1
 docName:        .res PATH_LEN   ; (entryName's size)
-text:           .res TEXT_MAX + 1
+text:           .res TEXT_MAX + 1   ; shared, one user at a time: the INI
+                                ; files (inifile.s), a theme file
+                                ; (themefile.s), an action's path (full:
+                                ; actions.s, tree.s, mount.s), the path
+                                ; line's part (cutPath, list.s), the
+                                ; toolbar's home path (toolbar.s), the
+                                ; icon view's icon and info at its end
+                                ; (iconview.s)

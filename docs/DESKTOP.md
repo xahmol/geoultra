@@ -462,6 +462,24 @@ colour is a property of an element, by name:
   lack the line and keep the built-in colour (a file needs only the
   lines it changes). Tests: d7u64.py (Custom.ini with `toolbar=white on
   red`: the record and the toolbar's row in the colour matrix).
+- **Icon view (2026-11-11):** `src/desktop/iconview.s` (core:
+  `ListDraw` draws it, and overlays call `ListDraw`). A grid of 40 x 32
+  cells (5 columns beside the wide sidebar, 6 beside the narrow one, 4
+  rows under the toolbar), each the entry's 24 x 21 icon with its name
+  centred under it and cut at the cell's edge; selected cells inverted,
+  the cursor's cell framed. GEOS files show their header's own icon
+  (`FE_STAT`; kept in the REU, bank 6 from `$9000`, for the first 448
+  entries, read once per folder); folders, "..", drives, the
+  Ultimate's roots, plain files and disk images get generic 24 x 21
+  drawings (`tools/mkbigicons.py`, text art; put into the REU at the
+  start from overlay 5, bank 6 at `$7000`); anything else the list's
+  8 x 8 icon three times as big. The list's code does the rest: in this
+  view `rows` is the cells on a page and `step` a row of cells, so
+  paging, the cursor keys, the scroll strip, selection and double
+  clicks work as in the list. The toolbar's view button goes list ->
+  icons -> detailed. Room: the built-in themes moved to overlay 1, the
+  INI and theme files' scratch into their overlays, three buffers into
+  side.s's shared `text`; the core ends at `$4F3E`. Tests: d9.py.
 - **Next, in this order:** the context menu and Info (the right
   button's U64 check first); the icon
   view; the theme editor (settings tool, phase 3).

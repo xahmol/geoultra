@@ -652,7 +652,6 @@ keyLen:         .byte 0         ; and its length
 textLen:        .word 0
 textEnd:        .word 0
 
-        .segment "BSS"
-
+; (in the overlay: Files sets both in every call that uses them)
 iniPath:        .res 48
 tmpPath:        .res 48

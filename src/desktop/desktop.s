@@ -17,7 +17,7 @@
         .import Copy, Cut, Paste, Delete, Rename, NewFolder, path
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
-        .import HistAdd
+        .import HistAdd, BigInit
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
         .import ThemeUse, themeNames, themeCount, curName, hasPal, PalReset
@@ -47,7 +47,8 @@ MENU_ITEMS      = 7             ; a menu table's first item (after its frame)
 ; the screen drawn, the menu installed, the clock ticking (appMain);
 ; back to MainLoop.
 Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
-        lda #0                  ; dirEntryBuf still holds our entry)
+        jsr BigInit             ; dirEntryBuf still holds our entry; the
+        lda #0                  ; icon view's icons, tooldraw.s)
         sta clipCount           ; (actions.s: an empty clipboard)
         sta clipCount+1
         lda guExtTable          ; FileEngine: the extension table + 30
@@ -1034,11 +1035,12 @@ IsCurrent:
         rts
 
 ; View (view > view > list, icons, detailed; A = the item): the list
-; drawn that way (icons: the list for now, a later step), saved.
+; drawn that way (the icon view: iconview.s), saved.
 View:   sta tmp
         jsr GotoFirstMenu
         lda tmp
         sta viewMode
+        jsr Derive              ; (the icon view: its grid)
         jsr ViewSave
         jmp ListDraw
 

@@ -272,6 +272,7 @@ Smoke tests in `tests/smoke/` (`make smoke-vice`, `make smoke-u64`), run
 
 | Check | Result |
 | --- | --- |
+| Right mouse button (2026-11-11, the user's hand test, tests/desktop/mouse2u64.py): the U64's USB mouse as a 1351 in port 1 | Passes: four right presses each seen in `guMouse2` ($80 -> $40 held -> $C0 released, the press kept), the left button only in `mouseData`; the context menu can use it |
 | REU DMA reads the Megabyter ROM window (banks 1-7 stashed from `$8000`, compared with the CPU's view) | Pass on the U64 at 1 MHz and at 64 MHz (manual turbo), and in VICE 3.10 |
 | The REU keeps its content across a reset | Pass: signature and boot counter survive `machine:reset`, and also starting another cartridge with `run_crt` |
 | The Megabyter cartridge autostarts again after a reset | Pass (the basis of reset recovery) |
@@ -408,14 +409,8 @@ Log:
 
 ## For the user, at the computer
 
-To do (2026-11-11): the right mouse button on the U64. Run
-`python3 tests/desktop/mouse2u64.py 60` (it reboots the U64 into
-GeoUltra and watches `guMouse2` for 60 s), press the right button a few
-times, then the left one. Passes when the right button is seen held and
-released; if it never shows, the U64's USB mouse does not pass it as a
-1351 does, and the context menu needs another trigger (for example C=
-with a left click). Until then the context menu waits; the toolbar does
-not depend on it.
+Done 2026-11-11: the right mouse button on the U64 ("Verified on
+hardware").
 
 Done 2026-10-30: the DirMaster reference DNP, the hibernation power cycle
 (with and without C=), and the GEOULTRA/test and BACKUP folders (both kept).

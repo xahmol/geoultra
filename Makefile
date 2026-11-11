@@ -102,6 +102,10 @@ build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/vlircvt.py
 # GeoUltra's desktop (docs/DESKTOP.md): src/desktop, on drive E.
 DESKSRCS = $(wildcard src/desktop/*.s)
 # The question's "Yes to all" button (64 pixels), drawn like the system icons.
+# The icon view's 24 x 21 generic icons (own drawings, text art in the tool).
+build/gen/bigicons.inc: tools/mkbigicons.py
+	@mkdir -p build/gen
+	$(PYTHON) tools/mkbigicons.py $@
 build/gen/yesall.inc: tools/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
 	$(PYTHON) tools/mkicons.py --icon $@ YesAllIcon "Yes to all" 64
@@ -112,7 +116,7 @@ build/gen/drvicon_%.inc: tools/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
 	$(PYTHON) tools/mkicons.py --icon $@ DriveIcon$* $*
 
-build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) build/gen/yesall.inc src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
+build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) build/gen/yesall.inc build/gen/bigicons.inc src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/desktop
 	for f in $(DESKSRCS); do $(CA65) -g -I src/inc -I build/gen -o build/desktop/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o $(patsubst src/desktop/%.s,build/desktop/%.o,$(filter-out src/desktop/desktop.s,$(DESKSRCS)))
@@ -439,6 +443,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d4.py
 	$(PYTHON) tests/desktop/d5.py
 	$(PYTHON) tests/desktop/d8.py
+	$(PYTHON) tests/desktop/d9.py
 
 test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt

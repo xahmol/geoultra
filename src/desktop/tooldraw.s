@@ -9,8 +9,10 @@
         .include "desktop.inc"
 
         .import tbMode, topY, Cards
-        .export Ov_ToolDraw
+        .import bigOk
+        .export Ov_ToolDraw, Ov_BigInit
 Ov_ToolDraw = ToolDraw
+Ov_BigInit = BigInit
 
 FRAME_ROWS      = 14
 FLAT_ROWS       = 8
@@ -18,6 +20,32 @@ ICON_ROW        = 3             ; the icon's first row in a frame
 DOT_ROWS        = 4             ; a flat group line: 4 dots, 2 px apart
 
         .segment "OV5"
+
+; BigInit (desktop.s, at the start): the icon view's generic 24 x 21
+; icons (build/gen/bigicons.inc, tools/mkbigicons.py) into the REU,
+; where iconview.s fetches them (bank 6 from $7000: between the overlays
+; and the history); bigOk set. Here, not in the core: they cost it
+; nothing.
+BigInit:
+        lda #<BigIcons
+        sta r0L
+        lda #>BigIcons
+        sta r0H
+        lda #0
+        sta r1L
+        sta r2L
+        lda #BIG_PAGE
+        sta r1H
+        lda #>(BIG_N * 64)
+        sta r2H
+        lda #<(BIG_N * 64)
+        sta r2L
+        lda #BIG_BANK
+        sta r3L
+        jsr StashRAM
+        lda #1
+        sta bigOk
+        rts
 
 ; ToolDraw: the toolbar drawn (nothing when it is off): its area
 ; cleared, each button, the line under two-line buttons or the dotted
@@ -194,6 +222,8 @@ Icons:  .byte $00, $20, $60, $FE, $60, $20, $00, $00    ; back
         .byte $38, $FE, $44, $54, $54, $54, $38, $00    ; delete
         .assert * - Icons = 8 * TB_BUTTONS, error, "an icon per button"
 
+
+.include "bigicons.inc"
 
 ; Scratch while drawing (overlay data: fetched anew with the overlay).
 bits:           .res 1 + 2 * FRAME_ROWS ; a button's compacted bitmap
