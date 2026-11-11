@@ -177,7 +177,8 @@ all of `src/` and `tools/`. Checklist for this code:
   the routine so a change can be checked.
 Findings are fixed in their own commits; the sweep is logged in
 docs/DESIGN.md "Code sweeps" (date, scope, findings, what was fixed,
-what stays open). Last sweep: 2026-11-11 (seventh, after desktop D6); next at the end of the
+what stays open). Last sweep: 2026-11-11 (eighth, part 1: the four extras and the scans;
+part 2, the re-read of the D7a code, still to do); next at the end of the
 current phase step, or after about ten feature commits.
 
 ## Conventions
