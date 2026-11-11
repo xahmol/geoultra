@@ -39,7 +39,8 @@ FO_READ_        = FO_READ
 LINES_N         = 13            ; the file's lines after name=
 NAME_MAX        = 15            ; a theme's name (and its zero)
 THEMES_MAX      = 8             ; files the view menu lists
-FILE_MAX        = 600           ; a theme file's bytes, at most
+FILE_MAX        = 1024          ; a theme file's bytes, at most (Write's
+                                ; longest, all words long and a palette: ~900)
 NO_STYLE        = $FF
 FE_UCI          = 30            ; (FILE_ENGINE.md: a raw Ultimate command)
 UCI_CONTROL     = 4             ; the control target,
@@ -745,7 +746,6 @@ Write:  lda #<buf
 @pal:   stx tmpX                ; a space before each value but the first
         txa
         beq :+
-        ldy #0
 @third: cmp #3                  ; (X a multiple of 3: a value's start)
         bcc :+
         sbc #3
@@ -1016,7 +1016,8 @@ home:           .res HOME_LEN
 path:           .res PATH_BUF
 info:           .res 16
 name:           .res 64
-buf = text                      ; (side.s, TEXT_MAX + 1 >= FILE_MAX + 1)
+buf = text                      ; (side.s's INI text, TEXT_MAX + 1 bytes)
+        .assert FILE_MAX <= TEXT_MAX, error, "a theme file must fit side.s's text"
 themeCount:     .res 1         ; the theme files listed
 handle:         .res 1
 at:             .res 1
