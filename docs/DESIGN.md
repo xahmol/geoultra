@@ -408,6 +408,15 @@ Log:
 
 ## For the user, at the computer
 
+To do (2026-11-11): the right mouse button on the U64. Run
+`python3 tests/desktop/mouse2u64.py 60` (it reboots the U64 into
+GeoUltra and watches `guMouse2` for 60 s), press the right button a few
+times, then the left one. Passes when the right button is seen held and
+released; if it never shows, the U64's USB mouse does not pass it as a
+1351 does, and the context menu needs another trigger (for example C=
+with a left click). Until then the context menu waits; the toolbar does
+not depend on it.
+
 Done 2026-10-30: the DirMaster reference DNP, the hibernation power cycle
 (with and without C=), and the GEOULTRA/test and BACKUP folders (both kept).
 
