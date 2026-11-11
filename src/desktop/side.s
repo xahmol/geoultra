@@ -27,6 +27,7 @@
         .import Into, Document, Ask
         .import path, entryInfo, entryName, cur, count
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd, ThemeSave, ClockSave, ViewSave
+        .export text            ; (themefile.s reads and writes a theme in it)
 
 LIST_MAX        = 4             ; favourites, recent documents, [desktop] lines
 PATH_LEN        = 63            ; a path and its zero (entryName's size:

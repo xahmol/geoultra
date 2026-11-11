@@ -329,8 +329,28 @@ colour is a property of an element, by name:
   colours swapped when painted. Test: tests/desktop/d7u64.py (U64: the
   files there, Night.ini in words, an edited Custom.ini in use;
   Custom.ini and SETTINGS.INI put back).
-- **Next:** the busy pointer and the copy progress line; the icon
-  view; the theme editor (settings tool, phase 3).
+- **Palettes, busy pointer, progress line (2026-11-11):** a theme
+  file may carry `palette=` and 16 `RRGGBB` values (the C64 colours'
+  order); the desktop sends it to the Ultimate 64 with `FE_UCI`
+  (control target, `SET_PALETTE`; firmware 3.15a, not yet released
+  for the C64 Ultimate; nothing on an Ultimate II+ or in VICE) when
+  the theme is used, and `RESET_PALETTE` when the theme it leaves had
+  one. The palette shows for every program, as the Ultimate's own
+  setting does. GeoUltra keeps the C64's palette; the other five
+  presets have their own (user, 2026-11-11: "optimise the colours of
+  the other presets with full RGB freedom"), each colour keeping its
+  character since programs see it too; Custom.ini has a note on the
+  format. The pointer is an hourglass (own drawing, sprite 0's picture
+  saved and put back, nested) while a folder is read, files are
+  pasted or deleted, an image is mounted or unmounted; the arrow
+  during a dialog. The status line shows "Copying 3 of 12: name, 40
+  blocks" (or "Moving", "Deleting"); RUN/STOP stops a copy (the
+  engine's FE_CANCELLED, the rest left). Memory: three 256-600 byte
+  buffers now share side.s's INI text (never in use together).
+  Tests: test-desktop (VICE); the progress line and pointer checked
+  in VICE at a checkpoint in ProgressBlock; d7u64.py (U64: the files'
+  palettes, Night's sent, the reset on leaving it).
+- **Next:** the icon view; the theme editor (settings tool, phase 3).
 
 ## Open bugs
 

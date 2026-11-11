@@ -16,11 +16,15 @@
 
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
         .import entryInfo, entryName, cur, count, path, IsDotDot
+        .import Busy, Idle, ProgressStart, ProgressBlock, progN, progTotal, SelCount
+        .import text            ; (side.s's INI text holds `full` while one
+full = text                     ; engine call copies, moves or mounts it)
         .import Dialog
         .export Copy, Cut, Paste, Delete, Rename, NewFolder, Ask
         .export Error, Append, full     ; (mount.s: an image's path, errors)
 
-FILE_EXISTS     = $40           ; (the engine's error)
+FILE_EXISTS     = $40           ; (the engine's errors)
+FE_CANCELLED    = $47
 
 CLIP_BANK       = 5             ; (1-4: the entry table, list.s)
 CLIP_SIZE       = 64            ; a name and its zero
@@ -150,7 +154,8 @@ ClipPlace:
 
 ; Paste: each clipboard name copied or moved into the current folder;
 ; a file there of the same name replaced after asking (NO: left out).
-Paste:  lda #0
+Paste:  jsr Busy                ; (the hourglass, the progress line)
+        lda #0
         sta n
         sta n+1
 @name:  lda n
@@ -158,12 +163,20 @@ Paste:  lda #0
         bne :+
         lda n+1
         cmp clipCount+1
-        beq @done
+        bne :+
+        jmp @done
 :       lda n
         ldx n+1
         jsr ClipPlace
         jsr FetchRAM
         jsr Source              ; srcPath "/" entryName to full
+        lda clipCount           ; "Copying 3 of 12: name"
+        sta progTotal
+        lda clipCount+1
+        sta progTotal+1
+        jsr ProgN
+        lda clipMode
+        jsr ProgressStart
         lda #0
         sta flags
 @try:   lda #<full
@@ -176,8 +189,9 @@ Paste:  lda #0
         sta r1H
         lda flags
         sta r2L
-        lda #0
-        sta r3L                 ; (no progress routine)
+        lda #<ProgressBlock     ; (list.s: the blocks, RUN/STOP stops)
+        sta r3L
+        lda #>ProgressBlock
         sta r3H
         lda clipMode
         clc
@@ -185,6 +199,8 @@ Paste:  lda #0
         jsr FileEngine
         txa
         beq @next
+        cpx #FE_CANCELLED       ; (RUN/STOP: the rest left, no error)
+        beq @done
         cpx #FILE_EXISTS
         bne @fail
         lda flags               ; (asked already: an error)
@@ -199,9 +215,9 @@ Paste:  lda #0
 @fail:  jsr Error
         jmp @reread
 @next:  inc n
-        bne @name
+        bne :+
         inc n+1
-        bne @name
+:       jmp @name
 @done:  lda clipMode            ; moved: the clipboard is empty
         beq @reread
         lda #0
@@ -209,7 +225,18 @@ Paste:  lda #0
         sta clipCount+1
 @reread:
         jsr ListRead
-        jmp ListDraw
+        jsr ListDraw
+        jmp Idle
+
+; ProgN: progN = n + 1 (the item being worked on).
+ProgN:  lda n
+        clc
+        adc #1
+        sta progN
+        lda n+1
+        adc #0
+        sta progN+1
+        rts
 
 ; Source: full = srcPath, "/" (unless it ends in one), entryName.
 Source: ldy #0
@@ -248,14 +275,28 @@ Delete: jsr AnySelected
         sta some
         lda count
         ora count+1
-        beq @end
-        lda #<DeleteText
+        bne :+
+        rts
+:       lda #<DeleteText
         ldx #>DeleteText
         jsr Ask
-        bne @end                ; (NO)
+        beq :+
+        rts                     ; (NO)
+:       jsr Busy
+        lda #1                  ; "Deleting 3 of 12": the selected ones
+        sta progTotal           ; (or the cursor's one)
         lda #0
+        sta progTotal+1
+        lda some
+        beq :+
+        jsr SelCount
+        sta progTotal
+        stx progTotal+1
+:       lda #0
         sta n
         sta n+1
+        sta done
+        sta done+1
 @entry: lda n
         cmp count
         bne :+
@@ -271,6 +312,15 @@ Delete: jsr AnySelected
         jsr Fetch
         jsr IsDotDot            ; (".." not deleted)
         beq @next
+        inc done
+        bne :+
+        inc done+1
+:       lda done
+        sta progN
+        lda done+1
+        sta progN+1
+        lda #2                  ; (Deleting)
+        jsr ProgressStart
         lda #<entryName
         sta r0L
         lda #>entryName
@@ -294,7 +344,8 @@ Delete: jsr AnySelected
         bne @entry
 @reread:
         jsr ListRead
-        jmp ListDraw
+        jsr ListDraw
+        jmp Idle
 @end:   rts
 
 ; Rename: the cursor's entry gets the name asked for.
@@ -463,9 +514,9 @@ clipCount:      .word 0
 n:              .word 0
 some:           .byte 0
 flags:          .byte 0
+done:           .word 0         ; Delete: the entries done so far
 
         .segment "BSS"
 
 srcPath:        .res 256
-full:           .res 256
 input:          .res NAME_MAX + 1

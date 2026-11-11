@@ -16,14 +16,21 @@
 ; the files for the view menu (themeNames); ThemeLoad reads one into the
 ; theme record (theme.s; unknown lines and words left as they were, so
 ; a file only needs the lines it changes). Without an Ultimate (VICE)
-; nothing is there: the built-in themes stay. Own design and code.
+; nothing is there: the built-in themes stay. A theme may carry a
+; palette (user, 2026-11-11): "palette=" and 16 RRGGBB values in the C64
+; colours' order, sent to the Ultimate 64 (firmware 3.15a; not yet on
+; the C64 Ultimate, nothing on an Ultimate II+ or in VICE) when the theme
+; is used; it then shows for every program, as the Ultimate's own
+; palette setting does. Own design and code.
 
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, ThemeSet, ThemeName, ThemeByName, Derive, tMenu
+        .import FileEngine, ThemeSet, ThemeName, ThemeByName, ThemePal, Derive, tMenu
         .import tCols, viewMode
+        .import text            ; (side.s's INI text: never in use at the same time)
         .export ThemeFiles, ThemeUse, themeNames, themeCount, curName
+        .export hasPal, PalReset
 
 FO_READ_        = FO_READ
 LINES_N         = 13            ; the file's lines after name=
@@ -31,6 +38,12 @@ NAME_MAX        = 15            ; a theme's name (and its zero)
 THEMES_MAX      = 8             ; files the view menu lists
 FILE_MAX        = 600           ; a theme file's bytes, at most
 NO_STYLE        = $FF
+FE_UCI          = 30            ; (FILE_ENGINE.md: a raw Ultimate command)
+UCI_CONTROL     = 4             ; the control target,
+SET_PALETTE     = $52           ; its palette commands (ultimate-uci-oscar64
+RESET_PALETTE   = $54           ; manual: firmware 3.15a on the U64)
+PAL_LEN         = 48            ; 16 RGB triplets
+KIND_PALETTE    = LINES_N       ; (KeyLo/KeyHi: the palette's key after the lines)
 CK_NONE         = 0             ; a line's colours: none,
 CK_PAIR         = 1             ; ink on paper,
 CK_INK          = 2             ; ink (on the area's paper),
@@ -74,7 +87,18 @@ Make:   jsr DirPath
         sta at
 @theme: lda at
         jsr ThemeSet
+        lda #0                  ; its palette, when it has one (theme.s)
+        sta hasPal
         lda at
+        jsr ThemePal
+        bcs :+
+        ldy #PAL_LEN - 1
+@pal:   lda (r1),y
+        sta palCmd + 2,y
+        dey
+        bpl @pal
+        inc hasPal
+:       lda at
         jsr ThemeName           ; r1
         jsr NameFrom
         jsr Write
@@ -82,14 +106,18 @@ Make:   jsr DirPath
         lda at
         cmp #THEMES_N
         bcc @theme
-        lda #0
+        lda #0                  ; (GeoUltra: no palette)
+        sta hasPal
         jsr ThemeSet
         lda #<CustomName
         sta r1L
         lda #>CustomName
         sta r1H
         jsr NameFrom
-        jmp Write
+        inc custom              ; (its note on the palette)
+        jsr Write
+        dec custom
+        rts
 
 ; NameFrom: curName = the name at r1 (cut at NAME_MAX - 1).
 NameFrom:
@@ -219,6 +247,8 @@ ThemeUse:
         lda r0H
         sta r1H
         jsr NameFrom
+        lda #0                  ; (a palette only from the file)
+        sta hasPal
         lda #<curName
         sta r0L
         lda #>curName
@@ -232,7 +262,10 @@ ThemeUse:
         lda #>curName
         sta r0H
         jsr ThemeLoad           ; (C set: no file; the built-in stays)
-        lda #VIEW_LIST
+        lda hasPal              ; its palette to the Ultimate 64
+        beq :+
+        jsr PalSend
+:       lda #VIEW_LIST
         ldx tCols
         beq :+
         lda #VIEW_DETAILED
@@ -346,6 +379,14 @@ Line:   lda tp
         inx
         cpx #LINES_N
         bcc @kind
+        ldx #KIND_PALETTE       ; "palette=" and its 16 values
+        jsr KeyMatch
+        bcs :+
+        jsr PalRead
+:       lda lineAt
+        sta tp
+        lda lineAt+1
+        sta tp+1
         rts
 @found: ldx kind
         lda LStyle,x            ; a style word first?
@@ -502,6 +543,90 @@ Match:  ldy #0
         lda idx
         rts
 
+; PalRead: the 16 RRGGBB values at tp (spaces between them) into
+; palCmd's data; hasPal = 1 when all 48 bytes were there.
+PalRead:
+        ldx #0
+@rgb:   ldy #0
+        jsr Skip                ; (spaces before a value)
+        ldy #3                  ; its three bytes
+@byte:  sty tmpY
+        jsr Hex
+        bcs @bad
+        asl a
+        asl a
+        asl a
+        asl a
+        sta tmp
+        jsr Hex
+        bcs @bad
+        ora tmp
+        sta palCmd + 2,x
+        inx
+        ldy tmpY
+        dey
+        bne @byte
+        cpx #PAL_LEN
+        bcc @rgb
+        lda #1
+        sta hasPal
+        rts
+@bad:   lda #0
+        sta hasPal
+        rts
+
+; Hex: A = the hex digit at tp (0-15), tp one on; C set when it is none.
+Hex:    ldy #0
+        lda (tp),y
+        jsr Step
+        cmp #'0'
+        bcc @no
+        cmp #'9' + 1
+        bcc @dig
+        ora #$20
+        cmp #'a'
+        bcc @no
+        cmp #'f' + 1
+        bcs @no
+        sbc #'a' - 10 - 1       ; (C clear: one less)
+        clc
+        rts
+@dig:   sbc #'0' - 1            ; (C clear)
+        clc
+        rts
+@no:    sec
+        rts
+
+; PalSend: palCmd (SET_PALETTE and the 48 bytes) to the Ultimate
+; (FE_UCI); PalReset: the Ultimate's own palette back (RESET_PALETTE).
+; Errors left: no palette control (an Ultimate II+, a C64 Ultimate
+; without it, VICE) changes nothing.
+PalSend:
+        lda #UCI_CONTROL
+        sta palCmd
+        lda #SET_PALETTE
+        sta palCmd + 1
+        lda #2 + PAL_LEN
+        bne Uci
+PalReset:
+        lda #UCI_CONTROL
+        sta palCmd
+        lda #RESET_PALETTE
+        sta palCmd + 1
+        lda #2
+Uci:    sta r1L
+        lda #<palCmd
+        sta r0L
+        lda #>palCmd
+        sta r0H
+        lda #0
+        sta r2L
+        sta r2H
+        sta r3L
+        sta r3H
+        lda #FE_UCI
+        jmp FileEngine
+
 ; Comma: tp past "," and spaces.
 Comma:  ldy #0
         lda (tp),y
@@ -604,7 +729,47 @@ Write:  lda #<buf
         cmp #LINES_N
         bcs :+
         jmp @line
-:       jsr FilePath            ; the file
+:       lda hasPal              ; its palette
+        beq @note
+        lda #<PalKey
+        ldx #>PalKey
+        jsr Put
+        lda #'='
+        jsr PutCh
+        ldx #0
+@pal:   stx tmpX                ; a space before each value but the first
+        txa
+        beq :+
+        ldy #0
+@third: cmp #3                  ; (X a multiple of 3: a value's start)
+        bcc :+
+        sbc #3
+        bne @third
+        lda #' '
+        jsr PutCh
+:       ldx tmpX
+        lda palCmd + 2,x
+        lsr a
+        lsr a
+        lsr a
+        lsr a
+        jsr HexOut
+        ldx tmpX
+        lda palCmd + 2,x
+        and #$0F
+        jsr HexOut
+        ldx tmpX
+        inx
+        cpx #PAL_LEN
+        bcc @pal
+        jsr NewLine
+@note:  lda custom              ; Custom: how a palette is written
+        beq @file
+        lda #<PalNote
+        ldx #>PalNote
+        jsr Put
+        jsr NewLine
+@file:  jsr FilePath            ; the file
         lda #<path
         sta r0L
         lda #>path
@@ -639,6 +804,14 @@ Write:  lda #<buf
         tax
 @end:   rts
 tRowsByte = tMenu + REC_ROWS
+
+; HexOut: the hex digit A (0-15) written.
+HexOut: cmp #10
+        bcc :+
+        adc #'A' - 10 - 1       ; (C set)
+        jmp PutCh
+:       ora #'0'
+        jmp PutCh
 
 ; StyleOut: line kind `kind`'s style word A written.
 StyleOut:
@@ -784,10 +957,10 @@ K_SCROLLBAR:    .byte "scrollbar", 0
 K_STATUS:       .byte "status", 0
 KeyLo:  .byte <K_BORDER, <K_DESK, <K_MENUBAR, <K_SIDEBAR, <K_HEADINGS
         .byte <K_TITLEBAR, <K_ROWS, <K_COLUMNS, <K_ICONS, <K_SELECTION
-        .byte <K_CURSOR, <K_SCROLLBAR, <K_STATUS
+        .byte <K_CURSOR, <K_SCROLLBAR, <K_STATUS, <PalKey
 KeyHi:  .byte >K_BORDER, >K_DESK, >K_MENUBAR, >K_SIDEBAR, >K_HEADINGS
         .byte >K_TITLEBAR, >K_ROWS, >K_COLUMNS, >K_ICONS, >K_SELECTION
-        .byte >K_CURSOR, >K_SCROLLBAR, >K_STATUS
+        .byte >K_CURSOR, >K_SCROLLBAR, >K_STATUS, >PalKey
 LStyle: .byte NO_STYLE, NO_STYLE, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 LColKind:
         .byte CK_PAPER, CK_PAIR, CK_PAIR, CK_PAIR, CK_PAIR, CK_PAIR
@@ -822,6 +995,9 @@ ThemesDir:      .byte "THEMES", 0
 Slash:          .byte "/", 0
 IniExt:         .byte ".ini", 0
 CustomName:     .byte "Custom", 0
+PalKey:         .byte "palette", 0
+PalNote:        .byte "; palette=RRGGBB x 16 (black ... light grey): the colours"
+                .byte " on an Ultimate 64", 0
 
 HOME_LEN        = 32
 PATH_BUF        = 80
@@ -837,13 +1013,17 @@ tmp:            .byte 0
 tmpY:           .byte 0
 pathEnd:        .byte 0
 lineAt:         .word 0
+tmpX:           .byte 0
+hasPal:         .byte 0         ; 1: the theme in use carries a palette
+custom:         .byte 0         ; 1: writing Custom (its palette note)
 
         .segment "BSS"
 
 curName:        .res NAME_MAX   ; the theme in use (its file's name)
+palCmd:         .res 2 + PAL_LEN ; SET_PALETTE and the theme's palette
 themeNames:     .res THEMES_MAX * NAME_MAX
 home:           .res HOME_LEN
 path:           .res PATH_BUF
 info:           .res 16
 name:           .res 64
-buf:            .res FILE_MAX + 1
+buf = text                      ; (side.s, TEXT_MAX + 1 >= FILE_MAX + 1)

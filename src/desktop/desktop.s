@@ -18,7 +18,7 @@
         .import ViewSave
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeSet, ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
-        .import ThemeUse, themeNames, themeCount, curName
+        .import ThemeUse, themeNames, themeCount, curName, hasPal, PalReset
         .import PaintAll, PaintSide, Neutral, Dialog, MenuNeutral, Recover
         .import ClockDraw, ClockTick, TextWidth, boldOn, clockMode, viewMode
         .import tHead, tIcons, cHeadP, cSide, cSideIconP, cSideAccentP
@@ -957,6 +957,8 @@ RunDA:  sta tmp
 ; (side.s, SETTINGS.INI [desktop]), the screen drawn in it.
 Theme:  sta tmp
         jsr GotoFirstMenu
+        lda hasPal              ; (the theme left had a palette?)
+        sta tmp2
         lda tmp
         jsr ThemeAt
         lda r1L
@@ -964,7 +966,12 @@ Theme:  sta tmp
         lda r1H
         sta r0H
         jsr ThemeUse
-        jsr ThemeSave
+        lda tmp2                ; it had, the new one has none: the
+        beq :+                  ; Ultimate's own palette back
+        lda hasPal
+        bne :+
+        jsr PalReset
+:       jsr ThemeSave
         jmp Back
 
 ; ThemeAt: r1 = the name of the theme menu's item A (a file's, or a
@@ -1228,6 +1235,7 @@ sideTops:       .res SIDE_MAX   ; and its top pixel row
 handle:         .byte 0
 any:            .byte 0
 tmp:            .byte 0
+tmp2:           .byte 0
 at:             .byte 0
 daCount:        .byte 0
 nThemes:        .byte 0         ; the theme menu's items

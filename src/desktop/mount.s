@@ -14,6 +14,7 @@
 
         .import FileEngine, Into, Drive, ListRead, ListDraw, SideRedraw
         .import Error, Append, full, entryName, path
+        .import Busy, Idle
         .import Dialog
         .export Mount, Eject, HasImage, EjectIcon, IsImage
 
@@ -61,7 +62,9 @@ Mount:  jsr IsImage
         lda #>full
         sta r1H
         lda #FE_MOUNT
+        jsr Busy                ; (the image loads: a moment)
         jsr FileEngine
+        jsr Idle
         txa
         beq :+
         jmp Error               ; (entryName: the image)
@@ -224,7 +227,9 @@ Eject:  sta letter
         lda #>drivePath
         sta r0H
         lda #FE_UMOUNT
+        jsr Busy                ; (the write-back: a moment)
         jsr FileEngine
+        jsr Idle
         txa
         beq @gone
         ldy #0                  ; (the error's first line: the image)

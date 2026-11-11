@@ -2,7 +2,11 @@
 """GeoUltra's desktop on the U64, step D7 (docs/DESKTOP.md): theme files.
 GEOULTRA/THEMES holds the six built-in themes and Custom (made by the
 desktop when they are not there: this test only checks they are, and
-that Night.ini says what the built-in Night is); then Custom.ini edited
+that Night.ini says what the built-in Night is, its palette too); with
+theme=Night the U64's palette is Night's (read back with GET_PALETTE),
+and the desktop's Theme routine (called through appMain: menu clicks
+are not reliable over REST) switching to GeoUltra gives the Ultimate's
+own palette back (RESET_PALETTE); then Custom.ini edited
 (desk, sidebar, headings) and SETTINGS.INI [desktop] theme=Custom (made
 for the test): after a boot the theme record holds the edited values.
 Custom.ini and SETTINGS.INI are put back as they were (an existing
@@ -23,6 +27,16 @@ HOME = "/USB0/GEOULTRA/"
 THEMES = ["Custom", "Detailed", "Flat", "GEOS classic", "GeoUltra", "Mono", "Night"]
 NIGHT = ("desk=light grey on dark grey", "headings=band, black on cyan", "rows=8",
          "selection=bar, black on yellow", "status=on, cyan on black")
+NIGHT_PAL = ("12151A E8ECF2 8D2F34 4FC7C2 9835A4 4CB442 2C29B1 F2C94C "
+             "984E20 5B3800 D1676D 232830 6B7280 9FEF93 6D6AEF C5CAD3")
+CMD, REPLY, STUB = 0x5E00, 0x5E80, 0xC0A0
+
+
+def palette(u):
+    """The U64's current palette (GET_PALETTE through FE_UCI), as hex."""
+    u.write(CMD, bytes([0x04, 0x51]))
+    u.fe(30, r0=CMD, r1=2, r2=REPLY, r3=48)
+    return bytes(u.read(REPLY, 48)).hex().upper()
 
 
 def main():
@@ -54,6 +68,8 @@ def main():
     check("THEMES: the six themes and Custom", names, THEMES)
     night = get(HOME + "THEMES/Night.ini").decode("latin1").replace("\r", "").split("\n")
     check("Night.ini in words", all(line in night for line in NIGHT), True)
+    check("Night.ini: its palette", "palette=" + NIGHT_PAL in night, True)
+    default = palette(u)
     check("the desktop lists them", u.read(k["themeCount"], 1)[0], 7)
     custom = get(HOME + "THEMES/Custom.ini")
     edited = []
@@ -63,6 +79,18 @@ def main():
                 "headings": "headings=band, white on red"}.get(key, line)
         edited.append(line)
     try:
+        ftp.storbinary("STOR " + HOME + "SETTINGS.INI", io.BytesIO(b"[desktop]\r\ntheme=Night\r\n"))
+        u.boot()
+        time.sleep(15)
+        check("theme=Night: its palette on the U64", palette(u), NIGHT_PAL.replace(" ", ""))
+        names = [bytes(u.read(k["themeNames"] + 15 * i, 15)).split(b"\0")[0] for i in range(7)]
+        tick = k["ClockTick"]
+        u.write(STUB, bytes([0xA9, tick & 0xFF, 0x8D, 0x9B, 0x84, 0xA9, tick >> 8, 0x8D, 0x9C, 0x84,
+                             0xA9, names.index(b"GeoUltra"), 0x4C, k["Theme"] & 0xFF, k["Theme"] >> 8]))
+        u.write(0x849B, bytes([STUB & 0xFF, STUB >> 8]))    # appMain: Theme(GeoUltra), once
+        time.sleep(8)
+        check("to GeoUltra: the Ultimate's own palette back", palette(u), default)
+        check("SETTINGS.INI: theme=GeoUltra", b"theme=GeoUltra" in get(HOME + "SETTINGS.INI"), True)
         ftp.storbinary("STOR " + HOME + "THEMES/Custom.ini", io.BytesIO("\r\n".join(edited).encode("latin1")))
         ftp.storbinary("STOR " + HOME + "SETTINGS.INI", io.BytesIO(b"[desktop]\r\ntheme=Custom\r\n"))
         u.boot()

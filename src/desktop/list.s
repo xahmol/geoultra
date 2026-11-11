@@ -24,11 +24,19 @@
         .export ListRead, ListDraw, ListPress, ListKey, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot
+        .export ProgressStart, ProgressBlock, progN, progTotal, SelCount
+        .import Busy, Idle
+        .import text            ; (side.s's INI text, PathPress's path: not
+                                ; in use while a folder is entered)
+cutPath = text
 
 ; The list's right edge (the strip from STRIP_LEFT), the status line
 LIST_RIGHT      = STRIP_LEFT - 3
 STATUS_Y        = 192
 FREE_PRE_MAX    = 5             ; "USB0" and ":"
+PROG_NAME_END   = 34            ; the progress line: the name cut here
+R_LEN           = 32            ; r0-r15
+RAM_ALL         = $30
 COL_SIZE        = 246           ; the detailed view: sizes end here,
 COL_DATE        = 254           ; dates start here,
 COL_NAME_END    = 202           ; names are clipped here
@@ -53,8 +61,10 @@ RAM_IO          = $35
 ; first entry is "..", a folder (Open goes up; the actions leave it out,
 ; IsDotDot). Then its free space for the status line (FreeRead).
 ListRead:
+        jsr Busy                ; (icons.s: the hourglass meanwhile)
         jsr ReadList
-        jmp FreeRead
+        jsr FreeRead
+        jmp Idle
 ReadList:
         lda #<path
         sta r0L
@@ -1099,6 +1109,140 @@ Status: lda tStatus
         jsr FullSpan
         jmp InvertRectangle
 
+; ProgressStart: "Copying 3 of 12: name" on the status line (A = the
+; verb: 0 copying, 1 moving, 2 deleting; progN of progTotal; the name in
+; entryName), its length kept for ProgressBlock.
+ProgressStart:
+        tax
+        ldy VerbAt,x
+        ldx #0
+@verb:  lda Verbs,y
+        beq :+
+        sta stBuf,x
+        inx
+        iny
+        bne @verb
+:       txa
+        tay
+        lda progN
+        ldx progN+1
+        jsr Dec16
+        ldx #OfWord
+        jsr Words
+        lda progTotal
+        ldx progTotal+1
+        jsr Dec16
+        ldx #ColonWord
+        jsr Words
+        ldx #0
+@name:  lda entryName,x
+        beq :+
+        sta stBuf,y
+        iny
+        inx
+        cpy #PROG_NAME_END
+        bcc @name
+:       sty progLen
+        lda #0
+        sta stBuf,y
+        jmp StatusShow
+
+; ProgressBlock (FE_COPY's and FE_MOVE's progress routine, r3): ", 40
+; blocks" after ProgressStart's text (r4 = the blocks done); C set when
+; RUN/STOP is held (the engine stops: FE_CANCELLED). Keeps r0-r15 and the
+; CPU port as the engine had them; the drawing with the font in view.
+ProgressBlock:
+        ldx #R_LEN - 1          ; the engine's registers kept
+@keep:  lda r0L,x
+        sta regSave,x
+        dex
+        bpl @keep
+        lda CPU_PORT
+        pha
+        lda #RAM_ALL            ; (the system font lies under I/O)
+        sta CPU_PORT
+        ldy progLen
+        ldx #CommaWord
+        jsr Words
+        lda r4L
+        ldx r4H
+        jsr Dec16
+        ldx #BlocksWord
+        jsr Words
+        lda #0
+        sta stBuf,y
+        jsr StatusShow
+        jsr Stopped             ; (C set: RUN/STOP held)
+        pla
+        sta CPU_PORT
+        php
+        ldx #R_LEN - 1
+@back:  lda regSave,x
+        sta r0L,x
+        dex
+        bpl @back
+        plp
+        rts
+
+; StatusShow: stBuf on the status line, in its colours, inverted as the
+; status line is.
+StatusShow:
+        lda #0
+        jsr SetPattern
+        lda #STATUS_Y
+        sta r2L
+        lda #199
+        sta r2H
+        jsr FullSpan
+        jsr Rectangle
+        lda #<316
+        sta rightMargin
+        lda #>316
+        sta rightMargin+1
+        lda #4
+        sta textX
+        lda #<stBuf
+        ldx #>stBuf
+        jsr StatusText
+        lda #<SCREEN_RIGHT
+        sta rightMargin
+        lda #>SCREEN_RIGHT
+        sta rightMargin+1
+        lda #STATUS_Y
+        sta r2L
+        lda #199
+        sta r2H
+        jsr FullSpan
+        jmp InvertRectangle
+
+; Stopped: C set when RUN/STOP is held (the keyboard matrix's row 7,
+; bit 7; I/O switched in for the read).
+Stopped:
+        php
+        sei
+        lda CPU_PORT
+        pha
+        lda #RAM_IO
+        sta CPU_PORT
+        lda CIA1_PA
+        pha
+        lda #%01111111
+        sta CIA1_PA
+        lda CIA1_PB
+        sta tmp
+        pla
+        sta CIA1_PA
+        pla
+        sta CPU_PORT
+        plp
+        lda tmp                 ; (bit 7 low: held)
+        asl a
+        bcc :+
+        clc
+        rts
+:       sec
+        rts
+
 ; StatusText: the text at A/X at x textX (< 256), baseline 198.
 StatusText:
         sta r0L
@@ -1272,11 +1416,23 @@ SelectedWord = * - StatusWords
         .byte " selected", 0
 FreeWord = * - StatusWords
         .byte "B free", 0
+OfWord = * - StatusWords
+        .byte " of ", 0
+ColonWord = * - StatusWords
+        .byte ": ", 0
+BlocksWord = * - StatusWords
+        .byte " blocks", 0
 SizeWord = * - StatusWords
         .byte "Size", 0
 DateWord = * - StatusWords
         .byte "Date", 0
 RootTitle:      .byte "GeoUltra", 0
+Verbs:          .byte "Copying ", 0
+VERB_MOVE = * - Verbs
+                .byte "Moving ", 0
+VERB_DELETE = * - Verbs
+                .byte "Deleting ", 0
+VerbAt:         .byte 0, VERB_MOVE, VERB_DELETE
 
 ; --- The selection -----------------------------------------------------
 
@@ -1823,6 +1979,10 @@ textX:          .byte 0         ; Text's x
 textClip:       .word LIST_RIGHT ; and its right edge
 unit:           .byte 'K'       ; SizeKB
 word:           .byte 0         ; Status: the entries' word
+progN:          .word 0         ; ProgressStart: the item,
+progTotal:      .word 0         ; of so many
+progLen:        .byte 0         ; its text's length
+regSave:        .res R_LEN      ; ProgressBlock: the engine's r0-r15
 ry:             .byte 0         ; DrawRow's top
 selNow:         .byte 0
 cx:             .byte 0         ; the title's x
@@ -1840,5 +2000,4 @@ path:           .res 256
 entryInfo:      .res INFO_LEN
 entryName:      .res NAME_LEN + 2
 sel:            .res ENTRY_MAX / 8
-cutPath:        .res 256        ; (PathPress)
 stBuf:          .res 48         ; the status line's text
