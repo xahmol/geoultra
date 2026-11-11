@@ -14,14 +14,15 @@
         .include "desktop.inc"
 
         .import FileEngine, Setup, Slot, Store, text, counts, which, at, work
-        .import wantTheme, wantView, curName, clockMode, viewMode
+        .import wantTheme, wantView, wantToolbar, curName, clockMode, viewMode, tbMode
         .importzp lp, sp
-        .export Ov_LoadAll, Ov_Save, Ov_ThemeSave, Ov_ViewSave, Ov_ClockSave
+        .export Ov_LoadAll, Ov_Save, Ov_ThemeSave, Ov_ViewSave, Ov_ClockSave, Ov_ToolbarSave
 Ov_LoadAll = LoadAll            ; (the stubs in ovl.s, overlay 4)
 Ov_Save = Save
 Ov_ThemeSave = ThemeSave
 Ov_ViewSave = ViewSave
 Ov_ClockSave = ClockSave
+Ov_ToolbarSave = ToolbarSave
 
         .segment "OV4"
 
@@ -414,6 +415,7 @@ DeskRead:
         sta wantTheme
         lda #$FF
         sta wantView
+        sta wantToolbar
         ldx #L_DESK
         jsr Setup
         ldx #KEY_THEME
@@ -443,12 +445,20 @@ DeskRead:
         sta wantView
 @clock: ldx #KEY_CLOCK
         jsr FindKey
-        bcs @end
+        bcs @bar
         jsr Value
         ldx #ClockFirst - First
         jsr Pick
-        bcs @end
+        bcs @bar
         sta clockMode
+@bar:   ldx #KEY_TOOLBAR
+        jsr FindKey
+        bcs @end
+        jsr Value
+        ldx #ToolbarFirst - First
+        jsr Pick
+        bcs @end
+        sta wantToolbar
 @end:   rts
 
 ; Pick: A = the index of the value at r0 among the first characters at
@@ -499,6 +509,11 @@ ViewSave:
         ldx #KEY_VIEW
         ldy #ViewWords - Words  ; (0: no branch on Z)
         jmp Word
+ToolbarSave:
+        lda tbMode
+        ldx #KEY_TOOLBAR
+        ldy #ToolbarWords - Words
+        bne Word                ; (not 0: always)
 ClockSave:
         lda clockMode
         ldx #KEY_CLOCK
@@ -605,12 +620,16 @@ KEY_VIEW = * - Keys
                 .byte "view=", 0
 KEY_CLOCK = * - Keys
                 .byte "clock=", 0
+KEY_TOOLBAR = * - Keys
+                .byte "toolbar=", 0
 First:                                  ; a value's first character
 ViewFirst:      .byte "lid", 0          ; list, icons, detailed
 ClockFirst:     .byte "21o", 0          ; 24, 12, off
+ToolbarFirst:   .byte "18o", 0          ; 16, 8, off (its height in pixels)
 Words:
 ViewWords:      .byte "list", 0, "icons", 0, "detailed", 0
 ClockWords:     .byte "24", 0, "12", 0, "off", 0
+ToolbarWords:   .byte "16", 0, "8", 0, "off", 0
 
 NameLo:         .byte <IniName, <RecName, <IniName
 NameHi:         .byte >IniName, >RecName, >IniName

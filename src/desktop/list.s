@@ -23,7 +23,8 @@
         .import stY0, stY1, trackTop, trackBot, trackH, viewMode, MonthName
         .export ListRead, ListDraw, ListPress, ListKey, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
-        .export Modifiers, mods, IsDotDot
+        .export Modifiers, mods, IsDotDot, ListEnd, SelAll
+        .import topY, titleEnd
         .export ProgressStart, ProgressBlock, progN, progTotal, SelCount
         .import Busy, Idle
         .import text            ; (side.s's INI text, PathPress's path: not
@@ -178,7 +179,7 @@ ListDraw:
         jsr PaintList
         lda #0
         jsr SetPattern
-        lda #MENU_BOTTOM + 2    ; title, path and rows cleared
+        lda topY                ; title, path and rows cleared
         sta r2L
         lda bottom
         sta r2H
@@ -715,7 +716,7 @@ Title:  lda tTitle
         sta cx
         lda tTitle
         bne @solid
-        ldx #16                 ; stripes: every other line
+        ldx topY                ; stripes: every other line
 @stripe:
         stx r11L
         stx tmp
@@ -725,14 +726,12 @@ Title:  lda tTitle
         ldx tmp
         inx
         inx
-        cpx #24
+        cpx titleEnd
         bcc @stripe
         lda #0                  ; a gap for the name
         jsr SetPattern
-        lda #16
-        sta r2L
-        lda #23
-        sta r2H
+        jsr TitleRows
+
         lda cx
         sec
         sbc #5
@@ -755,10 +754,7 @@ Title:  lda tTitle
 :       jsr Rectangle
         jmp TitleText
 @solid: jsr TitleText           ; solid: the name, then the bar inverted
-        lda #16
-        sta r2L
-        lda #23
-        sta r2H
+        jsr TitleRows
         jsr TitleSpan
         jmp InvertRectangle
 @line:  lda listL               ; line: the name in bold at the left, a
@@ -770,11 +766,21 @@ Title:  lda tTitle
         jsr TitleText
         lda #0
         sta currentMode
-        lda #23
-        sta r11L
+        ldx titleEnd
+        dex
+        stx r11L
         jsr TitleSpan
         lda #$FF
         jmp HorizontalLine
+
+; TitleRows: r2L-r2H = the title bar's rows (topY to titleEnd - 1).
+TitleRows:
+        lda topY
+        sta r2L
+        ldx titleEnd
+        dex
+        stx r2H
+        rts
 
 ; TitleSpan: r3 = listL, r4 = the screen's right edge.
 TitleSpan:
@@ -788,15 +794,21 @@ TitleSpan:
         sta r4H
         rts
 
-; TitleText: the title's name at x cx, baseline 22.
+; TitleText: the title's name at x cx, baseline topY + 6.
 TitleText:
         jsr TitleName
         lda cx
         sta r11L
         lda #0
         sta r11H
-        lda #22
-        sta r1H
+        ldx topY
+        inx
+        inx
+        inx
+        inx
+        inx
+        inx
+        stx r1H
         jmp PutString
 
 ; TitleName: r0 = the path's last part, or "GeoUltra" at "/".
@@ -1576,7 +1588,7 @@ ListPress:
         cmp listL
         bcc @out                ; (the sidebar)
 :       lda mouseYPos
-        cmp #MENU_BOTTOM + 2
+        cmp topY
         bcc @out
         cmp listTop
         bcs @below
@@ -1921,6 +1933,73 @@ ListKey:
 @show:  jsr ListDraw
         clc
         rts
+
+; ListEnd (the toolbar's end button): the cursor on the last entry,
+; only it selected, the list drawn.
+ListEnd:
+        lda count
+        ora count+1
+        beq @end
+        lda count
+        sec
+        sbc #1
+        sta cur
+        lda count+1
+        sbc #0
+        sta cur+1
+        jsr ClearSel
+        lda cur
+        ldx cur+1
+        ldy #1
+        jsr Select
+        jsr Follow
+        jmp ListDraw
+@end:   rts
+
+; SelAll (the toolbar's select all): every entry selected but ".." (the
+; first, below "/"), the list drawn.
+SelAll: jsr ClearSel
+        lda count               ; whole bytes: count / 8
+        sta tmp
+        lda count+1
+        sta tmpH
+        ldx #3
+@div:   lsr tmpH
+        ror tmp
+        dex
+        bne @div
+        ldx tmp                 ; (ENTRY_MAX entries: 256 bytes, X 0 and
+        lda tmpH                ; tmpH 1: all 256 filled)
+        bne :+
+        txa
+        beq @rest
+:       lda #$FF
+@all:   dex
+        sta sel,x
+        bne @all
+@rest:  lda count               ; the last byte's bits: count & 7
+        and #7
+        tay
+        lda #0
+@bit:   dey
+        bmi @last
+        sec
+        rol a
+        bne @bit
+@last:  ldx tmpH                 ; (all 256 bytes full: no rest)
+        bne @dotdot
+        ldx tmp
+        ora sel,x
+        sta sel,x
+@dotdot:
+        lda path + 1            ; below "/": ".." not
+        beq @draw
+        lda #0
+        tax
+        tay
+        jsr Select
+@draw:  jmp ListDraw
+        .assert ENTRY_MAX <= 2048, error, "SelAll: sel at most 256 bytes"
 
 ; Follow: top moved so the cursor is on the screen.
 Follow: lda cur+1               ; cur < top: top = cur

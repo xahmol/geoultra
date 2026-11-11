@@ -146,6 +146,44 @@ def main():
         side(0x80)
         check("a click on the first: there", here(), "/b/dir1")
         g.png("desktop-d5")
+        # The toolbar (two lines, the default): a press on a button's middle
+        # (its cards from x 8, 16 px apart, 8 px between the groups).
+        def button(card):
+            press(card * 8 + 8, 23, s=4)
+        button(5)                                           # up
+        check("toolbar up: /b", here(), "/b")
+        n = word("count")
+        button(14)                                          # end
+        check("toolbar end: the last entry", word("cur"), n - 1)
+        button(12)                                          # top
+        check("toolbar top: the first", word("cur"), 0)
+        button(26)                                          # select all
+        bits = bytes(v.mem_get(k["sel"], k["sel"] + 31))
+        check("toolbar select all: all but \"..\"", sum(bin(b).count("1") for b in bits), n - 1)
+        button(17)                                          # view
+        check("toolbar view: detailed", v.mem_get(k["viewMode"], k["viewMode"])[0], 2)
+        button(17)
+        check("toolbar view again: list", v.mem_get(k["viewMode"], k["viewMode"])[0], 0)
+        button(7)                                           # root
+        check("toolbar root: /", here(), "/")
+        g.png("desktop-d5-toolbar")
+        # view > toolbar > one line, off, two lines: the menu's routine
+        # (A = the item) called once through appMain, as a menu click runs
+        # it: the content's top and the sidebar's first line (under its
+        # heading) follow.
+        from gushvice import KEY_STUB
+        for item, top in ((1, 24), (2, 16), (0, 32)):
+            tb, tick = k["Toolbar"], k["ClockTick"]
+            v.mem_set(KEY_STUB, bytes([0xA9, tick & 0xFF, 0x8D, 0x9B, 0x84, 0xA9, tick >> 8, 0x8D, 0x9C, 0x84,
+                                       0xA9, item, 0x4C, tb & 0xFF, tb >> 8]))
+            v.mem_set(0x849B, bytes([KEY_STUB & 0xFF, KEY_STUB >> 8]))
+            v.resume()
+            settle(5)
+            check("toolbar %d: the content from y %d" % (item, top),
+                  (v.mem_get(k["topY"], k["topY"])[0], v.mem_get(k["sideTops"], k["sideTops"])[0]),
+                  (top, top + 10))
+            if item == 1:
+                g.png("desktop-d5-oneline")
         # The clock's longest text (12-hour, "Wed 11 Nov 2026  12:42 pm",
         # 25 characters and its zero) stays in clockText: before the eighth
         # sweep it ran 2 bytes into curName, the theme in use.

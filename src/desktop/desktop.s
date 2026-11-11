@@ -16,7 +16,7 @@
         .import OvlInit, clipCount
         .import Copy, Cut, Paste, Delete, Rename, NewFolder, path
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
-        .import ViewSave
+        .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeSet, ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
         .import ThemeUse, themeNames, themeCount, curName, hasPal, PalReset
@@ -25,7 +25,7 @@
         .import tHead, tIcons, cHeadP, cSide, cSideIconP, cSideAccentP
         .import sideW, ejectCard, sideTx, rowH, bottom
         .export FileEngine, Redraw, SideRedraw, SideHeading, SideItem, SideGap
-        .export SideArrows
+        .export SideArrows, View
         .export itemText, itemName, itemIcon, itemEject
 
 FE_ENTRY        = 30            ; the file engine: guExtTable + 30
@@ -90,6 +90,8 @@ Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
 ; sidebar line (its drive's root; on a drive's eject icon its unmount).
 Press:  lda mouseData
         bmi @end
+        jsr ToolPress           ; (C clear: it was on the toolbar)
+        bcc @end
         jsr ListPress
         bcc @end
         lda mouseXPos+1         ; the sidebar: x left of its line
@@ -203,6 +205,7 @@ Draw:   jsr PaintAll
         lda #$FF
         jsr HorizontalLine
         jsr ClockDraw
+        jsr ToolDraw            ; (toolbar.s; nothing when it is off)
         jsr ListRead
         jsr Sidebar
         jmp ListDraw
@@ -222,8 +225,9 @@ Across: lda #0
 ; Ultimate's roots, favourites and recent documents.
 Sidebar:
         jsr PaintSide
-        lda #MENU_BOTTOM + 1
-        sta r3L
+        ldx topY                ; (from the line above the content: under
+        dex                     ; the menu bar's, or the toolbar's)
+        stx r3L
         lda bottom
         sta r3H
         lda sideW
@@ -235,7 +239,7 @@ Sidebar:
         lda #$FF
         jsr VerticalLine
         jsr OpenCode
-        lda #MENU_BOTTOM + 2
+        lda topY
         sta sideY
         lda #0
         sta sideCount
@@ -392,7 +396,7 @@ Ultimate:
 SideRedraw:
         lda #0
         jsr SetPattern
-        lda #MENU_BOTTOM + 1
+        lda topY
         sta r2L
         lda bottom
         sta r2H
@@ -898,6 +902,11 @@ ViewsMenu:
         lda #<viewsMenu
         ldx #>viewsMenu
         bne Marks
+ToolbarMenu:
+        ldy tbMode
+        lda #<toolbarMenu
+        ldx #>toolbarMenu
+        bne Marks
 ClockMenu:
         ldy clockMode
         lda #<clockMenu
@@ -1031,6 +1040,18 @@ View:   sta tmp
         jsr ViewSave
         jmp ListDraw
 
+; Toolbar (view > toolbar > two lines, one line, off; A = the item):
+; the layout derived anew, saved, the screen and the menu drawn again
+; (Back, as after a theme).
+Toolbar:
+        sta tmp
+        jsr GotoFirstMenu
+        lda tmp
+        sta tbMode
+        jsr Derive
+        jsr ToolbarSave
+        jmp Back                ; (open.s: drawn again, the menu too)
+
 ; Clock (view > clock > 24-hour, 12-hour, off; A = the item): saved,
 ; drawn again.
 Clock:  sta tmp
@@ -1134,9 +1155,9 @@ fileMenu:
         .word Gush
 
 viewMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 3 * 14
+        .byte MENU_BOTTOM, MENU_BOTTOM + 4 * 14
         .word 58, 109
-        .byte VERTICAL | UN_CONSTRAINED | 3
+        .byte VERTICAL | UN_CONSTRAINED | 4
         .word ThemeText
         .byte DYN_SUB_MENU
         .word ThemeMenu
@@ -1146,6 +1167,9 @@ viewMenu:
         .word ClockText
         .byte DYN_SUB_MENU
         .word ClockMenu
+        .word ToolbarText
+        .byte DYN_SUB_MENU
+        .word ToolbarMenu
 
 themeMenu:                              ; (beside the view menu's items;
         .byte MENU_BOTTOM, MENU_BOTTOM + THEMES_N * 14  ; ThemeMenu sets the
@@ -1184,6 +1208,20 @@ clockMenu:
         .word OffItem
         .byte MENU_ACTION
         .word Clock
+
+toolbarMenu:
+        .byte MENU_BOTTOM + 42, MENU_BOTTOM + 42 + 3 * 14
+        .word 110, 179
+        .byte VERTICAL | UN_CONSTRAINED | 3
+        .word TwoLineItem
+        .byte MENU_ACTION
+        .word Toolbar
+        .word OneLineItem
+        .byte MENU_ACTION
+        .word Toolbar
+        .word TbOffItem
+        .byte MENU_ACTION
+        .word Toolbar
 
 diskMenu:
         .byte MENU_BOTTOM, MENU_BOTTOM + 14
@@ -1225,6 +1263,10 @@ DetailedItem:   .byte "  detailed", 0
 Hour24Item:     .byte "  24-hour", 0
 Hour12Item:     .byte "  12-hour", 0
 OffItem:        .byte "  off", 0
+ToolbarText:    .byte "toolbar", 0
+TwoLineItem:    .byte "  two lines", 0
+OneLineItem:    .byte "  one line", 0
+TbOffItem:      .byte "  off", 0          ; (its own: Marks writes into it)
 RefreshItem:    .byte "refresh", 0
 InfoLine1:      .byte BOLDON, "GeoUltra Desktop", PLAINTEXT, 0
 InfoLine2:      .byte "milestone 1 (in development)", 0

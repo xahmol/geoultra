@@ -415,9 +415,43 @@ colour is a property of an element, by name:
   toolbar its colours only. The icons and their order as drawn there:
   back, forward, up, root ("/"), home | top, end | view, refresh | new
   folder, info, select all, copy, paste, delete.
-- **Next, in this order:** the eighth sweep with its extras (and the
-  INI code into an overlay); the right button in the driver, checked on
-  the U64; the toolbar with the history; the context menu and Info; the
+- **Eighth sweep and the right button (2026-11-11):** done (DESIGN.md
+  "Code sweeps"); the 1351 driver reports the right button in
+  `guMouse2` (`$C0E6`, ARCHITECTURE.md "Menus and the pointer"), tested
+  in VICE; the U64 check (its USB mouse) is on the user's list.
+- **Toolbar, step T1 (2026-11-11):** `src/desktop/toolbar.s`. The row
+  under the menu bar, the full width; view > toolbar > two lines (16
+  px, framed buttons, the default), one line (8 px, the icons flat,
+  dotted lines between the groups) or off; saved as SETTINGS.INI
+  `[desktop] toolbar=16`, `8` or `off` (the height in pixels: the INI
+  reader tells values apart by their first character, and "one" and
+  "off" share theirs). The layout follows from `topY` (theme.s,
+  Derive: 16 plus the toolbar's height): the sidebar, the title bar,
+  the path line, the list and their colours start there. The buttons
+  sit on cards (BitmapUp places bitmaps on cards): 16 px apart from x
+  8, 8 px between the groups (the mock-up: x 4 and 6 px). Each button's
+  bitmap is made when drawn (the frame template and the mock-up's icon
+  shifted into it). Actions: up, root "/", home (FE_HOME; nothing
+  without an Ultimate), top, end, view (list and detailed in turn; icons
+  with the icon view), refresh, new folder, select all (all but ".."),
+  copy, paste, delete. Back and forward (T2, the history) and info (with
+  the context menu) do nothing yet. The toolbar has the menu bar's
+  colours for now; its own theme colour line is a step of its own (it
+  changes the theme files). Tests: d5.py (the buttons pressed, the three
+  heights through the menu's routine).
+  Found on the way: the boot ROM started each REU transfer by storing
+  `RAM_ALL` (`$30`) at `$FF00`, inside the input driver once an earlier
+  image had loaded it. Before, that hit the second byte of an
+  instruction (the driver read a wrong address for its "moved" flag);
+  with the right button's code an opcode sat there and the driver ran
+  into garbage that wrote over the desktop's code. The boot ROM now
+  writes back the byte it reads, as hibernation already did.
+- **Room:** the desktop's core ends at `$4F77` of `$4FFF` (136 bytes
+  left): the history (T2) and the toolbar's theme colour need room made
+  first (candidates: the toolbar's drawing or the sidebar's lists into
+  an overlay).
+- **Next, in this order:** the toolbar's history (back, forward); the
+  context menu and Info (the right button's U64 check first); the
   icon view; the theme editor (settings tool, phase 3).
 
 ## Open bugs

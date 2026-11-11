@@ -40,3 +40,4 @@ OvlFail:
         Stub ThemeSave, 4
         Stub ViewSave, 4
         Stub ClockSave, 4
+        Stub ToolbarSave, 4

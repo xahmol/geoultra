@@ -23,6 +23,8 @@
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList
         .export Neutral, Dialog, MenuNeutral, Recover, ClockDraw, ClockTick
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
+        .export tbMode, topY, titleEnd
+        .import ToolPaint
         .import BusyPause, BusyResume
 
 CPU_PORT        = $01
@@ -107,12 +109,22 @@ Derive: lda tSel
         bne :+
         ldy #19
 :       sty sideTx
-        lda #23                 ; the path line's baseline: under the title
+        ldx tbMode              ; the content's top: under the toolbar
+        lda #MENU_BOTTOM + 2
+        clc
+        adc BarH,x
+        sta topY
+        clc
+        adc #8
+        sta titleEnd            ; (the title bar: topY to titleEnd - 1)
+        lda #7                  ; the path line's baseline: under the title
         ldx tTitle
         cpx #ST_NONE
         beq :+
-        lda #31
-:       sta pathY
+        lda #15
+:       clc
+        adc topY
+        sta pathY
         ldx #199                ; the bottom: above the status line
         lda tStatus
         bne :+
@@ -369,6 +381,7 @@ PaintAll:
         lda cMenu
         sta pcol
         jsr Paint
+        jsr ToolPaint           ; (toolbar.s: its rows, when it is on)
         jsr PaintSide
         jmp PaintList
 
@@ -381,7 +394,8 @@ PaintSide:
         sec
         sbc #1
         sta px1
-        lda #2
+        lda topY
+        jsr Cells
         sta py0
         lda bottom
         jsr Cells
@@ -398,7 +412,8 @@ PaintList:
         sta px0
         lda #39
         sta px1
-        lda #2
+        lda topY
+        jsr Cells
         sta py0
         lda bottom
         jsr Cells
@@ -409,7 +424,8 @@ PaintList:
         lda tTitle
         cmp #ST_NONE
         beq @icons
-        lda #2
+        lda topY
+        jsr Cells
         sta py0
         sta py1
         lda cTitleP
@@ -841,6 +857,7 @@ TextWidth:
         bne @ch
 @end:   rts
 
+BarH:           .byte 16, 8, 0  ; the toolbar's height by tbMode
 MonthOff:       .byte 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4
 DayNames:       .byte "SunMonTueWedThuFriSat"
 MonNames:       .byte "JanFebMarAprMayJunJulAugSepOctNovDec"
@@ -985,6 +1002,9 @@ lastMin:        .byte $FF
 clockX:         .word CLOCK_X0  ; the clock text's left edge (ClockDraw)
 clockMode:      .byte 0         ; the clock: 0 24-hour, 1 12-hour, 2 off
 viewMode:       .byte 0         ; the list: 0 list, 1 icons, 2 detailed
+tbMode:         .byte TB_TWO    ; the toolbar (TB_*; a view option)
+topY:           .byte 32        ; the content's top (under the toolbar)
+titleEnd:       .byte 40        ; the title bar's end (topY + 8)
 at:             .byte 0
 tmp:            .byte 0
 px0:            .byte 0

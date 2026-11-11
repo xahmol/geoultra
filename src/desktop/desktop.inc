@@ -101,6 +101,7 @@ IC_DOWN         = 13
 ; More file engine functions
 FE_DF           = 16
 HorizontalLine  = $C118
+DrawPoint       = $C133
 VerticalLine    = $C121
 
 ; Theme styles (theme.s; the mock-up's buttons in order, 0 the first)
@@ -119,6 +120,9 @@ ST_THIN         = 1             ; scrollbar: 0 arrows
 ST_OFF          = 1             ; icons, status: 0 on
 
 ; The view (theme.s viewMode) and the clock (clockMode)
+TB_TWO          = 0             ; the toolbar (tbMode): two lines, 16 px,
+TB_ONE          = 1             ; one line, 8 px,
+TB_OFF          = 2             ; none
 VIEW_LIST       = 0
 VIEW_ICONS      = 1
 VIEW_DETAILED   = 2

@@ -29,6 +29,8 @@
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
         .export text            ; (themefile.s reads and writes a theme in it)
         .export Setup, Slot, Store, counts, which, at, work, wantTheme, wantView
+        .export wantToolbar
+        .import tbMode
         .exportzp lp, sp        ; (inifile.s, overlay 4, uses them)
 
 CODE_FAV        = $80           ; sidebar codes (desktop.s, Press):
@@ -47,7 +49,10 @@ sp:             .res 2          ; its section line ("[favourites]")
 ; Called here in turn: an overlay calls no other overlay.
 SideLoad:
         jsr LoadAll
-        jsr ThemeFiles
+        lda wantToolbar         ; (before the theme: its layout follows)
+        bmi :+
+        sta tbMode
+:       jsr ThemeFiles
         lda #<wantTheme
         ldx #>wantTheme
         ldy wantTheme
@@ -480,6 +485,7 @@ workLen:        .byte 0
 
 wantTheme:      .res WANT_LEN   ; inifile.s, DeskRead: the theme named,
 wantView:       .res 1          ; the view named ($FF: none)
+wantToolbar:    .res 1          ; the toolbar named ($FF: none)
 favs:           .res LIST_MAX * (PATH_LEN + 1)
 recents:        .res LIST_MAX * (PATH_LEN + 1)
 desks:          .res LIST_MAX * (PATH_LEN + 1)
