@@ -63,16 +63,16 @@ def main():
                 check("cursor left: / again", path(), "/")
                 press(30, LIST_TOP + 1 * ROW_H + 4, wait=3)   # sidebar line 2: B
                 check("a click on drive B's line: /b", path(), "/b")
-                press(150, LIST_TOP + 4, wait=0.3)          # gush: the first entry,
+                press(150, LIST_TOP + ROW_H + 4, wait=0.3)  # gush: after "..",
                 v.mem_set(DBL, bytes([30]))                 # (VICE runs in warp: the
-                press(150, LIST_TOP + 4, wait=10)           # count kept for the second)
+                press(150, LIST_TOP + ROW_H + 4, wait=10)   # count kept for the second)
                 check("a double click on gush: it runs", bytes(v.mem_get(0x0400, 0x040F)), gush)
             else:
                 g.keys([KEY_DOWN, KEY_DOWN, CR], settle=0.5)    # "/": a, b, e
                 time.sleep(3)
                 v.ping()
                 check("RETURN on e: /e", path(), "/e")
-                gpos = 1                                    # (src/sysdrive.toml: geoFolder,
+                gpos = 2                                    # (src/sysdrive.toml: "..", geoFolder,
                                                             # gush, GeoUltra Desktop, bin)
                 press(150, LIST_TOP + gpos * ROW_H + 4, wait=0.3)
                 v.mem_set(DBL, bytes([30]))

@@ -260,19 +260,24 @@ colour is a property of an element, by name:
 
 ## Open bugs
 
-- **geoFolder opened from the list in `/e` (2026-11-06, the user's
-  hand test on the U64):** its dialog shows an empty file list, a
-  garbled third button and garbage below the buttons. Also from the
-  desktop's geos menu, in `/a` as in `/e` (the user, same day): so not
-  the folder nor the way it starts, but the desktop's state while an
-  accessory runs. Suspects: the desktop's REU use (entry table banks
-  1-4, clipboard bank 5; are they the applications' banks?) and its
-  zero page ($80-$87), both grown with D4/D5b. To do first next
-  session: bisect today's commits in VICE (geoFolder from the
-  desktop's geos menu, a screenshot per commit).
-- Fixed in the working copy, not yet committed: after a desk
-  accessory started from the list, the menu bar was gone (Redraw
-  clears it; open.s now calls ReDoMenu after it).
+- **geoFolder garbled when opened from the desktop (2026-11-06, the
+  user's hand test on the U64). Cause found 2026-11-11, not the
+  desktop:** drive A's test copy (`/USB0/GEOULTRA/test/GEOS64.D81`)
+  held its own geoFolder (put there by `tests/gush/gu64.py`), and
+  GetFile takes the current drive's copy before drive E's. That copy
+  was damaged: 2 data blocks allocated, but the first block's link
+  was 0/$FF (last block), so only 254 of 508 bytes loaded; the
+  dialog table loaded, the gush icon and the texts did not. The
+  second block had been freed and reused. Removed from the test copy
+  (directory entry and BAM; the damaged image kept outside the
+  repository); on the U64 the desktop's geoFolder from `/e` then
+  showed correctly. In VICE the dialog was correct from the list and
+  the geos menu, with 1541 and 1581 drives A. What damaged the file is
+  not known: gush's `cp` and the desktop's paste (`/e/geoFolder` to
+  drive B, VICE) both write a correct 2-block chain; c1541's
+  `-geoswrite` too. Watch for it in later write tests.
+- Fixed (036c457): after a desk accessory started from the list, the
+  menu bar was gone (Redraw clears it; open.s calls ReDoMenu after it).
 
 ## Tests
 

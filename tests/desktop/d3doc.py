@@ -61,7 +61,7 @@ def main():
         v.ping()
         check("/a", bytes(v.mem_get(k["path"], k["path"] + 2)), b"/a\0")
         i = names.index(DOC)
-        g.keys([KEY_HOME] + [KEY_DOWN] * i, settle=0.2)
+        g.keys([KEY_HOME] + [KEY_DOWN] * (i + 1), settle=0.2)    # (".." first)
         g.keys([CR], settle=1)
         time.sleep(20)
         v.ping()

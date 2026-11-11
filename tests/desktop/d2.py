@@ -83,7 +83,7 @@ def main():
         v.ping()
         check("FE_CD /b, then the desktop started (FE_RUNSYS no return)",
               bytes(v.mem_get(0x02F0, 0x02F1)), b"\x00\xEE")
-        check("all entries of /b read (gush and the files)", word("count"), FILES + 1)
+        check("all entries of /b read (\"..\", gush and the files)", word("count"), FILES + 2)
         g.png("desktop-d2")
         g.keys([KEY_DOWN] * 20, settle=0.3)
         time.sleep(2)

@@ -81,7 +81,7 @@ def main():
         v.resume()
         settle(8)
         base = word("count")
-        check("/b listed: gush and f00-f02", base, 4)
+        check("/b listed: \"..\", gush and f00-f02", base, 5)
         g.keys([C | ord("n")], settle=2)                    # new folder
         settle(2)
         g.png("desktop-d4-new")
@@ -91,7 +91,7 @@ def main():
         g.keys("\r", settle=0.3)
         settle(4)
         check("C=N dir1: one entry more", word("count"), base + 1)
-        g.keys([KEY_HOME, KEY_DOWN], settle=0.3)            # f00 (after gush)
+        g.keys([KEY_HOME, KEY_DOWN, KEY_DOWN], settle=0.3)  # f00 (after "..", gush)
         g.keys([C | ord("c")], settle=1)
         settle(1)
         check("C=C: one name on the clipboard", word("clipCount"), 1)
@@ -100,39 +100,39 @@ def main():
         check("into dir1", bytes(v.mem_get(k["path"], k["path"] + 7)), b"/b/dir1\0")
         g.keys([C | ord("v")], settle=1)
         settle(5)
-        check("C=V: f00 copied into dir1", word("count"), 1)
+        check("C=V: f00 copied into dir1 (after \"..\")", word("count"), 2)
         g.keys([C | ord("v")], settle=1)                    # again: replace?
         settle(3)
         g.png("desktop-d4-ask")
         press(*YES_XY, s=5)
-        check("pasted again, YES: still one entry", word("count"), 1)
+        check("pasted again, YES: still one entry", word("count"), 2)
         g.keys([KEY_LEFT], settle=1)                        # /b: cut f01
         settle(3)
-        g.keys([KEY_HOME, KEY_DOWN, KEY_DOWN, C | ord("x")], settle=0.5)
+        g.keys([KEY_HOME] + [KEY_DOWN] * 3 + [C | ord("x")], settle=0.5)
         settle(1)
         g.keys([KEY_HOME] + [KEY_DOWN] * base + [CR], settle=0.3)
         settle(4)
         g.keys([C | ord("v")], settle=1)
         settle(5)
-        check("C=X, C=V: f01 moved into dir1", word("count"), 2)
+        check("C=X, C=V: f01 moved into dir1", word("count"), 3)
         g.keys([KEY_LEFT], settle=1)
         settle(3)
         check("/b: one entry less (f01 gone, dir1 there)", word("count"), base)
         g.keys([KEY_HOME] + [KEY_DOWN] * (base - 1) + [CR], settle=0.3)   # dir1 again
         settle(4)
-        g.keys([KEY_HOME, KEY_DOWN, C | ord("r")], settle=1)            # rename f01
+        g.keys([KEY_HOME, KEY_DOWN, KEY_DOWN, C | ord("r")], settle=1)  # rename f01
         settle(2)
         g.keys([DEL] * 5, settle=0.2)
         g.keys("g01\r", settle=0.3)
         settle(4)
-        g.keys([KEY_HOME, KEY_DOWN, C | ord("c")], settle=0.5)          # (its name read
+        g.keys([KEY_HOME, KEY_DOWN, KEY_DOWN, C | ord("c")], settle=0.5)  # (its name read
         settle(1)                                                       # back: the clipboard)
         nm = bytes(v.mem_get(k["entryName"], k["entryName"] + 7)).split(b"\0")[0]
         check("C=R: f01 renamed g01", nm, b"g01")
-        g.keys([KEY_HOME, KEY_DOWN, DEL], settle=1)                     # delete g01
+        g.keys([KEY_HOME, KEY_DOWN, KEY_DOWN, DEL], settle=1)           # delete g01
         settle(3)
         press(*YES_XY, s=5)
-        check("DEL, YES: one entry left", word("count"), 1)
+        check("DEL, YES: one entry left (and \"..\")", word("count"), 2)
         g.png("desktop-d4")
     finally:
         g.stop()
