@@ -627,7 +627,8 @@ ColText:
         jmp NameClip
 
 ; SizeKB: A/X = the entry's size in KB (unit 'K'), or in MB (unit 'M')
-; from 10240 KB; C set for an entry without a size (folders, drives).
+; from 10240 KB; C set for an entry without a size (folders, drives,
+; Ultimate files: their listing gives none).
 ; GEOS and CBM files: blocks / 4, rounded up; Ultimate files: bytes /
 ; 1024, rounded up.
 SizeKB: lda entryInfo + FI_KIND
@@ -636,8 +637,13 @@ SizeKB: lda entryInfo + FI_KIND
         cmp #K_CBM
         beq @blocks
         cmp #K_UFILE
-        beq @bytes
-        sec
+        bne @none
+        lda entryInfo + FI_SIZE         ; (the Ultimate's listings give
+        ora entryInfo + FI_SIZE + 1     ; no sizes, FILE_ENGINE.md: 0 is
+        ora entryInfo + FI_SIZE + 2     ; unknown, so nothing shown)
+        ora entryInfo + FI_SIZE + 3
+        bne @bytes
+@none:  sec
         rts
 @blocks:
         lda entryInfo + FI_SIZE         ; (blocks + 3) / 4

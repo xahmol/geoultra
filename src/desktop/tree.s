@@ -215,8 +215,32 @@ OneFile:
 
 ; OneCopy: the file at tSrc copied (mode 0) or moved to tDst; when tDst
 ; exists, replaced after "Yes" or "Yes to all", left after "No". C set:
-; stop.
+; stop. The engine gets tDst's folder, not its full path, so it names
+; the copy as gush's cp does (the user, 2026-11-11: GeoWrite pasted onto
+; the Ultimate came without ".cvt"): name.cvt on the Ultimate, the name
+; without it back on a GEOS drive, .prg/.seq/.usr for CBM files.
 OneCopy:
+        ldy #$FF                ; tDst cut at its last "/" (its folder)
+@end:   iny
+        lda tDst,y
+        bne @end
+@slash: dey
+        lda tDst,y
+        cmp #'/'
+        bne @slash
+        sty cutAt
+        lda #0
+        sta tDst,y
+        jsr CopyFile
+        php                     ; (its result kept)
+        ldy cutAt               ; tDst as it was
+        lda #'/'
+        sta tDst,y
+        plp
+        rts
+
+; CopyFile: OneCopy's copy (tDst holding the target's folder).
+CopyFile:
         jsr LastToEntry         ; "Copying 14: name"
         inc fileNo
         bne :+
@@ -451,6 +475,7 @@ EverythingText: .byte BOLDON, "Delete everything in it?", PLAINTEXT, 0
 op:             .byte 0
 mode:           .byte 0         ; 0 copy, 1 move
 errX:           .byte 0         ; WalkFail: the error meanwhile
+cutAt:          .byte 0         ; OneCopy: where tDst's last "/" was
 depth:          .byte 0
 handle:         .byte 0
 flags:          .byte 0

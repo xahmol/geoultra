@@ -480,6 +480,18 @@ colour is a property of an element, by name:
   icons -> detailed. Room: the built-in themes moved to overlay 1, the
   INI and theme files' scratch into their overlays, three buffers into
   side.s's shared `text`; the core ends at `$4F3E`. Tests: d9.py.
+- **Files on the Ultimate (the user, 2026-11-11):** a GEOS file pasted
+  onto the Ultimate is now named as gush's `cp` names it (`name.cvt`:
+  the engine gets the target folder, not a full path); opening a file
+  there that is no disk image shows "Not opened here: GEOS files open
+  from drives A-E: copy it to one of them first." (the user kept this
+  wording); the detailed view leaves an Ultimate file's size empty
+  (the Ultimate's listings give none; it showed 0), the Info dialog will
+  show the real size. A user manual, docs/DESKTOP_MANUAL.md, gets a
+  section on what works on which kind of drive.
+- **Drive C for testing (the user, 2026-11-11):** the system DNP as a
+  native REU drive (MOUNTS.INI `C=`, a copy in the test folder, made
+  by `make deploy`); tests that mount use D.
 - **Next, in this order:** the context menu and Info (the right
   button's U64 check first); the icon
   view; the theme editor (settings tool, phase 3).

@@ -44,8 +44,6 @@ def main():
         print("%s %s: %s" % ("pass" if good else "FAIL", title, got if good else "%s, expected %s" % (got, want)))
     ftp = ftplib.FTP(u.ip)
     ftp.login()
-    if "SETTINGS.INI" in [n.split("/")[-1] for n in ftp.nlst(HOME)]:
-        sys.exit("d8u64.py: the stick has a SETTINGS.INI; not touched")
 
     def ls(path):
         """The names in a folder (lower case); None when it is not there
@@ -102,6 +100,10 @@ def main():
     for name, data in (("one.txt", b"first\r"), ("two.txt", b"second\r"),
                        ("SUB/three.txt", b"third\r")):
         ftp.storbinary("STOR " + BASE + "/SRC/" + name, io.BytesIO(data))
+    try:                                                # (the user's own: kept,
+        users = _get(ftp, HOME + "SETTINGS.INI")        # put back at the end)
+    except ftplib.error_perm:
+        users = None
     ftp.storbinary("STOR " + HOME + "SETTINGS.INI",
                    io.BytesIO(b"[favourites]\r\n/usb0/geoultra/test/d8\r\n"))
     try:
@@ -135,8 +137,28 @@ def main():
         key(C | ord("v"), 25)
         check("SRC moved into MOVED", (ls(BASE + "/MOVED/SRC/SUB"), "src" in (ls(BASE) or [])),
               (["three.txt"], False))
+        # A GEOS application onto the Ultimate: named as gush's cp names it
+        # (GEOWRITE.cvt, CVT: 35992 bytes), not under its bare name.
+        n = u.read(k["sideCount"], 1)[0]
+        letters = bytes(u.read(k["sideLetters"], n))
+        press((20, u.read(k["sideTops"] + letters.index(b"a"), 1)[0] + 4), 6)
+        key(KEY_HOME, 1)
+        for _ in range(40):
+            key(C | ord("c"), 1)
+            if bytes(u.read(k["entryName"], 20)).split(b"\0")[0].lower() == b"geowrite":
+                break
+            key(KEY_DOWN, 1)
+        press((20, u.read(k["sideTops"] + letters.index(b"\x80"), 1)[0] + 4), 6)
+        key(C | ord("v"), 30)
+        names_now = ls(BASE) or []
+        check("GEOWRITE pasted onto the Ultimate: GEOWRITE.cvt",
+              ("geowrite.cvt" in names_now, "geowrite" in names_now), (True, False))
+        check("its size (CVT)", ftp.size(BASE + "/GEOWRITE.cvt") if "geowrite.cvt" in names_now else None, 35992)
     finally:
-        ftp.delete(HOME + "SETTINGS.INI")
+        if users is None:
+            ftp.delete(HOME + "SETTINGS.INI")
+        else:
+            ftp.storbinary("STOR " + HOME + "SETTINGS.INI", io.BytesIO(users))
         if ls(BASE) is not None:
             rmtree(BASE)
         ftp.quit()

@@ -17,7 +17,7 @@
 
         .import FileEngine, Into, Drive, ListRead, ListDraw, SideRedraw
         .import Error, Append, full, entryName, path   ; (errors.s, actions.s)
-        .import Busy, Idle
+        .import Busy, Idle, Dialog
         .import Dialog
         .export Ov_Mount, Ov_Eject, HasImage, EjectIcon, IsImage
 Ov_Mount = Mount                ; (ovl.s: the stubs Mount and Eject)
@@ -35,9 +35,17 @@ TEXT_DY         = 11            ; its baseline below the button's top
         .segment "OV3"
 
 ; Mount: entryName (a file in the current Ultimate folder) mounted on
-; the drive asked for, when it is a disk image; else nothing.
+; the drive asked for, when it is a disk image; any other file is not
+; opened, and a dialog says so (the user, 2026-11-11: a GEOS program
+; copied onto the Ultimate cannot run there).
 Mount:  jsr IsImage
-        bcs @end
+        bcc :+
+        lda #<notDlg
+        sta r0L
+        lda #>notDlg
+        sta r0H
+        jmp Dialog
+:
         ldy #0                  ; full = path "/" entryName (actions.s:
 @p:     lda path,y              ; Append bounds it; the engine refuses a
         sta full,y              ; path longer than it takes)
@@ -371,3 +379,20 @@ ejectName:      .res MINFO_LEN
 drv:            .res 1
 choice:         .res 1
 letter:         .res 1
+
+        .segment "OV3"          ; (shown while overlay 3 is in)
+
+; Not opened here: an Ultimate file that is no disk image (measured in
+; the system font: 89, 144 and 128 of the 176 pixels a line has).
+notDlg: .byte DEF_DB_POS | 1
+        .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+        .word NotLine1
+        .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+        .word NotLine2
+        .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 16
+        .word NotLine3
+        .byte OK, DBI_X_2, DBI_Y_2
+        .byte 0
+NotLine1:       .byte BOLDON, "Not opened here", PLAINTEXT, 0
+NotLine2:       .byte "GEOS files open from drives A-E:", 0
+NotLine3:       .byte "copy it to one of them first.", 0
