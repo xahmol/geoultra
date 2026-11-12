@@ -529,6 +529,16 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   another drive: copied) and onto a folder in the same list; C= held at
   the release the other way; a quick double click still opens; a press
   held still for two seconds stays a click.
+- Drag and drop, later additions (2026-11-12): the dragged icon visible
+  in blue (the sweep's colour fix); the folder row or sidebar line under
+  the pointer inverted while dragging and back to normal after; a drop
+  on a drive or favourite in the sidebar (one list); a drop on the
+  sidebar line of the drive shown, or on the other pane showing the
+  same folder, does nothing; a click in one pane and a quick click on
+  the same row in the other does not open anything.
+- Two panes kept (2026-11-12): two panes on, the desktop restarted
+  (reboot): it comes back in two panes; off, restarted: one list
+  (SETTINGS.INI gets `panes=1` or `panes=2`).
 - Copying a GEOS program onto usb0 (it becomes NAME.cvt) and back to
   drive C (it becomes the program again and starts); opening the .cvt
   on usb0 shows "Not opened here".
