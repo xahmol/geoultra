@@ -19,6 +19,18 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   Drives, REU, Pointer), the page's settings on the right as GEOS icons
   and fields, OK, Cancel and Save at the bottom; in the theme's look
   (the menu bar's colours for the frame, as the desktop's dialogs).
+- **S3 decisions (the user, 2026-11-12):** the time gets its own page,
+  **Time**, after System (seven pages: Theme, Desktop, System, Time,
+  Drives, REU, Pointer); System keeps turbo, the slow list and
+  hibernation. Turbo: a row "full speed / off / step" and a stepper
+  "[-] step [+]" over the 16 steps, shown in MHz (both U64 kinds, as
+  gush's `turbo`), applied at once (FE_TURBO) and saved (`turbo=N`,
+  `turbo=off`, no key for full speed). The time zone: the UTC offset
+  with [-] and [+] in 15-minute steps (`[time] offset=` seconds) and
+  summer time "EU rule / off" (the EU rule is new kernal work: the
+  last Sundays of March and October, 01:00 UTC). Hibernation: a row
+  off, 15 s, 30 s (the default), 1 min, 5 min (`hibernate=0/15/30/60/
+  300`).
 - Pages:
   - *Theme:* the theme editor: each line of a theme file; colours from
     16 swatches (in the theme's palette) for ink and paper, plus the RGB

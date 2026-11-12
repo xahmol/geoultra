@@ -11,5 +11,6 @@ INI_MAX         = 1023
         jmp IniSet              ; $2003
         jmp IniDel              ; $2006
         .word iniLen            ; $2009: where iniLen is
+        .word iniSkip           ; $200B: where iniSkip is
 
         .include "ini.inc"

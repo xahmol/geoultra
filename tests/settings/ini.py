@@ -40,6 +40,7 @@ def main():
         e.start()
         v.mem_set(BASE, blob)
         len_at = blob[9] | blob[10] << 8
+        skip_at = blob[11] | blob[12] << 8
 
         def text(t):
             v.mem_set(BUF, t + b"\0")
@@ -77,20 +78,23 @@ def main():
             r = v.mem_get(RES, RES + 3)
             return r[0] & 1, r[1], r[2] | r[3] << 8              # C, A, r2
 
-        def find(t, sect, key):
+        def find(t, sect, key, skip=0):
             text(t)
+            v.mem_set(skip_at, bytes([skip]))
             c, a, r2 = call(FIND, sect, key)
             if c:
                 return None
             return bytes(v.mem_get(r2, r2 + a - 1)) if a else b""
 
-        def iset(t, sect, key, val):
+        def iset(t, sect, key, val, skip=0):
             text(t)
+            v.mem_set(skip_at, bytes([skip]))
             c, _, _ = call(SET, sect, key, val)
             return c, get()
 
-        def idel(t, sect, key):
+        def idel(t, sect, key, skip=0):
             text(t)
+            v.mem_set(skip_at, bytes([skip]))
             c, _, _ = call(DEL, sect, key)
             return c, get()
 
@@ -131,6 +135,18 @@ def main():
         check("IniDel: the other section's key stays", idel(T, "system", "view"),
               (0, T.replace(b"view=no\r\n", b"")))
         check("IniDel: a key not there", idel(T, "desktop", "nope"), (1, T))
+
+        S = b"[system]\r\nslow=geoWrite\r\nslow=geoPaint\r\nturbo=8\r\n"
+        check("iniSkip 1: the key's second line", find(S, "system", "slow", 1), b"geoPaint")
+        check("iniSkip 2: past the last: not found", find(S, "system", "slow", 2), None)
+        check("iniSkip set back to 0 by a call", (find(S, "system", "slow", 1),
+                                                   v.mem_get(skip_at, skip_at)[0]), (b"geoPaint", 0))
+        check("iniSkip $FF: IniSet adds a line though the key is there",
+              iset(S, "system", "slow", "geoCalc", 0xFF), (0, S + b"slow=geoCalc\r\n"))
+        check("iniSkip 1: IniDel takes the second line out", idel(S, "system", "slow", 1),
+              (0, S.replace(b"slow=geoPaint\r\n", b"")))
+        check("iniSkip 1: IniSet replaces the second", iset(S, "system", "slow", "geoDex", 1),
+              (0, S.replace(b"geoPaint", b"geoDex")))
     finally:
         e.stop()
     sys.exit(0 if e.ok else 1)

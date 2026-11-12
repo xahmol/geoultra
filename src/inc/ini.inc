@@ -11,14 +11,18 @@
 ; by a zero, which the scan relies on), includes geos.inc first and puts
 ; this include in a code segment; iniLen (the text's length) is the
 ; includer's to set after reading the file (with the zero after it) and
-; to use when writing it. Exports IniFind, IniSet,
-; IniDel, iniLen. All three destroy A, X, Y, r0-r7.
+; to use when writing it. A key may stand in its section more than once
+; (SETTINGS.INI's slow=): iniSkip, set before a call, passes over that
+; many of its lines (each call sets it back to 0); $FF makes IniSet add
+; a new line even when the key is there. Exports IniFind, IniSet,
+; IniDel, iniLen, iniSkip. All three destroy A, X, Y, r0-r7.
 
-        .export iniLen
+        .export iniLen, iniSkip
 
         .pushseg
         .segment "BSS"
 iniLen:         .res 2          ; the text's length (the includer's)
+iniSkip:        .res 1          ; the key's lines to pass over (IniFind)
         .popseg
 
         .scope IniImpl          ; (its names stay its own: no clash with
@@ -49,7 +53,9 @@ IniFind:
         sta r5H
 @line:  jsr AtEnd
         bcc :+
-        sec                     ; (the text's end: not found)
+        lda #0                  ; (the text's end: not found; iniSkip
+        sta iniSkip             ; back to 0)
+        sec
         rts
 :       lda r5L
         sta iniLine
@@ -72,7 +78,11 @@ IniFind:
         beq @next
         jsr IsKey               ; C clear: ours, r2 its value, A the length
         bcs @other
-        pha
+        ldx iniSkip             ; (one to pass over: as another line)
+        beq @ours
+        dec iniSkip
+        bcc @other              ; (C clear from IsKey: always)
+@ours:  pha
         jsr NextLine
         lda r5L
         sta iniNext
