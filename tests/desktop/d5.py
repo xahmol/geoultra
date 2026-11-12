@@ -152,18 +152,18 @@ def main():
         button(5)                                           # up
         check("toolbar up: /b", here(), "/b")
         n = word("count")
-        button(14)                                          # end
+        button(12)                                          # end
         check("toolbar end: the last entry", word("cur"), n - 1)
-        button(12)                                          # top
+        button(10)                                          # top
         check("toolbar top: the first", word("cur"), 0)
-        button(28)                                          # select all
+        button(26)                                          # select all
         bits = bytes(v.mem_get(k["sel"], k["sel"] + 31))
         check("toolbar select all: all but \"..\"", sum(bin(b).count("1") for b in bits), n - 1)
-        button(17)                                          # view: list ->
+        button(15)                                          # view: list ->
         check("toolbar view: icons", v.mem_get(k["viewMode"], k["viewMode"])[0], 1)
-        button(17)                                          # icons -> detailed
+        button(15)                                          # icons -> detailed
         check("toolbar view again: detailed", v.mem_get(k["viewMode"], k["viewMode"])[0], 2)
-        button(17)                                          # -> list
+        button(15)                                          # -> list
         check("toolbar view a third time: list", v.mem_get(k["viewMode"], k["viewMode"])[0], 0)
         button(7)                                           # root
         check("toolbar root: /", here(), "/")

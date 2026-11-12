@@ -11,8 +11,8 @@ there now. GEOS 2.0's own deskTop can still be used instead:
 
 From top to bottom:
 
-- **The menu bar**: the menus geos (GeoUltra info, gush and the desk
-  accessories), file, view, go and disk on the left, the date and time
+- **The menu bar**: the menus geos (GeoUltra info, settings, gush and
+  the desk accessories), file, view, go and disk on the left, the date and time
   on the right (unless the theme or the clock setting leaves them out).
   Everything the toolbar does is in the menus too.
 - **The toolbar** (view > toolbar): buttons for the things done most,
@@ -141,12 +141,11 @@ Under the menu bar, in five groups:
 
 | Buttons | |
 | --- | --- |
-| back, forward | the folders visited before and after (the last 16) |
-| up, root, home | the folder above, `/` (all drives), GeoUltra's folder on the Ultimate |
+| back, forward, up, root | the folders visited before and after (the last 16), the folder above, `/` (all drives) |
 | top, end | the first and the last entry |
 | view, two panes, refresh | the next view; one list or two panes; the folder read again |
 | new folder, info, select all, copy, paste, delete | as in the file menu; info as in the context menu |
-| gush | GeoUltra's shell |
+| settings, gush | GeoUltra Settings (see "Settings"), GeoUltra's shell |
 
 view > toolbar sets its height: **two lines** (framed buttons, the
 default), **one line** (the icons alone, one more row for the list) or
@@ -243,8 +242,17 @@ panes=1              (1: one list, 2: two panes)
 
 `RECENT.INI` holds the recent documents. Other sections of
 `SETTINGS.INI` belong to the system (`[system] desktop=geos` starts
-GEOS 2.0's deskTop instead of this one). A settings program for all of
-this is planned (docs/DESKTOP.md, "Next").
+GEOS 2.0's deskTop instead of this one).
+
+**GeoUltra Settings** (geos > settings, or the toolbar's settings
+button; in gush: `"/e/GU Settings"`) changes these without editing the
+file: a list of pages on the left, the page on the right, OK (save and
+leave), Cancel (leave; it asks when something was changed) and Save
+(save and stay). Its first page is **Desktop**: which desktop starts
+(GeoUltra's or GEOS 2.0's), the view, the toolbar, the clock and two
+panes; they take effect when the desktop starts again (after OK). The
+other pages (theme, system, drives, REU, pointer) follow; their plan is
+in docs/SETTINGS.md.
 
 ## Limits
 

@@ -34,7 +34,7 @@ dropPath = text + 1024           ; a drop's target folder (listin.s; text's
         .import tHead, tIcons, cHeadP, cSide, cSideIconP, cSideAccentP
         .import sideW, ejectCard, sideTx, rowH, bottom
         .export FileEngine, Redraw, SideRedraw, SideHeading, SideItem, SideGap
-        .export SideArrows, View, Gush
+        .export SideArrows, View, Gush, Settings
         .export itemText, itemName, itemIcon, itemEject
 
 FE_ENTRY        = 30            ; the file engine: guExtTable + 30
@@ -43,7 +43,8 @@ HEAD_STEP       = 10            ; a heading's lines and the gap after it
 SECTION_GAP     = 3             ; between the sidebar's sections
 NAME_DX         = 10            ; a drive's disk name after its letter
 DA_MAX          = 8             ; desk accessories in the geos menu
-GEOS_FIXED      = 2             ; its items before them: info, gush
+GEOS_FIXED      = 3             ; its items before them: info, settings,
+                                ; gush
 GO_N            = 7             ; the go menu's items (GoTexts, GoDo)
 GO_TEXT         = 8             ; each one's text: 8 bytes
 DA_NAME_LEN     = 17            ; a GEOS name and its zero
@@ -1193,14 +1194,22 @@ Clock:  sta tmp
         jmp ClockDraw
 
 ; Gush (file > gush): GeoUltra's shell in the desktop's place.
-Gush:   jsr GotoFirstMenu
+Gush:   lda #<GushName
+        ldx #>GushName
+        bne RunSys              ; (always)
+; Settings (geos > settings, the toolbar): GeoUltra Settings
+; (docs/SETTINGS.md) from drive E, as gush.
+Settings:
+        lda #<SettingsName
+        ldx #>SettingsName
+; RunSys: the program on drive E named at A/X started in the desktop's
+; place (FE_RUNSYS); back here only when it cannot start.
+RunSys: sta r0L
+        stx r0H
+        jsr GotoFirstMenu
         jsr Neutral
-        lda #<GushName
-        sta r0L
-        lda #>GushName
-        sta r0H
         lda #FE_RUNSYS
-        jsr FileEngine          ; (back only when it cannot start)
+        jsr FileEngine
         jmp Back
 
 ; Refresh (disk > refresh): the list read again.
@@ -1223,6 +1232,7 @@ rootPath:       .byte "/", 0
 ELetter:        .byte "E", 0
 SystemText:     .byte "System", 0
 GushName:       .byte "gush", 0
+SettingsName:   .byte "GU Settings", 0
 
         .segment "DATA"
 
@@ -1254,8 +1264,11 @@ geosItems:
         .word InfoText
         .byte MENU_ACTION
         .word About
-        .word GushItem          ; (gush beside the desk accessories: the
-        .byte MENU_ACTION       ; user, 2026-11-12)
+        .word SettingsItem      ; (settings and gush beside the desk
+        .byte MENU_ACTION       ; accessories: the user, 2026-11-12)
+        .word Settings
+        .word GushItem
+        .byte MENU_ACTION
         .word Gush
         .res DA_MAX * 5         ; (the accessories, GeosMenu)
 
@@ -1409,6 +1422,7 @@ DiskText:       .byte "disk", 0
 GoText:         .byte "go", 0
 InfoText:       .byte "GeoUltra info", 0
 GushItem:       .byte "gush      C=G", 0
+SettingsItem:   .byte "settings", 0
 InfoItem:       .byte "info      C=I", 0
 CopyOtherItem:  .byte "copy to other  C=T", 0
 MoveOtherItem:  .byte "move to other C=M", 0

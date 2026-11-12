@@ -199,7 +199,7 @@ Across: lda #0
         rts
 
 GROUPS_N = 5
-GroupLine:      .byte 11, 16, 23, 36    ; the gaps' cards (flat: dots)
+GroupLine:      .byte 9, 14, 21, 34     ; the gaps' cards (flat: dots)
 
 ; The frame (16 x 14: rounded corners, a shadow right and below).
 Frame:  .byte $00, $00, $7F, $F8, $80, $06, $80, $06, $80, $06, $80, $06
@@ -211,7 +211,6 @@ Icons:  .byte $00, $20, $60, $FE, $60, $20, $00, $00    ; back
         .byte $00, $08, $0C, $FE, $0C, $08, $00, $00    ; forward
         .byte $10, $38, $7C, $FE, $38, $38, $38, $00    ; up
         .byte $06, $0C, $0C, $18, $30, $30, $60, $00    ; root "/"
-        .byte $10, $38, $7C, $FE, $44, $54, $7C, $00    ; home
         .byte $FE, $00, $10, $38, $7C, $10, $10, $00    ; top
         .byte $10, $10, $7C, $38, $10, $00, $FE, $00    ; end
         .byte $EE, $EE, $EE, $00, $EE, $EE, $EE, $00    ; view
@@ -223,6 +222,7 @@ Icons:  .byte $00, $20, $60, $FE, $60, $20, $00, $00    ; back
         .byte $F0, $9E, $92, $92, $F2, $12, $1E, $00    ; copy
         .byte $38, $EE, $82, $BA, $82, $BA, $FE, $00    ; paste
         .byte $38, $FE, $44, $54, $54, $54, $38, $00    ; delete
+        .byte $60, $FE, $60, $00, $0C, $FE, $0C, $00    ; settings: two sliders
         .byte $00, $40, $20, $10, $20, $4E, $00, $00    ; gush: a ">_" prompt
         .assert * - Icons = 8 * TB_BUTTONS, error, "an icon per button"
 

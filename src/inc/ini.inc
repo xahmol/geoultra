@@ -14,9 +14,16 @@
 ; to use when writing it. Exports IniFind, IniSet,
 ; IniDel, iniLen. All three destroy A, X, Y, r0-r7.
 
-MoveData        = $C17E         ; GEOS jump table
+        .export iniLen
 
-        .export IniFind, IniSet, IniDel, iniLen
+        .pushseg
+        .segment "BSS"
+iniLen:         .res 2          ; the text's length (the includer's)
+        .popseg
+
+        .scope IniImpl          ; (its names stay its own: no clash with
+                                ; the includer's)
+MoveData        = $C17E         ; GEOS jump table
 
 ; IniFind: r0 = a section's name ("desktop", zero-ended, without the
 ; brackets), r1 = a key ("view", without "="). C clear: found, r2 = the
@@ -613,7 +620,6 @@ INI_SECT_MAX    = 40            ; a new section's line
 
         .pushseg
         .segment "BSS"
-iniLen:         .res 2          ; the text's length (the includer's)
 iniSect:        .res 1          ; IniFind: the section was found
 iniIns:         .res 2          ; IniFind: where a new line goes
 iniLine:        .res 2          ; IniFind: the key's line
@@ -633,3 +639,9 @@ sectN:          .res 1
 lineBuf:        .res INI_LINE_MAX
 sectBuf:        .res INI_SECT_MAX
         .popseg
+
+        .endscope
+IniFind = IniImpl::IniFind     ; (the routines, outside the scope)
+IniSet = IniImpl::IniSet
+IniDel = IniImpl::IniDel
+        .export IniFind, IniSet, IniDel

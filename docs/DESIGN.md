@@ -536,6 +536,13 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   sidebar line of the drive shown, or on the other pane showing the
   same folder, does nothing; a click in one pane and a quick click on
   the same row in the other does not open anything.
+- GeoUltra Settings (2026-11-12): geos > settings and the toolbar's
+  settings button (two sliders, before gush; home is gone from the
+  toolbar, still in the go menu) start it; the Desktop page's options
+  set by a click; Save, then OK: back in the desktop with the chosen
+  view, toolbar, clock and panes; "Start with GEOS 2.0's" and a reboot
+  starts GEOS 2.0's deskTop (set it back afterwards); Cancel after a
+  change asks first.
 - Two panes kept (2026-11-12): two panes on, the desktop restarted
   (reboot): it comes back in two panes; off, restarted: one list
   (SETTINGS.INI gets `panes=1` or `panes=2`).

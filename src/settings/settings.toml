@@ -1,0 +1,11 @@
+# GeoUltra Settings (docs/SETTINGS.md): on drive E (src/sysdrive.toml),
+# started from the desktop's geos menu and toolbar, and from gush.
+[file]
+name = "GU Settings"
+type = "APPLICATION"
+cbmtype = "USR"
+load = 0x0400
+class = "GU Settings"
+version = "V0.1"
+author = "Xander Mol"
+info = "GeoUltra's own settings (in development)."

@@ -62,7 +62,8 @@ checkcfg: check-deploy
 # GeoUltra's own GEOS files, assembled at $0400 and packed as CVT by
 # geos-oscar64's geosapp.py (0.1.2 or later: it pads desk accessories to
 # whole blocks), written to a D64 with VICE's c1541.
-SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt
+SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt \
+           build/settings/settings.cvt
 
 build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	@mkdir -p build/tools
@@ -122,6 +123,27 @@ build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) build
 	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o $(patsubst src/desktop/%.s,build/desktop/%.o,$(filter-out src/desktop/desktop.s,$(DESKSRCS)))
 	$(PYTHON) $(GEOSAPP) src/desktop/desktop.toml build/desktop/desktop.bin build/desktop/desktop-seq.cvt
 	$(PYTHON) tools/vlircvt.py build/desktop/desktop-seq.cvt $@ build/desktop/desktop.bin.1 build/desktop/desktop.bin.2 build/desktop/desktop.bin.3 build/desktop/desktop.bin.4 build/desktop/desktop.bin.5 build/desktop/desktop.bin.6 build/desktop/desktop.bin.7 build/desktop/desktop.bin.8
+
+# GeoUltra Settings (docs/SETTINGS.md): src/settings, on drive E; its
+# OK, Cancel and Save buttons drawn like the system icons.
+SETSRCS = $(wildcard src/settings/*.s)
+SETICONS = build/gen/okicon.inc build/gen/cancelicon.inc build/gen/saveicon.inc
+build/gen/okicon.inc: tools/mkicons.py tools/fonts/system9.py
+	@mkdir -p build/gen
+	$(PYTHON) tools/mkicons.py --icon $@ OkIcon OK
+build/gen/cancelicon.inc: tools/mkicons.py tools/fonts/system9.py
+	@mkdir -p build/gen
+	$(PYTHON) tools/mkicons.py --icon $@ CancelIcon Cancel
+build/gen/saveicon.inc: tools/mkicons.py tools/fonts/system9.py
+	@mkdir -p build/gen
+	$(PYTHON) tools/mkicons.py --icon $@ SaveIcon Save
+
+build/settings/settings.cvt: $(SETSRCS) src/settings/settings.inc $(SETICONS) src/settings/settings.cfg src/settings/settings.toml $(wildcard src/inc/*.inc)
+	@mkdir -p build/settings
+	for f in $(SETSRCS); do $(CA65) -g -I src/inc -I src/settings -I build/gen -o build/settings/$$(basename $$f .s).o $$f || exit 1; done
+	$(LD65) -C src/settings/settings.cfg -m build/settings/settings.map -Ln build/settings/settings.lbl -o build/settings/settings.bin build/settings/settings.o $(patsubst src/settings/%.s,build/settings/%.o,$(filter-out src/settings/settings.s,$(SETSRCS)))
+	$(PYTHON) $(GEOSAPP) src/settings/settings.toml build/settings/settings.bin build/settings/settings-seq.cvt
+	$(PYTHON) tools/vlircvt.py build/settings/settings-seq.cvt $@ build/settings/settings.bin.1
 
 # External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
 # at gush's transient area (src/cmds/cmd.cfg), a GEOS APPL_DATA file of
@@ -443,9 +465,12 @@ test-sysfont: all
 test-desktop81: all
 	$(PYTHON) tests/drives/desktop81.py
 
-# GeoUltra Settings (docs/SETTINGS.md): the shared INI module in VICE.
+# GeoUltra Settings (docs/SETTINGS.md): the shared INI module and the
+# application's frame and Desktop page in VICE.
 test-settings: all
 	$(PYTHON) tests/settings/ini.py
+	$(PYTHON) tests/settings/s1.py
+	$(PYTHON) tests/settings/s1g.py
 
 # GeoUltra's own desktop (docs/DESKTOP.md): VICE; test-desktop-u64 on the
 # U64 (SETTINGS.INI desktop=geoultra, made and deleted again).

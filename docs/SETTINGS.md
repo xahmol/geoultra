@@ -90,6 +90,17 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   panes). Tests: the frame in VICE (pages switch, buttons), the INI
   routines in VICE, the Desktop page's writing on the U64 (the user's
   SETTINGS.INI set aside and restored, as d14u64).
+  **S1 done (2026-11-12):** `src/inc/ini.inc` (IniFind, IniSet, IniDel;
+  21 checks in VICE, tests/settings/ini.py) and `src/inc/inifile.inc`
+  (IniPaths, IniLoad, IniSave through `SETTINGS.TMP`); the application
+  `src/settings/` ("GU Settings" on drive E: GEOS names hold 16
+  characters, the title says "GeoUltra Settings"): the frame, the side
+  list, OK, Cancel (asking when changed), Save; choice rows (choice.s)
+  as the pages' widget; the Desktop page (overlay 1). The desktop starts
+  it from geos > settings and the toolbar (settings in home's place,
+  next to gush); gush with `"/e/GU Settings"`. Test:
+  tests/settings/s1.py (10 checks in VICE). Still to do in S1: the
+  writing on the U64 (a test as d14u64), the theme's colours (with S4).
 - **S2, the Pointer page:** 4 designs in the kernal (own drawings),
   `[system] pointer=` read at boot, applied at once from the page.
 - **S3, the System page:** turbo and the slow list, hibernation, NTP

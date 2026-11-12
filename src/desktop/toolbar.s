@@ -2,10 +2,11 @@
 ; right-click"; the user's decisions and mock-up of 2026-11-11). A row
 ; under the menu bar across the full width, its height a view option
 ; (tbMode, theme.s: TB_TWO two lines, 16 px, framed 16 x 14 buttons;
-; TB_ONE one line, 8 px, the icons flat; TB_OFF none). 15 buttons in
-; five groups: back, forward, up, root, home | top, end | view, two
-; panes, refresh | new folder, info, select all, copy, paste, delete |
-; gush. Each button sits
+; TB_ONE one line, 8 px, the icons flat; TB_OFF none). 17 buttons in
+; five groups: back, forward, up, root | top, end | view, two panes,
+; refresh | new folder, info, select all, copy, paste, delete |
+; settings, gush (the user, 2026-11-12: settings in home's place; home
+; stays in the go menu). Each button sits
 ; on two cards (BitmapUp places bitmaps on cards), 16 px apart from x 8
 ; with 8 px between the groups (the mock-up: 4 and 6, not on cards).
 ; The drawing is overlay 5 (tooldraw.s); here the presses, the colours
@@ -18,7 +19,7 @@
         .import tbMode, topY, cToolbar, Paint, px0, px1, py0, py1, pcol
         .import Up, Into, ListKey, ListEnd, SelAll, ListRead, ListDraw
         .import View, viewMode, NewFolder, Copy, Paste, Delete, FileEngine
-        .import HistBack, HistForward, text, Info, Gush, TwoPanes
+        .import HistBack, HistForward, text, Info, Gush, TwoPanes, Settings
 homePath        = text          ; (side.s's text buffer: free between actions)
         .export ToolPress, ToolPaint, Cards, Root, Home, Top
 
@@ -129,19 +130,19 @@ ViewNext:
 Refresh:
         jsr ListRead
         jmp ListDraw
-Acts:   .word HistBack-1, HistForward-1, Up-1, Root-1, Home-1
+Acts:   .word HistBack-1, HistForward-1, Up-1, Root-1
         .word Top-1, ListEnd-1
         .word ViewNext-1, TwoPanes-1, Refresh-1
         .word NewFolder-1, Info-1, SelAll-1, Copy-1, Paste-1, Delete-1
-        .word Gush-1
+        .word Settings-1, Gush-1
         .assert (* - Acts) / 2 = TB_BUTTONS, error, "an action per button"
 
 ; The buttons' cards: 16 px apart from x 8, 8 px between the groups.
-Cards:  .byte 1, 3, 5, 7, 9
-        .byte 12, 14
-        .byte 17, 19, 21        ; view, two panes, refresh
-        .byte 24, 26, 28, 30, 32, 34
-        .byte 37                ; gush (the user, 2026-11-12)
+Cards:  .byte 1, 3, 5, 7
+        .byte 10, 12            ; top, end
+        .byte 15, 17, 19        ; view, two panes, refresh
+        .byte 22, 24, 26, 28, 30, 32
+        .byte 35, 37            ; settings, gush (the user, 2026-11-12)
 RootPath:       .byte "/", 0
 
         .segment "BSS"
