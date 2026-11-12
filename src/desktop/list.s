@@ -25,8 +25,10 @@
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot, ListEnd, SelAll, row, RowEntry
         .import IconsForget, DrawCell, CellAt, step, tbMode, stripL, listR, paneR
+        .import panes, paneDim
+PANE_DIV        = 159           ; two panes: the line between them
         .export Frame, Place, SortNow, sortPending, RightPress, SwapPane
-        .export PaneInit
+        .export PaneInit, FreeRead
         .export EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, Follow
         .export ThumbRows
         .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd
@@ -235,6 +237,7 @@ ListDraw:
         ldx #>path
         ldy pathY
         jsr Text
+        jsr PaneMark            ; (two panes: the active one's path line)
         jsr Header
         lda pathY               ; (to the frame's right edge: the scroll
         clc                     ; strip starts below it)
@@ -274,6 +277,19 @@ Frame:  lda #0
         lda #<SCREEN_RIGHT
         ldx #>SCREEN_RIGHT
         jsr Edge2
+        lda panes               ; two panes: the line between them (from
+        beq :+                  ; the panes' top, under the toolbar)
+        lda #PANE_DIV
+        sta r4L
+        lda #0
+        sta r4H
+        lda topY
+        sta r3L
+        lda bottom
+        sta r3H
+        lda #$FF
+        jsr VerticalLine
+:
         lda bottom
         jsr Across
         lda tbMode
@@ -308,6 +324,32 @@ Across: sta r11L
         sta r4H
         lda #$FF
         jmp HorizontalLine
+
+; PaneMark: with two panes, the active pane's path line inverted (no
+; title bars then: the user, 2026-11-12); not while panes.s draws the
+; inactive one (paneDim).
+PaneMark:
+        lda panes
+        beq @end
+        lda paneDim
+        bne @end
+        lda pathY               ; its rows: the text's (9) and one more
+        sec
+        sbc #7
+        sta r2L
+        clc
+        adc #8
+        sta r2H
+        lda listL
+        sta r3L
+        lda #0
+        sta r3H
+        lda listR
+        sta r4L
+        lda listR+1
+        sta r4H
+        jmp InvertRectangle
+@end:   rts
 
 ; DrawEntry: row `row` drawn as a row of the list or a cell of the
 ; icon view (iconview.s).

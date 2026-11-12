@@ -199,7 +199,7 @@ Across: lda #0
         rts
 
 GROUPS_N = 5
-GroupLine:      .byte 11, 16, 21, 34    ; the gaps' cards (flat: dots)
+GroupLine:      .byte 11, 16, 23, 36    ; the gaps' cards (flat: dots)
 
 ; The frame (16 x 14: rounded corners, a shadow right and below).
 Frame:  .byte $00, $00, $7F, $F8, $80, $06, $80, $06, $80, $06, $80, $06
@@ -215,6 +215,7 @@ Icons:  .byte $00, $20, $60, $FE, $60, $20, $00, $00    ; back
         .byte $FE, $00, $10, $38, $7C, $10, $10, $00    ; top
         .byte $10, $10, $7C, $38, $10, $00, $FE, $00    ; end
         .byte $EE, $EE, $EE, $00, $EE, $EE, $EE, $00    ; view
+        .byte $FF, $99, $99, $99, $99, $99, $FF, $00    ; two panes
         .byte $3A, $46, $8E, $80, $82, $44, $38, $00    ; refresh
         .byte $70, $8F, $81, $91, $B9, $91, $FF, $00    ; new folder
         .byte $38, $54, $82, $92, $92, $54, $38, $00    ; info

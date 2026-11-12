@@ -459,6 +459,11 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   Detailed).
 - The look: the frame lines, menus and dialogs in the theme's colours
   (Night especially), the border in the menu bar's colour.
+- Two panes (C=P, view > two panes, the toolbar's button between view
+  and refresh): both folders, a click in the other pane (it becomes
+  active: its path line inverted), C=SPACE, copy in one and paste in
+  the other, the free space on the status line following the active
+  pane, back to one list (the view from before).
 - Copying a GEOS program onto usb0 (it becomes NAME.cvt) and back to
   drive C (it becomes the program again and starts); opening the .cvt
   on usb0 shows "Not opened here".

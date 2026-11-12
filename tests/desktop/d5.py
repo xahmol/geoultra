@@ -156,7 +156,7 @@ def main():
         check("toolbar end: the last entry", word("cur"), n - 1)
         button(12)                                          # top
         check("toolbar top: the first", word("cur"), 0)
-        button(26)                                          # select all
+        button(28)                                          # select all
         bits = bytes(v.mem_get(k["sel"], k["sel"] + 31))
         check("toolbar select all: all but \"..\"", sum(bin(b).count("1") for b in bits), n - 1)
         button(17)                                          # view: list ->

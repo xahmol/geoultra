@@ -593,6 +593,15 @@ colour is a property of an element, by name:
   belongs to one pane's entries (forget it on a swap), the file
   engine's current folder (FE_CD to the pane's path when it becomes
   active), the history (one for both panes for now).
+  **P4 done (2026-11-12):** panes.s (core): view > two panes, C=P and a
+  toolbar button (view group) switch them; Draw reads and draws the
+  other pane first (sorted on the spot), then the active one; a click in
+  the other pane or C=SPACE makes it active (the file engine's folder
+  and the free space follow). No title bars in two panes (the user,
+  2026-11-12): the path lines name the folders, the active pane's
+  inverted. The list view in panes (the detailed view refused; the
+  icon view works, 3 columns); the view and the title bar come back when
+  two panes go off. Two panes are not yet saved in SETTINGS.INI.
 - **Design answers (the user, 2026-11-12, second round):**
   - *Two panes:* the list view in each pane (the detailed columns do not
     fit 160 pixels; the chosen view returns when two panes go off; the

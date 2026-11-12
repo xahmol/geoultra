@@ -18,7 +18,7 @@
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
-        .import PaneInit
+        .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
         .export openReq
         .import Root, Home, Top, ListEnd, Up
         .import Eject, HasImage, EjectIcon, IconUp
@@ -105,10 +105,18 @@ Press:  lda mouseData
         bmi @end
         jsr ToolPress           ; (C clear: it was on the toolbar)
         bcc @end
-        jsr ListPress           ; (overlay 8, listin.s)
+        lda panes               ; two panes: the pane clicked made active
+        beq @list
+        jsr PaneAt
+        cmp active
+        beq @list
+        jsr PaneSwitch
+@list:  jsr ListPress           ; (overlay 8, listin.s)
         bcs :+
         jmp OpenReq             ; (its double click: opened here)
-:       lda mouseXPos+1         ; the sidebar: x left of its line
+:       lda panes               ; (two panes: no sidebar)
+        bne @end
+        lda mouseXPos+1         ; the sidebar: x left of its line
         bne @end
         lda sideW
         sec
@@ -183,9 +191,11 @@ KeyActs:
         .byte SHORTCUT | 'r', SHORTCUT | 'n', KEY_DELETE, SHORTCUT | 'o'
         .byte SHORTCUT | 'f', SHORTCUT | 'i', SHORTCUT | 'a', SHORTCUT | 'g'
         .byte SHORTCUT | KEY_LEFT, SHORTCUT | KEY_RIGHT
+        .byte SHORTCUT | 'p', SHORTCUT | ' '
 KeyActs_n = * - KeyActs
 ActDo:  .word Copy-1, Cut-1, Paste-1, Rename-1, NewFolder-1, Delete-1, Open-1
         .word FavAdd-1, Info-1, SelAll-1, Gush-1, HistBack-1, HistForward-1
+        .word TwoPanes-1, PaneSwitch-1
         .assert (* - ActDo) / 2 = KeyActs_n, error, "an action per key"
 
 ; The file menu's items: the menus closed, then the action.
@@ -249,7 +259,10 @@ Draw:   jsr PaintAll
         jsr HorizontalLine
         jsr ClockDraw
         jsr ToolDraw            ; (toolbar.s; nothing when it is off)
-        jsr ListRead
+        lda panes               ; two panes: panes.s
+        beq :+
+        jmp DrawPanes
+:       jsr ListRead
         jsr Sidebar
         jmp ListDraw
 
@@ -267,7 +280,10 @@ Across: lda #0
 ; per drive (A-D that are there, then E, the system drive), the
 ; Ultimate's roots, favourites and recent documents.
 Sidebar:
-        jsr PaintSide
+        lda panes               ; (two panes: no sidebar)
+        beq :+
+        rts
+:       jsr PaintSide
         ldx topY                ; (from the line above the content: under
         dex                     ; the menu bar's, or the toolbar's)
         stx r3L
@@ -437,6 +453,8 @@ Ultimate:
 ; SideRedraw: the sidebar cleared and drawn again (side.s, mount.s); the
 ; current drive put back.
 SideRedraw:
+        lda panes               ; (two panes: no sidebar)
+        bne SideNone
         lda #0
         jsr SetPattern
         lda topY
@@ -454,10 +472,16 @@ SideRedraw:
         jsr Sidebar
         jmp Frame               ; (list.s: the lines round the areas)
 
+; SideNone: nothing (Sidebar's neighbours with two panes: no sidebar).
+SideNone:
+        rts
+
 ; SideArrows: the open drive's arrow moved to the line of the drive or
 ; root the list is in now (open.s, Into; side.s): column 0 of each
 ; sidebar line cleared, the arrow drawn on the one that matches.
 SideArrows:
+        lda panes               ; (two panes: no sidebar)
+        bne SideNone
         jsr OpenCode
         ldx #0
 @line:  cpx sideCount
@@ -1085,7 +1109,12 @@ IsCurrent:
 View:   sta tmp
         jsr GotoFirstMenu
         lda tmp
-        sta viewMode
+        ldx panes               ; (two panes: no detailed view, its columns
+        beq :+                  ; do not fit; the list instead)
+        cmp #VIEW_DETAILED
+        bne :+
+        lda #VIEW_LIST
+:       sta viewMode
         jsr Derive              ; (the icon view: its grid)
         jsr ViewSave
         jmp ListDraw
@@ -1214,9 +1243,9 @@ fileMenu:
         .word MFav
 
 viewMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 5 * 14
-        .word 58, 109
-        .byte VERTICAL | UN_CONSTRAINED | 5
+        .byte MENU_BOTTOM, MENU_BOTTOM + 6 * 14
+        .word 58, 129
+        .byte VERTICAL | UN_CONSTRAINED | 6
         .word ThemeText
         .byte DYN_SUB_MENU
         .word ThemeMenu
@@ -1229,6 +1258,9 @@ viewMenu:
         .word ToolbarText
         .byte DYN_SUB_MENU
         .word ToolbarMenu
+        .word PanesItem
+        .byte MENU_ACTION
+        .word TwoPanes
         .word RefreshItem
         .byte MENU_ACTION
         .word Refresh
@@ -1350,6 +1382,7 @@ TwoLineItem:    .byte "  two lines", 0
 OneLineItem:    .byte "  one line", 0
 TbOffItem:      .byte "  off", 0          ; (its own: Marks writes into it)
 RefreshItem:    .byte "refresh", 0
+PanesItem:      .byte "two panes C=P", 0
 InfoLine1:      .byte BOLDON, "GeoUltra Desktop", PLAINTEXT, 0
 InfoLine2:      .byte "milestone 1 (in development)", 0
 driveLine:      .byte "A", 0

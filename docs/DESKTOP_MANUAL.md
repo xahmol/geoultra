@@ -43,6 +43,18 @@ button goes through them in turn):
 - **detailed**: the list with the size and the date (GEOS files) beside
   each name.
 
+## Two panes
+
+view > two panes (C=P, or the toolbar's button between view and
+refresh) shows two folders side by side, the sidebar hidden. Each pane
+has its own folder, list, selection and scroll strip; the active pane's
+path line is inverted, and the menus, keys and toolbar act on it. A
+click in a pane, or C=SPACE, makes it the active one. The panes show the
+list or the icon view (the detailed view's columns do not fit). The
+same keys and menu switch back to one list, with the view from before.
+Copying between the panes: copy (or cut) in one, then paste in the
+other; drag and drop and "copy to the other pane" are still to come.
+
 ## Moving around
 
 - **Mouse**: a click on an entry selects it (the others no longer); C=
@@ -116,7 +128,7 @@ Under the menu bar, in five groups:
 | back, forward | the folders visited before and after (the last 16) |
 | up, root, home | the folder above, `/` (all drives), GeoUltra's folder on the Ultimate |
 | top, end | the first and the last entry |
-| view, refresh | the next view; the folder read again |
+| view, two panes, refresh | the next view; one list or two panes; the folder read again |
 | new folder, info, select all, copy, paste, delete | as in the file menu; info as in the context menu |
 | gush | GeoUltra's shell |
 

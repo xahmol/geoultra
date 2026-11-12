@@ -27,6 +27,7 @@
         .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
         .export tbMode, topY, titleEnd
         .import ToolPaint, IconLayout, step, sortPending, SortNow, RightPress
+        .import SetGeom, panes
         .import BusyPause, BusyResume
 
 CPU_PORT        = $01
@@ -83,6 +84,7 @@ Derive: lda tSel
         bne :+
         ldy #19
 :       sty sideTx
+        jsr SetGeom             ; (panes.s: two panes' edges, or the list's)
         ldx tbMode              ; the content's top: under the toolbar
         lda #MENU_BOTTOM + 2
         clc
@@ -306,8 +308,10 @@ PaintAll:
         sta pcol
         jsr Paint
         jsr ToolPaint           ; (toolbar.s: its rows, when it is on)
+        lda panes               ; (two panes: no sidebar)
+        bne :+
         jsr PaintSide
-        jmp PaintList
+:       jmp PaintList
 
 ; PaintSide: the sidebar's cells (below the menu bar, to the bottom).
 PaintSide:
@@ -334,7 +338,12 @@ PaintList:
         lda listL
         jsr Cells
         sta px0
-        lda #39
+        lda paneR+1             ; to the pane's right edge (a card)
+        lsr a
+        lda paneR
+        ror a
+        lsr a
+        lsr a
         sta px1
         lda topY
         jsr Cells
