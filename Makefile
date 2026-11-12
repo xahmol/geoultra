@@ -138,12 +138,12 @@ build/gen/saveicon.inc: tools/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
 	$(PYTHON) tools/mkicons.py --icon $@ SaveIcon Save
 
-build/settings/settings.cvt: $(SETSRCS) src/settings/settings.inc $(SETICONS) src/settings/settings.cfg src/settings/settings.toml $(wildcard src/inc/*.inc)
+build/settings/settings.cvt: $(SETSRCS) src/settings/settings.inc $(SETICONS) build/gen/pointers.inc src/settings/settings.cfg src/settings/settings.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/settings
 	for f in $(SETSRCS); do $(CA65) -g -I src/inc -I src/settings -I build/gen -o build/settings/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/settings/settings.cfg -m build/settings/settings.map -Ln build/settings/settings.lbl -o build/settings/settings.bin build/settings/settings.o $(patsubst src/settings/%.s,build/settings/%.o,$(filter-out src/settings/settings.s,$(SETSRCS)))
 	$(PYTHON) $(GEOSAPP) src/settings/settings.toml build/settings/settings.bin build/settings/settings-seq.cvt
-	$(PYTHON) tools/vlircvt.py build/settings/settings-seq.cvt $@ build/settings/settings.bin.1
+	$(PYTHON) tools/vlircvt.py build/settings/settings-seq.cvt $@ build/settings/settings.bin.1 build/settings/settings.bin.2
 
 # External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
 # at gush's transient area (src/cmds/cmd.cfg), a GEOS APPL_DATA file of
@@ -220,6 +220,16 @@ $(KOBJ)/hibernate.o $(KOBJ)/hibresume.o: $(KSRCS) $(DRVSRCS)
 $(KOBJ)/%.o: src/kernal/%.s $(INCS) $(KOBJ)/.bypass
 	@mkdir -p $(KOBJ)
 	$(CA65) -I src/inc $(BUILDDATE) $(KDEFS) -D BUILD_ID=$(BUILD_ID) -o $@ $<
+
+# The mouse pointer's designs (own drawings, text art in the tool), for
+# module 86 (src/kernal/pointer.s).
+$(GEN)/pointers.inc: tools/mkpointers.py
+	@mkdir -p $(GEN)
+	$(PYTHON) tools/mkpointers.py $@
+
+$(KOBJ)/pointer.o: src/kernal/pointer.s $(GEN)/pointers.inc $(INCS) $(KOBJ)/.bypass
+	@mkdir -p $(KOBJ)
+	$(CA65) -I src/inc -I $(GEN) -o $@ $<
 
 $(KOBJ)/%.o: src/drivers/%.s $(INCS)
 	@mkdir -p $(KOBJ)
@@ -471,6 +481,7 @@ test-settings: all
 	$(PYTHON) tests/settings/ini.py
 	$(PYTHON) tests/settings/s1.py
 	$(PYTHON) tests/settings/s1g.py
+	$(PYTHON) tests/settings/s2.py
 
 # GeoUltra's own desktop (docs/DESKTOP.md): VICE; test-desktop-u64 on the
 # U64 (SETTINGS.INI desktop=geoultra, made and deleted again).

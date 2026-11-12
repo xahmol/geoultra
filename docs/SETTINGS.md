@@ -107,6 +107,21 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   frame's colours follow the theme in S4.
 - **S2, the Pointer page:** 4 designs in the kernal (own drawings),
   `[system] pointer=` read at boot, applied at once from the page.
+  **S2 done (2026-11-12):** tools/mkpointers.py draws the designs (text
+  art: a classic arrow, the kernal's own, a large arrow, a hand, a
+  crosshair; each with its hot spot); the kernal's module 86
+  (src/kernal/pointer.s) copies one into the pointer picture and sprite
+  0 and sets PosPointer's offsets (24 and 50, less the hot spot: their
+  operands, no new resident code); DrawSprite on sprite 0 (an
+  application's own pointer) puts the offsets back, as GEOS 2.0 places
+  it (14 resident bytes). Read at boot (mount.s PointerInit, after the
+  modules are there) and applied at once by FE_POINTER (31, r2L = the
+  design). The page (pptr.s, overlay 2): one choice row with each
+  design's picture under it. Tests: s2.py (7 checks in VICE: the page,
+  the INI text, sprite 0 and the offsets per design, DrawSprite's
+  reset), s2u64.py (pointer=3 at boot on the U64); conformance 301 of
+  301. A design lasts until an application draws its own pointer (as
+  the arrow did before).
 - **S3, the System page:** turbo and the slow list, hibernation, NTP
   and the time zone, date and time by hand.
 - **S4, the Theme page:** the theme editor (themefile.s's parsing

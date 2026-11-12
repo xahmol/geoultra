@@ -4,7 +4,7 @@
         .include "hw.inc"
 
         .export IrqEntry, NmiEntry, InterruptMain, MainLoop, frameCount
-        .export MainLoopCall
+        .export MainLoopCall, PtrDX, PtrDY
         .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
         .import SleepTick, WakeSleepers, CallRoutine, TimeUpdate, AlarmTick
         .import HibTick, RtcCheck
@@ -94,10 +94,13 @@ InterruptMain:
         jsr HibTick             ; (then WbTick)
         jmp GetRandom
 
-; Position sprite 0 (the pointer) at mouseXPos/mouseYPos.
+; Position sprite 0 (the pointer) at mouseXPos/mouseYPos. The offsets'
+; operands (PtrDX, PtrDY: 24 and 50, less the pointer design's hot spot)
+; are set by pointer.s (module 86) and put back by sprites.s DrawSprite.
 PosPointer:
         lda mouseXPos
         clc
+PtrDX = * + 1
         adc #24
         sta vicSpr0X
         lda mouseXPos+1
@@ -110,6 +113,7 @@ PosPointer:
         sta vicSprXMsb
         lda mouseYPos
         clc
+PtrDY = * + 1
         adc #50
         sta vicSpr0Y
         rts

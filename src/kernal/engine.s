@@ -133,6 +133,7 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 75, 9             ; FE_REBOOT
         .byte 76, 0             ; FE_NTP (enginentp.s)
         .byte 80, 0             ; FE_UCI (enginenet.s)
+        .byte 86, 3             ; FE_POINTER (pointer.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),

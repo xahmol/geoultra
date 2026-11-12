@@ -9,14 +9,15 @@
 ; design and code.
 ;
 ; Table: .byte rows, then per row (ROW_* offsets):
-;   .byte baseline y; .addr label, section, key; .byte options, default
+;   .byte baseline y; .addr label (0: none), section, key; .byte options,
+;   default
 ;   then per option: .word x; .addr text, value (zero-ended)
 
         .include "geos.inc"
         .include "settings.inc"
 
         .import IniFind, IniSet, dirty, NoRoom
-        .export ChoiceDraw, ChoicePress
+        .export ChoiceDraw, ChoicePress, sel
 
 ROW_Y           = 0
 ROW_LABEL       = 1
@@ -52,19 +53,20 @@ ChoiceDraw:
         bcs @end
         jsr Current
         jsr RowAt
-        ldy #ROW_LABEL          ; the label
+        ldy #ROW_LABEL          ; the label (0: none)
         lda (tp),y
         sta r0L
         iny
         lda (tp),y
         sta r0H
+        beq @texts
         lda #<LABEL_X
         sta r11L
         lda #>LABEL_X
         sta r11H
         jsr Base
         jsr PutString
-        lda #0                  ; the options' texts
+@texts: lda #0                  ; the options' texts
         sta opt
 @text:  lda opt
         jsr OptAt

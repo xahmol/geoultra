@@ -25,10 +25,10 @@
         .include "drvflags.inc"
         .include "kcalls.inc"
 
-        .export MountAll, SerialFromDisk, TurboInit
+        .export MountAll, SerialFromDisk, TurboInit, PointerInit
         .export startGush
         .import ownDesk
-        .import turboWant, turboNow
+        .import turboWant, turboNow, OvlCall
 .ifdef BYPASS
         .import bypassOn
 .endif
@@ -70,6 +70,7 @@ drive:          .byte 0
 nextBank:       .byte 0
 keyAt:          .word 0         ; ReadSettings: a key's start
 startGush:      .byte 0         ; $80: [system] start=gush (init.s)
+ptrDesign:      .byte 0         ; [system] pointer=N (PointerInit)
 inDrives:       .byte 0
 type:           .byte 0
 banks:          .byte 0
@@ -439,19 +440,28 @@ ReadSettings:
         jmp @skip
 :
         and #$DF
-.ifdef BYPASS
         cmp #'P'
         bne @serial
+        lda r1L                 ; (Match reads on: back for the next key)
+        sta keyAt
+        lda r1H
+        sta keyAt+1
+.ifdef BYPASS
         ldx #protKey - keys     ; "ROTECTION=BYPASS"
         jsr Match
-        beq :+
-        jmp @skip
-:
+        bne :+
         lda #$80
         sta bypassOn
         jmp @skip
-@serial:
+:       jsr KeyBack
 .endif
+        ldx #ptrKey - keys      ; "OINTER=" a design (pointer.s, module 86)
+        jsr Match
+        bne @skipP
+        jsr Decimal
+        sta ptrDesign           ; (PointerInit checks it)
+@skipP: jmp @skip
+@serial:
         cmp #'D'
         bne @hib
         ldx #deskKey - keys     ; "ESKTOP=GEOS": GEOS 2.0's deskTop, unless
@@ -551,6 +561,16 @@ ReadSettings:
         jmp @line
 @end:   rts
 
+; PointerInit (cold start, after MountAll: the modules are there):
+; SETTINGS.INI's pointer design (pointer.s, module 86; 0, the classic
+; arrow, is the kernal's own).
+PointerInit:
+        lda ptrDesign
+        beq @end
+        jsr OvlCall
+        .byte 86, 0
+@end:   rts
+
 ; KeyBack: r1 back at the key's start (keyAt).
 KeyBack:
         lda keyAt
@@ -570,6 +590,7 @@ startKey:       .byte "TART=GUSH", 0
 deskKey:        .byte "ESKTOP=GEOS", 0
 .ifdef BYPASS
 protKey:        .byte "ROTECTION=BYPASS", 0
+ptrKey:         .byte "OINTER=", 0
 .endif
 
 ; Decimal: A = the decimal number that follows (up to 255; stops at the

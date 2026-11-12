@@ -6,6 +6,7 @@
         .include "hw.inc"
 
         .export DrawSprite, PosSprite, EnablSprite, DisablSprite
+        .import PtrDX, PtrDY
 
         .segment "DATA"
 
@@ -18,8 +19,17 @@ bit8:   .byte $01, $02, $04, $08, $10, $20, $40, $80
         .segment "CODE"
 
 ; DrawSprite: r3L = sprite, r4 = 64 bytes of picture. Destroys A, Y, r5.
+; A picture for sprite 0, the pointer, is the caller's own: its hot spot
+; top left, as GEOS 2.0 places it (PosPointer's offsets put back; a
+; pointer design's hot spot, pointer.s, no longer applies).
 DrawSprite:
-        lda r3L                 ; r5 = SPRITE_PICS + sprite * 64
+        lda r3L
+        bne :+
+        lda #24
+        sta PtrDX
+        lda #50
+        sta PtrDY
+:       lda r3L                 ; r5 = SPRITE_PICS + sprite * 64
         lsr
         lsr
         sta r5H

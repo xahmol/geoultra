@@ -306,6 +306,17 @@ does not show the server's status code).
   only as simple search fields; images left out (alt text), at most
   small ones later. A Gopher client is the cheap first step: plain text
   and menus, the same rendering and history, a fraction of the work.
+- **The terminal in GEOS's look (the user's question, 2026-11-12):**
+  keeping the menu bar and the task bar, in hi-res, is possible: the
+  GEOS bitmap's colours go per 8 x 8 cell, as PETSCII's per character
+  (one background), so a 40-column grid on the cells keeps every
+  character's colour exactly; the glyphs drawn into the bitmap from the
+  machine's own character ROM at run time; scrolling by REU DMA. The
+  cost is rows: the menu bar (2 cell rows) and a status or task bar (1)
+  leave 22 of a BBS's 25. Suggested: a 40 x 22 window on the bottom
+  rows as the normal view, plus a key for a full 40 x 25 screen (the
+  menu back by key or the pointer at the top); to settle in the
+  terminal's design round.
 - **The order** (in rising order of scope; the browser last, after the
   Gopher client and the terminal):
   1. *Fetch* (a gush command first, a dialog later): a file from an
@@ -544,6 +555,11 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   view, toolbar, clock and panes; "Start with GEOS 2.0's" and a reboot
   starts GEOS 2.0's deskTop (set it back afterwards); Cancel after a
   change asks first.
+- The pointer designs (2026-11-12): settings, Pointer page: each of
+  classic, large, hand and cross changes the pointer at once; the hand's
+  fingertip and the crosshair's centre point where clicks land (try a
+  small icon or a menu item); after a reboot the chosen one is still
+  there; back to classic afterwards if wanted.
 - Two panes kept (2026-11-12): two panes on, the desktop restarted
   (reboot): it comes back in two panes; off, restarted: one list
   (SETTINGS.INI gets `panes=1` or `panes=2`).

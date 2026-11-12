@@ -12,6 +12,7 @@
         .import pointerPic, UseSystemFont, PutString, RecoverRectangle
         .import StringWidth, sysFlgCopy, DiskInit, ExtraColours, ClockInit
         .import MountAll, SerialFromDisk, TurboInit, SaveJumpTab, HibResumeOvl, RtcClockOvl
+        .import PointerInit
         .export ColdStart
         .import startGush, FileEngine
 
@@ -171,6 +172,7 @@ ColdStart:                      ; $4F00: the boot ROM jumps here
         jsr TurboInit           ; the U64 at full speed
         jsr HibResumeOvl        ; a hibernated session: resumed (no return)
         jsr RtcClockOvl         ; the date and time from the Ultimate
+        jsr PointerInit         ; SETTINGS.INI's pointer design (mount.s)
         lda #RAM_ALL            ; from here on the font under I/O is visible
         sta CPU_PORT
         lda #0                  ; text: whole screen, plain style

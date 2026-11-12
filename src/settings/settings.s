@@ -9,12 +9,13 @@
         .include "engine.inc"
         .include "settings.inc"
 
-        .import OvlInit, DeskDraw, DeskPress
+        .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress
         .export FileEngine, dirty, NoRoom
 
         .segment "ZEROPAGE"
 
 feVec:          .res 2          ; the file engine's entry
+pageVec:        .res 2          ; DrawPage, Press: the page's routine
 
         .segment "CODE"
 
@@ -202,11 +203,15 @@ DrawPage:
         lda #>SCREEN_RIGHT
         sta r4H
         jsr Rectangle
-        lda page
-        cmp #PAGE_DESKTOP
-        bne :+
-        jmp DeskDraw            ; (overlay 1)
-:       lda #<LaterText
+        ldx page                ; the page's own drawing (its overlay)
+        lda DrawLo,x
+        sta pageVec
+        lda DrawHi,x
+        sta pageVec+1
+        jmp (pageVec)
+
+; Later: the note on a page still to come.
+Later:  lda #<LaterText
         sta r0L
         lda #>LaterText
         sta r0H
@@ -255,11 +260,16 @@ Press:  lda mouseData
         bcc @end
         cmp #PAGE_BOTTOM + 1
         bcs @end
-        lda page
-        cmp #PAGE_DESKTOP
-        bne @end
-        jmp DeskPress           ; (overlay 1)
+        ldx page                ; the page's own (its overlay)
+        lda PressLo,x
+        sta pageVec
+        lda PressHi,x
+        sta pageVec+1
+        jmp (pageVec)
 @end:   rts
+
+NoPress:
+        rts
 
 ; --- the buttons (DoIcons)
 
@@ -343,6 +353,13 @@ Digit:  cmp #10
 TITLE_X         = 112
 SIDE_X          = 6
 SIDE_BASE       = 9             ; a page name's baseline below its row top
+
+; Each page's drawing and click routines (stubs into its overlay, ovl.s;
+; Later and NoPress for the pages still to come), in PAGE_* order.
+DrawLo:         .byte <Later, <DeskDraw, <Later, <Later, <Later, <PtrDraw
+DrawHi:         .byte >Later, >DeskDraw, >Later, >Later, >Later, >PtrDraw
+PressLo:        .byte <NoPress, <DeskPress, <NoPress, <NoPress, <NoPress, <PtrPress
+PressHi:        .byte >NoPress, >DeskPress, >NoPress, >NoPress, >NoPress, >PtrPress
 
 Title:          .byte BOLDON, "GeoUltra Settings", PLAINTEXT, 0
 NameLo:         .byte <N0, <N1, <N2, <N3, <N4, <N5
