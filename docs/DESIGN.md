@@ -439,6 +439,30 @@ Log:
 
 ## For the user, at the computer
 
+To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
+(drive C is now the apps DNP, 8 MB):
+
+- The right mouse button in the list: the context menu at the pointer,
+  the item under the pointer inverted, a click on an item, a click
+  outside (closes), the right button again (closes); Info on a GEOS
+  file, a folder and a file on usb0 (its size in bytes). The automatic
+  tests drive it through VICE's joyport simulation and the U64 test
+  calls Info directly, so the real mouse is untested.
+- The menus: geos (gush, the desk accessories still start), file (info,
+  select all), view (refresh), the new go menu; the keys C=I, C=A, C=G,
+  C=cursor left and right (back, forward).
+- The toolbar's gush button (the last one) and the info button.
+- Sorting: folders first, then files, by name in any case; a large
+  folder on usb0.
+- The icon view on drive C (GEOS icons from the headers; folders and
+  ".." with the generic icons) and with the narrow sidebar (theme
+  Detailed).
+- The look: the frame lines, menus and dialogs in the theme's colours
+  (Night especially), the border in the menu bar's colour.
+- Copying a GEOS program onto usb0 (it becomes NAME.cvt) and back to
+  drive C (it becomes the program again and starts); opening the .cvt
+  on usb0 shows "Not opened here".
+
 Done 2026-11-11: the right mouse button on the U64 ("Verified on
 hardware").
 
