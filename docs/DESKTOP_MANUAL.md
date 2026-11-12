@@ -267,10 +267,10 @@ system waits without input before it hibernates (off, 15 s, 30 s,
 zone in quarter hours, summer time by the EU's rule or off, and the
 date and time by hand (set..., typed as YYYY-MM-DD HH:MM). The server
 also sets the clock at every start. **Pointer** chooses the mouse
-pointer and its colour: classic arrow, large arrow, hand
-or crosshair; it changes at once and stays at every start. The other
-pages (theme, system with turbo and the time, drives, REU) follow;
-their plan is in docs/SETTINGS.md.
+pointer, a classic arrow, a large arrow, a hand or a crosshair, and its
+colour (- and +, any of the 16); both change at once and stay at every
+start. The pages Theme, Drives and REU follow; their plan is in
+docs/SETTINGS.md.
 
 ## Limits
 
