@@ -501,9 +501,12 @@ colour is a property of an element, by name:
   hand-ordered disks may follow). The sort runs in an overlay, from
   MainLoop right after a folder is read (reading only marks the list),
   so the list is drawn once, sorted.
-- **Next, in this order:** copy, paste, move and delete onto drive C
-  (the apps DNP) tested on the U64; sorting; docs/DESKTOP_MANUAL.md
-  (with "Drives: what works where"); the context menu and Info; two
+- **Done 2026-11-12 (night):** copy, paste, move and delete onto drive
+  C tested on the U64 (tests/desktop/d10u64.py); sorting (sort.s,
+  overlay 6; tests/desktop/d11.py); docs/DESKTOP_MANUAL.md. The core ends
+  at `$4FDC`: the context menu needs room made first.
+- **Next, in this order:** the ninth code sweep (about ten feature
+  commits since the eighth); the context menu and Info; two
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,
   pointer designs, turbo and slow list, NTP and clock, the default
