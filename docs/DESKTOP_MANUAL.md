@@ -251,7 +251,12 @@ leave), Cancel (leave; it asks when something was changed) and Save
 (save and stay). Its first page is **Desktop**: which desktop starts
 (GeoUltra's or GEOS 2.0's), the view, the toolbar, the clock and two
 panes; they take effect when the desktop starts again (after OK).
-**Pointer** chooses the mouse pointer: classic arrow, large arrow, hand
+**System**: the turbo (full speed, off, or a speed step chosen with
+- and +, shown in MHz for both kinds of Ultimate 64; it changes at
+once), the programs that run at 1 MHz (add... picks a program on
+drives A-D; remove takes the selected one out) and how long the
+system waits without input before it hibernates (off, 15 s, 30 s,
+1 min, 5 min). **Pointer** chooses the mouse pointer: classic arrow, large arrow, hand
 or crosshair; it changes at once and stays at every start. The other
 pages (theme, system with turbo and the time, drives, REU) follow;
 their plan is in docs/SETTINGS.md.

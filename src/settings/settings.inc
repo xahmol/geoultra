@@ -15,6 +15,8 @@ DoIcons         = $C15A
 GetCharWidth    = $C1C9
 EnterDeskTop    = $C22C
 DoDlgBox        = $C256
+FindFile        = $C20B
+OpenDisk        = $C2A1
 StashRAM        = $C2C8
 FetchRAM        = $C2CB
 
@@ -34,14 +36,16 @@ PAGE_BOTTOM     = 171
 BUTTON_LINE     = 174           ; the line above the buttons
 BUTTON_Y        = 180           ; the buttons' top
 SCREEN_RIGHT    = 319
-PAGES_N         = 6             ; Theme, Desktop, System, Drives, REU,
-                                ; Pointer (PAGE_*)
+PAGES_N         = 7             ; Theme, Desktop, System, Time, Drives,
+                                ; REU, Pointer (PAGE_*; the user,
+                                ; 2026-11-12: Time its own page)
 PAGE_THEME      = 0
 PAGE_DESKTOP    = 1
 PAGE_SYSTEM     = 2
-PAGE_DRIVES     = 3
-PAGE_REU        = 4
-PAGE_POINTER    = 5
+PAGE_TIME       = 3
+PAGE_DRIVES     = 4
+PAGE_REU        = 5
+PAGE_POINTER    = 6
 
 ; The INI text (src/inc/ini.inc): SETTINGS.INI whole, at most 3072 bytes
 ; as the desktop and gush read it

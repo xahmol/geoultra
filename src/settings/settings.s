@@ -9,7 +9,7 @@
         .include "engine.inc"
         .include "settings.inc"
 
-        .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress
+        .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
         .export FileEngine, dirty, NoRoom
 
         .segment "ZEROPAGE"
@@ -356,20 +356,24 @@ SIDE_BASE       = 9             ; a page name's baseline below its row top
 
 ; Each page's drawing and click routines (stubs into its overlay, ovl.s;
 ; Later and NoPress for the pages still to come), in PAGE_* order.
-DrawLo:         .byte <Later, <DeskDraw, <Later, <Later, <Later, <PtrDraw
-DrawHi:         .byte >Later, >DeskDraw, >Later, >Later, >Later, >PtrDraw
-PressLo:        .byte <NoPress, <DeskPress, <NoPress, <NoPress, <NoPress, <PtrPress
-PressHi:        .byte >NoPress, >DeskPress, >NoPress, >NoPress, >NoPress, >PtrPress
+DrawLo:         .byte <Later, <DeskDraw, <SysDraw, <Later, <Later, <Later, <PtrDraw
+DrawHi:         .byte >Later, >DeskDraw, >SysDraw, >Later, >Later, >Later, >PtrDraw
+PressLo:        .byte <NoPress, <DeskPress, <SysPress, <NoPress, <NoPress, <NoPress
+                .byte <PtrPress
+PressHi:        .byte >NoPress, >DeskPress, >SysPress, >NoPress, >NoPress, >NoPress
+                .byte >PtrPress
+        .assert * - PressHi = PAGES_N, error, "a press routine per page"
 
 Title:          .byte BOLDON, "GeoUltra Settings", PLAINTEXT, 0
-NameLo:         .byte <N0, <N1, <N2, <N3, <N4, <N5
-NameHi:         .byte >N0, >N1, >N2, >N3, >N4, >N5
+NameLo:         .byte <N0, <N1, <N2, <N3, <N4, <N5, <N6
+NameHi:         .byte >N0, >N1, >N2, >N3, >N4, >N5, >N6
 N0:             .byte "Theme", 0
 N1:             .byte "Desktop", 0
 N2:             .byte "System", 0
-N3:             .byte "Drives", 0
-N4:             .byte "REU", 0
-N5:             .byte "Pointer", 0
+N3:             .byte "Time", 0
+N4:             .byte "Drives", 0
+N5:             .byte "REU", 0
+N6:             .byte "Pointer", 0
 LaterText:      .byte "This page comes in a later step.", 0
 IniName:        .byte "SETTINGS.INI", 0
 TmpName:        .byte "SETTINGS.TMP", 0

@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
 from gushvice import Gush, OUT, harness, KEY_STUB  # noqa: E402
 from vicemon import RESP_CHECKPOINT  # noqa: E402
 
-PAGE_DESKTOP, PAGE_POINTER = 1, 5
+PAGE_DESKTOP, PAGE_POINTER = 1, 6
 X0, STEP = 90 + 10, 56
 SIDE_TOP, SIDE_ROW = 20, 14
 Y0, DY, X1, X2 = 16 + 20, 18, 150, 212

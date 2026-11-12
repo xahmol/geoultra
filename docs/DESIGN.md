@@ -575,6 +575,11 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   view, toolbar, clock and panes; "Start with GEOS 2.0's" and a reboot
   starts GEOS 2.0's deskTop (set it back afterwards); Cancel after a
   change asks first.
+- The System page (2026-11-12): turbo off and a step with - and +
+  (the speed changes at once), full speed again; add... on the slow
+  list picks a program from drive A (Disk goes to B, C, D) and shows
+  its name, remove takes it out; Save, then gush's `turbo` shows the
+  step; hibernation 1 min.
 - The pointer designs (2026-11-12): settings, Pointer page: each of
   classic, large, hand and cross changes the pointer at once; the hand's
   fingertip and the crosshair's centre point where clicks land (try a

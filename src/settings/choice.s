@@ -11,12 +11,14 @@
 ; Table: .byte rows, then per row (ROW_* offsets):
 ;   .byte baseline y; .addr label (0: none), section, key; .byte options,
 ;   default
-;   then per option: .word x; .addr text, value (zero-ended)
+;   then per option: .word x; .addr text, value (zero-ended; 0: no
+;   value, the key taken out: an option meaning "as without the key",
+;   which is the row's default then)
 
         .include "geos.inc"
         .include "settings.inc"
 
-        .import IniFind, IniSet, dirty, NoRoom
+        .import IniFind, IniSet, IniDel, dirty, NoRoom
         .export ChoiceDraw, ChoicePress, sel
 
 ROW_Y           = 0
@@ -157,10 +159,13 @@ Choose: sta opt
         iny
         lda (op),y
         sta r2H
-        jsr IniSet
-        bcc :+
+        bne @set
+        jsr IniDel              ; (no value: the key out; none there: fine)
+        jmp @done
+@set:   jsr IniSet
+        bcc @done
         jmp NoRoom
-:       ldx row
+@done:  ldx row
         lda opt
         sta sel,x
         lda #1
@@ -283,9 +288,10 @@ Current:
         iny
         lda (op),y
         sta r3H
+        beq @other              ; (no value: never the one in the text)
         jsr Equal
         bcc @found
-        inc opt
+@other: inc opt
         bne @opt
 @found: lda opt
         ldx row

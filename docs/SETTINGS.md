@@ -31,6 +31,23 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   last Sundays of March and October, 01:00 UTC). Hibernation: a row
   off, 15 s, 30 s (the default), 1 min, 5 min (`hibernate=0/15/30/60/
   300`).
+- **From GeoDesk64's settings (the user, 2026-11-12, after reading
+  the GeoDesk64 manual and the GDOS64 FastBoot guide; behaviour only,
+  own code, credited where derived):** adopted as settings: copy
+  conflicts (ask, today's behaviour / replace / skip / only newer, a
+  sync), ask before deleting (yes / no; the question for folders with
+  contents stays), the sort order (name / date / size / type, folders
+  first), the pointer's colour (Pointer page), GEOS's own colours for
+  programs' dialogs, menus and file selector as theme lines (S4), icon
+  colours by GEOS file type (a theme option, S4), a background picture
+  (a geoPaint picture behind the desktop; later). Adopted without a
+  setting: two panes come back with both panes' folders; the list is
+  read again after every desk accessory. On the roadmap: pinned
+  programs in the sidebar (as GeoDesk64's AppLinks), undelete (deleted
+  files shown and restored when not overwritten). Not taken: the
+  printer and input driver choice, the icon cache options, GDOS's
+  driver configuration, a "save settings" command (GeoUltra writes at
+  once), FastBoot (GeoUltra starts from its cartridge and hibernates).
 - Pages:
   - *Theme:* the theme editor: each line of a theme file; colours from
     16 swatches (in the theme's palette) for ink and paper, plus the RGB
@@ -136,6 +153,15 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   the arrow did before).
 - **S3, the System page:** turbo and the slow list, hibernation, NTP
   and the time zone, date and time by hand.
+  **S3 done (2026-11-12), the System page:** psys.s (overlay 3): turbo
+  (full speed / off / step, the stepper in MHz for both U64 kinds,
+  applied at once by FE_TURBO), the slow list (up to 6 names from the
+  repeated slow= lines; add through GEOS's file dialog on drives A-D,
+  the permanent name's start without its trailing spaces; remove the
+  selected one), hibernation (off / 15 s / 30 s / 1 min / 5 min). New
+  in the core: widgets.s (buttons with labels centred by measured
+  width), choice options without a value (the key taken out: "full
+  speed"). The Time page is S3b. Test: s3.py (9 checks in VICE).
 - **S4, the Theme page:** the theme editor (themefile.s's parsing
   shared, the mock preview, palettes).
 - **S5, the Drives page:** MOUNTS.INI, DNP sizes, long names, new
