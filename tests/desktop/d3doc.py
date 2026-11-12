@@ -60,7 +60,11 @@ def main():
         time.sleep(4)
         v.ping()
         check("/a", bytes(v.mem_get(k["path"], k["path"] + 2)), b"/a\0")
-        i = names.index(DOC)
+        def fold(name):                                 # the desktop's sort key
+            return "".join(chr(ord(c) & 0xDF) if "a" <= c <= "z" else
+                           chr(ord(c) & 0x7F) if "\xc1" <= c <= "\xda" else c
+                           for c in name[:7])           # (sort.s: 7 characters)
+        i = sorted(names, key=fold).index(DOC)          # (sorted: stable)
         g.keys([KEY_HOME] + [KEY_DOWN] * (i + 1), settle=0.2)    # (".." first)
         g.keys([CR], settle=1)
         time.sleep(20)

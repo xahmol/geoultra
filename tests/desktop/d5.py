@@ -112,8 +112,7 @@ def main():
         settle(2)                                           # the cursor on it
         g.keys("dir1\r", settle=0.3)
         settle(4)
-        n = word("count")
-        g.keys([KEY_HOME] + [KEY_DOWN] * (n - 1), settle=0.3)
+        g.keys([KEY_HOME, KEY_DOWN], settle=0.3)            # dir1 (sorted: after "..")
         settle(1)
         g.keys([C | ord("f")], settle=1)
         settle(3)
@@ -128,13 +127,13 @@ def main():
         check("four: /b, /b/dir1, /a, /e", favs(), ["/b", "/b/dir1", "/a", "/e"])
         side(ord("b"))
         n = word("count")
-        g.keys([KEY_HOME, C | ord("f")], settle=1)          # the cursor on gush:
+        g.keys([KEY_HOME, C | ord("f")], settle=1)          # the cursor on "..":
         settle(3)                                           # /b already there
         g.keys([C | ord("n")], settle=2)
         settle(2)
         g.keys("dir2\r", settle=0.3)
         settle(4)
-        g.keys([KEY_HOME] + [KEY_DOWN] * n, settle=0.3)
+        g.keys([KEY_HOME, KEY_DOWN, KEY_DOWN], settle=0.3)  # dir2 (after "..", dir1)
         settle(1)
         g.keys([C | ord("f")], settle=1)
         settle(3)

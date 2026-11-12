@@ -25,7 +25,8 @@
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot, ListEnd, SelAll, row, RowEntry
         .import IconsForget, DrawCell, CellAt, step, tbMode
-        .export Frame
+        .export Frame, Place, SortNow, sortPending
+        .import SortList
         .import topY, titleEnd
         .export ProgressStart, ProgressBlock, progN, progTotal, SelCount
         .import Busy, Idle
@@ -70,7 +71,23 @@ ListRead:
         jsr IconsForget         ; (iconview.s: a new folder, new icons)
         jsr ReadList
         jsr FreeRead
-        jmp Idle
+        lda count+1             ; two entries or more: to be sorted
+        bne :+                  ; (SortNow, from MainLoop: ListRead is
+        lda count               ; also called from overlays, the sort is
+        cmp #2                  ; one)
+        bcc :++
+:       inc sortPending
+:       jmp Idle
+
+; SortNow (theme.s, ClockTick, from MainLoop: the list marked by
+; ListRead): sorted (sort.s, overlay 6), then drawn.
+SortNow:
+        lda #0
+        sta sortPending
+        jsr Busy
+        jsr SortList
+        jsr Idle
+        jmp ListDraw
 ReadList:
         lda #<path
         sta r0L
@@ -179,7 +196,10 @@ Place:  sta r1H                 ; n * 128: low byte (n & 1) << 7, high
 ; line, the rows from top (icon, name, selection, cursor), the scroll
 ; strip and the status line.
 ListDraw:
-        jsr AlignTop            ; (the icon view: a whole row of cells)
+        lda sortPending         ; (to be sorted: drawn once it is, SortNow)
+        beq :+
+        rts
+:       jsr AlignTop            ; (the icon view: a whole row of cells)
         jsr PaintList
         lda #0
         jsr SetPattern
@@ -2153,6 +2173,8 @@ Follow: lda cur+1               ; cur < top: top = cur
 
 
         .segment "DATA"
+
+sortPending:    .byte 0         ; 1: read, not yet sorted (SortNow)
 
 count:          .word 0         ; entries in the table
 top:            .word 0         ; the first shown

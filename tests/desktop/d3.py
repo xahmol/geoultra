@@ -75,8 +75,8 @@ def main():
                 time.sleep(3)
                 v.ping()
                 check("RETURN on e: /e", path(), "/e")
-                gpos = 2                                    # (src/sysdrive.toml: "..", geoFolder,
-                                                            # gush, GeoUltra Desktop, bin)
+                gpos = 4                                    # (sorted: "..", the folder bin,
+                                                            # geoFolder, GeoUltra Desktop, gush)
                 press(150, LIST_TOP + gpos * ROW_H + 4, wait=0.3)
                 v.mem_set(DBL, bytes([30]))
                 press(150, LIST_TOP + gpos * ROW_H + 4, wait=10)

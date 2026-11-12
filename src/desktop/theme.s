@@ -24,7 +24,7 @@
         .export Neutral, Dialog, MenuNeutral, Recover, ClockDraw, ClockTick
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
         .export tbMode, topY, titleEnd
-        .import ToolPaint, IconLayout, step
+        .import ToolPaint, IconLayout, step, sortPending, SortNow
         .import BusyPause, BusyResume
 
 CPU_PORT        = $01
@@ -535,9 +535,13 @@ Recover:
 
 ; --- The clock ------------------------------------------------------------
 
-; ClockTick (appMain): the clock drawn again when the minute changed.
+; ClockTick (appMain): a list waiting to be sorted sorted (list.s,
+; SortNow); the clock drawn again when the minute changed.
 ClockTick:
-        lda minutes
+        lda sortPending         ; (list.s: a folder read, to be sorted;
+        beq :+                  ; here, in MainLoop, an overlay may run)
+        jsr SortNow
+:       lda minutes
         cmp lastMin
         bne ClockDraw
         rts

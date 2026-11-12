@@ -18,7 +18,7 @@
         .import path, text, Into
         .export HistAdd, HistBack, HistForward
 
-HIST_BANK       = 6             ; (ovl.s: the overlays at $0000-$4FFF)
+HIST_BANK       = 6             ; (ovl.s: the overlays at $0000-$5FFF)
 HIST_ADDR       = $80           ; the slots' first page in the bank
 HIST_N          = 16            ; places kept
 HIST_MASK       = HIST_N - 1

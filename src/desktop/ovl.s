@@ -1,9 +1,10 @@
 ; GeoUltra Desktop: overlays (docs/DESKTOP.md, "Structure"). The
 ; desktop is a VLIR file: record 0 the core at $0400-$4FFF, records 1
-; to 5 overlays at TRANS ($5000-$5FFF): 1 the theme files
+; to 6 overlays at TRANS ($5000-$5FFF): 1 the theme files
 ; (themefile.s), 2 the actions with the recursion into folders
 ; (actions.s, tree.s), 3 mounting (mount.s), 4 the INI files
-; (inifile.s), 5 the toolbar's drawing (tooldraw.s). The loader and OvlGo are ovlcore.inc (shared with gush);
+; (inifile.s), 5 the toolbar's drawing (tooldraw.s), 6 sorting the list
+; (sort.s). The loader and OvlGo are ovlcore.inc (shared with gush);
 ; this file names the bank and the stubs. Own code.
 
         .include "geos.inc"
@@ -12,10 +13,10 @@
 TRANS           = $5000
 TRANS_SIZE      = $1000
 OVL_BANK        = 6             ; (1-4: the entry table, 5: the clipboard;
-                                ; bank 6: the overlays $0000-$4FFF, the
+                                ; bank 6: the overlays $0000-$5FFF, the
                                 ; big icons $7000 (tooldraw.s), the history
                                 ; $8000 (history.s), icons $9000 (iconview.s))
-OVL_N           = 5
+OVL_N           = 6
 
         .segment "CODE"
 
@@ -46,3 +47,4 @@ OvlFail:
         Stub ToolbarSave, 4
         Stub ToolDraw, 5        ; overlay 5: tooldraw.s
         Stub BigInit, 5
+        Stub SortList, 6        ; overlay 6: sort.s
