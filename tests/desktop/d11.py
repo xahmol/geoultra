@@ -4,7 +4,8 @@
 any case. Drive B gets files zz, Mm, aa, BB (and gush; c1541 names them in
 PETSCII: AA, \xc2\xc2, \xcdM, ZZ, sorted as AA, BB, MM, ZZ), two folders are
 made (zdir, Adir); the list's order is read by stepping the cursor.
-Then the order after a new folder (it takes its sorted place). Screen:
+Then the order after a new folder (it takes its sorted place), and the
+other sort orders: size, type, date, name again. Screen:
 build/harness/gush/desktop-d11.png.
 Usage: tests/desktop/d11.py
 """
@@ -125,6 +126,17 @@ def main():
         settle(5)
         check("a new folder in its sorted place", order()[1:4], ["Adir", "Mdir", "zdir"])
         g.png("desktop-d11")
+        # The sort orders (sortMode, [desktop] sort=; the user, 2026-11-12):
+        # gush is the only GEOS file (93 blocks, a date); the rest one block.
+        for mode, title, want in (
+                (2, "by size: gush (largest) first, then by name", ["gush", "AA", "\xc2\xc2", "\xcdM", "ZZ"]),
+                (3, "by type: plain files, then the GEOS application", ["AA", "\xc2\xc2", "\xcdM", "ZZ", "gush"]),
+                (1, "by date: gush (dated) first, the undated after", ["gush", "AA", "\xc2\xc2", "\xcdM", "ZZ"]),
+                (0, "by name again", ["AA", "\xc2\xc2", "gush", "\xcdM", "ZZ"])):
+            v.mem_set(k["sortMode"], bytes([mode]))
+            call(k["Refresh"], 0, s=6)
+            got = order()
+            check(title + "; folders still first", (got[:4], got[4:]), (["..", "Adir", "Mdir", "zdir"], want))
         # Two panes, step P3: the other pane's state swapped in and back.
         def state():
             return (bytes(v.mem_get(k["path"], k["path"] + 7)).split(b"\0")[0].decode("latin1"),

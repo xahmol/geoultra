@@ -14,11 +14,11 @@
         .include "desktop.inc"
 
         .import FileEngine, Setup, Slot, Store, text, counts, which, at, work
-        .import panes, wantPanes
+        .import panes, wantPanes, sortMode, deskPrefs
         .import wantTheme, wantView, wantToolbar, curName, clockMode, viewMode, tbMode
         .importzp lp, sp
         .export Ov_LoadAll, Ov_Save, Ov_ThemeSave, Ov_ViewSave, Ov_ClockSave, Ov_ToolbarSave
-        .export Ov_PanesSave
+        .export Ov_PanesSave, Ov_PanesKeep
 Ov_LoadAll = LoadAll            ; (the stubs in ovl.s, overlay 4)
 Ov_Save = Save
 Ov_ThemeSave = ThemeSave
@@ -26,6 +26,7 @@ Ov_ViewSave = ViewSave
 Ov_ClockSave = ClockSave
 Ov_ToolbarSave = ToolbarSave
 Ov_PanesSave = PanesSave
+Ov_PanesKeep = PanesKeep
 
         .segment "OV4"
 
@@ -420,6 +421,9 @@ DeskRead:
         sta wantView
         sta wantToolbar
         sta wantPanes
+        lda #0                  ; (sort=: by name unless named; copy=ask,
+        sta sortMode            ; delete=ask)
+        sta deskPrefs
         ldx #L_DESK
         jsr Setup
         ldx #KEY_THEME
@@ -465,13 +469,117 @@ DeskRead:
         sta wantToolbar
 @panes: ldx #KEY_PANES
         jsr FindKey
-        bcs @end
+        bcs @pane2
         jsr Value
         ldx #PanesFirst - First
         jsr Pick
-        bcs @end
+        bcs @pane2
         sta wantPanes
+@pane2: ldx #KEY_SORT           ; sort= (sort.s): name, date, size, type
+        jsr FindKey
+        bcs :+
+        jsr Value
+        ldx #SortFirst - First
+        jsr Pick
+        bcs :+
+        sta sortMode
+:       ldx #KEY_COPY           ; copy= (tree.s): ask, replace, skip, newer
+        jsr FindKey
+        bcs :+
+        jsr Value
+        ldx #CopyFirst - First
+        jsr Pick
+        bcs :+
+        sta deskPrefs           ; (bits 0-1)
+:       ldx #KEY_DEL            ; delete=now (actions.s): no question
+        jsr FindKey
+        bcs :+
+        jsr Value
+        ldx #DelFirst - First
+        jsr Pick
+        bcs :+
+        tax
+        beq :+
+        lda deskPrefs
+        ora #PREF_NOASK
+        sta deskPrefs
+:       ldx #KEY_PANE2          ; the other pane's folder, into its state
+        jsr FindKey             ; in the REU (list.s's PaneInit gave it "/"
+        bcs @end                ; before this; the user, 2026-11-12: two
+        jsr Value               ; panes keep their folders, as GeoDesk64's
+        ldy #0                  ; two-window mode)
+@ch:    lda (r0),y
+        cmp #' ' + 1            ; (its line's end)
+        bcc @zero
+        sta pbuf,y
+        iny
+        cpy #PATH_LEN - 1
+        bcc @ch
+@zero:  lda #0
+        sta pbuf,y
+        cpy #0
+        beq @end
+        jsr PaneRegs
+        jmp StashRAM
 @end:   rts
+
+; PanesKeep (desktop.s Leave: before a program or a desk accessory
+; takes over): with two panes, the other pane's folder as [desktop]
+; pane2= when it changed (a path longer than a line holds: not kept).
+; The pane in use is the file engine's current folder: it comes back by
+; itself.
+PanesKeep:
+        lda panes
+        beq @end
+        jsr PaneRegs            ; its path's start from the REU
+        jsr FetchRAM
+        ldy #0
+@len:   lda pbuf,y
+        beq @got
+        iny
+        cpy #PATH_LEN - 1
+        bcc @len
+@end:   rts                     ; (too long)
+@got:   ldx #L_DESK             ; the same as the line there: nothing
+        jsr Setup
+        ldx #KEY_PANE2
+        jsr FindKey
+        bcs @set
+        jsr Value
+        ldy #$FF
+@cmp:   iny
+        lda pbuf,y
+        beq @last
+        cmp (r0),y
+        beq @cmp
+        bne @set
+@last:  lda (r0),y              ; (the line's value ends here too?)
+        cmp #' ' + 1
+        bcc @end
+@set:   lda #<pbuf
+        sta r1L
+        lda #>pbuf
+        sta r1H
+        ldx #KEY_PANE2
+        jmp SetLine
+
+; PaneRegs: r0-r3 for the other pane's path's first PATH_LEN bytes
+; (list.s SwapPane's first part) and pbuf.
+PaneRegs:
+        lda #<pbuf
+        sta r0L
+        lda #>pbuf
+        sta r0H
+        lda #0
+        sta r1L
+        sta r2H
+        lda #PANE_PAGE
+        sta r1H
+        lda #PATH_LEN
+        sta r2L
+        lda #PANE_BANK
+        sta r3L
+        rts
 
 ; Pick: A = the index of the value at r0 among the first characters at
 ; First + X (three, zero after them); C set when none matches.
@@ -641,11 +749,22 @@ KEY_TOOLBAR = * - Keys
                 .byte "toolbar=", 0
 KEY_PANES = * - Keys
                 .byte "panes=", 0
+KEY_PANE2 = * - Keys
+                .byte "pane2=", 0
+KEY_SORT = * - Keys
+                .byte "sort=", 0
+KEY_COPY = * - Keys
+                .byte "copy=", 0
+KEY_DEL = * - Keys
+                .byte "delete=", 0
 First:                                  ; a value's first character
 ViewFirst:      .byte "lid", 0          ; list, icons, detailed
 ClockFirst:     .byte "21o", 0          ; 24, 12, off
 ToolbarFirst:   .byte "18o", 0          ; 16, 8, off (its height in pixels)
 PanesFirst:     .byte "12", 0           ; one list, two panes
+SortFirst:      .byte "ndst", 0         ; name, date, size, type
+CopyFirst:      .byte "arsn", 0         ; ask, replace, skip, newer
+DelFirst:       .byte "an", 0           ; ask, now
 Words:
 ViewWords:      .byte "list", 0, "icons", 0, "detailed", 0
 ClockWords:     .byte "24", 0, "12", 0, "off", 0
@@ -672,6 +791,8 @@ key:            .byte 0         ; FindKey, SetLine: the key's offset
 keyLen:         .byte 0         ; and its length
 textLen:        .word 0
 textEnd:        .word 0
+
+pbuf:           .res PATH_LEN   ; PanesKeep, DeskRead: the other pane's path
 
 ; (in the overlay: Files sets both in every call that uses them)
 iniPath:        .res 48

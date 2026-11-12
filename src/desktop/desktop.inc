@@ -132,6 +132,12 @@ CTX_N           = 11            ; the context menu's items (ctxmenu.s):
                                 ; to the other pane (list.s CtxDo)
 PANE_BANK       = 5             ; the other pane's state (list.s SwapPane):
 PANE_PAGE       = $FC           ; after the clipboard (actions.s), 4 pages
+PREF_COPY       = $03           ; deskPrefs (side.s; SETTINGS.INI [desktop],
+COPY_ASK        = 0             ; the user, 2026-11-12, after GeoDesk64):
+COPY_REPLACE    = 1             ; copy= what an existing file at the
+COPY_SKIP       = 2             ; target gets (tree.s CopyFile)
+COPY_NEWER      = 3
+PREF_NOASK      = $04           ; delete=now: no question first (actions.s)
 ENTRY_MAX       = 1024          ; a pane's entries (list.s: two REU banks)
 SEL_LEN         = ENTRY_MAX / 8 ; the selection's bytes
 DROP_OTHER_COPY = 2             ; a drop (listin.s -> desktop.s DropDo; 0

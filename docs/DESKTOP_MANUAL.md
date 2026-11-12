@@ -250,7 +250,13 @@ file: a list of pages on the left, the page on the right, OK (save and
 leave), Cancel (leave; it asks when something was changed) and Save
 (save and stay). Its first page is **Desktop**: which desktop starts
 (GeoUltra's or GEOS 2.0's), the view, the toolbar, the clock and two
-panes; they take effect when the desktop starts again (after OK).
+panes, the sort order (name, date: newest first, size: largest first,
+type; folders always first), what happens when a copied file is
+already there (ask, replace, skip, or replace only an older one: GEOS
+files carry dates) and whether deleting asks first (a folder with
+things in it is always asked about); they take effect when the
+desktop starts again (after OK). Two panes come back with both
+folders: the one you worked in on the left.
 **System**: the turbo (full speed, off, or a speed step chosen with
 - and +, shown in MHz for both kinds of Ultimate 64; it changes at
 once), the programs that run at 1 MHz (add... picks a program on

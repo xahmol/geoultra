@@ -48,6 +48,22 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   printer and input driver choice, the icon cache options, GDOS's
   driver configuration, a "save settings" command (GeoUltra writes at
   once), FastBoot (GeoUltra starts from its cartridge and hibernates).
+- **The GeoDesk64 items done (2026-11-12):** both panes keep their
+  folders (inifile.s PanesKeep writes `[desktop] pane2=` when it
+  changed, from the core's new Leave before every program or desk
+  accessory; DeskRead puts it back into the other pane's state; the
+  pane in use is the file engine's current folder and comes back on
+  the left); the list is already read again after a desk accessory
+  (Back draws and reads it); the sort order `sort=name|date|size|type`
+  (sort.s Lead: date newest first, size largest first, type by GEOS
+  type; folders first in all); `copy=ask|replace|skip|newer` (tree.s
+  CopyFile: skip leaves a moved file in place; newer compares the GEOS
+  dates, an undated file never newer); `delete=ask|now` (the folder
+  question stays). The Desktop page has the rows Sort by, Existing and
+  Delete. The desktop's core has 2 bytes left (`deskPrefs`, `sortMode`
+  and `Leave` took the rest): new desktop features need room made
+  first. Still to do of the list: the pointer's colour, the theme items
+  (S4), the background picture.
 - Pages:
   - *Theme:* the theme editor: each line of a theme file; colours from
     16 swatches (in the theme's palette) for ink and paper, plus the RGB

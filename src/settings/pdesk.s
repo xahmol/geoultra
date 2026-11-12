@@ -1,8 +1,13 @@
 ; GeoUltra Settings: the Desktop page (overlay 1, ovl.s; docs/SETTINGS.md,
 ; "Pages"): which desktop starts, and the desktop's view, toolbar, clock
-; and panes, as choice rows (choice.s) over SETTINGS.INI's keys, written
+; panes, the sort order, what an existing file at a copy's target gets
+; and whether deleting asks first (the user, 2026-11-12, after
+; GeoDesk64), as
+; choice rows (choice.s) over SETTINGS.INI's keys, written
 ; with the values the kernal and the desktop read ([system] desktop=;
-; [desktop] view=, toolbar=, clock=, panes=; src/desktop/inifile.s).
+; [desktop] view=, toolbar=, clock=, panes=, sort=, copy=, delete=;
+; src/desktop/
+; inifile.s).
 ; Own design and code.
 
         .include "geos.inc"
@@ -26,10 +31,18 @@ Ov_DeskPress:
 X1              = 150           ; the options' columns
 X2              = 212
 X3              = 266
+C1              = 150           ; the copy row's four columns
+C2              = 186
+C3              = 240
+C4              = 276
+S1              = 150           ; the sort row's four columns
+S2              = 192
+S3              = 234
+S4              = 276
 Y0              = PAGE_TOP + 20 ; the rows' baselines, 18 apart
 DY              = 18
 
-Rows:   .byte 5
+Rows:   .byte 8
         .byte Y0                                ; the desktop at the start
         .word LDesk, SSystem, KDesk
         .byte 2, 0
@@ -58,6 +71,25 @@ Rows:   .byte 5
         .byte 2, 0
         .word X1, TOneList, V1
         .word X2 + 14, TTwoPanes, V2
+        .byte Y0 + 5 * DY                       ; the sort order
+        .word LSort, SDesktop, KSort
+        .byte 4, 0
+        .word S1, TName, VName
+        .word S2, TDate, VDate
+        .word S3, TSize, VSize
+        .word S4, TType, VType
+        .byte Y0 + 6 * DY                       ; a file at the target
+        .word LCopy, SDesktop, KCopy
+        .byte 4, 0
+        .word C1, TAsk, VAsk
+        .word C2, TReplace, VReplace
+        .word C3, TSkip, VSkip
+        .word C4, TNewer, VNewer
+        .byte Y0 + 7 * DY                       ; deleting
+        .word LDel, SDesktop, KDel
+        .byte 2, 0
+        .word X1, TAskFirst, VAsk
+        .word X2 + 14, TAtOnce, VNow
 
 SSystem:        .byte "system", 0
 SDesktop:       .byte "desktop", 0
@@ -66,6 +98,31 @@ KView:          .byte "view", 0
 KBar:           .byte "toolbar", 0
 KClock:         .byte "clock", 0
 KPanes:         .byte "panes", 0
+KSort:          .byte "sort", 0
+KCopy:          .byte "copy", 0
+KDel:           .byte "delete", 0
+LCopy:          .byte "Existing", 0
+LDel:           .byte "Delete", 0
+TAsk:           .byte "ask", 0
+TReplace:       .byte "replace", 0
+TSkip:          .byte "skip", 0
+TNewer:         .byte "newer", 0
+TAskFirst:      .byte "ask first", 0
+TAtOnce:        .byte "at once", 0
+VAsk:           .byte "ask", 0
+VReplace:       .byte "replace", 0
+VSkip:          .byte "skip", 0
+VNewer:         .byte "newer", 0
+VNow:           .byte "now", 0
+LSort:          .byte "Sort by", 0
+TName:          .byte "name", 0
+TDate:          .byte "date", 0
+TSize:          .byte "size", 0
+TType:          .byte "type", 0
+VName:          .byte "name", 0
+VDate:          .byte "date", 0
+VSize:          .byte "size", 0
+VType:          .byte "type", 0
 LDesk:          .byte "Start with", 0
 LView:          .byte "View", 0
 LBar:           .byte "Toolbar", 0

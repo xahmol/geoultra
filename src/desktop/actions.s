@@ -16,6 +16,7 @@
         .include "desktop.inc"
 
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
+        .import deskPrefs
         .import entryInfo, entryName, cur, count, path, IsDotDot
         .import Busy, Idle
         .import TreeStart, PasteItem, DeleteItem   ; (tree.s, the same overlay)
@@ -221,7 +222,10 @@ Delete: jsr AnySelected
         ora count+1
         bne :+
         rts
-:       lda #<DeleteText
+:       lda deskPrefs           ; (delete=now: no question; a folder with
+        and #PREF_NOASK         ; things in it is still asked, tree.s)
+        bne :+
+        lda #<DeleteText
         ldx #>DeleteText
         jsr Ask
         beq :+

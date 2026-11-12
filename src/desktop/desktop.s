@@ -34,7 +34,8 @@ dropPath = text + 1024           ; a drop's target folder (listin.s; text's
         .import tHead, tIcons, cHeadP, cSide, cSideIconP, cSideAccentP
         .import sideW, ejectCard, sideTx, rowH, bottom
         .export FileEngine, Redraw, SideRedraw, SideHeading, SideItem, SideGap
-        .export SideArrows, View, Gush, Settings
+        .export SideArrows, View, Gush, Settings, Leave
+        .import PanesKeep
         .export itemText, itemName, itemIcon, itemEject
 
 FE_ENTRY        = 30            ; the file engine: guExtTable + 30
@@ -1086,7 +1087,7 @@ RunDA:  sec                     ; (item A: the accessory A - GEOS_FIXED)
         sta r6L
         lda DaHi,x
         sta r6H
-        jsr Neutral
+        jsr Leave
         lda #0
         sta r0L
         jsr GetFile
@@ -1207,10 +1208,16 @@ Settings:
 RunSys: sta r0L
         stx r0H
         jsr GotoFirstMenu
-        jsr Neutral
+        jsr Leave
         lda #FE_RUNSYS
         jsr FileEngine
         jmp Back
+
+; Leave: before a program or a desk accessory takes the screen: the
+; other pane's folder kept (inifile.s, overlay 4), GEOS's colours
+; (theme.s Neutral). From the core only (the overlay call).
+Leave:  jsr PanesKeep
+        jmp Neutral
 
 ; Refresh (disk > refresh): the list read again.
 Refresh:

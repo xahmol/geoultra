@@ -14,7 +14,7 @@
         .include "desktop.inc"
 
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
-        .import cur, count, path, Redraw, RecentAdd, Mount, Neutral, SideArrows
+        .import cur, count, path, Redraw, RecentAdd, Mount, Leave, SideArrows
         .export Open, Up, Drive, Into, Document, Back
         .import HistAdd
 
@@ -116,7 +116,7 @@ Program:
 @e:     lda entryInfo + FI_GTYPE
         cmp #DESK_ACC
         beq @byName
-        jsr Neutral             ; (theme.s: GEOS's colours for it)
+        jsr Leave               ; (desktop.s: the panes kept, GEOS's colours)
         lda #<entryName         ; an application: FE_RUNSYS (back only
         sta r0L                 ; with an error)
         lda #>entryName
@@ -148,7 +148,7 @@ Program:
         sta r6L
         lda #>shortName
         sta r6H
-Start:  jsr Neutral             ; (theme.s: GEOS's colours for it)
+Start:  jsr Leave               ; (desktop.s: the panes kept, GEOS's colours)
         lda #0                  ; GetFile (an application does not come
         sta r0L                 ; back)
         jsr GetFile
@@ -254,7 +254,7 @@ Launch: ldx docDrive
         sta r6L
         lda #>appName
         sta r6H
-        jsr Neutral             ; (theme.s: GEOS's colours for it)
+        jsr Leave               ; (desktop.s: the panes kept, GEOS's colours)
         lda #ST_LD_DATA
         sta r0L
         jsr GetFile

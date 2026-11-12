@@ -7,7 +7,10 @@ SRC copied into OUTER (the whole tree there); pasted again: "Replace
 it?" answered "Yes to all" (no second question, still the same tree);
 OUTER deleted: "Delete everything in it?" answered Yes (gone); SRC cut
 and pasted into a new folder MOVED (moved: gone from /b, its tree in
-MOVED). Checked through the desktop's entry counts and names.
+MOVED). Then copy= and delete= (the user, 2026-11-12): ONE moved into
+a folder that has one, with skip, only newer (plain files: no date) and
+replace; TWO deleted without the question. Checked through the
+desktop's entry counts and names.
 Usage: tests/desktop/d8.py
 """
 import os
@@ -146,6 +149,39 @@ def main():
         g.keys([KEY_LEFT], settle=0.5)
         settle(3)
         check("SRC gone from /b", "src" in [n.lower() for n in names()], False)
+        # copy= and delete= (deskPrefs; the user, 2026-11-12, after
+        # GeoDesk64): ONE moved from /b into MOVED/SRC, which has a ONE.
+        def move_one(prefs):
+            v.mem_set(k["deskPrefs"], bytes([prefs]))
+            here = names()
+            cursor_to("ONE", here)
+            g.keys([C | ord("x")], settle=0.5)
+            cursor_to("MOVED", here)
+            g.keys([CR], settle=0.5)
+            settle(3)
+            g.keys([KEY_HOME, KEY_DOWN, CR], settle=0.5)    # SRC (.., SRC: no
+            settle(3)                                        # C=C before the paste)
+            g.keys([C | ord("v")], settle=0.5)
+            settle(10)
+            inside = sorted(n.lower() for n in names())
+            g.keys([KEY_LEFT], settle=0.5)
+            settle(3)
+            g.keys([KEY_LEFT], settle=0.5)
+            settle(3)
+            return inside, "one" in [n.lower() for n in names()]
+        check("copy=skip: no question, ONE left in /b", move_one(2),
+              (["..", "one", "sub", "two"], True))
+        check("copy=newer: plain files have no date: left as well", move_one(3),
+              (["..", "one", "sub", "two"], True))
+        check("copy=replace: no question, ONE moved (gone from /b)", move_one(1),
+              (["..", "one", "sub", "two"], False))
+        v.mem_set(k["deskPrefs"], bytes([4]))               # delete=now
+        before = count()
+        cursor_to("TWO")
+        g.keys([DEL], settle=0.5)
+        settle(6)
+        check("delete=now: TWO deleted without a question",
+              (count(), "two" in [n.lower() for n in names()]), (before - 1, False))
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

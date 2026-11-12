@@ -20,6 +20,7 @@
         .include "desktop.inc"
 
         .import FileEngine, Error, Dialog, ProgressStart, ProgressBlock
+        .import deskPrefs
         .import progN, progTotal, entryName, entryInfo, path, text
         .export TreeStart, PasteItem, DeleteItem, Ask3
 
@@ -278,7 +279,21 @@ CopyFile:
         bne @fail
         lda flags               ; (asked already: an error)
         bne @fail
-        lda #<ReplaceText
+        lda deskPrefs           ; copy= (the user, 2026-11-12, after
+        and #PREF_COPY          ; GeoDesk64): ask, replace, skip, or
+        beq @ask                ; replace only an older one
+        cmp #COPY_SKIP
+        beq @skip
+        cmp #COPY_NEWER
+        bne @over
+        jsr Newer
+        bcc @over
+@skip:  clc                     ; (left out; a move leaves it in place)
+        rts
+@over:  lda #FC_OVERWRITE
+        sta flags
+        bne @try
+@ask:   lda #<ReplaceText
         ldx #>ReplaceText
         jsr Ask3
         cmp #NO
@@ -292,6 +307,59 @@ CopyFile:
         sta flags
         bne @try
 @fail:  jmp Fail
+
+; Newer (CopyFile, copy=newer): C clear when the source (tinfo, from
+; StatSrc) has a later date than the file at the target (tDst + "/" +
+; its name: tDst's cut at cutAt undone for the FE_STAT); dates as year
+; (80-99 before 0-79), month, day, hour, minute. Equal, older or no
+; target info: C set (kept).
+Newer:  ldy cutAt
+        lda #'/'
+        sta tDst,y
+        lda #<tDst
+        sta r0L
+        lda #>tDst
+        sta r0H
+        lda #<dinfo
+        sta r1L
+        lda #>dinfo
+        sta r1H
+        lda #0
+        sta r2L
+        sta r2H
+        lda #FE_STAT
+        jsr FileEngine
+        ldy cutAt
+        lda #0
+        sta tDst,y
+        txa
+        bne @old
+        ldx #0
+@cmp:   lda tinfo + FI_DATE,x
+        jsr Century
+        sta tmpA
+        lda dinfo + FI_DATE,x
+        jsr Century
+        cmp tmpA                ; target - source: borrow when the source
+        bcc @new                ; is later
+        bne @old
+        inx
+        cpx #5
+        bcc @cmp
+@old:   sec
+        rts
+@new:   clc
+        rts
+
+; Century: A (a date byte X) made comparable: the year (X 0) 80-99 below
+; 0-79 (+ 100 for 0-79).
+Century:
+        cpx #0
+        bne @end
+        cmp #80
+        bcs @end
+        adc #100
+@end:   rts
 
 ; Counted: "Deleting 5: name" (the entry in entryName; the files counted).
 Counted:
@@ -489,6 +557,8 @@ lvSlotHi:       .res TREE_DEPTH
 lvSrcLen:       .res TREE_DEPTH
 lvDstLen:       .res TREE_DEPTH
 tinfo:          .res 16
+dinfo:          .res 16         ; Newer: the target's info
+tmpA:           .res 1
 entry:          .res TREE_SLOT
 tSrc:           .res 256
 tDst:           .res 256

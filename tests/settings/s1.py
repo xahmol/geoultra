@@ -111,6 +111,15 @@ def main():
               b"[desktop]\r\nview=icons\r\n[system]\r\ndesktop=geos\r\n")
         press(X1 + 3, Y0 + DY - 3)                          # view: list again
         check("view: list again (replaced)", ini(), b"[desktop]\r\nview=list\r\n[system]\r\ndesktop=geos\r\n")
+        press(234 + 3, Y0 + 5 * DY - 3)                     # sort by: size
+        check("sort by size: [desktop] sort=size", ini(),
+              b"[desktop]\r\nview=list\r\nsort=size\r\n[system]\r\ndesktop=geos\r\n")
+        press(240 + 3, Y0 + 6 * DY - 3)                     # existing: skip
+        press(X2 + 14 + 3, Y0 + 7 * DY - 3)                 # delete: at once
+        check("existing files skipped, deleting at once: copy=skip, delete=now", ini(),
+              b"[desktop]\r\nview=list\r\nsort=size\r\ncopy=skip\r\ndelete=now\r\n"
+              b"[system]\r\ndesktop=geos\r\n")
+        g.png("settings-s1-rows")
         g.png("settings-s1-chosen")
         press(*CANCEL_XY)
         g.png("settings-s1-cancel")

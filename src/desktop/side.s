@@ -29,7 +29,7 @@
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
         .export text            ; (themefile.s reads and writes a theme in it)
         .export Setup, Slot, Store, counts, which, at, work, wantTheme, wantView
-        .export wantToolbar, wantPanes
+        .export wantToolbar, wantPanes, sortMode, deskPrefs
         .import PanesOn
         .import tbMode, Derive
         .exportzp lp, sp        ; (inifile.s, overlay 4, uses them)
@@ -492,6 +492,9 @@ wantTheme:      .res WANT_LEN   ; inifile.s, DeskRead: the theme named,
 wantView:       .res 1          ; the view named ($FF: none)
 wantToolbar:    .res 1          ; the toolbar named ($FF: none)
 wantPanes:      .res 1          ; panes= (0 one, 1 two, $FF: none)
+deskPrefs:      .res 1          ; copy= and delete= (PREF_*, desktop.inc)
+sortMode:       .res 1          ; sort= (sort.s Lead): 0 name, 1 date, 2
+                                ; size, 3 type
 favs:           .res LIST_MAX * (PATH_LEN + 1)
 recents:        .res LIST_MAX * (PATH_LEN + 1)
 desks:          .res LIST_MAX * (PATH_LEN + 1)

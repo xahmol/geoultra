@@ -16,7 +16,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import count, Fetch, Place, entryInfo, entryName, text, IsDotDot
+        .import count, Fetch, Place, entryInfo, entryName, text, IsDotDot, sortMode
         .export Ov_SortList
 Ov_SortList = SortList
 
@@ -92,8 +92,11 @@ Keys:   lda #<text
 @group: ldy #0
         lda grp
         sta (kp),y
+        jsr Lead                ; (the sort order's bytes; Y the last one)
         ldx #0
-@ch:    lda entryName,x
+@ch:    cpy #KEY_CHARS          ; (the key full)
+        bcs @ptr
+        lda entryName,x
         beq @pad
         cmp #'a'                ; (upper case: names sort in any case;
         bcc :+                  ; ASCII's a-z and PETSCII's capitals
@@ -110,13 +113,12 @@ Keys:   lda #<text
 :       iny
         sta (kp),y
         inx
-        cpx #KEY_CHARS
-        bcc @ch
+        bne @ch                 ; (always)
+@pad:   cpy #KEY_CHARS          ; (a short name: zeros after it)
         bcs @ptr
-@pad:   iny                     ; (a short name: zeros after it)
+        iny
         sta (kp),y
-        cpy #KEY_CHARS
-        bcc @pad
+        bne @pad                ; (Y not 0: always)
 @ptr:   ldy #0                  ; ptrs[i] = this key
         lda kp
         sta (pp),y
@@ -139,6 +141,53 @@ Keys:   lda #<text
         bne :+
         inc iH
 :       jmp @entry
+
+; Lead: the sort order's bytes after the group (sortMode, SETTINGS.INI
+; [desktop] sort=; the user, 2026-11-12, after GeoDesk64's sort modes):
+; name: none; date: newest first (year with its century, month, day,
+; hour, minute, each inverted); size: largest first (its three low
+; bytes, inverted); type: the GEOS file type + 1 (other files 0). The
+; name follows in what is left of the key. Y = the last byte written.
+Lead:   ldx sortMode
+        beq @end
+        dex
+        beq @date
+        dex
+        beq @size
+        ldx #0                  ; type
+        lda entryInfo + FI_KIND
+        cmp #K_GEOS
+        bne :+
+        ldx entryInfo + FI_GTYPE
+        inx
+:       txa
+        iny
+        sta (kp),y
+@end:   rts
+@date:  lda entryInfo + FI_DATE ; the year: 80-99 before 0-79
+        cmp #80
+        bcs :+
+        adc #100
+:       jsr Down
+        ldx #1
+@d:     lda entryInfo + FI_DATE,x
+        jsr Down
+        inx
+        cpx #5
+        bcc @d
+        rts
+@size:  ldx #2
+@s:     lda entryInfo + FI_SIZE,x
+        jsr Down
+        dex
+        bpl @s
+        rts
+
+; Down: A inverted into the key's next byte (larger sorts first).
+Down:   eor #$FF
+        iny
+        sta (kp),y
+        rts
 
 ; Shell: ptrs[0..count-1] ordered by their keys (Shell sort; each gap's
 ; pass an insertion sort over elements gap apart).
