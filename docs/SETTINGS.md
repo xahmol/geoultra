@@ -99,8 +99,12 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   as the pages' widget; the Desktop page (overlay 1). The desktop starts
   it from geos > settings and the toolbar (settings in home's place,
   next to gush); gush with `"/e/GU Settings"`. Test:
-  tests/settings/s1.py (10 checks in VICE). Still to do in S1: the
-  writing on the U64 (a test as d14u64), the theme's colours (with S4).
+  tests/settings/s1.py (10 checks in VICE), s1g.py (gush), and on the
+  U64 s1u64.py (6 checks: a test SETTINGS.INI with a comment and a
+  [favourites] section, two options clicked, Save writes the two keys
+  and keeps every other line byte for byte, OK starts the desktop with
+  the new view; the user's SETTINGS.INI set aside and restored). The
+  frame's colours follow the theme in S4.
 - **S2, the Pointer page:** 4 designs in the kernal (own drawings),
   `[system] pointer=` read at boot, applied at once from the page.
 - **S3, the System page:** turbo and the slow list, hibernation, NTP
