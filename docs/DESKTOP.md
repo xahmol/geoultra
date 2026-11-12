@@ -542,8 +542,9 @@ colour is a property of an element, by name:
   copy and move code as paste.
 - **Settings tool (the user, 2026-11-12):** its own application
   "GeoUltra Settings" on drive E in assembler, started from the geos
-  menu, a toolbar button (the user, 2026-11-12: both; the button's place
-  to settle, the toolbar is full up to gush) and gush; first version: the theme editor (each line, the
+  menu, a toolbar button (the user, 2026-11-12: both; the button takes
+  home's place, next to gush; home stays in the go menu) and gush
+  (structure and steps: docs/SETTINGS.md); first version: the theme editor (each line, the
   desktop's look as preview, saved as a theme file), desktop (default
   desktop, view, toolbar, clock), system (turbo and the slow list,
   hibernation delay, NTP server and time zone), mouse pointer designs.
