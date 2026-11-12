@@ -536,13 +536,19 @@ colour is a property of an element, by name:
   menu, context menu, C=T and C=M); drag and drop as well: a press on a
   selected entry and a move drags it (a sprite with its icon), a
   release over the other pane or a sidebar folder or drive copies (other
-  drive) or moves (same drive), C= held the other way.
+  drive) or moves (same drive), C= held the other way. Drag and drop
+  works on folders (with everything in them) and on selections of
+  several files and folders (the user, 2026-11-12), through the same
+  copy and move code as paste.
 - **Settings tool (the user, 2026-11-12):** its own application
   "GeoUltra Settings" on drive E in assembler, started from the geos
   menu and gush; first version: the theme editor (each line, the
   desktop's look as preview, saved as a theme file), desktop (default
   desktop, view, toolbar, clock), system (turbo and the slow list,
   hibernation delay, NTP server and time zone), mouse pointer designs.
+  Also the system's own settings (the user, 2026-11-12): the REU (the
+  size GEOS applications see) and the drives (which images on A-D,
+  their sizes, long names).
 - **Next, in this order:** two
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,

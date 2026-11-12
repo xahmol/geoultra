@@ -240,6 +240,35 @@ UCI).
 | 5 | GEOS 128 cartridge on a C128 with an Ultimate II+, 40/80 columns |
 | 6 | Real IEC drives: slow universal driver, then turbo drivers (1541, 1581, 1571, CMD FD/HD) |
 
+**Releases and documentation (the user, 2026-11-12; placement proposed,
+to be confirmed):**
+
+- **Beta 1, at the end of the desktop work in phase 3** (Ultimate 64
+  family only): after two panes with drag and drop, the settings tool's
+  first version (theme editor, desktop, system with REU and drives,
+  pointer designs), a stabilisation step (tenth sweep, full regression in
+  VICE and on the U64, a hand-test checklist for the user) and first
+  user manuals. Before printing and task switching (large on their own)
+  and before phase 4 (the Ultimate II+). With release notes, the
+  Facebook post and blog text, and a first-look video made the
+  established way (VIC-stream capture driven by a scene script, Piper
+  "Alba" voice-over, title and closing cards).
+- **User manuals** (when design and functions are stable): system (boot,
+  drives and images, MOUNTS.INI, hibernation, turbo, the REU), desktop
+  (docs/DESKTOP_MANUAL.md), gush (docs/GUSH_MANUAL.md), settings,
+  geoFolder.
+- **Technical reference** (before 1.0): GeoUltra's additions to and
+  changes from the Hitchhiker's Guide to GEOS, as a delta document: the
+  information block and signature, the extension jump table, the file
+  engine API, folders and long names, native drives, the REU map and the
+  applications' REU, hibernation, turbo, the input driver's right
+  button, CVT, the file formats (MOUNTS.INI, SETTINGS.INI, themes),
+  compatibility notes.
+- **Developer guide** (separate, before 1.0): detecting GeoUltra and
+  using its additions from a program, gush's external commands
+  (docs/GUSH_COMMANDS.md), the geos-oscar64 C library, building and
+  testing.
+
 ## Verified in VICE
 
 - 2026-10-28: GEOS 2.0's own deskTop, loaded and started by GeoUltra's
