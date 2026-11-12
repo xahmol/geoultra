@@ -602,7 +602,7 @@ colour is a property of an element, by name:
   2026-11-12): the path lines name the folders, the active pane's
   inverted. The list view in panes (the detailed view refused; the
   icon view works, 3 columns); the view and the title bar come back when
-  two panes go off. Two panes are not yet saved in SETTINGS.INI.
+  two panes go off. (Kept in SETTINGS.INI since: below.)
   **P5 done (2026-11-12):** copy to other (C=T) and move to other (C=M)
   in the file menu and the context menu: copied or cut to the clipboard,
   pasted with the other pane active, back, this pane read again.
@@ -635,6 +635,12 @@ colour is a property of an element, by name:
   core's DropDo exchanges path and dropPath around the paste, which
   took the path building out of the core. Still to do: a drop indicator
   (the folder under the pointer marked while dragging).
+  **Two panes kept (2026-11-12):** SETTINGS.INI `[desktop] panes=1` or
+  `2`, written when two panes are switched on or off (inifile.s
+  PanesSave), read at the start (DeskRead: wantPanes; side.s SideLoad
+  calls panes.s PanesOn before the first drawing). The other pane starts
+  at "/"; its folder is not kept. Test: d14u64.py on the U64 (the
+  user's SETTINGS.INI set aside and restored).
 - **Design answers (the user, 2026-11-12, second round):**
   - *Two panes:* the list view in each pane (the detailed columns do not
     fit 160 pixels; the chosen view returns when two panes go off; the

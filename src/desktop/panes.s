@@ -17,7 +17,8 @@
         .import SortList, Derive, viewMode, tTitle, listL, stripL, listR
         .import paneR, iconCard, nameX, tIcons, Back, FreeRead
         .export SetGeom, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
-        .export paneDim, CopyOther, MoveOther, CdPath
+        .export paneDim, CopyOther, MoveOther, CdPath, PanesOn
+        .import PanesSave
         .import Copy, Cut, Paste
 
 PANE_W          = 160           ; a pane: x 0-159 or 160-319
@@ -30,6 +31,23 @@ TwoPanes:
         jsr GotoFirstMenu
         lda panes
         bne @off
+        jsr PanesOn
+        jmp @draw
+@off:   lda #0
+        sta panes
+        lda viewSave            ; the view and the title bar from before
+        sta viewMode
+        lda titleSave
+        sta tTitle
+@draw:  jsr PanesSave           ; (SETTINGS.INI's panes=; overlay 4)
+        jsr Derive
+        jmp Back
+
+; PanesOn (TwoPanes; side.s SideLoad for "panes=2"): two panes on, not
+; drawn: the list view in the panes, no title bars (the path lines name
+; the folders; the active one's inverted), the left pane active; the
+; caller runs Derive.
+PanesOn:
         inc panes               ; on: the list view in the panes, no title
         lda viewMode            ; bars (the path lines name the folders;
         sta viewSave            ; the active one's inverted)
@@ -41,15 +59,7 @@ TwoPanes:
         sta tTitle
         lda #0
         sta active
-        beq @draw
-@off:   lda #0
-        sta panes
-        lda viewSave            ; the view and the title bar from before
-        sta viewMode
-        lda titleSave
-        sta tTitle
-@draw:  jsr Derive
-        jmp Back
+        rts
 
 ; PaneSwitch (C=SPACE; Press, a click in the other pane): the other pane
 ; made the active one (its folder the file engine's current one), both

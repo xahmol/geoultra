@@ -29,7 +29,8 @@
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
         .export text            ; (themefile.s reads and writes a theme in it)
         .export Setup, Slot, Store, counts, which, at, work, wantTheme, wantView
-        .export wantToolbar
+        .export wantToolbar, wantPanes
+        .import PanesOn
         .import tbMode, Derive
         .exportzp lp, sp        ; (inifile.s, overlay 4, uses them)
 
@@ -65,8 +66,11 @@ SideLoad:
         lda wantView            ; (a view named: it wins over the theme's)
         bmi :+
         sta viewMode
-        jmp Derive              ; (the icon view: its grid)
-:       rts
+:       lda wantPanes           ; ("panes=2": two panes from the start,
+        bmi :+                  ; panes.s)
+        beq :+
+        jsr PanesOn
+:       jmp Derive              ; (the icon view: its grid; the panes')
 
 ; Setup: which = X; lp, sp for list X.
 Setup:  stx which
@@ -487,6 +491,7 @@ workLen:        .byte 0
 wantTheme:      .res WANT_LEN   ; inifile.s, DeskRead: the theme named,
 wantView:       .res 1          ; the view named ($FF: none)
 wantToolbar:    .res 1          ; the toolbar named ($FF: none)
+wantPanes:      .res 1          ; panes= (0 one, 1 two, $FF: none)
 favs:           .res LIST_MAX * (PATH_LEN + 1)
 recents:        .res LIST_MAX * (PATH_LEN + 1)
 desks:          .res LIST_MAX * (PATH_LEN + 1)

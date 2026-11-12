@@ -6,23 +6,26 @@
 ; written as a temporary file that then takes the old one's place, its
 ; other lines kept (its section moves to the end), as gush's turbo -s
 ; does (sysset.s). Without an Ultimate (VICE) nothing is read or
-; written. The [desktop] keys: theme=, view=, clock= (DeskRead, the
-; *Save routines). Calls only the core (side.s's Setup, Slot, Store, the
+; written. The [desktop] keys: theme=, view=, clock=, toolbar=, panes=
+; (DeskRead, the *Save routines). Calls only the core (side.s's Setup, Slot, Store, the
 ; file engine). Own code.
 
         .include "geos.inc"
         .include "desktop.inc"
 
         .import FileEngine, Setup, Slot, Store, text, counts, which, at, work
+        .import panes, wantPanes
         .import wantTheme, wantView, wantToolbar, curName, clockMode, viewMode, tbMode
         .importzp lp, sp
         .export Ov_LoadAll, Ov_Save, Ov_ThemeSave, Ov_ViewSave, Ov_ClockSave, Ov_ToolbarSave
+        .export Ov_PanesSave
 Ov_LoadAll = LoadAll            ; (the stubs in ovl.s, overlay 4)
 Ov_Save = Save
 Ov_ThemeSave = ThemeSave
 Ov_ViewSave = ViewSave
 Ov_ClockSave = ClockSave
 Ov_ToolbarSave = ToolbarSave
+Ov_PanesSave = PanesSave
 
         .segment "OV4"
 
@@ -416,6 +419,7 @@ DeskRead:
         lda #$FF
         sta wantView
         sta wantToolbar
+        sta wantPanes
         ldx #L_DESK
         jsr Setup
         ldx #KEY_THEME
@@ -453,12 +457,20 @@ DeskRead:
         sta clockMode
 @bar:   ldx #KEY_TOOLBAR
         jsr FindKey
-        bcs @end
+        bcs @panes
         jsr Value
         ldx #ToolbarFirst - First
         jsr Pick
-        bcs @end
+        bcs @panes
         sta wantToolbar
+@panes: ldx #KEY_PANES
+        jsr FindKey
+        bcs @end
+        jsr Value
+        ldx #PanesFirst - First
+        jsr Pick
+        bcs @end
+        sta wantPanes
 @end:   rts
 
 ; Pick: A = the index of the value at r0 among the first characters at
@@ -509,6 +521,11 @@ ViewSave:
         ldx #KEY_VIEW
         ldy #ViewWords - Words  ; (0: no branch on Z)
         jmp Word
+PanesSave:
+        lda panes
+        ldx #KEY_PANES
+        ldy #PanesWords - Words
+        bne Word                ; (not 0: always)
 ToolbarSave:
         lda tbMode
         ldx #KEY_TOOLBAR
@@ -622,14 +639,18 @@ KEY_CLOCK = * - Keys
                 .byte "clock=", 0
 KEY_TOOLBAR = * - Keys
                 .byte "toolbar=", 0
+KEY_PANES = * - Keys
+                .byte "panes=", 0
 First:                                  ; a value's first character
 ViewFirst:      .byte "lid", 0          ; list, icons, detailed
 ClockFirst:     .byte "21o", 0          ; 24, 12, off
 ToolbarFirst:   .byte "18o", 0          ; 16, 8, off (its height in pixels)
+PanesFirst:     .byte "12", 0           ; one list, two panes
 Words:
 ViewWords:      .byte "list", 0, "icons", 0, "detailed", 0
 ClockWords:     .byte "24", 0, "12", 0, "off", 0
 ToolbarWords:   .byte "16", 0, "8", 0, "off", 0
+PanesWords:     .byte "1", 0, "2", 0
 
 NameLo:         .byte <IniName, <RecName, <IniName
 NameHi:         .byte >IniName, >RecName, >IniName

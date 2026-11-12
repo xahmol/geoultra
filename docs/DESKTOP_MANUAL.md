@@ -233,6 +233,7 @@ theme=GeoUltra
 view=list            (list, icons, detailed)
 clock=24             (24, 12, off)
 toolbar=16           (16: two lines, 8: one line, off)
+panes=1              (1: one list, 2: two panes)
 
 [favourites]
 /usb0/geoultra
