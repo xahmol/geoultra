@@ -5,7 +5,8 @@ page. Started from the desktop as in s1.py; a click on a design sets
 the kernal's module 86): sprite 0's picture is the design's
 (build/gen/pointers.inc) and PosPointer's offsets are 24 and 50 less its
 hot spot; DrawSprite on sprite 0 (an application's own pointer) puts
-the offsets back to 24 and 50; the classic arrow again. Screens:
+the offsets back to 24 and 50; the classic arrow again; the pointer's
+colour with + and - (pointercolour=, load.s's operand, the VIC's). Screens:
 build/harness/gush/settings-s2*.png.
 Usage: tests/settings/s2.py
 """
@@ -140,6 +141,23 @@ def main():
         press(X0 + 3, Y0 - 3, t=5)                          # classic
         check("classic again: its picture, offsets 24, 50, pointer=0",
               (sprite() == pics[0], offsets(), ini()), (True, (24, 50), b"[system]\r\npointer=0\r\n"))
+        col_y = 36 + 10 + 21 + 20                           # the colour row
+        minus, plus = (X0 + 50 + 7, col_y - 3), (X0 + 50 + 92 + 7, col_y - 3)
+
+        def colours():
+            return (v.mem_get(kern["ptrColour"], kern["ptrColour"])[0],
+                    v.mem_get(0xD027, 0xD027, bank="io")[0] & 0x0F)
+        press(*plus, t=3)
+        check("colour +: yellow (7) in the text, the kernal's and the VIC's",
+              (ini(), colours()), (b"[system]\r\npointer=0\r\npointercolour=7\r\n", (7, 7)))
+        press(*minus, t=3)
+        press(*minus, t=3)
+        check("colour - twice: green (5)", (ini(), colours()),
+              (b"[system]\r\npointer=0\r\npointercolour=5\r\n", (5, 5)))
+        g.png("settings-s2-colour")
+        press(21 * 8 + 24, 188, t=12)                       # OK: the desktop again
+        check("OK, back in the desktop: the colour kept (module 0 at its start)",
+              colours(), (5, 5))
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

@@ -3,7 +3,8 @@
 S2; src/kernal/pointer.s, module 86): a test SETTINGS.INI with
 [system] pointer=3 gives the crosshair after a reboot: sprite 0's
 picture is its design (build/gen/pointers.inc), PosPointer's offsets
-24 and 50 less its hot spot (7, 7). The user's own SETTINGS.INI is set
+24 and 50 less its hot spot (7, 7); pointercolour=5 the colour kept
+for every program's start. The user's own SETTINGS.INI is set
 aside first and put back byte for byte at the end.
 Usage: tests/settings/s2u64.py [build/geoultra64.crt]
 """
@@ -19,7 +20,7 @@ from feu64 import U64  # noqa: E402
 
 SETTINGS = "/USB0/GEOULTRA/SETTINGS.INI"
 KEY_STUB = 0xC0A0               # the info block's unused bytes (gushvice.py)
-TEST_INI = b"[system]\r\npointer=3\r\n"
+TEST_INI = b"[system]\r\npointer=3\r\npointercolour=5\r\n"
 
 
 def main():
@@ -89,6 +90,8 @@ def main():
         check("pointer=3: sprite 0 the crosshair", bytes(u.read(0x8A00, 63)) == data[3 * 63:4 * 63], True)
         check("its hot spot: offsets 17, 43", (u.read(kern["PtrDX"], 1)[0], u.read(kern["PtrDY"], 1)[0]),
               (17, 43))
+        check("pointercolour=5: the colour kept for every program's start",
+              u.read(kern["ptrColour"], 1)[0], 5)
     finally:
         store(keep)
         check("the user's SETTINGS.INI back as it was", fetch() == keep, True)

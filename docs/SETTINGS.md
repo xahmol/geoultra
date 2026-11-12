@@ -62,8 +62,13 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   question stays). The Desktop page has the rows Sort by, Existing and
   Delete. The desktop's core has 2 bytes left (`deskPrefs`, `sortMode`
   and `Leave` took the rest): new desktop features need room made
-  first. Still to do of the list: the pointer's colour, the theme items
-  (S4), the background picture.
+  first. The pointer's colour (2026-11-12): `[system] pointercolour=`
+  0-15 at boot (mount.s), FE_POINTER's r2H at once; kept in the INFO
+  block (`$C0F3`, the free bytes after GeoUltra's own fields), which
+  module 0 gives sprite 0 at each program's start (it held a fixed
+  blue); the Pointer page's colour row with - and +, the theme files'
+  colour names. Still to do of the list: the theme items (S4), the
+  background picture.
 - Pages:
   - *Theme:* the theme editor: each line of a theme file; colours from
     16 swatches (in the theme's palette) for ink and paper, plus the RGB

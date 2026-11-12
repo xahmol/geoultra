@@ -5,7 +5,7 @@
         .include "hw.inc"
 
         .import ExtTable
-        .export Trap, sysFlgCopy, BootGEOS, basicBuf, guMouse2
+        .export Trap, sysFlgCopy, BootGEOS, basicBuf, guMouse2, ptrColour
 
         .segment "INFO"
         .org $C000                      ; fixed addresses in this block
@@ -40,6 +40,9 @@ guMouse2:       .byte $80               ; $C0E6: the right mouse button (the 135
                                         ; set at each press (the reader clears it)
                 .res $C0F1 - *, 0
 trapAddress:    .word 0                 ; $C0F1: entry hit by Trap
+ptrColour:      .byte 6                 ; $C0F3: the pointer's colour (blue;
+                                        ; pointer.s sets it, load.s's module 0
+                                        ; gives it at each program's start)
         .reloc
 
         .segment "CODE"

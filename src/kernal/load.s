@@ -17,6 +17,7 @@
         .include "kcalls.inc"
 
         .export GetFile, LdFile, LdApplic, LdDeskAcc, RstrAppl, StartAppl
+        .import ptrColour
         .export EnterDeskTop, FirstInit, Panic, Sleep, CRC
         .export SleepTick, WakeSleepers, InitMachine, ExtraColours, SaveJumpTab
 
@@ -568,8 +569,9 @@ OvFirstInit:
         jsr ExtraColours
         lda #RAM_IO
         sta CPU_PORT
-        lda #$06                ; pointer and prompt blue, border black
-        sta vicSpr0Color
+        lda ptrColour           ; the pointer and the prompt in the user's
+        sta vicSpr0Color        ; pointer colour (info.s; blue unless
+                                ; [system] pointercolour=), border black
         sta vicSpr0Color+1
         lda #0
         sta vicBorder

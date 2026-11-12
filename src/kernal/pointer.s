@@ -13,7 +13,8 @@
         .include "geos.inc"
         .include "engine.inc"
 
-        .import pointerPic, PtrDX, PtrDY
+        .import pointerPic, PtrDX, PtrDY, ptrColour
+        .include "hw.inc"
 
 POS_DX          = 24            ; PosPointer's offsets for a hot spot 0, 0
 POS_DY          = 50
@@ -21,20 +22,58 @@ POS_DY          = 50
         .segment "OVL86"
         .scope Mod86
 
-        jmp OvApply             ; entry 0: A = the design (mount.s)
+        jmp OvBoot              ; entry 0: A = the design, X = the colour
         jmp OvFePointer         ; entry 3: FE_POINTER
 
-; OvFePointer (FE_POINTER): r2L = the design (0-3): applied at once.
-; FE_BAD_PATH for a design that does not exist.
+; OvBoot (mount.s PointerInit): design A and colour X ($FF: as it is).
+OvBoot: pha
+        txa
+        jsr Colour
+        pla
+        jmp OvApply
+
+; OvFePointer (FE_POINTER): r2L = the design (0-3), r2H = the colour
+; (0-15); $FF: as it is. Applied at once. FE_BAD_PATH for a design or
+; a colour that does not exist.
 OvFePointer:
-        lda argR2
-        cmp #POINTERS_N
-        bcc :+
         ldx #FE_BAD_PATH
-        rts
-:       jsr OvApply
+        lda argR2
+        cmp #$FF
+        beq :+
+        cmp #POINTERS_N
+        bcs @end
+:       lda argR2 + 1
+        cmp #$FF
+        beq :+
+        cmp #16
+        bcs @end
+:       lda argR2 + 1
+        jsr Colour
+        lda argR2
+        jsr OvApply
         ldx #0
-        rts
+@end:   rts
+
+; Colour: A ($FF: nothing) the pointer's colour, at once (sprite 0) and
+; at every program's start (info.s's ptrColour, which load.s's module 0
+; gives sprite 0; the [system]
+; pointercolour= of SETTINGS.INI, the user's choice of 2026-11-12, after
+; GeoDesk64's system colours). Destroys A.
+Colour: cmp #16
+        bcs @end
+        sta ptrColour
+        php
+        sei
+        pha
+        lda CPU_PORT
+        tax
+        lda #RAM_IO
+        sta CPU_PORT
+        pla
+        sta vicSpr0Color
+        stx CPU_PORT
+        plp
+@end:   rts
 
 ; OvApply: design A (0-3; others: nothing) into pointerPic and sprite
 ; 0's picture, its hot spot into PosPointer's offsets. Destroys A, X, Y.

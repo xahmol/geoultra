@@ -71,6 +71,7 @@ nextBank:       .byte 0
 keyAt:          .word 0         ; ReadSettings: a key's start
 startGush:      .byte 0         ; $80: [system] start=gush (init.s)
 ptrDesign:      .byte 0         ; [system] pointer=N (PointerInit)
+ptrColour:      .byte $FF       ; [system] pointercolour=N ($FF: none)
 inDrives:       .byte 0
 type:           .byte 0
 banks:          .byte 0
@@ -455,11 +456,22 @@ ReadSettings:
         jmp @skip
 :       jsr KeyBack
 .endif
+        lda r1L                 ; (the key's start, for the next try)
+        sta keyAt
+        lda r1H
+        sta keyAt+1
         ldx #ptrKey - keys      ; "OINTER=" a design (pointer.s, module 86)
+        jsr Match
+        bne :+
+        jsr Decimal
+        sta ptrDesign           ; (PointerInit checks it)
+        jmp @skip
+:       jsr KeyBack
+        ldx #pcolKey - keys     ; "OINTERCOLOUR=" its colour
         jsr Match
         bne @skipP
         jsr Decimal
-        sta ptrDesign           ; (PointerInit checks it)
+        sta ptrColour
 @skipP: jmp @skip
 @serial:
         cmp #'D'
@@ -565,9 +577,12 @@ ReadSettings:
 ; SETTINGS.INI's pointer design (pointer.s, module 86; 0, the classic
 ; arrow, is the kernal's own).
 PointerInit:
-        lda ptrDesign
+        lda ptrDesign           ; (0: the classic arrow, the kernal's own;
+        ldx ptrColour           ; $FF: no colour named)
+        bne :+
+        cpx #$FF
         beq @end
-        jsr OvlCall
+:       jsr OvlCall
         .byte 86, 0
 @end:   rts
 
@@ -591,6 +606,7 @@ deskKey:        .byte "ESKTOP=GEOS", 0
 .ifdef BYPASS
 protKey:        .byte "ROTECTION=BYPASS", 0
 ptrKey:         .byte "OINTER=", 0
+pcolKey:        .byte "OINTERCOLOUR=", 0
 .endif
 
 ; Decimal: A = the decimal number that follows (up to 255; stops at the
