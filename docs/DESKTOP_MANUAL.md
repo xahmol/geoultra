@@ -11,9 +11,10 @@ there now. GEOS 2.0's own deskTop can still be used instead:
 
 From top to bottom:
 
-- **The menu bar**: the menus geos, file, view and disk on the left, the
-  date and time on the right (unless the theme or the clock setting
-  leaves them out).
+- **The menu bar**: the menus geos (GeoUltra info, gush and the desk
+  accessories), file, view, go and disk on the left, the date and time
+  on the right (unless the theme or the clock setting leaves them out).
+  Everything the toolbar does is in the menus too.
 - **The toolbar** (view > toolbar): buttons for the things done most,
   in four groups (see "The toolbar").
 - **The sidebar** on the left: the drives, the Ultimate's roots, your
@@ -49,7 +50,10 @@ button goes through them in turn):
   everything from the cursor to it. A double click opens the entry.
 - **Keys**: cursor up and down move the cursor (C= held: the selection
   grows with it), HOME goes to the first entry, RETURN opens the entry
-  under the cursor, cursor left goes up a folder.
+  under the cursor, cursor left goes up a folder; C= and cursor left or
+  right go back or forward through the folders visited.
+- **The go menu**: back, forward, up, root (all drives), home
+  (GeoUltra's folder on the Ultimate), top and end.
 - **Sidebar**: a click on a drive or an Ultimate root goes there; a
   click on a favourite goes to that folder; a click on a recent document
   opens it.
@@ -74,14 +78,18 @@ All in the file menu, with their keys:
 | Action | Key | |
 | --- | --- | --- |
 | open | C=O | as a double click |
+| info | C=I | see below |
 | copy | C=C | the selected entries (or the one under the cursor) onto the clipboard |
 | cut | C=X | the same, to be moved |
 | paste | C=V | copies (or moves) the clipboard's entries into the current folder; asks before replacing a file (Yes, Yes to all, No) |
 | delete | DEL | asks first; a folder with everything in it asks once more |
 | rename | C=R | |
 | new folder | C=N | on drives with folders (native drives, 1581 partitions, the Ultimate) |
+| select all | C=A | every entry but ".." |
 | favourite | C=F | the current folder (or the selected folder) into the sidebar's favourites (up to 4; the oldest goes) |
-| gush | | GeoUltra's shell, in the desktop's place (docs/GUSH_MANUAL.md) |
+
+GeoUltra's shell, gush, is in the geos menu (C=G, and the toolbar's
+last button): it takes the desktop's place (docs/GUSH_MANUAL.md).
 
 Folders are copied, moved and deleted with everything in them. A long
 copy shows its progress on the status line; RUN/STOP stops it.
@@ -101,7 +109,7 @@ size, which the folder listing does not have.
 
 ## The toolbar
 
-Under the menu bar, in four groups:
+Under the menu bar, in five groups:
 
 | Buttons | |
 | --- | --- |
@@ -110,6 +118,7 @@ Under the menu bar, in four groups:
 | top, end | the first and the last entry |
 | view, refresh | the next view; the folder read again |
 | new folder, info, select all, copy, paste, delete | as in the file menu; info as in the context menu |
+| gush | GeoUltra's shell |
 
 view > toolbar sets its height: **two lines** (framed buttons, the
 default), **one line** (the icons alone, one more row for the list) or

@@ -17,7 +17,8 @@
         .import Copy, Cut, Paste, Delete, Rename, NewFolder, path
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
-        .import HistAdd, BigInit, Frame
+        .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
+        .import Root, Home, Top, ListEnd, Up
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
         .import ThemeUse, themeNames, themeCount, curName, hasPal, PalReset
@@ -26,7 +27,7 @@
         .import tHead, tIcons, cHeadP, cSide, cSideIconP, cSideAccentP
         .import sideW, ejectCard, sideTx, rowH, bottom
         .export FileEngine, Redraw, SideRedraw, SideHeading, SideItem, SideGap
-        .export SideArrows, View
+        .export SideArrows, View, Gush
         .export itemText, itemName, itemIcon, itemEject
 
 FE_ENTRY        = 30            ; the file engine: guExtTable + 30
@@ -35,6 +36,9 @@ HEAD_STEP       = 10            ; a heading's lines and the gap after it
 SECTION_GAP     = 3             ; between the sidebar's sections
 NAME_DX         = 10            ; a drive's disk name after its letter
 DA_MAX          = 8             ; desk accessories in the geos menu
+GEOS_FIXED      = 2             ; its items before them: info, gush
+GO_N            = 7             ; the go menu's items (GoTexts, GoDo)
+GO_TEXT         = 8             ; each one's text: 8 bytes
 DA_NAME_LEN     = 17            ; a GEOS name and its zero
 THEME_ITEM      = 16            ; a view menu theme item: "* " and a name
 THEME_NAME      = 15            ; a theme's name (themefile.s NAME_MAX)
@@ -162,10 +166,12 @@ Key:    lda keyData
 KeyActs:
         .byte SHORTCUT | 'c', SHORTCUT | 'x', SHORTCUT | 'v'
         .byte SHORTCUT | 'r', SHORTCUT | 'n', KEY_DELETE, SHORTCUT | 'o'
-        .byte SHORTCUT | 'f'
+        .byte SHORTCUT | 'f', SHORTCUT | 'i', SHORTCUT | 'a', SHORTCUT | 'g'
+        .byte SHORTCUT | KEY_LEFT, SHORTCUT | KEY_RIGHT
 KeyActs_n = * - KeyActs
 ActDo:  .word Copy-1, Cut-1, Paste-1, Rename-1, NewFolder-1, Delete-1, Open-1
-        .word FavAdd-1
+        .word FavAdd-1, Info-1, SelAll-1, Gush-1, HistBack-1, HistForward-1
+        .assert (* - ActDo) / 2 = KeyActs_n, error, "an action per key"
 
 ; The file menu's items: the menus closed, then the action.
 MOpen:  jsr GotoFirstMenu
@@ -186,6 +192,22 @@ MNew:   jsr GotoFirstMenu
         jmp NewFolder
 MFav:   jsr GotoFirstMenu
         jmp FavAdd
+MInfo:  jsr GotoFirstMenu
+        jmp Info                ; (ctxmenu.s, overlay 7)
+MAll:   jsr GotoFirstMenu
+        jmp SelAll
+
+; GoItem (the go menu: A = the item): the menus closed, then back,
+; forward, up, root, home, top or end (as the toolbar's buttons).
+GoItem: asl a
+        tax
+        lda GoDo+1,x
+        pha
+        lda GoDo,x
+        pha
+        jmp GotoFirstMenu       ; (its rts: the action)
+GoDo:   .word HistBack-1, HistForward-1, Up-1, Root-1, Home-1, Top-1, ListEnd-1
+        .assert (* - GoDo) / 2 = GO_N, error, "an action per go item"
 
 ; FileEngine: A = function, Y = handle, r0-r4 (FILE_ENGINE.md).
 FileEngine:
@@ -794,13 +816,13 @@ GeosMenu:
         sec
         sbc r7H
         sta daCount
-        clc                     ; items: info and the accessories
-        adc #1
+        clc                     ; items: info, gush and the accessories
+        adc #GEOS_FIXED
         ora #VERTICAL | UN_CONSTRAINED
         sta geosMenu + 6
         lda daCount             ; its bottom: MENU_BOTTOM + 14 per item
         clc
-        adc #1
+        adc #GEOS_FIXED
         jsr MenuBottom
         sta geosMenu + 1
         ldx #0                  ; the accessories' items
@@ -808,15 +830,15 @@ GeosMenu:
 @item:  cpx daCount
         bcs @done
         lda DaLo,x
-        sta geosItems + 5,y
+        sta geosItems + GEOS_FIXED * 5 + 0,y
         lda DaHi,x
-        sta geosItems + 6,y
+        sta geosItems + GEOS_FIXED * 5 + 1,y
         lda #MENU_ACTION
-        sta geosItems + 7,y
+        sta geosItems + GEOS_FIXED * 5 + 2,y
         lda #<RunDA
-        sta geosItems + 8,y
+        sta geosItems + GEOS_FIXED * 5 + 3,y
         lda #>RunDA
-        sta geosItems + 9,y
+        sta geosItems + GEOS_FIXED * 5 + 4,y
         tya
         clc
         adc #5
@@ -845,6 +867,9 @@ MenuBottom:
 FileMenu:
         lda #<fileMenu
         ldx #>fileMenu
+        bne MenuR0
+GoMenu: lda #<goMenu
+        ldx #>goMenu
         bne MenuR0
 DiskMenu:
         lda #<diskMenu
@@ -951,7 +976,7 @@ Marks:  sta r0L
         jmp MenuNeutral         ; (r0: the menu)
 
 ; Info (geos > GeoUltra info): a dialog naming the desktop.
-Info:   jsr GotoFirstMenu
+About:  jsr GotoFirstMenu
         lda #<infoDlg
         sta r0L
         lda #>infoDlg
@@ -960,10 +985,11 @@ Info:   jsr GotoFirstMenu
 
 ; RunDA (geos > an accessory; A = the item: 1 the first accessory): in
 ; GEOS's colours; the desktop drawn again when it ends.
-RunDA:  sta tmp
+RunDA:  sec                     ; (item A: the accessory A - GEOS_FIXED)
+        sbc #GEOS_FIXED
+        sta tmp
         jsr GotoFirstMenu
         ldx tmp
-        dex
         lda DaLo,x
         sta r6L
         lda DaHi,x
@@ -1106,8 +1132,8 @@ GushName:       .byte "gush", 0
 
 mainMenu:
         .byte 0, MENU_BOTTOM
-        .word 0, 129
-        .byte HORIZONTAL | UN_CONSTRAINED | 4
+        .word 0, 124
+        .byte HORIZONTAL | UN_CONSTRAINED | 5
         .word GeosText
         .byte DYN_SUB_MENU
         .word GeosMenu
@@ -1117,27 +1143,36 @@ mainMenu:
         .word ViewText
         .byte DYN_SUB_MENU
         .word ViewMenu
+        .word GoText
+        .byte DYN_SUB_MENU
+        .word GoMenu
         .word DiskText
         .byte DYN_SUB_MENU
         .word DiskMenu
 
 geosMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 14
+        .byte MENU_BOTTOM, MENU_BOTTOM + 2 * 14
         .word 0, 99
-        .byte VERTICAL | UN_CONSTRAINED | 1
+        .byte VERTICAL | UN_CONSTRAINED | GEOS_FIXED
 geosItems:
         .word InfoText
         .byte MENU_ACTION
-        .word Info
+        .word About
+        .word GushItem          ; (gush beside the desk accessories: the
+        .byte MENU_ACTION       ; user, 2026-11-12)
+        .word Gush
         .res DA_MAX * 5         ; (the accessories, GeosMenu)
 
 fileMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 9 * 14
+        .byte MENU_BOTTOM, MENU_BOTTOM + 10 * 14
         .word 30, 129
-        .byte VERTICAL | UN_CONSTRAINED | 9
+        .byte VERTICAL | UN_CONSTRAINED | 10
         .word OpenItem
         .byte MENU_ACTION
         .word MOpen
+        .word InfoItem
+        .byte MENU_ACTION
+        .word MInfo
         .word CopyItem
         .byte MENU_ACTION
         .word MCopy
@@ -1156,17 +1191,17 @@ fileMenu:
         .word NewItem
         .byte MENU_ACTION
         .word MNew
+        .word AllItem
+        .byte MENU_ACTION
+        .word MAll
         .word FavItem
         .byte MENU_ACTION
         .word MFav
-        .word GushItem
-        .byte MENU_ACTION
-        .word Gush
 
 viewMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 4 * 14
+        .byte MENU_BOTTOM, MENU_BOTTOM + 5 * 14
         .word 58, 109
-        .byte VERTICAL | UN_CONSTRAINED | 4
+        .byte VERTICAL | UN_CONSTRAINED | 5
         .word ThemeText
         .byte DYN_SUB_MENU
         .word ThemeMenu
@@ -1179,6 +1214,9 @@ viewMenu:
         .word ToolbarText
         .byte DYN_SUB_MENU
         .word ToolbarMenu
+        .word RefreshItem
+        .byte MENU_ACTION
+        .word Refresh
 
 themeMenu:                              ; (beside the view menu's items;
         .byte MENU_BOTTOM, MENU_BOTTOM + THEMES_N * 14  ; ThemeMenu sets the
@@ -1232,9 +1270,19 @@ toolbarMenu:
         .byte MENU_ACTION
         .word Toolbar
 
+goMenu:
+        .byte MENU_BOTTOM, MENU_BOTTOM + GO_N * 14
+        .word 80, 139
+        .byte VERTICAL | UN_CONSTRAINED | GO_N
+        .repeat GO_N, i
+        .word GoTexts + i * GO_TEXT
+        .byte MENU_ACTION
+        .word GoItem
+        .endrepeat
+
 diskMenu:
         .byte MENU_BOTTOM, MENU_BOTTOM + 14
-        .word 90, 149
+        .word 98, 157
         .byte VERTICAL | UN_CONSTRAINED | 1
         .word RefreshItem
         .byte MENU_ACTION
@@ -1253,8 +1301,18 @@ GeosText:       .byte "geos", 0
 FileText:       .byte "file", 0
 ViewText:       .byte "view", 0
 DiskText:       .byte "disk", 0
+GoText:         .byte "go", 0
 InfoText:       .byte "GeoUltra info", 0
-GushItem:       .byte "gush", 0
+GushItem:       .byte "gush      C=G", 0
+InfoItem:       .byte "info      C=I", 0
+AllItem:        .byte "select all C=A", 0
+GoTexts:        .byte "back", 0, 0, 0, 0
+                .byte "forward", 0
+                .byte "up", 0, 0, 0, 0, 0, 0
+                .byte "root /", 0, 0
+                .byte "home", 0, 0, 0, 0
+                .byte "top", 0, 0, 0, 0, 0
+                .byte "end", 0, 0, 0, 0, 0
 OpenItem:       .byte "open      C=O", 0
 CopyItem:       .byte "copy      C=C", 0
 CutItem:        .byte "cut       C=X", 0

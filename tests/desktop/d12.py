@@ -82,6 +82,17 @@ def main():
         v.resume()
         settle(s)
 
+    def in_menu(want=True, tries=15):
+        """Wait until the menu's loop runs (the CPU in overlay 7, $5000-$5FFF)
+        or, want False, no longer runs; True when it got there."""
+        for _ in range(tries):
+            pc = v.regs_get()["PC"]
+            if (0x5000 <= pc < 0x6000) == want:
+                return True
+            v.resume()
+            settle(1)
+        return False
+
     def item(n):
         """The middle of the menu's item n (its box at the pointer)."""
         return byte("x0") + 20, byte("y0") + 1 + n * ITEM_H + 7
@@ -115,6 +126,7 @@ def main():
         call(k["Drive"], ord("a"))
         row = byte("listTop") + 4 * byte("rowH") + 3            # the 5th row
         right(150, row)
+        check("the menu's loop runs", in_menu(), True)
         check("a right press: the entry under the pointer the cursor", word("cur"), 4)
         check("the menu open (overlay 7 in)", byte("curOvl"), 7)
         g.png("desktop-d12")
@@ -125,12 +137,32 @@ def main():
         g.png("desktop-d12-info")
         left(*OK_XY, s=3)
         right(150, row)
+        in_menu()
         right(150, row)                                         # again: closed
+        check("the right button again: the menu closed", in_menu(False), True)
         check("the right button again: nothing on the clipboard", word("clipCount"), 0)
         right(150, row)
+        check("the menu open again", in_menu(), True)
         x, y = item(1)                                          # copy
         left(x, y, s=4)
+        in_menu(False)
         check("copy from the menu: one entry on the clipboard", word("clipCount"), 1)
+        # The go menu (the user, 2026-11-12): its items through GoItem, as a
+        # menu click runs it (A = the item), and its keys.
+        def here():
+            return bytes(v.mem_get(k["path"], k["path"] + 15)).split(b"\0")[0].decode("latin1")
+        call(k["GoItem"], 3)                                    # root
+        check("go > root: /", here(), "/")
+        call(k["GoItem"], 0)                                    # back
+        check("go > back: /a", here(), "/a")
+        g.keys([0x80 | 30], settle=3)                           # C= cursor right
+        settle(2)
+        check("C=cursor right: forward, /", here(), "/")
+        g.keys([0x80 | 8], settle=3)                            # C= cursor left
+        settle(2)
+        check("C=cursor left: back, /a", here(), "/a")
+        left(88, 6, s=3)                                        # the go menu opened
+        g.png("desktop-d12-go")
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

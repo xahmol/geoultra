@@ -3,8 +3,8 @@
 ; under the menu bar across the full width, its height a view option
 ; (tbMode, theme.s: TB_TWO two lines, 16 px, framed 16 x 14 buttons;
 ; TB_ONE one line, 8 px, the icons flat; TB_OFF none). 15 buttons in
-; four groups: back, forward, up, root, home | top, end | view, refresh
-; | new folder, info, select all, copy, paste, delete. Each button sits
+; five groups: back, forward, up, root, home | top, end | view, refresh
+; | new folder, info, select all, copy, paste, delete | gush. Each button sits
 ; on two cards (BitmapUp places bitmaps on cards), 16 px apart from x 8
 ; with 8 px between the groups (the mock-up: 4 and 6, not on cards).
 ; The drawing is overlay 5 (tooldraw.s); here the presses, the colours
@@ -17,9 +17,9 @@
         .import tbMode, topY, cToolbar, Paint, px0, px1, py0, py1, pcol
         .import Up, Into, ListKey, ListEnd, SelAll, ListRead, ListDraw
         .import View, viewMode, NewFolder, Copy, Paste, Delete, FileEngine
-        .import HistBack, HistForward, text, Info
+        .import HistBack, HistForward, text, Info, Gush
 homePath        = text          ; (side.s's text buffer: free between actions)
-        .export ToolPress, ToolPaint, Cards
+        .export ToolPress, ToolPaint, Cards, Root, Home, Top
 
         .segment "CODE"
 
@@ -132,6 +132,7 @@ Acts:   .word HistBack-1, HistForward-1, Up-1, Root-1, Home-1
         .word Top-1, ListEnd-1
         .word ViewNext-1, Refresh-1
         .word NewFolder-1, Info-1, SelAll-1, Copy-1, Paste-1, Delete-1
+        .word Gush-1
         .assert (* - Acts) / 2 = TB_BUTTONS, error, "an action per button"
 
 ; The buttons' cards: 16 px apart from x 8, 8 px between the groups.
@@ -139,6 +140,7 @@ Cards:  .byte 1, 3, 5, 7, 9
         .byte 12, 14
         .byte 17, 19
         .byte 22, 24, 26, 28, 30, 32
+        .byte 35                ; gush (the user, 2026-11-12)
 RootPath:       .byte "/", 0
 
         .segment "BSS"
