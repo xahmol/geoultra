@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: two panes (docs/DESKTOP.md, "Two panes": the
-; user's decisions of 2026-11-12; step P4). Side by side, 160 pixels
+; user's decisions of 2026-11-12; steps P4-P6). Side by side, 160 pixels
 ; each, the sidebar hidden; each pane its own folder, list and
 ; selection (list.s keeps the active pane's state, SwapPane exchanges it
 ; with the other's in the REU). The panes show the list view (the
@@ -7,8 +7,11 @@
 ; two panes go off) and no title bars (the user, 2026-11-12): the path
 ; lines name the folders, the active pane's inverted. view > two panes,
 ; C=P and the toolbar
-; switch them on and off; a click in a pane or C=SPACE makes it the
-; active one. Core code: Draw and Press call it. Own design and code.
+; switch them on and off (SETTINGS.INI's panes= keeps it: PanesSave,
+; PanesOn at the start); a click in a pane or C=SPACE makes it the
+; active one. CopyOther and MoveOther (C=T, C=M, the menus and a drop on
+; the other pane, desktop.s DropDo) paste into the other pane's folder.
+; Core code: Draw, Press, Key and the menus call it. Own design and code.
 
         .include "geos.inc"
         .include "desktop.inc"
@@ -67,6 +70,8 @@ PanesOn:
 PaneSwitch:
         lda panes
         beq @end
+        lda #0                  ; (no double click across the panes: the
+        sta dblClickCount       ; entry numbers are the other pane's)
         jsr Other
         jsr CdPath
         jsr FreeRead            ; (list.s: the status line's free space is

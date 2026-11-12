@@ -20,7 +20,7 @@
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
         .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
         .import CopyOther, MoveOther, CdPath
-        .export dropReq, dropAt, dropPath, sideCount, sideTops, sideLetters
+        .export dropReq, dropPath, sideCount, sideTops, sideLetters
         .import text
 dropPath = text + 1024           ; a drop's target folder (listin.s; text's
                                 ; start is Paste's "full"; 256 bytes)
@@ -131,8 +131,8 @@ Press:  lda mouseData
         lda mouseXPos
         cmp tmp
         bcs @end
-        ldx #0                  ; the line whose rows hold the pointer
-@line:  cpx sideCount
+        ldx #0                  ; the line whose rows hold the pointer (as
+@line:  cpx sideCount           ; listin.s's SideLine for drops)
         bcs @end
         lda mouseYPos
         sec
@@ -1448,7 +1448,6 @@ InfoLine2:      .byte "milestone 1 (in development)", 0
 driveLine:      .byte "A", 0
 
 dropReq:        .byte 0         ; listin.s: a drop (DROP_*), done by DropDo
-dropAt:         .word 0         ; listin.s's scratch: the folder entry
 openReq:        .byte 0         ; listin.s: open the entry under the cursor
 feVec:          .word 0
 sideY:          .byte 0         ; the next sidebar line's top

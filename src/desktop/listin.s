@@ -9,12 +9,13 @@
 
         .include "geos.inc"
         .include "desktop.inc"
+        .include "hw.inc"
 
         .import EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, cur
         .import ListDraw, count, ThumbRows, top, path, Follow, Up, Into, step
         .import rows, listL, listTop, pathY, bottom, topY, stY0, stY1, tScroll
         .import openReq, text, TextWidth, rowH, IsSelected, stripL, sel
-        .import panes, active, PaneAt, dropReq, dropAt, Fetch, entryInfo, IconFor, Icons
+        .import panes, active, PaneAt, dropReq, Fetch, entryInfo, IconFor, Icons
         .import dropPath, entryName, path, sideW, sideCount, sideTops, sideLetters, Setup, Slot
         .import RowY, RowBox, ry, row, viewMode
         .export Ov_ListPress, Ov_ListKey, Ov_ListEnd, Ov_SelAll
@@ -26,6 +27,7 @@ EnablSprite     = $C1D2
 DisablSprite    = $C1D5
 DRAG_SPR        = 2             ; (0 the pointer, 1 the text cursor)
 DRAG_MIN        = 5             ; pixels moved before a press is a drag
+DRAG_COLOR      = 6             ; blue (the pointer's, kernal load.s)
 cutPath = text                  ; (list.s's PathPress buffer: side.s's text)
 Ov_ListPress = ListPress
 Ov_ListKey = ListKey
@@ -476,7 +478,9 @@ Drag:   lda pick
         jsr PaneAt
         cmp active
         beq @entry
-        jsr OtherPath           ; (its path: for the drive's comparison)
+        jsr OtherPath           ; (its path: for the comparisons)
+        jsr SamePath            ; (the same folder in both: nothing)
+        beq @none
         lda #DROP_OTHER_COPY
         bne @req
 @side:  jsr SideTarget          ; a sidebar drive or favourite?
@@ -496,7 +500,9 @@ Drag:   lda pick
         cmp #K_UDIR
         bne @none
 :       jsr EntryPath           ; dropPath = path "/" its name
-@path:  lda #DROP_PATH_COPY
+@path:  jsr SamePath            ; (into its own folder: nothing to do)
+        beq @none
+        lda #DROP_PATH_COPY
 @req:   sta dropReq             ; the same drive: a move (bit 0); C= at
         jsr SameDrive           ; the release: the other way
         bne :+
@@ -746,13 +752,23 @@ Sprite: lda pick
         lda #>sprite
         sta r4H
         jsr DrawSprite
+        php                     ; its colour (the kernal sets only sprites
+        sei                     ; 0 and 1): as the pointer's
+        lda CPU_PORT
+        pha
+        lda #RAM_IO
+        sta CPU_PORT
+        lda #DRAG_COLOR
+        sta vicSpr0Color + DRAG_SPR
+        pla
+        sta CPU_PORT
+        plp
         lda #DRAG_SPR
         sta r3L
         jmp EnablSprite
 
-; OtherPath: dropPath's start = the other pane's path's first 16
-; bytes, from the REU (list.s SwapPane's first part): enough for
-; SameDrive.
+; OtherPath: dropPath = the other pane's path, from the REU (list.s
+; SwapPane's first part, 256 bytes).
 OtherPath:
         lda #<dropPath
         sta r0L
@@ -760,14 +776,26 @@ OtherPath:
         sta r0H
         lda #0
         sta r1L
-        sta r2H
+        sta r2L
         lda #PANE_PAGE
         sta r1H
-        lda #16
-        sta r2L
+        lda #1
+        sta r2H
         lda #PANE_BANK
         sta r3L
         jmp FetchRAM
+
+; SamePath: Z set when dropPath names path's folder itself (the same
+; text; a sidebar line of the folder shown, say).
+SamePath:
+        ldy #$FF
+@ch:    iny
+        lda path,y
+        cmp dropPath,y
+        bne @end
+        cmp #0
+        bne @ch
+@end:   rts
 
 ; SameDrive: Z set when dropPath is on the same drive as path (their
 ; first parts: "/a", "/usb0" ...).
@@ -825,8 +853,8 @@ SelAll: jsr ClearSel
         ror tmp
         dex
         bne @div
-        ldx tmp                 ; (ENTRY_MAX entries: 256 bytes, X 0 and
-        lda tmpH                ; tmpH 1: all 256 filled)
+        ldx tmp                 ; (whole bytes; with tmpH 1, 256 of them:
+        lda tmpH                ; only when SEL_LEN is 256)
         bne :+
         txa
         beq @rest
@@ -843,7 +871,7 @@ SelAll: jsr ClearSel
         sec
         rol a
         bne @bit
-@last:  ldx tmpH                 ; (all 256 bytes full: no rest)
+@last:  ldx tmpH                 ; (256 bytes full: no rest)
         bne @dotdot
         ldx tmp
         ora sel,x
@@ -856,11 +884,12 @@ SelAll: jsr ClearSel
         tay
         jsr Select
 @draw:  jmp ListDraw
-        .assert ENTRY_MAX <= 2048, error, "SelAll: sel at most 256 bytes"
+        .assert SEL_LEN <= 256, error, "SelAll: sel at most 256 bytes"
 
 ; Scratch (overlay data: fetched anew with the overlay)
 dx:     .byte 0                 ; Drag: where the press was
 hover:  .byte 0                 ; Drag: the mark shown (MarkTo)
+dropAt: .word 0                 ; Drag, Hover: the folder entry under it
 waitL:  .byte 0                 ; Drag: rounds waited for a move
 waitH:  .byte 0
 dy:     .byte 0
