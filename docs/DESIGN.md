@@ -465,6 +465,11 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   the other, copy to other (C=T) and move to other (C=M), each pane's
   half of the status line with the divider, back to one list (the view
   from before).
+- Drag and drop (2026-11-12): a selection dragged with the mouse (its
+  icon follows the pointer) onto the other pane (same drive: moved,
+  another drive: copied) and onto a folder in the same list; C= held at
+  the release the other way; a quick double click still opens; a press
+  held still for two seconds stays a click.
 - Copying a GEOS program onto usb0 (it becomes NAME.cvt) and back to
   drive C (it becomes the program again and starts); opening the .cvt
   on usb0 shows "Not opened here".

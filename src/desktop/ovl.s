@@ -57,3 +57,5 @@ OvlFail:
         Stub Info, 7
         Stub ListPress, 8       ; overlay 8: listin.s
         Stub ListKey, 8
+        Stub ListEnd, 8
+        Stub SelAll, 8

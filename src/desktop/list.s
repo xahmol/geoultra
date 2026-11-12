@@ -23,7 +23,7 @@
         .import stY0, stY1, trackTop, trackBot, trackH, viewMode, MonthName
         .export ListRead, ListDraw, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
-        .export Modifiers, mods, IsDotDot, ListEnd, SelAll, row, RowEntry
+        .export Modifiers, mods, IsDotDot, row, RowEntry, path
         .import IconsForget, DrawCell, CellAt, step, tbMode, stripL, listR, paneR
         .import panes, paneDim
 PANE_DIV        = 159           ; two panes: the line between them
@@ -58,8 +58,6 @@ COL_NAME_END    = 202           ; names are clipped here
 ENTRY_SIZE      = 128           ; info (16), long name (61), spare
 ENTRY_BANK      = 1             ; pane 1: banks 1-2 of the application's REU,
 ENTRY_BANK2     = 3             ; pane 2: banks 3-4 (two panes, DESKTOP.md)
-ENTRY_MAX       = 1024          ; a pane's entries (two banks)
-SEL_LEN         = ENTRY_MAX / 8 ; the selection's bytes
 ENTRY_LEN       = INFO_LEN + NAME_LEN
 
 ; CIA 1 for SHIFT and C= at a click (the keyboard matrix, as gush reads
@@ -1448,8 +1446,8 @@ ProgressBlock:
         plp
         rts
 
-; StatusShow: stBuf on the status line, in its colours, inverted as the
-; status line is.
+; StatusShow: stBuf on the status line (with two panes the active
+; pane's half), in its colours, inverted as the status line is.
 StatusShow:
         lda #0
         jsr SetPattern
@@ -1457,13 +1455,18 @@ StatusShow:
         sta r2L
         lda #199
         sta r2H
-        jsr FullSpan
-        jsr Rectangle
-        lda #<316
+        jsr StatusSpan          ; (two panes: the active one's half)
+        jsr Rectangle           ; (r3, r4 kept)
+        lda r4L                 ; the text from its left + 4 to its right - 3
+        sec
+        sbc #3
         sta rightMargin
-        lda #>316
+        lda r4H
+        sbc #0
         sta rightMargin+1
-        lda #4
+        lda r3L
+        clc
+        adc #4
         sta textX
         lda #<stBuf
         ldx #>stBuf
@@ -1476,7 +1479,7 @@ StatusShow:
         sta r2L
         lda #199
         sta r2H
-        jsr FullSpan
+        jsr StatusSpan
         jmp InvertRectangle
 
 ; Stopped: C set when RUN/STOP is held (the keyboard matrix's row 7,
@@ -1909,73 +1912,6 @@ Modifiers:
         sta CPU_PORT
         plp
         rts
-
-; ListEnd (the toolbar's end button): the cursor on the last entry,
-; only it selected, the list drawn.
-ListEnd:
-        lda count
-        ora count+1
-        beq @end
-        lda count
-        sec
-        sbc #1
-        sta cur
-        lda count+1
-        sbc #0
-        sta cur+1
-        jsr ClearSel
-        lda cur
-        ldx cur+1
-        ldy #1
-        jsr Select
-        jsr Follow
-        jmp ListDraw
-@end:   rts
-
-; SelAll (the toolbar's select all): every entry selected but ".." (the
-; first, below "/"), the list drawn.
-SelAll: jsr ClearSel
-        lda count               ; whole bytes: count / 8
-        sta tmp
-        lda count+1
-        sta tmpH
-        ldx #3
-@div:   lsr tmpH
-        ror tmp
-        dex
-        bne @div
-        ldx tmp                 ; (ENTRY_MAX entries: 256 bytes, X 0 and
-        lda tmpH                ; tmpH 1: all 256 filled)
-        bne :+
-        txa
-        beq @rest
-:       lda #$FF
-@all:   dex
-        sta sel,x
-        bne @all
-@rest:  lda count               ; the last byte's bits: count & 7
-        and #7
-        tay
-        lda #0
-@bit:   dey
-        bmi @last
-        sec
-        rol a
-        bne @bit
-@last:  ldx tmpH                 ; (all 256 bytes full: no rest)
-        bne @dotdot
-        ldx tmp
-        ora sel,x
-        sta sel,x
-@dotdot:
-        lda path + 1            ; below "/": ".." not
-        beq @draw
-        lda #0
-        tax
-        tay
-        jsr Select
-@draw:  jmp ListDraw
-        .assert ENTRY_MAX <= 2048, error, "SelAll: sel at most 256 bytes"
 
 ; SwapPane: the active pane's state (path, count, top, cur, entryBank,
 ; sel, the free space) exchanged with the other pane's in the REU (bank

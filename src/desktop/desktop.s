@@ -19,7 +19,8 @@
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
         .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
-        .import CopyOther, MoveOther
+        .import CopyOther, MoveOther, CdPath, Fetch, entryName
+        .export dropReq, dropAt
         .export openReq
         .import Root, Home, Top, ListEnd, Up
         .import Eject, HasImage, EjectIcon, IconUp
@@ -114,6 +115,7 @@ Press:  lda mouseData
         jsr PaneSwitch
 @list:  jsr ListPress           ; (overlay 8, listin.s)
         bcs :+
+        jsr DropDo              ; (its drag: dropped here)
         jmp OpenReq             ; (its double click: opened here)
 :       lda panes               ; (two panes: no sidebar)
         bne @end
@@ -176,6 +178,58 @@ Key:    lda keyData
         lda ActDo,x
         pha
         rts
+
+; DropDo: a drop listin.s asked for (dropReq, DROP_*): into the other
+; pane (panes.s), or into the folder entry dropAt of this list: copied or
+; cut, path extended by its name for the paste, then back and read again.
+DropDo: lda dropReq
+        beq @end
+        ldx #0
+        stx dropReq
+        cmp #DROP_OTHER_MOVE
+        bne :+
+        jmp MoveOther
+:       cmp #DROP_OTHER_COPY
+        bne :+
+        jmp CopyOther
+:       cmp #DROP_IN_MOVE
+        beq @cut
+        jsr Copy
+        jmp @in
+@cut:   jsr Cut
+@in:    lda dropAt              ; its name
+        ldx dropAt+1
+        jsr Fetch
+        ldy #$FF                ; path's end
+@e:     iny
+        lda path,y
+        bne @e
+        sty pathEnd
+        lda path-1,y            ; "/" unless it ends in one (the root)
+        cmp #'/'
+        beq :+
+        lda #'/'
+        sta path,y
+        iny
+:       ldx #0
+@n:     lda entryName,x
+        sta path,y
+        beq @go
+        inx
+        iny
+        bne @n
+        dey                     ; (too long: cut)
+        lda #0
+        sta path,y
+@go:    jsr CdPath
+        jsr Paste
+        ldy pathEnd             ; back
+        lda #0
+        sta path,y
+        jsr CdPath
+        jsr ListRead
+        jmp ListDraw
+@end:   rts
 
 ; OpenReq: the entry under the cursor opened when listin.s asked for it
 ; (openReq: an overlay must not open, Open may start a program or mount).
@@ -1402,6 +1456,9 @@ InfoLine1:      .byte BOLDON, "GeoUltra Desktop", PLAINTEXT, 0
 InfoLine2:      .byte "milestone 1 (in development)", 0
 driveLine:      .byte "A", 0
 
+dropReq:        .byte 0         ; listin.s: a drop (DROP_*), done by DropDo
+dropAt:         .word 0         ; and its folder entry (DROP_IN_*)
+pathEnd:        .byte 0         ; DropDo: path's end before the folder
 openReq:        .byte 0         ; listin.s: open the entry under the cursor
 feVec:          .word 0
 sideY:          .byte 0         ; the next sidebar line's top

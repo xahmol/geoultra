@@ -4,7 +4,11 @@ step P4). From /a: two panes switched on (TwoPanes, as view > two panes
 runs it): the left pane /a active, the right one "/"; the list view;
 a click in the right pane makes it active (its cursor on the entry
 clicked); C=SPACE back to the left; RETURN on drive b in the right
-pane opens /b there while the left keeps /a; two panes off: the view
+pane opens /b there while the left keeps /a; each pane's free space on
+its half of the status line; copy and move to the other pane (C=T,
+C=M) into a new /b/dst; drag and drop (step P6): gush dragged from /b
+onto the right pane (the same drive: moved), F1 dragged onto a new
+folder box in the same list (moved into it); two panes off: the view
 from before back. Screens: build/harness/gush/desktop-d13*.png.
 Usage: tests/desktop/d13.py
 """
@@ -152,6 +156,51 @@ def main():
         settle(3)
         check("the right pane: F1 copied, F2 moved in", (here(), word("count")), ("/b/dst", 3))
         g.png("desktop-d13-copy")
+        # P6: drag and drop. gush (left /b: .., dst, F1, gush) dragged onto
+        # the right pane (/b/dst, the same drive: moved); then in the left
+        # pane F1 dragged onto a new folder "box" (moved into it).
+        def row_y(n):
+            return byte("listTop") + n * byte("rowH") + 3
+
+        def drag(x0, y0, x1, y1):
+            v.mem_set(0x8515, b"\x00")                            # (no double click)
+            press(x0, y0, s=2)                                     # select
+            v.mem_set(0x8515, b"\x00")
+            v.mem_set(0x3A, bytes([x0 & 0xFF, x0 >> 8, y0]))
+            v.mem_set(0x8505, b"\x00")                            # held:
+            pf = v.mem_get(0x39, 0x39)[0]
+            v.mem_set(0x39, bytes([pf | 0x20]))
+            v.checkpoint(k["Drag"])                                # (Drag waits
+            v.resume()                                             # about two
+            v.wait_event(RESP_CHECKPOINT)                          # emulated
+            v.mem_set(0x3A, bytes([x1 & 0xFF, x1 >> 8, y1]))       # seconds:
+            v.resume()                                             # warp is
+            settle(0.5)                                            # faster)
+            v.mem_set(0x8505, b"\x80")                            # released
+            v.resume()
+            settle(30)
+        g.keys([0x80 | ord(" ")], settle=1)                        # left active
+        settle(3)
+        left_n = word("count")
+        drag(60, row_y(3), 240, row_y(5))
+        check("gush dragged to the right pane: gone from the left (moved)",
+              (byte("active"), word("count")), (0, left_n - 1))
+        g.keys([0x80 | ord(" ")], settle=1)                        # right active
+        settle(3)
+        check("the right pane: gush there", word("count"), 4)
+        g.keys([0x80 | ord(" ")], settle=1)                        # left again
+        settle(3)
+        g.keys([0x80 | ord("n")], settle=2)
+        settle(2)
+        g.keys("box\r", settle=0.3)
+        settle(5)                                                  # .., box, dst, F1
+        check("the left pane: box made", word("count"), 4)
+        drag(60, row_y(3), 60, row_y(1))
+        check("F1 dragged onto box: moved into it", word("count"), 3)
+        g.keys([KEY_HOME, KEY_DOWN, 13], settle=0.5)               # into box
+        settle(5)
+        check("box holds F1", (here(), word("count")), ("/b/box", 2))
+        g.png("desktop-d13-drag")
         call(k["TwoPanes"], 0, s=8)
         check("two panes off: the icon view back", (byte("panes"), byte("viewMode")), (0, VIEW_ICONS))
     finally:

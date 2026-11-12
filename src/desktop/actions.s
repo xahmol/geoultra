@@ -313,6 +313,11 @@ NewFolder:
         jsr FileEngine
         txa
         beq @reread
+        ldy #$FF                ; (the dialog names it: entryName)
+@name:  iny
+        lda input,y
+        sta entryName,y
+        bne @name
         jsr Error
 @reread:
         jsr ListRead

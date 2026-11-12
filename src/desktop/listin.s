@@ -13,8 +13,17 @@
         .import EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, cur
         .import ListDraw, count, ThumbRows, top, path, Follow, Up, Into, step
         .import rows, listL, listTop, pathY, bottom, topY, stY0, stY1, tScroll
-        .import openReq, text, TextWidth, rowH, IsSelected, stripL
-        .export Ov_ListPress, Ov_ListKey
+        .import openReq, text, TextWidth, rowH, IsSelected, stripL, sel
+        .import panes, active, PaneAt, dropReq, dropAt, Fetch, entryInfo, IconFor, Icons
+        .export Ov_ListPress, Ov_ListKey, Ov_ListEnd, Ov_SelAll
+Ov_ListEnd = ListEnd
+Ov_SelAll = SelAll
+DrawSprite      = $C1C6         ; GEOS jump table
+PosSprite       = $C1CF
+EnablSprite     = $C1D2
+DisablSprite    = $C1D5
+DRAG_SPR        = 2             ; (0 the pointer, 1 the text cursor)
+DRAG_MIN        = 5             ; pixels moved before a press is a drag
 cutPath = text                  ; (list.s's PathPress buffer: side.s's text)
 Ov_ListPress = ListPress
 Ov_ListKey = ListKey
@@ -116,7 +125,11 @@ ListPress:
         bcs @done               ; (no entry there)
         sta pick
         stx pick+1
-        jsr Double              ; (the same entry clicked again in time)
+        jsr Drag                ; (a selected entry dragged: C clear)
+        bcs :+
+        clc
+        rts
+:       jsr Double              ; (the same entry clicked again in time)
         bcs @open
         jsr Modifiers
         lda mods
@@ -377,7 +390,276 @@ ListKey:
         clc
         rts
 
+; --- Drag and drop (two panes P6; the user's decisions of 2026-11-12)
+
+; Drag (ListPress, a press on entry pick): when pick is selected and the
+; pointer moves DRAG_MIN pixels with the button held, the selection is
+; dragged (its icon as sprite DRAG_SPR) until the button is released;
+; dropped on the other pane, or on a folder of this list that is not
+; selected, the core copies or moves it there (dropReq, desktop.s
+; DropDo: the actions are overlay 2's): the same drive moves, another
+; copies, C= held the other way. C set: no drag (a click: on as usual):
+; an entry not selected, the second press of a double click, a release
+; before the move, or a press held still for about two seconds (the wait
+; keeps MainLoop, the clock and processes, from running).
+Drag:   lda pick
+        ldx pick+1
+        jsr IsSelected
+        beq @click
+        lda dblClickCount       ; (the same entry pressed again in time)
+        beq :+
+        lda pick
+        cmp last
+        bne :+
+        lda pick+1
+        cmp last+1
+        beq @click
+:       lda mouseXPos
+        sta dx
+        lda mouseYPos
+        sta dy
+        lda #0
+        sta waitL
+        sta waitH
+@wait:  inc waitL               ; (65536 rounds: about two seconds)
+        bne :+
+        inc waitH
+        beq @click
+:       lda mouseData           ; released before it moved: a click
+        bpl :+
+@click: sec
+        rts
+:       lda mouseYPos
+        sec
+        sbc dy
+        jsr Far
+        bcs @drag
+        lda mouseXPos
+        sec
+        sbc dx
+        jsr Far
+        bcc @wait
+@drag:  jsr Sprite              ; the entry's icon at the pointer
+@track: lda #DRAG_SPR
+        sta r3L
+        lda mouseXPos
+        clc
+        adc #8
+        sta r4L
+        lda mouseXPos+1
+        adc #0
+        sta r4H
+        lda mouseYPos
+        clc
+        adc #8
+        sta r5L
+        jsr PosSprite
+        lda mouseData
+        bpl @track              ; (held)
+        lda #DRAG_SPR
+        sta r3L
+        jsr DisablSprite
+        jsr Modifiers           ; (C= held: the other way)
+        lda mods
+        and #MOD_CBM
+        sta flip
+        lda panes               ; the other pane?
+        beq @entry
+        jsr PaneAt
+        cmp active
+        beq @entry
+        jsr SameDrive           ; (Z set: the same drive: a move)
+        beq :+
+        lda #DROP_OTHER_COPY
+        bne @req
+:       lda #DROP_OTHER_MOVE
+        bne @req
+@entry: jsr EntryUnder          ; a folder of this list, not selected?
+        bcs @none
+        sta dropAt
+        stx dropAt+1
+        jsr IsSelected
+        bne @none
+        lda dropAt
+        ldx dropAt+1
+        jsr Fetch
+        lda entryInfo + FI_KIND
+        cmp #K_FOLDER
+        beq :+
+        cmp #K_UDIR
+        bne @none
+:       lda #DROP_IN_MOVE       ; (the same list: the same drive)
+@req:   ldx flip                ; C=: the other way (move <-> copy)
+        beq :+
+        eor #1
+:       sta dropReq
+@none:  clc
+        rts
+
+; Far: C set when A (a signed difference) is DRAG_MIN or more away.
+Far:    bpl :+
+        eor #$FF
+        clc
+        adc #1
+:       cmp #DRAG_MIN
+        rts
+
+; Sprite: the dragged entry's 8 x 8 icon (icons.s) as sprite DRAG_SPR,
+; enabled.
+Sprite: lda pick
+        ldx pick+1
+        jsr Fetch
+        jsr IconFor             ; A = its icon
+        sta dx                  ; r4 = its rows: Icons + A * 9 + 1
+        asl a
+        asl a
+        asl a
+        adc dx
+        adc #<(Icons + 1)
+        sta r4L
+        lda #>(Icons + 1)
+        adc #0
+        sta r4H
+        ldx #63                 ; the image: 8 rows in its first column
+        lda #0
+@clr:   sta sprite,x
+        dex
+        bpl @clr
+        ldy #7
+@row:   lda (r4),y
+        pha
+        tya
+        sta dy                  ; (row * 3)
+        asl a
+        adc dy
+        tax
+        pla
+        sta sprite,x
+        dey
+        bpl @row
+        lda #DRAG_SPR
+        sta r3L
+        lda #<sprite
+        sta r4L
+        lda #>sprite
+        sta r4H
+        jsr DrawSprite
+        lda #DRAG_SPR
+        sta r3L
+        jmp EnablSprite
+
+; SameDrive: Z set when the other pane's path is on the same drive as
+; path (their first parts: "/a", "/usb0" ...). The other pane's path:
+; its first 16 bytes from the REU (list.s SwapPane's first part).
+SameDrive:
+        lda #<other
+        sta r0L
+        lda #>other
+        sta r0H
+        lda #0
+        sta r1L
+        sta r2H
+        lda #PANE_PAGE
+        sta r1H
+        lda #16
+        sta r2L
+        lda #PANE_BANK
+        sta r3L
+        jsr FetchRAM
+        ldy #0
+@ch:    iny
+        lda path,y              ; path's first part ended (0 or "/")?
+        beq @pend
+        cmp #'/'
+        beq @pend
+        cmp other,y             ; no: the same character in the other's
+        beq @ch
+@diff:  lda #1                  ; (Z clear: another drive)
+        rts
+@pend:  lda other,y             ; yes: the other's must end here too
+        beq :+
+        cmp #'/'
+        bne @diff
+:       lda #0                  ; (Z set: the same drive)
+        rts
+
+; --- ListEnd and SelAll (moved from list.s, 2026-11-12: room in the core)
+
+; ListEnd (the toolbar's end button): the cursor on the last entry,
+; only it selected, the list drawn.
+ListEnd:
+        lda count
+        ora count+1
+        beq @end
+        lda count
+        sec
+        sbc #1
+        sta cur
+        lda count+1
+        sbc #0
+        sta cur+1
+        jsr ClearSel
+        lda cur
+        ldx cur+1
+        ldy #1
+        jsr Select
+        jsr Follow
+        jmp ListDraw
+@end:   rts
+
+; SelAll (the toolbar's select all): every entry selected but ".." (the
+; first, below "/"), the list drawn.
+SelAll: jsr ClearSel
+        lda count               ; whole bytes: count / 8
+        sta tmp
+        lda count+1
+        sta tmpH
+        ldx #3
+@div:   lsr tmpH
+        ror tmp
+        dex
+        bne @div
+        ldx tmp                 ; (ENTRY_MAX entries: 256 bytes, X 0 and
+        lda tmpH                ; tmpH 1: all 256 filled)
+        bne :+
+        txa
+        beq @rest
+:       lda #$FF
+@all:   dex
+        sta sel,x
+        bne @all
+@rest:  lda count               ; the last byte's bits: count & 7
+        and #7
+        tay
+        lda #0
+@bit:   dey
+        bmi @last
+        sec
+        rol a
+        bne @bit
+@last:  ldx tmpH                 ; (all 256 bytes full: no rest)
+        bne @dotdot
+        ldx tmp
+        ora sel,x
+        sta sel,x
+@dotdot:
+        lda path + 1            ; below "/": ".." not
+        beq @draw
+        lda #0
+        tax
+        tay
+        jsr Select
+@draw:  jmp ListDraw
+        .assert ENTRY_MAX <= 2048, error, "SelAll: sel at most 256 bytes"
+
 ; Scratch (overlay data: fetched anew with the overlay)
+dx:     .byte 0                 ; Drag: where the press was
+waitL:  .byte 0                 ; Drag: rounds waited for a move
+waitH:  .byte 0
+dy:     .byte 0
+flip:   .byte 0                 ; C= held at the drop
+sprite: .res 64                 ; the dragged icon's sprite image
+other:  .res 16                 ; SameDrive: the other pane's path's start
 lo:     .word 0                 ; Range
 hi:     .word 0
 key:    .byte 0                 ; ListKey

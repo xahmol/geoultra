@@ -56,8 +56,16 @@ same keys and menu switch back to one list, with the view from before.
 Copying between the panes: "copy to other" (C=T) and "move to other"
 (C=M) in the file menu and the context menu put the selection into the
 other pane's folder (they use the clipboard: it holds those entries
-afterwards); or copy (or cut) in one pane and paste in the other. Drag
-and drop is still to come.
+afterwards); or copy (or cut) in one pane and paste in the other.
+
+**Drag and drop:** press on a selected entry and move the mouse with
+the button held: the selection is dragged (its icon follows the
+pointer). Released over the other pane, it goes into that pane's
+folder: moved on the same drive, copied to another drive. Released
+over a folder in the same list (one that is not part of the
+selection), it is moved into that folder. Hold C= while releasing to
+copy instead of move (or move instead of copy). Folders are taken with
+everything in them. Dropping onto the sidebar is still to come.
 
 ## Moving around
 

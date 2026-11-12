@@ -17,7 +17,7 @@
         .import SortList, Derive, viewMode, tTitle, listL, stripL, listR
         .import paneR, iconCard, nameX, tIcons, Back, FreeRead
         .export SetGeom, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
-        .export paneDim, CopyOther, MoveOther
+        .export paneDim, CopyOther, MoveOther, CdPath
         .import Copy, Cut, Paste
 
 PANE_W          = 160           ; a pane: x 0-159 or 160-319
@@ -74,16 +74,22 @@ DrawPanes:
         jsr Other
         jsr CdPath
         jsr ListRead
-        lda sortPending         ; (sorted here: SortNow only sorts the
-        beq :+                  ; active pane)
-        lda #0
-        sta sortPending
-        jsr SortList
-:       jsr Plain
+        jsr Sorted
+        jsr Plain
         jsr Other
         jsr CdPath
         jsr ListRead
         jmp ListDraw            ; (waits for the sort: SortNow draws it)
+
+; Sorted: the pane in list.s sorted now if it was read since (SortNow,
+; from MainLoop, only sorts the active pane; this one is about to be the
+; other).
+Sorted: lda sortPending
+        beq @end
+        lda #0
+        sta sortPending
+        jmp SortList
+@end:   rts
 
 ; Plain: the pane in list.s drawn as the inactive one (its path line
 ; not inverted: list.s, PaneMark).
@@ -173,6 +179,7 @@ ToOther:
 @cut:   jsr Cut
 @paste: jsr PaneSwitch          ; (the other pane active: pasted there)
         jsr Paste
+        jsr Sorted              ; (it stays in view: sorted now)
         jsr PaneSwitch          ; (back)
         jsr ListRead
         jmp ListDraw

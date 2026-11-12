@@ -611,6 +611,24 @@ colour is a property of an element, by name:
   divider (the user). The free space is part of a pane's state
   (SwapPane's fourth part, bank 5 `$FF00`). The core has 50 bytes left:
   P6 (drag and drop) needs room made first.
+  **P6 done (2026-11-12), without the sidebar:** room first: ListEnd and
+  SelAll moved into overlay 8 (stubs in ovl.s). listin.s Drag: a press
+  on a selected entry followed by a move of 5 pixels with the button
+  held drags the selection, the entry's 8 x 8 icon as sprite 2 beside
+  the pointer; the release asks the core for the drop (dropReq,
+  desktop.s DropDo): on the other pane, CopyOther or MoveOther (the
+  same drive, by the paths' first parts: a move; another drive: a
+  copy); on a folder entry of the same list that is not selected, the
+  selection cut (or copied) and pasted into it (path extended by its
+  name, then back). C= held at the release: the other way. A press
+  that does not move stays a click (and a double click). After a paste
+  into the other pane, that pane is sorted on the spot (it is drawn as
+  the inactive one, and SortNow only sorts the active pane); the
+  progress text keeps to the active pane's half of the status line.
+  Still to do: drops on the sidebar's folders and drives (the user's
+  decision), a drop indicator (the folder under the pointer marked).
+  The VICE test drags gush into the other pane (moved) and F1 onto a
+  new folder (moved into it); the sprite itself and C= are hand tests.
 - **Design answers (the user, 2026-11-12, second round):**
   - *Two panes:* the list view in each pane (the detailed columns do not
     fit 160 pixels; the chosen view returns when two panes go off; the
