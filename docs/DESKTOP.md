@@ -549,6 +549,21 @@ colour is a property of an element, by name:
   Also the system's own settings (the user, 2026-11-12): the REU (the
   size GEOS applications see) and the drives (which images on A-D,
   their sizes, long names).
+- **Two panes, the steps (2026-11-12):** the core has 89 bytes left and
+  the list code assumes one list (its edges and the scroll strip's
+  place are constants; one path, cursor, selection and entry table).
+  P1, room: the list's mouse and key handling (ListPress, ListKey,
+  PathPress, Double, Range: about 700 bytes) into an overlay, "open"
+  handed back to the core (Open can mount: overlay 3). P2, the list's
+  geometry in variables (left, right, the strip) for the full width, the
+  list beside the sidebar, or a pane. P3, a pane's state (path, count,
+  top, cursor, selection, history position) kept for the other pane in
+  the REU and swapped when the active pane changes; the entry tables
+  1024 entries each (pane 1 banks 1-2, pane 2 banks 3-4). P4, drawing
+  two panes (the sidebar hidden, view > two panes, SETTINGS.INI), a
+  click activating a pane. P5, copy and move to the other pane (file
+  and context menus, C=T, C=M). P6, drag and drop (a sprite with the
+  icon; folders and selections through the paste code).
 - **Next, in this order:** two
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,
