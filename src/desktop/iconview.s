@@ -29,7 +29,8 @@ ICON_PACKET     = $80 + ICON_W * ICON_ROWS ; (unique bytes, compacted)
 NAME_BASE       = 30            ; the name's baseline in a cell
 CACHE_BANK      = 6             ; (ovl.s: overlays $0000-$6FFF, history
 CACHE_PAGE      = $90           ; $8000-$8FFF; the icons from $9000)
-CACHE_N         = $7000 / 64    ; entries whose icon is kept: 448
+CACHE_N         = (BIG_PAGE * 256 - CACHE_PAGE * 256) / 64 ; entries whose
+                                ; icon is kept: 440 (to the big icons)
 SMALL_BYTES     = 9             ; icons.s: a packet byte and 8 rows
 H_ICON          = 4             ; its icon: a $BF packet and 63 bytes
 
@@ -345,9 +346,9 @@ Generic:
         lda #0
         sta slotHi
         jsr Regs
-        lda r1H
-        sec
-        sbc #CACHE_PAGE - BIG_PAGE
+        lda r1H                 ; (Regs: CACHE_PAGE + n * 64; the big
+        clc                     ; icons: BIG_PAGE + n * 64)
+        adc #BIG_PAGE - CACHE_PAGE
         sta r1H
         lda #BIG_BANK
         sta r3L

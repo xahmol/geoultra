@@ -18,6 +18,7 @@
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
+        .export openReq
         .import Root, Home, Top, ListEnd, Up
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
@@ -102,9 +103,10 @@ Press:  lda mouseData
         bmi @end
         jsr ToolPress           ; (C clear: it was on the toolbar)
         bcc @end
-        jsr ListPress
-        bcc @end
-        lda mouseXPos+1         ; the sidebar: x left of its line
+        jsr ListPress           ; (overlay 8, listin.s)
+        bcs :+
+        jmp OpenReq             ; (its double click: opened here)
+:       lda mouseXPos+1         ; the sidebar: x left of its line
         bne @end
         lda sideW
         sec
@@ -153,7 +155,8 @@ Key:    lda keyData
         beq @act
         dex
         bpl @k
-        jmp ListKey
+        jsr ListKey             ; (overlay 8, listin.s; then RETURN's open)
+        jmp OpenReq
 @act:   txa
         asl a
         tax
@@ -162,6 +165,16 @@ Key:    lda keyData
         lda ActDo,x
         pha
         rts
+
+; OpenReq: the entry under the cursor opened when listin.s asked for it
+; (openReq: an overlay must not open, Open may start a program or mount).
+OpenReq:
+        lda openReq
+        beq :+
+        lda #0
+        sta openReq
+        jmp Open
+:       rts
 
 KeyActs:
         .byte SHORTCUT | 'c', SHORTCUT | 'x', SHORTCUT | 'v'
@@ -1339,6 +1352,7 @@ InfoLine1:      .byte BOLDON, "GeoUltra Desktop", PLAINTEXT, 0
 InfoLine2:      .byte "milestone 1 (in development)", 0
 driveLine:      .byte "A", 0
 
+openReq:        .byte 0         ; listin.s: open the entry under the cursor
 feVec:          .word 0
 sideY:          .byte 0         ; the next sidebar line's top
 drv:            .byte 0

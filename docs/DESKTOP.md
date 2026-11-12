@@ -564,6 +564,19 @@ colour is a property of an element, by name:
   click activating a pane. P5, copy and move to the other pane (file
   and context menus, C=T, C=M). P6, drag and drop (a sprite with the
   icon; folders and selections through the paste code).
+  **P1 done (2026-11-12):** listin.s, overlay 8 (ListPress, ListKey,
+  PathPress, Double, Range, the strip's line and page steps); "open"
+  goes back to the core through openReq (desktop.s OpenReq after Press
+  and Key); REU bank 6 rearranged for an eighth overlay (overlays
+  `$0000-$7FFF`, history `$8000`, icon cache `$9000-$FDFF` for 440
+  icons, generic icons `$FE00`). The core ends at `$4CDE` (801 bytes
+  free). **P2's places:** LIST_RIGHT (17 uses) and STRIP_LEFT (18) in
+  list.s, listin.s and iconview.s become variables set by Derive; the
+  scroll strip's drawing (list.s around Strip) assumes x >= 256
+  (`STRIP_LEFT + 1 - 256` and the like) and needs rewriting for a strip
+  at x 152; the detailed view's columns (COL_SIZE, COL_DATE,
+  COL_NAME_END) are fixed x positions (in a 160-pixel pane: the list
+  view, to be decided in P4).
 - **Next, in this order:** two
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,
