@@ -505,8 +505,23 @@ colour is a property of an element, by name:
   C tested on the U64 (tests/desktop/d10u64.py); sorting (sort.s,
   overlay 6; tests/desktop/d11.py); docs/DESKTOP_MANUAL.md. The core ends
   at `$4FDC`: the context menu needs room made first.
-- **Next, in this order:** the ninth code sweep (about ten feature
-  commits since the eighth); the context menu and Info; two
+- **Context menu and Info (2026-11-12):** `src/desktop/ctxmenu.s`,
+  overlay 7. The right button (guMouse2's press bit, read in ClockTick
+  from MainLoop) selects the entry under the pointer unless it is
+  selected, then a menu at the pointer: open, copy, cut, paste, rename,
+  delete, info, favourite, new folder, drawn on the foreground only in
+  the menu bar's colours (closing it recovers the background and the
+  shadow colours); the item under the pointer inverted; a left click
+  picks the item where the pointer is at that moment; outside, RUN/STOP,
+  ESC or the right button close it. The overlay returns the item and the
+  core does it (list.s RightPress; most actions are overlay 2's). Info
+  (the menu and the toolbar's info button): name, kind (the GEOS type's
+  name), size (blocks; on the Ultimate bytes or KB from FE_STAT), date,
+  class, in a dialog. Room: the clock's drawing moved to overlay 5;
+  seven overlays fill bank 6 up to the generic icons at `$7000` (an
+  assert in ovl.s). Tests: d12.py (VICE, the right button through the
+  joyport simulation), d12u64.py (Info's size of an Ultimate file).
+- **Next, in this order:** two
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,
   pointer designs, turbo and slow list, NTP and clock, the default

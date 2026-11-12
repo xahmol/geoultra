@@ -9,8 +9,7 @@
 ; with 8 px between the groups (the mock-up: 4 and 6, not on cards).
 ; The drawing is overlay 5 (tooldraw.s); here the presses, the colours
 ; and the buttons' places (Cards, used by both). Back and forward:
-; history.s. Info does nothing yet (the Info dialog comes with the
-; context menu). Own design.
+; history.s; info: ctxmenu.s. Own design.
 
         .include "geos.inc"
         .include "desktop.inc"
@@ -18,7 +17,7 @@
         .import tbMode, topY, cToolbar, Paint, px0, px1, py0, py1, pcol
         .import Up, Into, ListKey, ListEnd, SelAll, ListRead, ListDraw
         .import View, viewMode, NewFolder, Copy, Paste, Delete, FileEngine
-        .import HistBack, HistForward, text
+        .import HistBack, HistForward, text, Info
 homePath        = text          ; (side.s's text buffer: free between actions)
         .export ToolPress, ToolPaint, Cards
 
@@ -95,7 +94,9 @@ Home:   lda #<homePath          ; FE_HOME ("/USB0/GEOULTRA/"; none
         lda #FE_HOME
         jsr FileEngine
         txa
-        bne Nothing
+        beq :+
+        rts                     ; (no Ultimate: nothing)
+:
         ldy #0                  ; its last "/" dropped
 @end:   lda homePath,y
         beq :+
@@ -127,14 +128,10 @@ ViewNext:
 Refresh:
         jsr ListRead
         jmp ListDraw
-; Nothing: a button without an action yet (info).
-Nothing:
-        rts
-
 Acts:   .word HistBack-1, HistForward-1, Up-1, Root-1, Home-1
         .word Top-1, ListEnd-1
         .word ViewNext-1, Refresh-1
-        .word NewFolder-1, Nothing-1, SelAll-1, Copy-1, Paste-1, Delete-1
+        .word NewFolder-1, Info-1, SelAll-1, Copy-1, Paste-1, Delete-1
         .assert (* - Acts) / 2 = TB_BUTTONS, error, "an action per button"
 
 ; The buttons' cards: 16 px apart from x 8, 8 px between the groups.

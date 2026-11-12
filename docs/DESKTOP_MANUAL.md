@@ -86,6 +86,19 @@ All in the file menu, with their keys:
 Folders are copied, moved and deleted with everything in them. A long
 copy shows its progress on the status line; RUN/STOP stops it.
 
+**The right mouse button** opens a menu at the pointer with open, copy,
+cut, paste, rename, delete, info, favourite and new folder. Over an
+entry that is not selected yet, it selects that entry first. A click on
+an item does it; a click outside the menu, RUN/STOP, ESC or the right
+button again closes it. (On a 1351 the right button is the one GEOS
+programs do not use; the Ultimate 64's USB mouse works as one.)
+
+**Info** (in that menu, and the toolbar's info button) shows the entry
+under the cursor: its name, kind (for GEOS files their type:
+application, document, desk accessory, font, printer or input driver
+...), size, date and GEOS class. For files on the Ultimate it reads the
+size, which the folder listing does not have.
+
 ## The toolbar
 
 Under the menu bar, in four groups:
@@ -96,7 +109,7 @@ Under the menu bar, in four groups:
 | up, root, home | the folder above, `/` (all drives), GeoUltra's folder on the Ultimate |
 | top, end | the first and the last entry |
 | view, refresh | the next view; the folder read again |
-| new folder, info, select all, copy, paste, delete | as in the file menu (info: not yet) |
+| new folder, info, select all, copy, paste, delete | as in the file menu; info as in the context menu |
 
 view > toolbar sets its height: **two lines** (framed buttons, the
 default), **one line** (the icons alone, one more row for the list) or
@@ -134,7 +147,7 @@ What this means in practice:
   same.
 - **Disk images on the Ultimate** are opened by mounting them on A-D.
 - **Sizes**: the Ultimate's listings give no sizes, so the detailed
-  view leaves them empty for files there.
+  view leaves them empty for files there; Info shows a file's size.
 - **Real disk drives** on the serial bus are not supported yet.
 
 ## Themes
@@ -201,5 +214,3 @@ this is planned (docs/DESKTOP.md, "Next").
   a folder holds at most 2048 entries in the list.
 - The icon view keeps the first 448 entries' icons in the REU; later
   ones are read again when shown.
-- The info button and a context menu (right mouse button) are still to
-  come.

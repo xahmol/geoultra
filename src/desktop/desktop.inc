@@ -124,6 +124,9 @@ THM_STYLES      = 11            ; a theme record: style bytes, then colour
 THM_LEN         = 22            ; bytes (theme.s's record, themefile.s's)
 BIG_BANK        = 6             ; the icon view's generic icons in the REU
 BIG_PAGE        = $70           ; (tooldraw.s puts them, iconview.s reads)
+CTX_N           = 9             ; the context menu's items (ctxmenu.s):
+                                ; open, copy, cut, paste, rename, delete,
+                                ; info, favourite, new folder (list.s CtxDo)
 TB_TWO          = 0             ; the toolbar (tbMode): two lines, 16 px,
 TB_ONE          = 1             ; one line, 8 px,
 TB_OFF          = 2             ; none

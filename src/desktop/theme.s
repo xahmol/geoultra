@@ -26,7 +26,7 @@
         .export lastMin, clockX, MonLo, MonHi
         .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
         .export tbMode, topY, titleEnd
-        .import ToolPaint, IconLayout, step, sortPending, SortNow
+        .import ToolPaint, IconLayout, step, sortPending, SortNow, RightPress
         .import BusyPause, BusyResume
 
 CPU_PORT        = $01
@@ -545,6 +545,16 @@ ClockTick:
                                 ; never in a dialog, as DoDlgBox clears
                                 ; appMain while it runs, dialog.s)
         jsr SortNow
+:       lda guMouse2            ; the right button pressed (the 1351
+        and #$40                ; driver sets bit 6, the reader clears it):
+        beq :+                  ; the context menu (list.s)
+        php
+        sei
+        lda guMouse2
+        and #$FF - $40
+        sta guMouse2
+        plp
+        jmp RightPress
 :       lda minutes
         cmp lastMin
         beq :+

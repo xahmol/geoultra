@@ -25,7 +25,8 @@
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot, ListEnd, SelAll, row, RowEntry
         .import IconsForget, DrawCell, CellAt, step, tbMode
-        .export Frame, Place, SortNow, sortPending
+        .export Frame, Place, SortNow, sortPending, RightPress
+        .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd
         .import SortList
         .import topY, titleEnd
         .export ProgressStart, ProgressBlock, progN, progTotal, SelCount
@@ -1732,26 +1733,8 @@ ListPress:
         cmp #<STRIP_LEFT
         bcc @list
         jmp @strip
-@list:  lda viewMode              ; the icon view: the cell
-        cmp #VIEW_ICONS
-        bne @rows
-        jsr CellAt
-        bcs @none
-        bcc @got
-@rows:  lda mouseYPos           ; the row
-        sec
-        sbc listTop
-        ldx #0
-@r:     cmp rowH
-        bcc @got
-        sbc rowH
-        inx
-        bne @r
-@got:   cpx rows
-        bcs @none               ; (below the last whole row)
-        stx row
-        jsr RowEntry
-        bcs @done               ; (below the last entry)
+@list:  jsr EntryUnder
+        bcs @done               ; (no entry there)
         sta pick
         stx pick+1
         jsr Double              ; (the same entry clicked again in time)
@@ -1856,6 +1839,90 @@ LineDown:
         bcc @end
         inc top+1
 @end:   rts
+
+; EntryUnder: A/X = the entry under the pointer (in the list's rows,
+; or the icon view's cells), C clear; C set when there is none.
+EntryUnder:
+        lda viewMode            ; the icon view: the cell
+        cmp #VIEW_ICONS
+        bne @rows
+        jsr CellAt
+        bcc @got
+        rts
+@rows:  lda mouseYPos           ; the row
+        sec
+        sbc listTop
+        ldx #0
+@r:     cmp rowH
+        bcc @got
+        sbc rowH
+        inx
+        bne @r
+@got:   cpx rows
+        bcs @end                ; (below the last whole row)
+        stx row
+        jmp RowEntry            ; (C set: below the last entry)
+@end:   rts
+
+; RightPress (theme.s, ClockTick: the right button pressed): over the
+; list, the entry under the pointer selected (unless it is already);
+; then the context menu at the pointer (ctxmenu.s, overlay 7), and the
+; item chosen done here (most actions are overlay 2's).
+RightPress:
+        jsr InList
+        bcs @menu
+        jsr EntryUnder
+        bcs @menu
+        sta pick
+        stx pick+1
+        jsr IsSelected
+        bne @menu
+        jsr ClearSel
+        lda pick
+        ldx pick+1
+        ldy #1
+        jsr Select
+        lda pick
+        sta cur
+        lda pick+1
+        sta cur+1
+        jsr ListDraw
+@menu:  jsr Popup
+        cmp #CTX_N
+        bcs @end
+        asl a
+        tax
+        lda CtxDo+1,x
+        pha
+        lda CtxDo,x
+        pha
+@end:   rts
+CtxDo:  .word Open-1, Copy-1, Cut-1, Paste-1, Rename-1, Delete-1, Info-1
+        .word FavAdd-1, NewFolder-1
+        .assert (* - CtxDo) / 2 = CTX_N, error, "an action per item"
+
+; InList: C clear when the pointer is over the list's rows or cells
+; (listL to the scroll strip, listTop to bottom).
+InList: lda mouseYPos
+        cmp listTop
+        bcc @no
+        lda bottom
+        cmp mouseYPos
+        bcc @no
+        lda mouseXPos+1
+        bne @high
+        lda mouseXPos
+        cmp listL
+        bcc @no
+        clc
+        rts
+@high:  lda mouseXPos           ; (256 and more: left of the strip)
+        cmp #<STRIP_LEFT
+        bcs @no
+        clc
+        rts
+@no:    sec
+        rts
 
 ; Double: C set when pick is the entry clicked last and GEOS's double-
 ; click count still runs; else that count started for this click.

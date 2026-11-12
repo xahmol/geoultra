@@ -121,7 +121,7 @@ build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) build
 	for f in $(DESKSRCS); do $(CA65) -g -I src/inc -I build/gen -o build/desktop/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o $(patsubst src/desktop/%.s,build/desktop/%.o,$(filter-out src/desktop/desktop.s,$(DESKSRCS)))
 	$(PYTHON) $(GEOSAPP) src/desktop/desktop.toml build/desktop/desktop.bin build/desktop/desktop-seq.cvt
-	$(PYTHON) tools/vlircvt.py build/desktop/desktop-seq.cvt $@ build/desktop/desktop.bin.1 build/desktop/desktop.bin.2 build/desktop/desktop.bin.3 build/desktop/desktop.bin.4 build/desktop/desktop.bin.5 build/desktop/desktop.bin.6
+	$(PYTHON) tools/vlircvt.py build/desktop/desktop-seq.cvt $@ build/desktop/desktop.bin.1 build/desktop/desktop.bin.2 build/desktop/desktop.bin.3 build/desktop/desktop.bin.4 build/desktop/desktop.bin.5 build/desktop/desktop.bin.6 build/desktop/desktop.bin.7
 
 # External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
 # at gush's transient area (src/cmds/cmd.cfg), a GEOS APPL_DATA file of
@@ -455,6 +455,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d8.py
 	$(PYTHON) tests/desktop/d9.py
 	$(PYTHON) tests/desktop/d11.py
+	$(PYTHON) tests/desktop/d12.py
 
 test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt

@@ -48,7 +48,10 @@ MENU_ITEMS      = 7             ; a menu table's first item (after its frame)
 ; back to MainLoop.
 Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
         jsr BigInit             ; dirEntryBuf still holds our entry; the
-        lda #0                  ; icon view's icons, tooldraw.s)
+        lda guMouse2            ; icon view's icons, tooldraw.s; a right
+        and #$FF - $40          ; press from before the desktop: not ours)
+        sta guMouse2
+        lda #0
         sta clipCount           ; (actions.s: an empty clipboard)
         sta clipCount+1
         lda guExtTable          ; FileEngine: the extension table + 30
