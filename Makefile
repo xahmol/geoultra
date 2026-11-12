@@ -40,7 +40,7 @@ REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 DEPLOYDIR = /SD/idi8b/geoultra/
 
-.PHONY: all checkcfg vice vice-shot deploy conformance conformance81 test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -442,6 +442,10 @@ test-sysfont: all
 # InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).
 test-desktop81: all
 	$(PYTHON) tests/drives/desktop81.py
+
+# GeoUltra Settings (docs/SETTINGS.md): the shared INI module in VICE.
+test-settings: all
+	$(PYTHON) tests/settings/ini.py
 
 # GeoUltra's own desktop (docs/DESKTOP.md): VICE; test-desktop-u64 on the
 # U64 (SETTINGS.INI desktop=geoultra, made and deleted again).
