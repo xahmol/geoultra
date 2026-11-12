@@ -521,6 +521,28 @@ colour is a property of an element, by name:
   seven overlays fill bank 6 up to the generic icons at `$7000` (an
   assert in ovl.s). Tests: d12.py (VICE, the right button through the
   joyport simulation), d12u64.py (Info's size of an Ultimate file).
+- **Menus and the gush button (the user, 2026-11-12):** every toolbar
+  action also in the menus: geos (GeoUltra info, gush, the desk
+  accessories; the name "geos" kept: the user's decision, applications
+  draw their own menus anyway), file (open C=O, info C=I, copy C=C, cut
+  C=X, paste C=V, delete DEL, rename C=R, new folder C=N, select all C=A,
+  favourite C=F), view (theme, view, clock, toolbar, refresh), go (new:
+  back C=cursor left, forward C=cursor right, up, root, home, top, end),
+  disk (refresh). A gush button as a fifth toolbar group.
+- **Two panes (the user, 2026-11-12):** side by side, 160 pixels each,
+  the sidebar hidden while two panes are on; each pane its own path
+  line and title, the active one highlighted; copy, cut and paste as
+  now in the active pane, plus copy and move to the other pane (file
+  menu, context menu, C=T and C=M); drag and drop as well: a press on a
+  selected entry and a move drags it (a sprite with its icon), a
+  release over the other pane or a sidebar folder or drive copies (other
+  drive) or moves (same drive), C= held the other way.
+- **Settings tool (the user, 2026-11-12):** its own application
+  "GeoUltra Settings" on drive E in assembler, started from the geos
+  menu and gush; first version: the theme editor (each line, the
+  desktop's look as preview, saved as a theme file), desktop (default
+  desktop, view, toolbar, clock), system (turbo and the slow list,
+  hibernation delay, NTP server and time zone), mouse pointer designs.
 - **Next, in this order:** two
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,
