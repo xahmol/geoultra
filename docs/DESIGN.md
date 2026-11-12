@@ -333,7 +333,10 @@ does not show the server's status code).
   the cursor or the mouse); 22 rows beside the menu and the task bar,
   the full-screen switch for 25. The C128's VDC has 80 columns but in
   text mode one background for all characters; its bitmap mode has
-  cells as on the C64.
+  cells as on the C64. Speed (the user, 2026-11-12): the C128 runs at 2
+  MHz at most and reaches the VDC through two registers, a byte at a
+  time, while the U64's turbo makes software drawing and scrolling
+  cheap; the U64 is the better target. To decide later (the user).
 - **The order** (in rising order of scope; the browser last, after the
   Gopher client and the terminal):
   1. *Fetch* (a gush command first, a dialog later): a file from an
