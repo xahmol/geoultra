@@ -577,6 +577,38 @@ colour is a property of an element, by name:
   at x 152; the detailed view's columns (COL_SIZE, COL_DATE,
   COL_NAME_END) are fixed x positions (in a 160-pixel pane: the list
   view, to be decided in P4).
+- **Design answers (the user, 2026-11-12, second round):**
+  - *Two panes:* the list view in each pane (the detailed columns do not
+    fit 160 pixels; the chosen view returns when two panes go off; the
+    icon view in a pane: 3 columns). On and off: view > two panes (a
+    mark), C=P, and a toolbar button in the view group (the later
+    groups move along; gush at x 296-311). A click in a pane, or
+    C=SPACE, makes it the active one.
+  - *Drag and drop:* a drop on a folder entry (in the same list), on a
+    sidebar folder or drive line, or on the other pane puts the dragged
+    entries into it: same drive moves, other drive copies, C= held the
+    other way.
+  - *The settings application:* pages with a side list (Theme, Desktop,
+    System, Drives, REU, Pointer), the page's settings on the right as
+    GEOS icons and fields, OK, Cancel and save at the bottom, in the
+    theme's look.
+  - *Theme editor:* colours from 16 swatches (in the theme's palette)
+    for ink and paper, plus a colour's RGB value for themes with a
+    palette (Ultimate 64); a small desktop mock on the page's right half
+    as preview, redrawn at each change.
+  - *System:* the slow list edited by picking applications from the
+    GEOS drives (their permanent names; up to 6), remove; time: the NTP
+    server with a "now" button, the time zone and summer time
+    (automatic EU rule or off), date and time by hand.
+  - *Drives:* the images at the start (MOUNTS.INI, chosen from the
+    Ultimate's folders), a DNP's size in tracks (with the REU room
+    left), long names on or off per drive, a new empty image
+    (D64/D71/D81/DNP).
+  - *REU:* the legacy REU size applications see, a map of the 16 MB
+    (system, drives, tasks, applications, free), the number of task
+    slots (once tasks exist).
+  - *Pointer:* 4 own designs: a classic arrow, a large arrow, a hand, a
+    crosshair; applied at boot.
 - **Next, in this order:** two
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,

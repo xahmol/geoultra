@@ -240,10 +240,10 @@ UCI).
 | 5 | GEOS 128 cartridge on a C128 with an Ultimate II+, 40/80 columns |
 | 6 | Real IEC drives: slow universal driver, then turbo drivers (1541, 1581, 1571, CMD FD/HD) |
 
-**Releases and documentation (the user, 2026-11-12; placement proposed,
-to be confirmed):**
+**Releases and documentation (the user, 2026-11-12):**
 
-- **Beta 1, at the end of the desktop work in phase 3** (Ultimate 64
+- **Beta 1, at the end of the desktop work in phase 3** (confirmed by the
+  user 2026-11-12; Ultimate 64
   family only): after two panes with drag and drop, the settings tool's
   first version (theme editor, desktop, system with REU and drives,
   pointer designs), a stabilisation step (tenth sweep, full regression in
