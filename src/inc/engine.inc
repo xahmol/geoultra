@@ -298,6 +298,9 @@ nDays           = feInfo + 9    ; days since 1970 (word)
 nRest           = feInfo + 11   ; seconds of the day (3)
 nYear           = feInfo + 14   ; the year (word)
 nHost           = feName        ; the server's name (FE_LONG_MAX + 1 bytes)
+nDst            = FE_WORK + 105 ; [time] summer=eu: 1 (over cSrcDrv..: no
+nSave           = FE_WORK + 106 ; copy runs during FE_NTP); the UTC time
+                                ; kept while summer time is decided (4)
 
 ; Streams (enginestream.s), over the same place
 sPtr            = feInfo        ; the caller's buffer, moving on (word)

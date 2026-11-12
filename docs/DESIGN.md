@@ -575,6 +575,11 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   view, toolbar, clock and panes; "Start with GEOS 2.0's" and a reboot
   starts GEOS 2.0's deskTop (set it back afterwards); Cancel after a
   change asks first.
+- The Time page (2026-11-12): the zone (UTC+01:00 for the Netherlands)
+  and summer time "EU rule", the server, Save, then "now": the clock in
+  the menu bar right; set... with a date typed; a reboot keeps the right
+  time (the server at every start). Verified on the U64 by
+  s3bu64.py on 2026-11-12; the summer switch itself in March 2027.
 - The System page (2026-11-12): turbo off and a step with - and +
   (the speed changes at once), full speed again; add... on the slow
   list picks a program from drive A (Disk goes to B, C, D) and shows

@@ -294,6 +294,8 @@ IniName:        .byte "SETTINGS.INI", 0
 SetTime:
         jsr OvlCall             ; (module 75: FE_SETTIME, from GEOS's clock;
         .byte 75, 6             ; a stub: back to the function's caller)
+Summer: jsr OvlCall             ; (module 79: the EU's summer time?)
+        .byte 79, 3
 
 UNIX_FROM_NTP   = 2208988800    ; seconds 1900-1970
 month           = year + 1      ; GEOS's clock (geos.inc: year)
@@ -305,8 +307,9 @@ DAY             = 86400
 
 ; OvClocks (from module 76): nTime (NTP seconds) + nOff as a date and
 ; time in GEOS's clock (year 80-99: 19xx, else 20xx), then the CIA's
-; time of day and the Ultimate's clock from it (FE_SETTIME). X = 0 or
-; the error.
+; time of day and the Ultimate's clock from it (FE_SETTIME). With
+; nDst (summer=eu) an hour more in the EU's summer time. X = 0 or the
+; error.
 OvClocks:
         sec                     ; Unix time: - UNIX_FROM_NTP
         ldx #0
@@ -317,7 +320,10 @@ OvClocks:
         txa
         eor #4
         bne @unix
-        clc                     ; + the offset (three bytes, its sign
+        lda nDst                ; summer time decided on the UTC date
+        beq @local
+        jsr Dst
+@local: clc                     ; + the offset (three bytes, its sign
         ldx #0                  ; then to the fourth)
 @off:   lda nTime,x
         adc nOff,x
@@ -336,6 +342,55 @@ OvClocks:
         jsr Time                ; hour, minutes, seconds
         jsr Years               ; year, month, day
         jmp SetTime
+
+; Dst: in the EU's summer time (Summer), nOff an hour more; nTime as
+; it was (the UTC date is worked out from a copy).
+Dst:    ldx #3
+@keep:  lda nTime,x
+        sta nSave,x
+        dex
+        bpl @keep
+        jsr Days
+        lda nDays               ; the weekday: (days + 4) mod 7 (1970-01-01
+        clc                     ; a Thursday; 0: Sunday) to nTry
+        adc #4
+        sta r6L
+        lda nDays+1
+        adc #0
+        ldx #16
+        ldy #0                  ; (Y: the remainder)
+@div:   asl r6L
+        rol a
+        pha
+        tya
+        rol a
+        cmp #7
+        bcc :+
+        sbc #7
+:       tay
+        pla
+        dex
+        bne @div
+        sty nTry
+        jsr Time
+        jsr Years
+        jsr Summer              ; (module 79: C set in summer time)
+        bcc @back
+        lda nOff                ; + 3600
+        clc
+        adc #<3600
+        sta nOff
+        lda nOff+1
+        adc #>3600
+        sta nOff+1
+        bcc @back
+        inc nOff+2
+@back:  ldx #3
+@ret:   lda nSave,x
+        sta nTime,x
+        dex
+        bpl @ret
+        rts
 
 ; Days: nTime / DAY to nDays, the rest to nRest (shift and subtract).
 Days:   lda #0
@@ -446,16 +501,14 @@ Years:  lda #<1970
         sbc #100
 :       sta year
         ldx #0                  ; months
-@mon:   cpx #1
-        bne :+
-        ldy nYear
-        tya
+@mon:   ldy Months,x            ; (February in a leap year: 29; was a
+        cpx #1                  ; .byte $2C skip over a 3-byte lda, which
+        bne :+                  ; ran into its operand: sweep 2026-11-12)
+        lda nYear
         and #3
         bne :+
-        lda #29
-        .byte $2C               ; (bit abs: skips the next lda)
-:       lda Months,x
-        sta feMN
+        iny
+:       sty feMN
         lda nDays
         sec
         sbc feMN
@@ -483,14 +536,68 @@ Months: .byte 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
         .scope Mod79
 
         jmp Parse               ; entry 0
+        jmp Summer              ; entry 3 (module 78, Dst)
+
+month           = year + 1      ; GEOS's clock (geos.inc: year)
+day             = year + 2
+hour            = year + 3
+
+; Summer: C set when the UTC date and hour (GEOS's clock, nTry its
+; weekday) lie in the EU's summer time: from the last Sunday of March
+; to the last Sunday of October, each at 01:00 UTC (EU directive
+; 2000/84/EC's rule, the user's choice of 2026-11-12).
+Summer: lda month
+        cmp #3
+        bcc @no
+        beq @march
+        cmp #10
+        bcc @yes                ; (April to September)
+        bne @no
+        jsr LastSun             ; October: before its last Sunday 01:00
+        cmp day
+        bcc @no
+        bne @yes
+        lda hour
+        beq @yes
+@no:    clc
+        rts
+@march: jsr LastSun             ; March: from its last Sunday 01:00
+        cmp day
+        bcc @yes
+        bne @no
+        lda hour
+        beq @no
+@yes:   sec
+        rts
+
+; LastSun: A = the day of the last Sunday of a 31-day month (31 less
+; the 31st's weekday: (the weekday + 31 - day) mod 7).
+LastSun:
+        lda #31
+        sec
+        sbc day
+        clc
+        adc nTry
+@mod:   cmp #7
+        bcc :+
+        sbc #7
+        bcs @mod
+:       sta r6L
+        lda #31
+        sec
+        sbc r6L
+        rts
+
 
 ; Parse (from module 77, SETTINGS.INI at TEXT, zero-ended): the lines
-; of [time]: "ntp=" and "offset=" (keys in any case).
+; of [time]: "ntp=", "offset=" and "summer=" (eu: nDst 1; keys in any
+; case).
 Parse:  lda #<TEXT
         sta r5L
         lda #>TEXT
         sta r5H
         lda #0
+        sta nDst
         sta nTry                ; (here: inside [time])
 @line:  ldy #0
         lda (r5),y
@@ -513,8 +620,17 @@ Parse:  lda #<TEXT
         jmp @next
 :       ldx #OffKey - Keys
         jsr Match
-        bcc @next
+        bcc :+
         jsr Offset
+        jmp @next
+:       ldx #SumKey - Keys      ; "summer=eu": the EU's summer time
+        jsr Match
+        bcc @next
+        lda (r5),y
+        ora #$20
+        cmp #'e'
+        bne @next
+        inc nDst
 @next:  ldy #0                  ; past the line's end
 @skip:  lda (r5),y
         beq @end
@@ -631,5 +747,6 @@ Keys:
 TimeKey:        .byte "[time]", 0
 NtpKey:         .byte "ntp=", 0
 OffKey:         .byte "offset=", 0
+SumKey:         .byte "summer=", 0
 
         .endscope

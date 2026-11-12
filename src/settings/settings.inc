@@ -21,6 +21,7 @@ StashRAM        = $C2C8
 FetchRAM        = $C2CB
 
 FE_ENTRY        = 30            ; the file engine: guExtTable + 30
+TXT_LN_4_Y      = 64            ; a dialog's fourth text line (16 to 80 in steps of 16)
 
 ; The screen (docs/SETTINGS.md, "Decisions": a side list of pages, the
 ; page on the right, OK, Cancel and Save at the bottom)

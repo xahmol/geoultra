@@ -10,7 +10,8 @@
         .include "settings.inc"
 
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
-        .export FileEngine, dirty, NoRoom
+        .import TimeDraw, TimePress
+        .export FileEngine, dirty, NoRoom, Write
 
         .segment "ZEROPAGE"
 
@@ -356,11 +357,11 @@ SIDE_BASE       = 9             ; a page name's baseline below its row top
 
 ; Each page's drawing and click routines (stubs into its overlay, ovl.s;
 ; Later and NoPress for the pages still to come), in PAGE_* order.
-DrawLo:         .byte <Later, <DeskDraw, <SysDraw, <Later, <Later, <Later, <PtrDraw
-DrawHi:         .byte >Later, >DeskDraw, >SysDraw, >Later, >Later, >Later, >PtrDraw
-PressLo:        .byte <NoPress, <DeskPress, <SysPress, <NoPress, <NoPress, <NoPress
+DrawLo:         .byte <Later, <DeskDraw, <SysDraw, <TimeDraw, <Later, <Later, <PtrDraw
+DrawHi:         .byte >Later, >DeskDraw, >SysDraw, >TimeDraw, >Later, >Later, >PtrDraw
+PressLo:        .byte <NoPress, <DeskPress, <SysPress, <TimePress, <NoPress, <NoPress
                 .byte <PtrPress
-PressHi:        .byte >NoPress, >DeskPress, >SysPress, >NoPress, >NoPress, >NoPress
+PressHi:        .byte >NoPress, >DeskPress, >SysPress, >TimePress, >NoPress, >NoPress
                 .byte >PtrPress
         .assert * - PressHi = PAGES_N, error, "a press routine per page"
 

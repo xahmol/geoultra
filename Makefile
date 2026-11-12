@@ -143,7 +143,7 @@ build/settings/settings.cvt: $(SETSRCS) src/settings/settings.inc $(SETICONS) bu
 	for f in $(SETSRCS); do $(CA65) -g -I src/inc -I src/settings -I build/gen -o build/settings/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/settings/settings.cfg -m build/settings/settings.map -Ln build/settings/settings.lbl -o build/settings/settings.bin build/settings/settings.o $(patsubst src/settings/%.s,build/settings/%.o,$(filter-out src/settings/settings.s,$(SETSRCS)))
 	$(PYTHON) $(GEOSAPP) src/settings/settings.toml build/settings/settings.bin build/settings/settings-seq.cvt
-	$(PYTHON) tools/vlircvt.py build/settings/settings-seq.cvt $@ build/settings/settings.bin.1 build/settings/settings.bin.2 build/settings/settings.bin.3
+	$(PYTHON) tools/vlircvt.py build/settings/settings-seq.cvt $@ build/settings/settings.bin.1 build/settings/settings.bin.2 build/settings/settings.bin.3 build/settings/settings.bin.4
 
 # External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
 # at gush's transient area (src/cmds/cmd.cfg), a GEOS APPL_DATA file of
@@ -417,6 +417,7 @@ test-engine: all
 	$(PYTHON) tests/engine/e1.py
 	$(PYTHON) tests/engine/e2.py
 	$(PYTHON) tests/engine/long.py
+	$(PYTHON) tests/engine/dst.py
 
 # gush, the GeoUltra shell (tests/gush/g*.py, docs/GUSH.md): started from a
 # test D81 in VICE, keys through keyVector and GEOS's key queue, its screen
@@ -483,6 +484,7 @@ test-settings: all
 	$(PYTHON) tests/settings/s1g.py
 	$(PYTHON) tests/settings/s2.py
 	$(PYTHON) tests/settings/s3.py
+	$(PYTHON) tests/settings/s3b.py
 
 # GeoUltra's own desktop (docs/DESKTOP.md): VICE; test-desktop-u64 on the
 # U64 (SETTINGS.INI desktop=geoultra, made and deleted again).

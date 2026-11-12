@@ -162,6 +162,23 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   in the core: widgets.s (buttons with labels centred by measured
   width), choice options without a value (the key taken out: "full
   speed"). The Time page is S3b. Test: s3.py (9 checks in VICE).
+  **S3b done (2026-11-12), the Time page:** ptime.s (overlay 4): the
+  server (typed in GEOS's input dialog; empty: ntp= taken out), "now"
+  (the settings written first, as the kernal reads [time] from the
+  file, then FE_NTP), the zone with - and + in quarter hours from
+  UTC-12:00 to UTC+14:00 (offset= seconds), summer time EU rule / off
+  (summer=), the date and time typed as YYYY-MM-DD HH:MM (checked,
+  then GEOS's clock and FE_SETTIME). The kernal: [time] summer=eu read
+  in module 79; module 78 works out the UTC date first and adds an
+  hour in the EU's summer time (the last Sundays of March and October
+  at 01:00 UTC, the decision in module 79 for room). Found on the way:
+  module 78's month loop skipped over a 3-byte instruction with a
+  2-byte `bit`, so every date from February in a leap year came out
+  as month 109 (2028 the first one hit; confirmed with the old code,
+  fixed). Tests: tests/engine/dst.py (12 checks in VICE: both switches
+  of 2026 to the second, summer and winter days, the rule off, a
+  negative offset, February 2028), s3b.py (9 checks in VICE),
+  s3bu64.py ("now" with pool.ntp.org on the U64: the clock right).
 - **S4, the Theme page:** the theme editor (themefile.s's parsing
   shared, the mock preview, palettes).
 - **S5, the Drives page:** MOUNTS.INI, DNP sizes, long names, new

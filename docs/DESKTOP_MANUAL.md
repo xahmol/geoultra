@@ -256,7 +256,12 @@ panes; they take effect when the desktop starts again (after OK).
 once), the programs that run at 1 MHz (add... picks a program on
 drives A-D; remove takes the selected one out) and how long the
 system waits without input before it hibernates (off, 15 s, 30 s,
-1 min, 5 min). **Pointer** chooses the mouse pointer: classic arrow, large arrow, hand
+1 min, 5 min). **Time**: the time server (click the box to type it),
+"now" to set the clock from it (it saves the settings first), the time
+zone in quarter hours, summer time by the EU's rule or off, and the
+date and time by hand (set..., typed as YYYY-MM-DD HH:MM). The server
+also sets the clock at every start. **Pointer** chooses the mouse
+pointer: classic arrow, large arrow, hand
 or crosshair; it changes at once and stays at every start. The other
 pages (theme, system with turbo and the time, drives, REU) follow;
 their plan is in docs/SETTINGS.md.
