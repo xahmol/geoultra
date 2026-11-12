@@ -1237,7 +1237,7 @@ Status: lda tStatus
         sta r2L
         lda #199
         sta r2H
-        jsr FullSpan
+        jsr StatusSpan
         jsr Rectangle
         lda count               ; "21 entries, 2 selected" (".." not
         ldx count+1             ; counted; "1 entry"; no selection: no
@@ -1267,7 +1267,11 @@ Status: lda tStatus
         txa
         pha
         ldx #CommaWord
-        jsr Words
+        lda panes               ; (two panes: "2 selected" alone, half a
+        beq :+                  ; line has no room for both)
+        ldy #0
+        ldx #COMMA_SKIP
+:       jsr Words
         pla
         tax
         pla
@@ -1276,8 +1280,12 @@ Status: lda tStatus
         jsr Words
 @left:  lda #0
         sta stBuf,y
-        lda #4
-        sta textX
+        lda #4                  ; (two panes: in the pane's half)
+        ldx panes
+        beq :+
+        clc
+        adc listL
+:       sta textX
         lda #<stBuf
         ldx #>stBuf
         jsr StatusText
@@ -1302,19 +1310,33 @@ Status: lda tStatus
         sta stBuf,y
         iny
         ldx #FreeWord
-        jsr Words               ; "B free"
-        lda #0
+        jsr Words               ; "B free" ("B" alone with two panes)
+        lda panes
+        beq :+
+        dey
+        dey
+        dey
+        dey
+        dey
+:       lda #0
         sta stBuf,y
         lda #<stBuf
         sta r0L
         lda #>stBuf
         sta r0H
         jsr TextWidth
-        lda #<316               ; x = 316 - the width
+        lda paneR               ; x = the right edge - 3 - the width
+        sec
+        sbc #3
+        sta r11L
+        lda paneR+1
+        sbc #0
+        sta r11H
+        lda r11L
         sec
         sbc r2L
         sta r11L
-        lda #>316
+        lda r11H
         sbc r2H
         sta r11H
         lda #198
@@ -1324,8 +1346,28 @@ Status: lda tStatus
         sta r2L
         lda #199
         sta r2H
-        jsr FullSpan
+        jsr StatusSpan
         jmp InvertRectangle
+
+; StatusSpan: r3-r4 = the status line: the full width, or with two
+; panes the pane's half (each pane its own), short of the middle by a
+; pixel each (x 159-160 left blank: the divider).
+StatusSpan:
+        jsr FullSpan
+        lda panes
+        beq @end
+        lda listL
+        sta r3L
+        lda paneR
+        sta r4L
+        lda paneR+1
+        sta r4H
+        lda listL               ; a gap in the middle (the user: a divider):
+        beq :+                  ; the right half from x 161, the left one to
+        inc r3L                 ; x 158
+        rts
+:       dec r4L
+@end:   rts
 
 ; ProgressStart: "Copying 3 of 12: name" on the status line (A = the
 ; verb: 0 copying, 1 moving, 2 deleting; progN of progTotal, "Copying
@@ -1635,6 +1677,7 @@ EntriesWord = * - StatusWords
         .byte " entries", 0
 CommaWord = * - StatusWords
         .byte ", ", 0
+COMMA_SKIP = CommaWord + 2      ; (its zero: an empty text, Status)
 SelectedWord = * - StatusWords
         .byte " selected", 0
 FreeWord = * - StatusWords
@@ -1935,10 +1978,13 @@ SelAll: jsr ClearSel
         .assert ENTRY_MAX <= 2048, error, "SelAll: sel at most 256 bytes"
 
 ; SwapPane: the active pane's state (path, count, top, cur, entryBank,
-; sel) exchanged with the other pane's in the REU (bank PANE_BANK from
-; PANE_PAGE: after the clipboard, actions.s). Destroys A, X, Y, r0-r3.
+; sel, the free space) exchanged with the other pane's in the REU (bank
+; PANE_BANK, a page a part, from
+; PANE_PAGE: after the clipboard, actions.s; four parts, a page each:
+; the path, the selection, count to entryBank, the free space). Destroys
+; A, X, Y, r0-r3.
 SwapPane:
-        ldx #2
+        ldx #3
 @part:  lda PartLo,x            ; r0 = the part here
         sta r0L
         lda PartHi,x
@@ -1967,9 +2013,9 @@ SwapPane:
         dex
         bpl @part
         rts
-PartLo: .byte <path, <sel, <count
-PartHi: .byte >path, >sel, >count
-PartLen:.byte 0, SEL_LEN, PANE_VARS ; (the path: 256, see above)
+PartLo: .byte <path, <sel, <count, <freeOK
+PartHi: .byte >path, >sel, >count, >freeOK
+PartLen:.byte 0, SEL_LEN, PANE_VARS, FREE_LEN ; (the path: 256, see above)
 
 ; PaneInit (desktop.s, at the start): the other pane's state: "/" and
 ; empty, its table in banks 3-4.
@@ -1985,6 +2031,7 @@ PaneInit:
         sta top+1
         sta cur
         sta cur+1
+        sta freeOK              ; (its free space not known yet)
         jsr ClearSel
         lda #ENTRY_BANK2
         sta entryBank
@@ -2074,6 +2121,7 @@ freeOK:         .byte 0         ; FreeRead: 1 when freeVal holds the space
 freeVal:        .word 0
 freeMB:         .byte 'K'
 freePre:        .res FREE_PRE_MAX + 2
+FREE_LEN = * - freeOK           ; (a pane's: SwapPane)
 
         .segment "BSS"
 

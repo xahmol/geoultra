@@ -131,7 +131,7 @@ CTX_N           = 11            ; the context menu's items (ctxmenu.s):
                                 ; info, favourite, new folder, copy and move
                                 ; to the other pane (list.s CtxDo)
 PANE_BANK       = 5             ; the other pane's state (list.s SwapPane):
-PANE_PAGE       = $FC           ; after the clipboard (actions.s), 3 pages
+PANE_PAGE       = $FC           ; after the clipboard (actions.s), 4 pages
 TB_TWO          = 0             ; the toolbar (tbMode): two lines, 16 px,
 TB_ONE          = 1             ; one line, 8 px,
 TB_OFF          = 2             ; none

@@ -605,6 +605,12 @@ colour is a property of an element, by name:
   **P5 done (2026-11-12):** copy to other (C=T) and move to other (C=M)
   in the file menu and the context menu: copied or cut to the clipboard,
   pasted with the other pane active, back, this pane read again.
+  **The status line per pane (the user, 2026-11-12):** with two panes
+  each pane's half shows its entries (or the number selected) and its
+  drive's free space ("B: 98 KB"); a gap at x 159-160 continues the
+  divider (the user). The free space is part of a pane's state
+  (SwapPane's fourth part, bank 5 `$FF00`). The core has 50 bytes left:
+  P6 (drag and drop) needs room made first.
 - **Design answers (the user, 2026-11-12, second round):**
   - *Two panes:* the list view in each pane (the detailed columns do not
     fit 160 pixels; the chosen view returns when two panes go off; the

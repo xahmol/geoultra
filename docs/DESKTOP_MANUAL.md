@@ -47,8 +47,9 @@ button goes through them in turn):
 
 view > two panes (C=P, or the toolbar's button between view and
 refresh) shows two folders side by side, the sidebar hidden. Each pane
-has its own folder, list, selection and scroll strip; the active pane's
-path line is inverted, and the menus, keys and toolbar act on it. A
+has its own folder, list, selection, scroll strip and half of the status
+line (its entries, or the number selected, and its drive's free space);
+the active pane's path line is inverted, and the menus, keys and toolbar act on it. A
 click in a pane, or C=SPACE, makes it the active one. The panes show the
 list or the icon view (the detailed view's columns do not fit). The
 same keys and menu switch back to one list, with the view from before.
