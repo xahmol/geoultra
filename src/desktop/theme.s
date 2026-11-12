@@ -21,8 +21,10 @@
         .export sideW, listL, ejectCard, pathY, listTop, rowH, rows, bottom
         .export trackTop, trackBot, trackH, iconCard, nameX, sideTx, stY0, stY1
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList
-        .export Neutral, Dialog, MenuNeutral, Recover, ClockDraw, ClockTick
+        .export Neutral, Dialog, MenuNeutral, Recover, ClockTick
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
+        .export lastMin, clockX, MonLo, MonHi
+        .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
         .export tbMode, topY, titleEnd
         .import ToolPaint, IconLayout, step, sortPending, SortNow
         .import BusyPause, BusyResume
@@ -545,137 +547,9 @@ ClockTick:
         jsr SortNow
 :       lda minutes
         cmp lastMin
-        bne ClockDraw
-        rts
-
-; ClockDraw: "Wed 11 Nov 2026  21:42" right in the menu bar (menubar
-; style clock; the user's format, 2026-11-11), from GEOS's date and time
-; (years 2000-2099). Destroys r0-r15's usual ones.
-ClockDraw:
-        lda tMenu
-        cmp #ST_CLOCK
         beq :+
-        rts
-:       lda minutes
-        sta lastMin
-        jsr ClockClear
-        lda clockMode
-        cmp #CLOCK_OFF
-        bne :+
-        rts
-:       jsr Weekday             ; the text
-        tax
-        ldy #0
-        lda DayLo,x
-        sta r1L
-        lda DayHi,x
-        sta r1H
-        jsr Copy3
-        lda #' '
-        sta clockText,y
-        iny
-        lda day
-        jsr Dec2
-        lda #' '
-        sta clockText,y
-        iny
-        ldx month
-        dex
-        lda MonLo,x
-        sta r1L
-        lda MonHi,x
-        sta r1H
-        jsr Copy3
-        lda #' '
-        sta clockText,y
-        iny
-        lda #'2'                ; the year: 20yy
-        sta clockText,y
-        iny
-        lda #'0'
-        sta clockText,y
-        iny
-        lda year
-        jsr Dec2z
-        lda #' '
-        sta clockText,y
-        iny
-        sta clockText,y
-        iny
-        lda clockMode           ; 12-hour: "9:42 pm", 0 and 12 as 12
-        bne @h12
-        lda hour
-        jsr Dec2z
-        jsr Minutes
-        jmp @end
-@h12:   lda hour
-        sec
-        sbc #12
-        bcs :+
-        adc #12                 ; (am: the hour as it is)
-:       bne :+
-        lda #12
-:       jsr Dec2
-        jsr Minutes
-        ldx #'a'
-        lda hour
-        cmp #12
-        bcc :+
-        ldx #'p'
-:       lda #' '
-        sta clockText,y
-        iny
-        txa
-        sta clockText,y
-        iny
-        lda #'m'
-        sta clockText,y
-        iny
-@end:   lda #0
-        sta clockText,y
-        lda #<clockText
-        sta r0L
-        lda #>clockText
-        sta r0H
-        jsr TextWidth
-        lda #<316               ; right-aligned at x 316
-        sec
-        sbc r2L
-        sta r11L
-        sta clockX              ; (ClockClear's left edge next time)
-        lda #>316
-        sbc r2H
-        sta r11H
-        sta clockX+1
-        lda #10
-        sta r1H
-        lda #<clockText
-        sta r0L
-        lda #>clockText
-        sta r0H
-        jmp PutString
-CLOCK_X0        = 200           ; the clear's left edge before a first text
-CLOCK_TEXT_LEN  = 26            ; "Wed 11 Nov 2026  12:42 pm" and its zero
-
-; ClockClear: the clock's place in the menu bar cleared, from the last
-; text's left edge (clockX: a wider text starts left of CLOCK_X0) to the
-; edge.
-ClockClear:
-        lda #0
-        jsr SetPattern
-        lda #1
-        sta r2L
-        lda #12
-        sta r2H
-        lda clockX
-        sta r3L
-        lda clockX+1
-        sta r3H
-        lda #<318
-        sta r4L
-        lda #>318
-        sta r4H
-        jmp Rectangle
+        jmp ClockDraw           ; (overlay 5, tooldraw.s)
+:       rts
 
 ; MonthName: r1 = month A's (1-12) three letters. Destroys X.
 MonthName:
@@ -685,82 +559,6 @@ MonthName:
         lda MonHi-1,x
         sta r1H
         rts
-
-; Minutes: ":" and the minutes (two digits) at clockText + Y.
-Minutes:
-        lda #':'
-        sta clockText,y
-        iny
-        lda minutes
-        jmp Dec2z
-
-; Copy3: three characters from r1 to clockText + Y.
-Copy3:  ldx #0
-@c:     sty tmp
-        txa
-        tay
-        lda (r1),y
-        ldy tmp
-        sta clockText,y
-        iny
-        inx
-        cpx #3
-        bcc @c
-        rts
-
-; Dec2: A (0-99) in decimal at clockText + Y, without a leading zero;
-; Dec2z with one.
-Dec2:   cmp #10
-        bcs Dec2z
-        ora #'0'
-        sta clockText,y
-        iny
-        rts
-Dec2z:  ldx #'0'
-@t:     cmp #10
-        bcc :+
-        sbc #10
-        inx
-        bne @t
-:       pha
-        txa
-        sta clockText,y
-        iny
-        pla
-        ora #'0'
-        sta clockText,y
-        iny
-        rts
-
-; Weekday: A = the day of the week of GEOS's date (0 Sunday), for 2000
-; to 2099: (y + y / 4 + Month[m] + d) mod 7 with y one less in January
-; and February (Sakamoto's method; 2000's own offset folds to 0, 1999's
-; to 5 when y would go below 0).
-Weekday:
-        lda year
-        ldx month
-        cpx #3
-        bcs @y
-        sec
-        sbc #1
-        bcs @y
-        lda #5                  ; (January or February 2000: 1999)
-        bne @md
-@y:     sta tmp
-        lsr a
-        lsr a
-        clc
-        adc tmp
-@md:    ldx month
-        clc
-        adc MonthOff-1,x
-        clc
-        adc day
-@mod:   cmp #7
-        bcc @end
-        sbc #7
-        bcs @mod
-@end:   rts
 
 ; TextWidth: r2 = the width of the text at r0 in the current font
 ; (boldOn: a pixel more per character; control codes below 32 not
@@ -788,15 +586,7 @@ TextWidth:
 @end:   rts
 
 BarH:           .byte 16, 8, 0  ; the toolbar's height by tbMode
-MonthOff:       .byte 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4
-DayNames:       .byte "SunMonTueWedThuFriSat"
 MonNames:       .byte "JanFebMarAprMayJunJulAugSepOctNovDec"
-DayLo:          .repeat 7, i
-                .byte <(DayNames + 3 * i)
-                .endrepeat
-DayHi:          .repeat 7, i
-                .byte >(DayNames + 3 * i)
-                .endrepeat
 MonLo:          .repeat 12, i
                 .byte <(MonNames + 3 * i)
                 .endrepeat
@@ -869,7 +659,8 @@ boldOn:         .byte 0         ; TextWidth: 1 with SET_BOLD
 origBorder:     .byte 0
 bordSaved:      .byte 0
 lastMin:        .byte $FF
-clockX:         .word CLOCK_X0  ; the clock text's left edge (ClockDraw)
+clockX:         .word 200       ; the clock text's left edge (tooldraw.s,
+                                ; ClockDraw; 200 before a first text)
 clockMode:      .byte 0         ; the clock: 0 24-hour, 1 12-hour, 2 off
 viewMode:       .byte 0         ; the list: 0 list, 1 icons, 2 detailed
 tbMode:         .byte TB_TWO    ; the toolbar (TB_*; a view option)
@@ -886,4 +677,3 @@ pcol:           .byte 0
         .segment "BSS"
 
 shadow:         .res 1000       ; the desktop's colours (Paint)
-clockText:      .res CLOCK_TEXT_LEN

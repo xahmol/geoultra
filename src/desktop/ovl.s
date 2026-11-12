@@ -3,7 +3,8 @@
 ; to 6 overlays at TRANS ($5000-$5FFF): 1 the theme files
 ; (themefile.s), 2 the actions with the recursion into folders
 ; (actions.s, tree.s), 3 mounting (mount.s), 4 the INI files
-; (inifile.s), 5 the toolbar's drawing (tooldraw.s), 6 sorting the list
+; (inifile.s), 5 the toolbar's drawing and the clock (tooldraw.s), 6
+; sorting the list
 ; (sort.s). The loader and OvlGo are ovlcore.inc (shared with gush);
 ; this file names the bank and the stubs. Own code.
 
@@ -47,4 +48,5 @@ OvlFail:
         Stub ToolbarSave, 4
         Stub ToolDraw, 5        ; overlay 5: tooldraw.s
         Stub BigInit, 5
+        Stub ClockDraw, 5
         Stub SortList, 6        ; overlay 6: sort.s
