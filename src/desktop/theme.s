@@ -539,7 +539,9 @@ Recover:
 ; SortNow); the clock drawn again when the minute changed.
 ClockTick:
         lda sortPending         ; (list.s: a folder read, to be sorted;
-        beq :+                  ; here, in MainLoop, an overlay may run)
+        beq :+                  ; here, in MainLoop, an overlay may run:
+                                ; never in a dialog, as DoDlgBox clears
+                                ; appMain while it runs, dialog.s)
         jsr SortNow
 :       lda minutes
         cmp lastMin

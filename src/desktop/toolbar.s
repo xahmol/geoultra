@@ -82,9 +82,12 @@ ToolPress:
         rts                     ; (the action's rts: back with C as left)
 
 ; The buttons' actions (C on return does not matter: Press ends).
+; Root: the list of all drives ("/").
 Root:   lda #<RootPath
         ldx #>RootPath
         jmp Into
+; Home: GeoUltra's folder on the Ultimate (FE_HOME, its last "/"
+; dropped); nothing without an Ultimate.
 Home:   lda #<homePath          ; FE_HOME ("/USB0/GEOULTRA/"; none
         sta r1L                 ; without an Ultimate: nothing)
         lda #>homePath
@@ -108,9 +111,11 @@ Home:   lda #<homePath          ; FE_HOME ("/USB0/GEOULTRA/"; none
 :       lda #<homePath
         ldx #>homePath
         jmp Into
+; Top: the cursor on the first entry (the list's HOME key).
 Top:    lda #KEY_HOME           ; (the list's own key)
         jmp ListKey
-ViewNext:                       ; list -> icons -> detailed -> list
+; ViewNext: the next view: list -> icons -> detailed -> list.
+ViewNext:
         ldx viewMode
         inx
         txa
@@ -118,9 +123,11 @@ ViewNext:                       ; list -> icons -> detailed -> list
         bcc :+
         lda #VIEW_LIST
 :       jmp View
+; Refresh: the folder read again (and sorted, list.s).
 Refresh:
         jsr ListRead
         jmp ListDraw
+; Nothing: a button without an action yet (info).
 Nothing:
         rts
 
