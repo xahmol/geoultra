@@ -317,6 +317,23 @@ does not show the server's status code).
   rows as the normal view, plus a key for a full 40 x 25 screen (the
   menu back by key or the pointer at the top); to settle in the
   terminal's design round.
+- **ANSI as well (the user's question, 2026-11-12):** the colours fit:
+  ANSI gives each character a foreground and a background, a hi-res
+  cell has exactly one of each (also the 16 backgrounds of "iCE
+  colours"); with an Ultimate 64 palette the 16 VIC colours become the
+  PC's 16 (exact, as the theme palettes), on an Ultimate II+ the
+  nearest VIC colours. The character set (code page 437's box drawing
+  and blocks) must be own drawings, 8 pixels high (clean-room: not the
+  PC's font). The limit is width: ANSI is 80 columns, 320 pixels give
+  4-pixel characters, two per colour cell, so two neighbours of
+  different colours clash (plain text and menus mostly fine, detailed
+  art not). Suggested: both views by key: 80 columns (4 x 8 glyphs,
+  the whole width, the cell's colours from one of its two characters)
+  and 40 columns (8 x 8 glyphs, exact colours, the view panning with
+  the cursor or the mouse); 22 rows beside the menu and the task bar,
+  the full-screen switch for 25. The C128's VDC has 80 columns but in
+  text mode one background for all characters; its bitmap mode has
+  cells as on the C64.
 - **The order** (in rising order of scope; the browser last, after the
   Gopher client and the terminal):
   1. *Fetch* (a gush command first, a dialog later): a file from an
