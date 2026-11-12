@@ -269,9 +269,12 @@ UCI).
   (docs/GUSH_COMMANDS.md), the geos-oscar64 C library, building and
   testing.
 
-## Ideas after 1.0 (the user, 2026-11-12; not for the first release)
+## Roadmap: network and Ultimate applications (the user, 2026-11-12)
 
-Assessed, not planned. The Ultimate gives TCP and UDP sockets (UCI
+On the roadmap (the user, 2026-11-12: all of them), after the first
+release; the order below is the suggested one (smallest first, each
+building on the one before), to be fixed when phase 3 ends. The Ultimate
+gives TCP and UDP sockets (UCI
 network target: connect, read up to a packet of 896 bytes, write; no
 listening sockets in firmware 3.15) and an HTTP target (firmware 3.15;
 the library's functions are untested on hardware, and a raw exchange
@@ -290,10 +293,12 @@ does not show the server's status code).
   (GEOS's driver turns C= + key into shortcuts), a phone book, and
   downloads (XMODEM, Punter) through the file engine onto any drive.
   Speed is not the problem: the socket delivers far faster than a modem.
-- **A light web browser for HTTP sites: feasible, larger scope, limited
-  use.** Most of the web is HTTPS only; useful targets are retro sites
-  and the proxies made for old machines (text-only versions of modern
-  sites served over HTTP, such as FrogFind and 68k.news). GEOS suits the
+- **A light web browser for HTTP sites: feasible, larger scope.** The
+  target (the user, 2026-11-12) is exactly the sites made for old
+  machines: FrogFind (search and modern pages simplified, served over
+  HTTP) and the like (68k.news, text-only sites). HTTPS: research on
+  supporting it in the Ultimate's firmware is going on (the user); if it
+  comes, the browser takes it through the firmware, not on the 6502. GEOS suits the
   rendering: proportional fonts, bold and italic, headings in larger
   sizes, word wrap, links as underlined text. Pages kept in the REU (16
   MB) and parsed as a stream; HTTP/1.0 over a raw TCP socket (status
@@ -301,8 +306,8 @@ does not show the server's status code).
   only as simple search fields; images left out (alt text), at most
   small ones later. A Gopher client is the cheap first step: plain text
   and menus, the same rendering and history, a fraction of the work.
-- **Other applications that use the Ultimate without much creep** (in
-  rising order of scope):
+- **The order** (in rising order of scope; the browser last, after the
+  Gopher client and the terminal):
   1. *Fetch* (a gush command first, a dialog later): a file from an
      HTTP URL onto a drive or the Ultimate, CVT files converted as with
      copy. Small; gives access to GEOS software archives.
@@ -318,6 +323,8 @@ does not show the server's status code).
   5. *A Gopher client* (above), as the network's showcase before any
      browser.
   6. *The BBS terminal* (above).
+  7. *The web browser* (above), on the Gopher client's rendering and
+     history.
 
 ## Verified in VICE
 
