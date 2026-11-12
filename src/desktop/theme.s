@@ -23,7 +23,7 @@
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList
         .export Neutral, Dialog, MenuNeutral, Recover, ClockTick
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
-        .export lastMin, clockX, MonLo, MonHi
+        .export lastMin, clockX, MonLo, MonHi, stripL, listR, paneR
         .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
         .export tbMode, topY, titleEnd
         .import ToolPaint, IconLayout, step, sortPending, SortNow, RightPress
@@ -676,6 +676,11 @@ viewMode:       .byte 0         ; the list: 0 list, 1 icons, 2 detailed
 tbMode:         .byte TB_TWO    ; the toolbar (TB_*; a view option)
 topY:           .byte 32        ; the content's top (under the toolbar)
 titleEnd:       .byte 40        ; the title bar's end (topY + 8)
+stripL:         .word STRIP_LEFT ; the list's scroll strip (its left edge),
+listR:          .word STRIP_LEFT - 3 ; the list's right edge,
+paneR:          .word SCREEN_RIGHT ; the list area's (with the strip) right
+                                ; edge: the whole list now; a pane's with
+                                ; two panes (DESKTOP.md, P4)
 at:             .byte 0
 tmp:            .byte 0
 px0:            .byte 0

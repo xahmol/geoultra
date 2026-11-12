@@ -13,7 +13,7 @@
         .import EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, cur
         .import ListDraw, count, ThumbRows, top, path, Follow, Up, Into, step
         .import rows, listL, listTop, pathY, bottom, topY, stY0, stY1, tScroll
-        .import openReq, text, TextWidth, rowH, IsSelected
+        .import openReq, text, TextWidth, rowH, IsSelected, stripL
         .export Ov_ListPress, Ov_ListKey
 cutPath = text                  ; (list.s's PathPress buffer: side.s's text)
 Ov_ListPress = ListPress
@@ -106,13 +106,10 @@ ListPress:
         bcs :+
 @out:   sec
         rts
-:       lda mouseXPos+1         ; the strip?
-        cmp #>STRIP_LEFT
-        bcc @list
-        beq :+
-        jmp @strip
-:       lda mouseXPos
-        cmp #<STRIP_LEFT
+:       lda mouseXPos           ; the strip? (x >= stripL)
+        cmp stripL
+        lda mouseXPos+1
+        sbc stripL+1
         bcc @list
         jmp @strip
 @list:  jsr EntryUnder

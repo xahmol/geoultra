@@ -16,7 +16,7 @@
 
         .import listL, listTop, bottom, rows, viewMode, cur, row, RowEntry
         .import IsSelected, entryInfo, entryName, IconFor, Icons, TextWidth
-        .import FileEngine, text, IsDotDot
+        .import FileEngine, text, IsDotDot, stripL
         .export IconLayout, DrawCell, CellAt, IconsForget, step, gridCols, bigOk
 
 CELL_CARDS      = 5             ; a cell: 5 cards wide (the icon on 1-3)
@@ -45,7 +45,12 @@ IconLayout:
         lsr a
         lsr a
         sta first
-        lda #STRIP_LEFT / 8
+        lda stripL+1            ; (the strip's card: stripL / 8)
+        lsr a
+        lda stripL
+        ror a
+        lsr a
+        lsr a
         sec
         sbc first
         ldx #0

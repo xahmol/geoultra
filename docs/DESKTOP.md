@@ -577,6 +577,12 @@ colour is a property of an element, by name:
   at x 152; the detailed view's columns (COL_SIZE, COL_DATE,
   COL_NAME_END) are fixed x positions (in a 160-pixel pane: the list
   view, to be decided in P4).
+  **P2 done (2026-11-12):** the list's edges are variables (theme.s:
+  stripL, listR, paneR; their start values the full list beside the
+  sidebar): the clear, the path line's underline, the title's centring
+  and span, the selection bar, the name clip, the strip (rewritten for
+  any x: its card, line and thumb from stripL), the strip's hit test
+  (listin.s), InList, the icon grid's width. P4 sets them per pane.
 - **Design answers (the user, 2026-11-12, second round):**
   - *Two panes:* the list view in each pane (the detailed columns do not
     fit 160 pixels; the chosen view returns when two panes go off; the

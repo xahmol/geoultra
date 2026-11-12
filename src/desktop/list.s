@@ -24,7 +24,7 @@
         .export ListRead, ListDraw, path, count
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot, ListEnd, SelAll, row, RowEntry
-        .import IconsForget, DrawCell, CellAt, step, tbMode
+        .import IconsForget, DrawCell, CellAt, step, tbMode, stripL, listR, paneR
         .export Frame, Place, SortNow, sortPending, RightPress
         .export EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, Follow
         .export ThumbRows
@@ -214,9 +214,12 @@ ListDraw:
         sta r3L
         lda #0
         sta r3H
-        lda #<(STRIP_LEFT - 1)
+        lda stripL              ; (to the strip: stripL - 1)
+        sec
+        sbc #1
         sta r4L
-        lda #>(STRIP_LEFT - 1)
+        lda stripL+1
+        sbc #0
         sta r4H
         jsr Rectangle
         jsr Title
@@ -235,9 +238,9 @@ ListDraw:
         adc #2
         sta r11L
         jsr ListSpan
-        lda #<SCREEN_RIGHT
+        lda paneR
         sta r4L
-        lda #>SCREEN_RIGHT
+        lda paneR+1
         sta r4H
         lda #$FF
         jsr HorizontalLine
@@ -345,9 +348,9 @@ ListSpan:
         sta r3L
         lda #0
         sta r3H
-        lda #<LIST_RIGHT
+        lda listR
         sta r4L
-        lda #>LIST_RIGHT
+        lda listR+1
         sta r4H
         rts
 
@@ -371,7 +374,7 @@ DrawRow:
         lsr a
         lsr a
         sta px0
-        lda #LIST_RIGHT / 8
+        jsr ListRCard           ; (the list's right edge, a card)
         sta px1
         lda ry
         lsr a
@@ -441,14 +444,14 @@ DrawRow:
         sta r3H
         adc r2H
         sta r4H
-        cmp #>LIST_RIGHT        ; (clipped at the list's edge)
+        cmp listR+1        ; (clipped at the list's edge)
         bne :+
         lda r4L
-        cmp #<LIST_RIGHT
+        cmp listR
 :       bcc :+
-        lda #<LIST_RIGHT
+        lda listR
         sta r4L
-        lda #>LIST_RIGHT
+        lda listR+1
         sta r4H
 :       lda ry
         clc
@@ -509,8 +512,8 @@ DrawRow:
 ; NameClip: textClip = the list's right edge, or before the columns in
 ; the detailed view.
 NameClip:
-        lda #<LIST_RIGHT
-        ldx #>LIST_RIGHT
+        lda listR
+        ldx listR+1
         ldy viewMode
         cpy #VIEW_DETAILED
         bne :+
@@ -640,9 +643,9 @@ RowBase:
 
 ; ColText: stBuf at textX, baseline Y, clipped at the list's right edge.
 ColText:
-        lda #<LIST_RIGHT
+        lda listR
         sta textClip
-        lda #>LIST_RIGHT
+        lda listR+1
         sta textClip+1
         lda #<stBuf
         ldx #>stBuf
@@ -734,9 +737,12 @@ RowBox: lda ry
         sta r3L
         lda #0
         sta r3H
-        lda #<(LIST_RIGHT - 1)
+        lda listR
+        sec
+        sbc #1
         sta r4L
-        lda #>(LIST_RIGHT - 1)
+        lda listR+1
+        sbc #0
         sta r4H
         rts
 
@@ -822,12 +828,12 @@ Title:  lda tTitle
         sta tw
         lda listL
         clc
-        adc #<SCREEN_RIGHT
+        adc paneR
         sta cx
-        lda #>SCREEN_RIGHT
+        lda paneR+1
         adc #0
         lsr a
-        ror cx                  ; (listL + 319) / 2
+        ror cx                  ; (listL + paneR) / 2
         lda tw
         lsr a
         sta tmp
@@ -903,15 +909,15 @@ TitleRows:
         stx r2H
         rts
 
-; TitleSpan: r3 = listL, r4 = the screen's right edge.
+; TitleSpan: r3 = listL, r4 = the pane's right edge (paneR).
 TitleSpan:
         lda listL
         sta r3L
         lda #0
         sta r3H
-        lda #<SCREEN_RIGHT
+        lda paneR
         sta r4L
-        lda #>SCREEN_RIGHT
+        lda paneR+1
         sta r4H
         rts
 
@@ -960,16 +966,24 @@ TitleName:
         sta r0H
         rts
 
-; Strip: the scroll strip (x STRIP_LEFT-319, stY0-stY1): arrows in boxes
-; and a grey thumb, or a thin line with a black one.
+; Strip: the scroll strip (x stripL to paneR, stY0-stY1): arrows in
+; boxes and a grey thumb, or a thin line with a black one. Any x: the
+; strip's place is a variable (stripL, theme.s: a pane's or the list's).
 Strip:  lda #0
         jsr SetPattern
         jsr StripRect
         jsr Rectangle
+        lda stripL+1            ; its card: stripL / 8 (stripL < 512)
+        lsr a
+        lda stripL
+        ror a
+        lsr a
+        lsr a
+        sta card
         lda tScroll
         bne @thin
         lda #IC_UP
-        ldx #STRIP_LEFT / 8
+        ldx card
         ldy stY0
         iny
         jsr IconUp
@@ -978,7 +992,7 @@ Strip:  lda #0
         sbc #8
         tay
         lda #IC_DOWN
-        ldx #STRIP_LEFT / 8
+        ldx card
         jsr IconUp
         jsr StripRect           ; the frame, the arrows' boxes
         lda #$FF
@@ -997,44 +1011,48 @@ Strip:  lda #0
         sta r2L
         lda #$FF
         jsr FrameRectangle
-        lda #2                  ; the thumb: grey
-        ldx #STRIP_LEFT + 1 - 256
-        ldy #<(SCREEN_RIGHT - 1)
+        lda #2                  ; the thumb: grey, x + 1 to x + 6
+        ldx #1
+        ldy #6
         bne @thumb
-@thin:  lda stY0                ; a line in the middle
+@thin:  lda stY0                ; a line in the middle (x + 4)
         sta r3L
         lda stY1
         sta r3H
-        lda #<(STRIP_LEFT + 4)
-        sta r4L
-        lda #>(STRIP_LEFT + 4)
+        lda #4
+        jsr StripX
+        lda r3L                 ; (StripX: r3; VerticalLine wants r4 for x)
+        pha
+        lda r3H
+        pha
+        lda stY0
+        sta r3L
+        lda stY1
+        sta r3H
+        pla
         sta r4H
+        pla
+        sta r4L
         lda #$FF
         jsr VerticalLine
-        lda #1                  ; the thumb: black, 3 pixels
-        ldx #STRIP_LEFT + 3 - 256
-        ldy #STRIP_LEFT + 5 - 256
-@thumb: sta tmp                 ; (pattern), x1 and x2 low bytes (high 1)
-        stx r3L
-        sty r4L
-        lda #1
-        sta r3H
-        sta r4H
+        lda #1                  ; the thumb: black, x + 3 to x + 5
+        ldx #3
+        ldy #5
+@thumb: sta tmp                 ; (its pattern), the offsets of its sides
+        stx thumbX0
+        sty thumbX1
         lda count
         ora count+1
         beq @end                ; (nothing listed: no thumb)
+        jsr ThumbRows           ; (r2: its rows)
+        lda thumbX1             ; r4 = stripL + x1
+        jsr StripX
         lda r3L
-        pha
-        lda r4L
-        pha
-        jsr ThumbRows
-        pla
         sta r4L
-        pla
-        sta r3L
-        lda #1
-        sta r3H
+        lda r3H
         sta r4H
+        lda thumbX0             ; r3 = stripL + x0
+        jsr StripX
         lda tmp
         jsr SetPattern
         jsr Rectangle
@@ -1042,19 +1060,38 @@ Strip:  lda #0
         jmp SetPattern
 @end:   rts
 
+; StripX: r3 = stripL + A.
+StripX: clc
+        adc stripL
+        sta r3L
+        lda stripL+1
+        adc #0
+        sta r3H
+        rts
+
+; ListRCard: A = the list's right edge's card (listR / 8; listR < 512).
+ListRCard:
+        lda listR+1
+        lsr a
+        lda listR
+        ror a
+        lsr a
+        lsr a
+        rts
+
 ; StripRect: r2-r4 = the strip.
 StripRect:
         lda stY0
         sta r2L
         lda stY1
         sta r2H
-        lda #<STRIP_LEFT
+        lda stripL
         sta r3L
-        lda #>STRIP_LEFT
+        lda stripL+1
         sta r3H
-        lda #<SCREEN_RIGHT
+        lda paneR
         sta r4L
-        lda #>SCREEN_RIGHT
+        lda paneR+1
         sta r4H
         rts
 
@@ -1711,15 +1748,15 @@ InList: lda mouseYPos
         lda bottom
         cmp mouseYPos
         bcc @no
-        lda mouseXPos+1
-        bne @high
+        lda mouseXPos+1         ; listL <= x (listL < 256)
+        bne :+
         lda mouseXPos
         cmp listL
         bcc @no
-        clc
-        rts
-@high:  lda mouseXPos           ; (256 and more: left of the strip)
-        cmp #<STRIP_LEFT
+:       lda mouseXPos           ; x < stripL
+        cmp stripL
+        lda mouseXPos+1
+        sbc stripL+1
         bcs @no
         clc
         rts
@@ -1900,6 +1937,9 @@ last:           .word $FFFF         ; the entry clicked last
 handle:         .byte 0
 row:            .byte 0
 tmp:            .byte 0
+card:           .byte 0         ; Strip: its card
+thumbX0:        .byte 0         ; and its thumb's sides (from stripL)
+thumbX1:        .byte 0
 tmpH:           .byte 0
 mode:           .byte 0
 mods:           .byte 0
