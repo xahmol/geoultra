@@ -269,6 +269,56 @@ UCI).
   (docs/GUSH_COMMANDS.md), the geos-oscar64 C library, building and
   testing.
 
+## Ideas after 1.0 (the user, 2026-11-12; not for the first release)
+
+Assessed, not planned. The Ultimate gives TCP and UDP sockets (UCI
+network target: connect, read up to a packet of 896 bytes, write; no
+listening sockets in firmware 3.15) and an HTTP target (firmware 3.15;
+the library's functions are untested on hardware, and a raw exchange
+does not show the server's status code).
+
+- **Telnet BBS client with PETSCII and colour: feasible, medium scope.**
+  The cleanest way is for the terminal to switch the VIC to text mode
+  with the machine's own character ROM while it runs (exact PETSCII, 16
+  colours per character, hardware scrolling help; no glyphs copied) and
+  back to the GEOS bitmap for its menus and dialogs, GEOS's interrupt
+  and processes running on. A bitmap renderer (40 x 25 in 8 x 8 cells,
+  one colour pair per cell, as PETSCII has) would also work, with REU
+  DMA for scrolling. Needed: PETSCII control codes (colours, reverse,
+  cursor, clear), a minimal telnet negotiation (IAC answered with
+  refusals), its own keyboard reading for the C= and SHIFT graphics keys
+  (GEOS's driver turns C= + key into shortcuts), a phone book, and
+  downloads (XMODEM, Punter) through the file engine onto any drive.
+  Speed is not the problem: the socket delivers far faster than a modem.
+- **A light web browser for HTTP sites: feasible, larger scope, limited
+  use.** Most of the web is HTTPS only; useful targets are retro sites
+  and the proxies made for old machines (text-only versions of modern
+  sites served over HTTP, such as FrogFind and 68k.news). GEOS suits the
+  rendering: proportional fonts, bold and italic, headings in larger
+  sizes, word wrap, links as underlined text. Pages kept in the REU (16
+  MB) and parsed as a stream; HTTP/1.0 over a raw TCP socket (status
+  codes and redirects); UTF-8 folded to the GEOS character set; forms
+  only as simple search fields; images left out (alt text), at most
+  small ones later. A Gopher client is the cheap first step: plain text
+  and menus, the same rendering and history, a fraction of the work.
+- **Other applications that use the Ultimate without much creep** (in
+  rising order of scope):
+  1. *Fetch* (a gush command first, a dialog later): a file from an
+     HTTP URL onto a drive or the Ultimate, CVT files converted as with
+     copy. Small; gives access to GEOS software archives.
+  2. *A plain text editor* for files on the Ultimate and SEQ files
+     (MOUNTS.INI, SETTINGS.INI, themes, read-me files): those cannot be
+     opened from the desktop now. Small to medium, reuses the desktop's
+     fonts and dialogs.
+  3. *A calendar desk accessory* on the NTP clock (month view, the
+     date's day of the week). Small.
+  4. *A music desk accessory on the Ultimate 64's Ultimate Audio* (MOD
+     files played by the hardware, so GEOS keeps running; the library
+     has the MOD player). Small to medium; U64 only.
+  5. *A Gopher client* (above), as the network's showcase before any
+     browser.
+  6. *The BBS terminal* (above).
+
 ## Verified in VICE
 
 - 2026-10-28: GEOS 2.0's own deskTop, loaded and started by GeoUltra's

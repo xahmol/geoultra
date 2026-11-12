@@ -33,8 +33,8 @@
         .import tbMode, Derive
         .exportzp lp, sp        ; (inifile.s, overlay 4, uses them)
 
-CODE_FAV        = $80           ; sidebar codes (desktop.s, Press):
-CODE_REC        = $90           ; the list's base + the index
+CODE_FAV        = $80           ; sidebar codes (desktop.s, Press; CODE_REC
+                                ; in desktop.inc): the base + the index
 
         .segment "ZEROPAGE"
 

@@ -63,9 +63,11 @@ the button held: the selection is dragged (its icon follows the
 pointer). Released over the other pane, it goes into that pane's
 folder: moved on the same drive, copied to another drive. Released
 over a folder in the same list (one that is not part of the
-selection), it is moved into that folder. Hold C= while releasing to
-copy instead of move (or move instead of copy). Folders are taken with
-everything in them. Dropping onto the sidebar is still to come.
+selection), it is moved into that folder. Released over a drive or a
+favourite in the sidebar (with one list), it goes into that drive's
+top folder or that favourite folder: moved on the same drive, copied to
+another. Hold C= while releasing to copy instead of move (or move
+instead of copy). Folders are taken with everything in them.
 
 ## Moving around
 

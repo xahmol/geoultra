@@ -542,7 +542,8 @@ colour is a property of an element, by name:
   copy and move code as paste.
 - **Settings tool (the user, 2026-11-12):** its own application
   "GeoUltra Settings" on drive E in assembler, started from the geos
-  menu and gush; first version: the theme editor (each line, the
+  menu, a toolbar button (the user, 2026-11-12: both; the button's place
+  to settle, the toolbar is full up to gush) and gush; first version: the theme editor (each line, the
   desktop's look as preview, saved as a theme file), desktop (default
   desktop, view, toolbar, clock), system (turbo and the slow list,
   hibernation delay, NTP server and time zone), mouse pointer designs.
@@ -625,10 +626,15 @@ colour is a property of an element, by name:
   into the other pane, that pane is sorted on the spot (it is drawn as
   the inactive one, and SortNow only sorts the active pane); the
   progress text keeps to the active pane's half of the status line.
-  Still to do: drops on the sidebar's folders and drives (the user's
-  decision), a drop indicator (the folder under the pointer marked).
   The VICE test drags gush into the other pane (moved) and F1 onto a
   new folder (moved into it); the sprite itself and C= are hand tests.
+  **Sidebar drops (2026-11-12):** with one list, a drop on a drive line
+  (A-E, usb0, usb1, sd) or a favourite goes into that folder (recent
+  documents are no target). listin.s builds every target's path in
+  dropPath (`text + 1024`: Paste uses only text's first 256 bytes); the
+  core's DropDo exchanges path and dropPath around the paste, which
+  took the path building out of the core. Still to do: a drop indicator
+  (the folder under the pointer marked while dragging).
 - **Design answers (the user, 2026-11-12, second round):**
   - *Two panes:* the list view in each pane (the detailed columns do not
     fit 160 pixels; the chosen view returns when two panes go off; the

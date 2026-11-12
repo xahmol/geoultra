@@ -15,6 +15,7 @@
         .import rows, listL, listTop, pathY, bottom, topY, stY0, stY1, tScroll
         .import openReq, text, TextWidth, rowH, IsSelected, stripL, sel
         .import panes, active, PaneAt, dropReq, dropAt, Fetch, entryInfo, IconFor, Icons
+        .import dropPath, entryName, path, sideW, sideCount, sideTops, sideLetters, Setup, Slot
         .export Ov_ListPress, Ov_ListKey, Ov_ListEnd, Ov_SelAll
 Ov_ListEnd = ListEnd
 Ov_SelAll = SelAll
@@ -395,9 +396,10 @@ ListKey:
 ; Drag (ListPress, a press on entry pick): when pick is selected and the
 ; pointer moves DRAG_MIN pixels with the button held, the selection is
 ; dragged (its icon as sprite DRAG_SPR) until the button is released;
-; dropped on the other pane, or on a folder of this list that is not
-; selected, the core copies or moves it there (dropReq, desktop.s
-; DropDo: the actions are overlay 2's): the same drive moves, another
+; dropped on the other pane, on a folder of this list that is not
+; selected, or on a sidebar drive or favourite, the core copies or moves
+; it there (dropReq; dropPath the target folder; desktop.s DropDo): the
+; same drive moves, another
 ; copies, C= held the other way. C set: no drag (a click: on as usual):
 ; an entry not selected, the second press of a double click, a release
 ; before the move, or a press held still for about two seconds (the wait
@@ -464,16 +466,15 @@ Drag:   lda pick
         and #MOD_CBM
         sta flip
         lda panes               ; the other pane?
-        beq @entry
+        beq @side
         jsr PaneAt
         cmp active
         beq @entry
-        jsr SameDrive           ; (Z set: the same drive: a move)
-        beq :+
+        jsr OtherPath           ; (its path: for the drive's comparison)
         lda #DROP_OTHER_COPY
         bne @req
-:       lda #DROP_OTHER_MOVE
-        bne @req
+@side:  jsr SideTarget          ; a sidebar drive or favourite?
+        bcc @path
 @entry: jsr EntryUnder          ; a folder of this list, not selected?
         bcs @none
         sta dropAt
@@ -488,13 +489,117 @@ Drag:   lda pick
         beq :+
         cmp #K_UDIR
         bne @none
-:       lda #DROP_IN_MOVE       ; (the same list: the same drive)
-@req:   ldx flip                ; C=: the other way (move <-> copy)
-        beq :+
+:       jsr EntryPath           ; dropPath = path "/" its name
+@path:  lda #DROP_PATH_COPY
+@req:   sta dropReq             ; the same drive: a move (bit 0); C= at
+        jsr SameDrive           ; the release: the other way
+        bne :+
+        inc dropReq
+:       lda flip
+        beq @none
+        lda dropReq
         eor #1
-:       sta dropReq
+        sta dropReq
 @none:  clc
         rts
+
+; EntryPath: dropPath = path, "/" (unless it ends in one), entryName;
+; cut at its end when too long (Paste then fails on it and says so).
+EntryPath:
+        ldy #$FF
+@p:     iny
+        lda path,y
+        sta dropPath,y
+        bne @p
+        lda path-1,y            ; (the root "/": no second one)
+        cmp #'/'
+        beq :+
+        lda #'/'
+        sta dropPath,y
+        iny
+:       ldx #0
+@n:     lda entryName,x
+        sta dropPath,y
+        beq @end
+        inx
+        iny
+        bne @n
+        dey
+        lda #0
+        sta dropPath,y
+@end:   rts
+
+; SideTarget: C clear when the pointer is over a sidebar drive or
+; favourite line (one list: the sidebar shown), dropPath then its path:
+; "/a" ... "/e", "/usb0", "/usb1", "/sd", or the favourite's folder. A
+; recent document's line is no target. The lines as desktop.s's Press
+; finds them (sideTops, sideLetters).
+SideTarget:
+        lda mouseXPos+1
+        bne @no
+        ldx sideW
+        dex
+        cpx mouseXPos
+        bcc @no
+        beq @no
+        ldx #0
+@line:  cpx sideCount
+        bcs @no
+        lda mouseYPos
+        sec
+        sbc sideTops,x
+        bcc @next
+        cmp rowH
+        bcc @hit
+@next:  inx
+        bne @line
+@no:    sec
+        rts
+@hit:   lda sideLetters,x
+        bmi @fav
+        ldx #RootSd - Roots     ; an Ultimate root ('0', '1', 's'), or
+        cmp #'s'                ; "/" and the drive's letter
+        beq @root
+        ldx #RootUsb1 - Roots
+        cmp #'1'
+        beq @root
+        ldx #RootUsb0 - Roots
+        cmp #'0'
+        beq @root
+        sta dropPath+1
+        lda #'/'
+        sta dropPath
+        lda #0
+        sta dropPath+2
+        clc
+        rts
+@root:  ldy #0
+:       lda Roots,x
+        sta dropPath,y
+        beq @ok
+        inx
+        iny
+        bne :-
+@fav:   cmp #CODE_REC           ; (a recent document: none)
+        bcs @no
+        and #$0F
+        pha
+        ldx #L_FAV
+        jsr Setup
+        pla
+        jsr Slot                ; r6 = its path
+        ldy #PATH_LEN - 1
+:       lda (r6),y
+        sta dropPath,y
+        dey
+        bpl :-
+@ok:    clc
+        rts
+
+Roots:
+RootUsb0:       .byte "/usb0", 0
+RootUsb1:       .byte "/usb1", 0
+RootSd:         .byte "/sd", 0
 
 ; Far: C set when A (a signed difference) is DRAG_MIN or more away.
 Far:    bpl :+
@@ -548,13 +653,13 @@ Sprite: lda pick
         sta r3L
         jmp EnablSprite
 
-; SameDrive: Z set when the other pane's path is on the same drive as
-; path (their first parts: "/a", "/usb0" ...). The other pane's path:
-; its first 16 bytes from the REU (list.s SwapPane's first part).
-SameDrive:
-        lda #<other
+; OtherPath: dropPath's start = the other pane's path's first 16
+; bytes, from the REU (list.s SwapPane's first part): enough for
+; SameDrive.
+OtherPath:
+        lda #<dropPath
         sta r0L
-        lda #>other
+        lda #>dropPath
         sta r0H
         lda #0
         sta r1L
@@ -565,18 +670,22 @@ SameDrive:
         sta r2L
         lda #PANE_BANK
         sta r3L
-        jsr FetchRAM
+        jmp FetchRAM
+
+; SameDrive: Z set when dropPath is on the same drive as path (their
+; first parts: "/a", "/usb0" ...).
+SameDrive:
         ldy #0
 @ch:    iny
         lda path,y              ; path's first part ended (0 or "/")?
         beq @pend
         cmp #'/'
         beq @pend
-        cmp other,y             ; no: the same character in the other's
+        cmp dropPath,y          ; no: the same character in the other's
         beq @ch
 @diff:  lda #1                  ; (Z clear: another drive)
         rts
-@pend:  lda other,y             ; yes: the other's must end here too
+@pend:  lda dropPath,y          ; yes: the other's must end here too
         beq :+
         cmp #'/'
         bne @diff
@@ -659,7 +768,6 @@ waitH:  .byte 0
 dy:     .byte 0
 flip:   .byte 0                 ; C= held at the drop
 sprite: .res 64                 ; the dragged icon's sprite image
-other:  .res 16                 ; SameDrive: the other pane's path's start
 lo:     .word 0                 ; Range
 hi:     .word 0
 key:    .byte 0                 ; ListKey

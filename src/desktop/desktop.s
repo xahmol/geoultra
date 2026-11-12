@@ -19,8 +19,11 @@
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
         .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
-        .import CopyOther, MoveOther, CdPath, Fetch, entryName
-        .export dropReq, dropAt
+        .import CopyOther, MoveOther, CdPath
+        .export dropReq, dropAt, dropPath, sideCount, sideTops, sideLetters
+        .import text
+dropPath = text + 1024           ; a drop's target folder (listin.s; text's
+                                ; start is Paste's "full"; 256 bytes)
         .export openReq
         .import Root, Home, Top, ListEnd, Up
         .import Eject, HasImage, EjectIcon, IconUp
@@ -180,56 +183,44 @@ Key:    lda keyData
         rts
 
 ; DropDo: a drop listin.s asked for (dropReq, DROP_*): into the other
-; pane (panes.s), or into the folder entry dropAt of this list: copied or
-; cut, path extended by its name for the paste, then back and read again.
+; pane (panes.s), or into the folder dropPath: the selection copied or
+; cut, path and dropPath exchanged for the paste, then back and read
+; again.
 DropDo: lda dropReq
         beq @end
         ldx #0
         stx dropReq
-        cmp #DROP_OTHER_MOVE
-        bne :+
-        jmp MoveOther
-:       cmp #DROP_OTHER_COPY
-        bne :+
+        cmp #DROP_PATH_COPY
+        bcs @path
+        lsr a                   ; (bit 0: a move)
+        bcs :+
         jmp CopyOther
-:       cmp #DROP_IN_MOVE
-        beq @cut
+:       jmp MoveOther
+@path:  lsr a
+        bcs @cut
         jsr Copy
         jmp @in
 @cut:   jsr Cut
-@in:    lda dropAt              ; its name
-        ldx dropAt+1
-        jsr Fetch
-        ldy #$FF                ; path's end
-@e:     iny
-        lda path,y
-        bne @e
-        sty pathEnd
-        lda path-1,y            ; "/" unless it ends in one (the root)
-        cmp #'/'
-        beq :+
-        lda #'/'
-        sta path,y
-        iny
-:       ldx #0
-@n:     lda entryName,x
-        sta path,y
-        beq @go
-        inx
-        iny
-        bne @n
-        dey                     ; (too long: cut)
-        lda #0
-        sta path,y
-@go:    jsr CdPath
+@in:    jsr SwapPath
+        jsr CdPath
         jsr Paste
-        ldy pathEnd             ; back
-        lda #0
-        sta path,y
+        jsr SwapPath            ; back
         jsr CdPath
         jsr ListRead
         jmp ListDraw
 @end:   rts
+
+; SwapPath: path and dropPath exchanged (256 bytes each).
+SwapPath:
+        ldx #0
+@b:     lda path,x
+        ldy dropPath,x
+        sta dropPath,x
+        tya
+        sta path,x
+        inx
+        bne @b
+        rts
 
 ; OpenReq: the entry under the cursor opened when listin.s asked for it
 ; (openReq: an overlay must not open, Open may start a program or mount).
@@ -1457,8 +1448,7 @@ InfoLine2:      .byte "milestone 1 (in development)", 0
 driveLine:      .byte "A", 0
 
 dropReq:        .byte 0         ; listin.s: a drop (DROP_*), done by DropDo
-dropAt:         .word 0         ; and its folder entry (DROP_IN_*)
-pathEnd:        .byte 0         ; DropDo: path's end before the folder
+dropAt:         .word 0         ; listin.s's scratch: the folder entry
 openReq:        .byte 0         ; listin.s: open the entry under the cursor
 feVec:          .word 0
 sideY:          .byte 0         ; the next sidebar line's top

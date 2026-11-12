@@ -9,7 +9,8 @@ its half of the status line; copy and move to the other pane (C=T,
 C=M) into a new /b/dst; drag and drop (step P6): gush dragged from /b
 onto the right pane (the same drive: moved), F1 dragged onto a new
 folder box in the same list (moved into it); two panes off: the view
-from before back. Screens: build/harness/gush/desktop-d13*.png.
+from before back; in one list F1 dropped on drive b's sidebar line
+(moved to /b). Screens: build/harness/gush/desktop-d13*.png.
 Usage: tests/desktop/d13.py
 """
 import os
@@ -203,6 +204,20 @@ def main():
         g.png("desktop-d13-drag")
         call(k["TwoPanes"], 0, s=8)
         check("two panes off: the icon view back", (byte("panes"), byte("viewMode")), (0, VIEW_ICONS))
+        # A drop on the sidebar (one list): F1 from /b/box onto drive b's
+        # line: moved to /b (the same drive).
+        call(k["View"], VIEW_LIST)
+        check("one list in /b/box: .., F1", (here(), word("count")), ("/b/box", 2))
+        n = byte("sideCount")
+        letters = bytes(v.mem_get(k["sideLetters"], k["sideLetters"] + n - 1))
+        tops = bytes(v.mem_get(k["sideTops"], k["sideTops"] + n - 1))
+        y = tops[letters.index(b"b")] + 3
+        drag(120, row_y(1), 20, y)
+        check("F1 dropped on drive b's line: gone from /b/box", word("count"), 1)
+        g.keys([8], settle=0.5)                                    # up: /b
+        settle(5)
+        g.png("desktop-d13-side")
+        check("/b: .., box, dst, F1", (here(), word("count")), ("/b", 4))
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

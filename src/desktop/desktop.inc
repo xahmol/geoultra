@@ -135,9 +135,10 @@ PANE_PAGE       = $FC           ; after the clipboard (actions.s), 4 pages
 ENTRY_MAX       = 1024          ; a pane's entries (list.s: two REU banks)
 SEL_LEN         = ENTRY_MAX / 8 ; the selection's bytes
 DROP_OTHER_COPY = 2             ; a drop (listin.s -> desktop.s DropDo; 0
-DROP_OTHER_MOVE = 3             ; none): into the other pane, copied or
-DROP_IN_COPY    = 4             ; moved; into a folder of the list, copied
-DROP_IN_MOVE    = 5             ; or moved (C= flips bit 0)
+                                ; none): into the other pane, or into the
+DROP_PATH_COPY  = 4             ; folder dropPath; + 1: moved (bit 0)
+CODE_REC        = $90           ; sidebar codes: favourites $80 + the slot,
+                                ; recent documents CODE_REC + the slot
 TB_TWO          = 0             ; the toolbar (tbMode): two lines, 16 px,
 TB_ONE          = 1             ; one line, 8 px,
 TB_OFF          = 2             ; none
