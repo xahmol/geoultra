@@ -16,6 +16,7 @@
         .import openReq, text, TextWidth, rowH, IsSelected, stripL, sel
         .import panes, active, PaneAt, dropReq, dropAt, Fetch, entryInfo, IconFor, Icons
         .import dropPath, entryName, path, sideW, sideCount, sideTops, sideLetters, Setup, Slot
+        .import RowY, RowBox, ry, row, viewMode
         .export Ov_ListPress, Ov_ListKey, Ov_ListEnd, Ov_SelAll
 Ov_ListEnd = ListEnd
 Ov_SelAll = SelAll
@@ -442,7 +443,10 @@ Drag:   lda pick
         jsr Far
         bcc @wait
 @drag:  jsr Sprite              ; the entry's icon at the pointer
-@track: lda #DRAG_SPR
+        lda #0
+        sta hover
+@track: jsr Hover               ; (the target under the pointer marked)
+        lda #DRAG_SPR
         sta r3L
         lda mouseXPos
         clc
@@ -458,6 +462,8 @@ Drag:   lda pick
         jsr PosSprite
         lda mouseData
         bpl @track              ; (held)
+        lda #0                  ; (the mark taken away)
+        jsr MarkTo
         lda #DRAG_SPR
         sta r3L
         jsr DisablSprite
@@ -535,24 +541,8 @@ EntryPath:
 ; recent document's line is no target. The lines as desktop.s's Press
 ; finds them (sideTops, sideLetters).
 SideTarget:
-        lda mouseXPos+1
-        bne @no
-        ldx sideW
-        dex
-        cpx mouseXPos
-        bcc @no
-        beq @no
-        ldx #0
-@line:  cpx sideCount
-        bcs @no
-        lda mouseYPos
-        sec
-        sbc sideTops,x
-        bcc @next
-        cmp rowH
+        jsr SideLine
         bcc @hit
-@next:  inx
-        bne @line
 @no:    sec
         rts
 @hit:   lda sideLetters,x
@@ -595,6 +585,113 @@ SideTarget:
         bpl :-
 @ok:    clc
         rts
+
+; SideLine: C clear and X = the sidebar line under the pointer when it
+; is a drive or a favourite (a recent document's line: C set).
+SideLine:
+        lda mouseXPos+1
+        bne @no
+        ldx sideW
+        dex
+        cpx mouseXPos
+        bcc @no
+        beq @no
+        ldx #0
+@line:  cpx sideCount
+        bcs @no
+        lda mouseYPos
+        sec
+        sbc sideTops,x
+        bcc @next
+        cmp rowH
+        bcc @hit
+@next:  inx
+        bne @line
+@no:    sec
+        rts
+@hit:   lda sideLetters,x
+        cmp #CODE_REC
+        bcs @no                 ; (C set)
+        rts                     ; (C clear)
+
+; Hover (Drag, while the button is held): the drop target under the
+; pointer marked (MarkTo): a sidebar drive or favourite line with one
+; list, or a folder of this pane's list that is not selected (the list
+; and detailed views; the icon view gets no mark).
+Hover:  lda panes
+        bne @list
+        jsr SideLine
+        bcs @list
+        txa
+        ora #$80
+        bne MarkTo
+@list:  lda viewMode
+        cmp #VIEW_ICONS
+        beq @none
+        lda panes
+        beq :+
+        jsr PaneAt
+        cmp active
+        bne @none
+:       jsr EntryUnder
+        bcs @none
+        stx dropAt+1
+        sta dropAt
+        jsr IsSelected
+        bne @none
+        lda dropAt
+        ldx dropAt+1
+        jsr Fetch
+        lda entryInfo + FI_KIND
+        cmp #K_FOLDER
+        beq :+
+        cmp #K_UDIR
+        bne @none
+:       lda row                 ; (EntryUnder's)
+        clc
+        adc #1
+        bne MarkTo
+@none:  lda #0
+; MarkTo: the mark moved to A (0 none, row + 1, or $80 + a sidebar
+; line): the old one inverted back, the new one inverted.
+MarkTo: cmp hover
+        beq @end
+        pha
+        lda hover
+        jsr Flip
+        pla
+        sta hover
+        jmp Flip
+@end:   rts
+
+; Flip: mark A (as MarkTo's) inverted on the screen.
+Flip:   tax
+        beq @end
+        bpl @row
+        and #$7F                ; a sidebar line: x 0 to its line - 2
+        tax
+        lda sideTops,x
+        sta r2L
+        clc
+        adc rowH
+        sbc #0                  ; (C clear: - 1 more)
+        sta r2H
+        lda #0
+        sta r3L
+        sta r3H
+        sta r4H
+        ldx sideW
+        dex
+        dex
+        stx r4L
+        jmp InvertRectangle
+@row:   dex                     ; a row of the list (RowBox)
+        txa
+        jsr RowY
+        sta ry
+        jsr RowBox
+        jmp InvertRectangle
+@end:   rts
 
 Roots:
 RootUsb0:       .byte "/usb0", 0
@@ -763,6 +860,7 @@ SelAll: jsr ClearSel
 
 ; Scratch (overlay data: fetched anew with the overlay)
 dx:     .byte 0                 ; Drag: where the press was
+hover:  .byte 0                 ; Drag: the mark shown (MarkTo)
 waitL:  .byte 0                 ; Drag: rounds waited for a move
 waitH:  .byte 0
 dy:     .byte 0

@@ -163,7 +163,7 @@ def main():
         def row_y(n):
             return byte("listTop") + n * byte("rowH") + 3
 
-        def drag(x0, y0, x1, y1):
+        def drag(x0, y0, x1, y1, shot=None):
             v.mem_set(0x8515, b"\x00")                            # (no double click)
             press(x0, y0, s=2)                                     # select
             v.mem_set(0x8515, b"\x00")
@@ -177,6 +177,8 @@ def main():
             v.mem_set(0x3A, bytes([x1 & 0xFF, x1 >> 8, y1]))       # seconds:
             v.resume()                                             # warp is
             settle(0.5)                                            # faster)
+            if shot:                                               # (held: the
+                g.png(shot)                                        # target marked)
             v.mem_set(0x8505, b"\x80")                            # released
             v.resume()
             settle(30)
@@ -196,7 +198,7 @@ def main():
         g.keys("box\r", settle=0.3)
         settle(5)                                                  # .., box, dst, F1
         check("the left pane: box made", word("count"), 4)
-        drag(60, row_y(3), 60, row_y(1))
+        drag(60, row_y(3), 60, row_y(1), shot="desktop-d13-markrow")
         check("F1 dragged onto box: moved into it", word("count"), 3)
         g.keys([KEY_HOME, KEY_DOWN, 13], settle=0.5)               # into box
         settle(5)
@@ -212,7 +214,7 @@ def main():
         letters = bytes(v.mem_get(k["sideLetters"], k["sideLetters"] + n - 1))
         tops = bytes(v.mem_get(k["sideTops"], k["sideTops"] + n - 1))
         y = tops[letters.index(b"b")] + 3
-        drag(120, row_y(1), 20, y)
+        drag(120, row_y(1), 20, y, shot="desktop-d13-markside")
         check("F1 dropped on drive b's line: gone from /b/box", word("count"), 1)
         g.keys([8], settle=0.5)                                    # up: /b
         settle(5)

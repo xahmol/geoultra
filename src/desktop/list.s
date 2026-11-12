@@ -22,6 +22,7 @@
         .import listL, iconCard, nameX, pathY, listTop, rowH, rows, bottom
         .import stY0, stY1, trackTop, trackBot, trackH, viewMode, MonthName
         .export ListRead, ListDraw, path, count
+        .export RowY, RowBox, ry
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot, row, RowEntry, path
         .import IconsForget, DrawCell, CellAt, step, tbMode, stripL, listR, paneR

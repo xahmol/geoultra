@@ -633,8 +633,10 @@ colour is a property of an element, by name:
   documents are no target). listin.s builds every target's path in
   dropPath (`text + 1024`: Paste uses only text's first 256 bytes); the
   core's DropDo exchanges path and dropPath around the paste, which
-  took the path building out of the core. Still to do: a drop indicator
-  (the folder under the pointer marked while dragging).
+  took the path building out of the core. **The drop target marked
+  (2026-11-12):** while dragging, the folder row or sidebar line under
+  the pointer is inverted (listin.s Hover, MarkTo); the icon view gets
+  no mark yet.
   **Two panes kept (2026-11-12):** SETTINGS.INI `[desktop] panes=1` or
   `2`, written when two panes are switched on or off (inifile.s
   PanesSave), read at the start (DeskRead: wantPanes; side.s SideLoad
