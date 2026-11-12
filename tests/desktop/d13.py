@@ -36,7 +36,12 @@ def main():
     for line in open(os.path.join(ROOT, "build", "kernal64.lbl")):
         p = line.split()
         kern.setdefault(p[2].lstrip("."), int(p[1], 16))
-    g = Gush("desktop-d13", 6665, [])
+    files = []
+    for name in ("f1", "f2"):
+        path = os.path.join(OUT, name)
+        open(path, "wb").write(b"pane %s\r" % name.encode())
+        files.append(path)
+    g = Gush("desktop-d13", 6665, files)
     check = g.check
     v = g.v
 
@@ -117,6 +122,36 @@ def main():
         check("the status line: drive A's free space (the active pane's)",
               b"A:" in free or b"A: " in free, True)
         g.png("desktop-d13-b")
+        # P5: copy and move to the other pane. The right pane into a new
+        # folder /b/dst, the left to /b; F1 copied (C=T), F2 moved (C=M).
+        g.keys([0x80 | ord(" ")], settle=1)                        # right
+        settle(3)
+        g.keys([0x80 | ord("n")], settle=2)
+        settle(2)
+        g.keys("dst\r", settle=0.3)
+        settle(5)
+        g.keys([KEY_HOME, KEY_DOWN, 13], settle=0.5)               # .., dst
+        settle(5)
+        check("the right pane in /b/dst", here(), "/b/dst")
+        g.keys([0x80 | ord(" ")], settle=1)                        # left
+        settle(3)
+        g.keys([8], settle=0.5)                                    # up: /
+        settle(4)
+        g.keys([KEY_HOME, KEY_DOWN, 13], settle=0.5)               # b
+        settle(5)
+        n = word("count")                                          # .., dst, F1, F2, gush
+        check("the left pane in /b", (here(), n), ("/b", 5))
+        g.keys([KEY_HOME, KEY_DOWN, KEY_DOWN], settle=0.5)         # F1
+        g.keys([0x80 | ord("t")], settle=1)
+        settle(30)
+        g.keys([KEY_HOME, KEY_DOWN, KEY_DOWN, KEY_DOWN], settle=0.5)   # F2
+        g.keys([0x80 | ord("m")], settle=1)
+        settle(30)
+        check("after the move: the left pane one entry less", word("count"), n - 1)
+        g.keys([0x80 | ord(" ")], settle=1)
+        settle(3)
+        check("the right pane: F1 copied, F2 moved in", (here(), word("count")), ("/b/dst", 3))
+        g.png("desktop-d13-copy")
         call(k["TwoPanes"], 0, s=8)
         check("two panes off: the icon view back", (byte("panes"), byte("viewMode")), (0, VIEW_ICONS))
     finally:

@@ -602,6 +602,9 @@ colour is a property of an element, by name:
   inverted. The list view in panes (the detailed view refused; the
   icon view works, 3 columns); the view and the title bar come back when
   two panes go off. Two panes are not yet saved in SETTINGS.INI.
+  **P5 done (2026-11-12):** copy to other (C=T) and move to other (C=M)
+  in the file menu and the context menu: copied or cut to the clipboard,
+  pasted with the other pane active, back, this pane read again.
 - **Design answers (the user, 2026-11-12, second round):**
   - *Two panes:* the list view in each pane (the detailed columns do not
     fit 160 pixels; the chosen view returns when two panes go off; the

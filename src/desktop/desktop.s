@@ -19,6 +19,7 @@
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
         .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
+        .import CopyOther, MoveOther
         .export openReq
         .import Root, Home, Top, ListEnd, Up
         .import Eject, HasImage, EjectIcon, IconUp
@@ -191,11 +192,11 @@ KeyActs:
         .byte SHORTCUT | 'r', SHORTCUT | 'n', KEY_DELETE, SHORTCUT | 'o'
         .byte SHORTCUT | 'f', SHORTCUT | 'i', SHORTCUT | 'a', SHORTCUT | 'g'
         .byte SHORTCUT | KEY_LEFT, SHORTCUT | KEY_RIGHT
-        .byte SHORTCUT | 'p', SHORTCUT | ' '
+        .byte SHORTCUT | 'p', SHORTCUT | ' ', SHORTCUT | 't', SHORTCUT | 'm'
 KeyActs_n = * - KeyActs
 ActDo:  .word Copy-1, Cut-1, Paste-1, Rename-1, NewFolder-1, Delete-1, Open-1
         .word FavAdd-1, Info-1, SelAll-1, Gush-1, HistBack-1, HistForward-1
-        .word TwoPanes-1, PaneSwitch-1
+        .word TwoPanes-1, PaneSwitch-1, CopyOther-1, MoveOther-1
         .assert (* - ActDo) / 2 = KeyActs_n, error, "an action per key"
 
 ; The file menu's items: the menus closed, then the action.
@@ -217,6 +218,12 @@ MNew:   jsr GotoFirstMenu
         jmp NewFolder
 MFav:   jsr GotoFirstMenu
         jmp FavAdd
+MCopyOther:
+        jsr GotoFirstMenu
+        jmp CopyOther
+MMoveOther:
+        jsr GotoFirstMenu
+        jmp MoveOther
 MInfo:  jsr GotoFirstMenu
         jmp Info                ; (ctxmenu.s, overlay 7)
 MAll:   jsr GotoFirstMenu
@@ -1208,9 +1215,9 @@ geosItems:
         .res DA_MAX * 5         ; (the accessories, GeosMenu)
 
 fileMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 10 * 14
-        .word 30, 129
-        .byte VERTICAL | UN_CONSTRAINED | 10
+        .byte MENU_BOTTOM, MENU_BOTTOM + 12 * 14
+        .word 30, 139
+        .byte VERTICAL | UN_CONSTRAINED | 12
         .word OpenItem
         .byte MENU_ACTION
         .word MOpen
@@ -1226,6 +1233,12 @@ fileMenu:
         .word PasteItem
         .byte MENU_ACTION
         .word MPaste
+        .word CopyOtherItem
+        .byte MENU_ACTION
+        .word MCopyOther
+        .word MoveOtherItem
+        .byte MENU_ACTION
+        .word MMoveOther
         .word DeleteItem
         .byte MENU_ACTION
         .word MDelete
@@ -1352,6 +1365,8 @@ GoText:         .byte "go", 0
 InfoText:       .byte "GeoUltra info", 0
 GushItem:       .byte "gush      C=G", 0
 InfoItem:       .byte "info      C=I", 0
+CopyOtherItem:  .byte "copy to other  C=T", 0
+MoveOtherItem:  .byte "move to other C=M", 0
 AllItem:        .byte "select all C=A", 0
 GoTexts:        .byte "back", 0, 0, 0, 0
                 .byte "forward", 0

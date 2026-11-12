@@ -126,9 +126,10 @@ THM_LEN         = 22            ; bytes (theme.s's record, themefile.s's)
 BIG_BANK        = 6             ; the icon view's generic icons in the REU
 BIG_PAGE        = $FE           ; (tooldraw.s puts them, iconview.s reads;
                                 ; after the icon cache, iconview.s)
-CTX_N           = 9             ; the context menu's items (ctxmenu.s):
+CTX_N           = 11            ; the context menu's items (ctxmenu.s):
                                 ; open, copy, cut, paste, rename, delete,
-                                ; info, favourite, new folder (list.s CtxDo)
+                                ; info, favourite, new folder, copy and move
+                                ; to the other pane (list.s CtxDo)
 PANE_BANK       = 5             ; the other pane's state (list.s SwapPane):
 PANE_PAGE       = $FC           ; after the clipboard (actions.s), 3 pages
 TB_TWO          = 0             ; the toolbar (tbMode): two lines, 16 px,

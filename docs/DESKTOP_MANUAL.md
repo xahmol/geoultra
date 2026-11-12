@@ -52,8 +52,11 @@ path line is inverted, and the menus, keys and toolbar act on it. A
 click in a pane, or C=SPACE, makes it the active one. The panes show the
 list or the icon view (the detailed view's columns do not fit). The
 same keys and menu switch back to one list, with the view from before.
-Copying between the panes: copy (or cut) in one, then paste in the
-other; drag and drop and "copy to the other pane" are still to come.
+Copying between the panes: "copy to other" (C=T) and "move to other"
+(C=M) in the file menu and the context menu put the selection into the
+other pane's folder (they use the clipboard: it holds those entries
+afterwards); or copy (or cut) in one pane and paste in the other. Drag
+and drop is still to come.
 
 ## Moving around
 

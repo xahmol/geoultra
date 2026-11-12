@@ -32,6 +32,7 @@ PANE_DIV        = 159           ; two panes: the line between them
         .export EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, Follow
         .export ThumbRows
         .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd
+        .import CopyOther, MoveOther
         .import SortList
         .import topY, titleEnd
         .export ProgressStart, ProgressBlock, progN, progTotal, SelCount
@@ -1784,7 +1785,7 @@ RightPress:
         pha
 @end:   rts
 CtxDo:  .word Open-1, Copy-1, Cut-1, Paste-1, Rename-1, Delete-1, Info-1
-        .word FavAdd-1, NewFolder-1
+        .word FavAdd-1, NewFolder-1, CopyOther-1, MoveOther-1
         .assert (* - CtxDo) / 2 = CTX_N, error, "an action per item"
 
 ; InList: C clear when the pointer is over the list's rows or cells

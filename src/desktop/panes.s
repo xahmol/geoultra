@@ -17,7 +17,8 @@
         .import SortList, Derive, viewMode, tTitle, listL, stripL, listR
         .import paneR, iconCard, nameX, tIcons, Back, FreeRead
         .export SetGeom, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
-        .export paneDim
+        .export paneDim, CopyOther, MoveOther
+        .import Copy, Cut, Paste
 
 PANE_W          = 160           ; a pane: x 0-159 or 160-319
 
@@ -151,6 +152,31 @@ SetGeom:
         adc listL
         sta nameX
         rts
+
+; CopyOther, MoveOther (file menu, context menu, C=T, C=M): the
+; selection copied or moved into the other pane's folder: copied or cut
+; to the clipboard, pasted with the other pane active, then back and
+; this pane read again (a move took the entries away). Nothing with one
+; list.
+CopyOther:
+        lda #0
+        beq ToOther
+MoveOther:
+        lda #1
+ToOther:
+        ldx panes
+        beq @end
+        tax
+        bne @cut
+        jsr Copy
+        jmp @paste
+@cut:   jsr Cut
+@paste: jsr PaneSwitch          ; (the other pane active: pasted there)
+        jsr Paste
+        jsr PaneSwitch          ; (back)
+        jsr ListRead
+        jmp ListDraw
+@end:   rts
 
 ; PaneAt: A = the pane under the pointer (0 left, 1 right).
 PaneAt: lda mouseXPos+1

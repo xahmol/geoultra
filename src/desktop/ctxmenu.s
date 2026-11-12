@@ -19,9 +19,9 @@ Ov_Popup = Popup
 Ov_Info = Info
 
 GetNextChar     = $C2A7         ; GEOS jump table
-ITEMS_N         = 9             ; (CTX_* in desktop.inc: their order)
+ITEMS_N         = 11            ; (CTX_* in desktop.inc: their order)
 ITEM_H          = 14            ; as GEOS's menus
-BOX_W           = 84
+BOX_W           = 92
 BOX_H           = ITEMS_N * ITEM_H + 2
 TEXT_DX         = 6             ; an item's text: from the box's left edge
 TEXT_DY         = 10            ; its baseline below the item's top
@@ -633,8 +633,8 @@ PowHi:  .byte >10000, >1000, >100, >10
 
 ; The menu's items (sentence case, the desktop's menus' words) in
 ; CTX_* order (desktop.inc).
-TextLo: .byte <T0, <T1, <T2, <T3, <T4, <T5, <T6, <T7, <T8
-TextHi: .byte >T0, >T1, >T2, >T3, >T4, >T5, >T6, >T7, >T8
+TextLo: .byte <T0, <T1, <T2, <T3, <T4, <T5, <T6, <T7, <T8, <T9, <T10
+TextHi: .byte >T0, >T1, >T2, >T3, >T4, >T5, >T6, >T7, >T8, >T9, >T10
 T0:     .byte "open", 0
 T1:     .byte "copy", 0
 T2:     .byte "cut", 0
@@ -644,6 +644,8 @@ T5:     .byte "delete", 0
 T6:     .byte "info", 0
 T7:     .byte "favourite", 0
 T8:     .byte "new folder", 0
+T9:     .byte "copy to other", 0
+T10:    .byte "move to other", 0
         .assert ITEMS_N = CTX_N, error, "an item per CTX_ code"
 
 KindWord:       .byte "Kind: ", 0
