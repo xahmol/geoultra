@@ -125,6 +125,16 @@ def main():
         settle(5)
         check("a new folder in its sorted place", order()[1:4], ["Adir", "Mdir", "zdir"])
         g.png("desktop-d11")
+        # Two panes, step P3: the other pane's state swapped in and back.
+        def state():
+            return (bytes(v.mem_get(k["path"], k["path"] + 7)).split(b"\0")[0].decode("latin1"),
+                    word("count"), v.mem_get(k["entryBank"], k["entryBank"])[0])
+        mine = state()
+        call(k["SwapPane"], 0, s=3)
+        check("SwapPane: the other pane's state (/, empty, banks 3-4)", state(), ("/", 0, 3))
+        call(k["SwapPane"], 0, s=3)
+        check("SwapPane again: this pane's back", state(), mine)
+        check("its entries unchanged", order()[:3], ["..", "Adir", "Mdir"])
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

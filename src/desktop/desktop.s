@@ -18,6 +18,7 @@
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
+        .import PaneInit
         .export openReq
         .import Root, Home, Top, ListEnd, Up
         .import Eject, HasImage, EjectIcon, IconUp
@@ -53,6 +54,7 @@ MENU_ITEMS      = 7             ; a menu table's first item (after its frame)
 ; back to MainLoop.
 Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
         jsr BigInit             ; dirEntryBuf still holds our entry; the
+        jsr PaneInit            ; (list.s: the other pane's state)
         lda guMouse2            ; icon view's icons, tooldraw.s; a right
         and #$FF - $40          ; press from before the desktop: not ours)
         sta guMouse2

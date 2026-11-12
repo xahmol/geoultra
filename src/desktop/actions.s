@@ -39,7 +39,9 @@ FE_CANCELLED    = $47
 
 CLIP_BANK       = 5             ; (1-4: the entry table, list.s)
 CLIP_SIZE       = 64            ; a name and its zero
-CLIP_MAX        = 1024
+CLIP_MAX        = 1008          ; (63 KB: the bank's last KB the other
+                                ; pane's state, list.s SwapPane)
+        .assert CLIP_MAX * CLIP_SIZE <= PANE_PAGE * 256, error, "clipboard: into the pane state"
 NAME_MAX        = 40            ; an input line's characters
 
         .segment "ZEROPAGE"

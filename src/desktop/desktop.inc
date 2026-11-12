@@ -25,6 +25,7 @@ SetDevice       = $C2B0
 RstrFrmDialogue = $C2BF
 StashRAM        = $C2C8
 FetchRAM        = $C2CB
+SwapRAM         = $C2CE
 
 ; The file engine (docs/FILE_ENGINE.md): functions, flags, info block, kinds
 FE_CD           = 11
@@ -128,6 +129,8 @@ BIG_PAGE        = $FE           ; (tooldraw.s puts them, iconview.s reads;
 CTX_N           = 9             ; the context menu's items (ctxmenu.s):
                                 ; open, copy, cut, paste, rename, delete,
                                 ; info, favourite, new folder (list.s CtxDo)
+PANE_BANK       = 5             ; the other pane's state (list.s SwapPane):
+PANE_PAGE       = $FC           ; after the clipboard (actions.s), 3 pages
 TB_TWO          = 0             ; the toolbar (tbMode): two lines, 16 px,
 TB_ONE          = 1             ; one line, 8 px,
 TB_OFF          = 2             ; none

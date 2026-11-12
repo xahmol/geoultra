@@ -583,6 +583,16 @@ colour is a property of an element, by name:
   and span, the selection bar, the name clip, the strip (rewritten for
   any x: its card, line and thumb from stripL), the strip's hit test
   (listin.s), InList, the icon grid's width. P4 sets them per pane.
+  **P3 done (2026-11-12):** a pane's state (path, count, top, cur, its
+  entry table's bank, the selection) is exchanged with the other
+  pane's in the REU by SwapPane (SwapRAM; bank 5 from `$FC00`, after the
+  clipboard, now 1008 names); PaneInit at the start gives the other pane
+  "/" and an empty table in banks 3-4. A pane holds up to 1024 entries
+  (was 2048 for the single list); the selection is 128 bytes (ClearSel
+  and SelCount bounded to it). Still to handle in P4: the icon cache
+  belongs to one pane's entries (forget it on a swap), the file
+  engine's current folder (FE_CD to the pane's path when it becomes
+  active), the history (one for both panes for now).
 - **Design answers (the user, 2026-11-12, second round):**
   - *Two panes:* the list view in each pane (the detailed columns do not
     fit 160 pixels; the chosen view returns when two panes go off; the

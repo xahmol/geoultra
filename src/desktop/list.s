@@ -25,7 +25,8 @@
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot, ListEnd, SelAll, row, RowEntry
         .import IconsForget, DrawCell, CellAt, step, tbMode, stripL, listR, paneR
-        .export Frame, Place, SortNow, sortPending, RightPress
+        .export Frame, Place, SortNow, sortPending, RightPress, SwapPane
+        .export PaneInit
         .export EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, Follow
         .export ThumbRows
         .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd
@@ -52,8 +53,10 @@ COL_NAME_END    = 202           ; names are clipped here
 
 ; The entry table
 ENTRY_SIZE      = 128           ; info (16), long name (61), spare
-ENTRY_BANK      = 1             ; banks 1-4 of the application's REU
-ENTRY_MAX       = 2048
+ENTRY_BANK      = 1             ; pane 1: banks 1-2 of the application's REU,
+ENTRY_BANK2     = 3             ; pane 2: banks 3-4 (two panes, DESKTOP.md)
+ENTRY_MAX       = 1024          ; a pane's entries (two banks)
+SEL_LEN         = ENTRY_MAX / 8 ; the selection's bytes
 ENTRY_LEN       = INFO_LEN + NAME_LEN
 
 ; CIA 1 for SHIFT and C= at a click (the keyboard matrix, as gush reads
@@ -181,9 +184,9 @@ Place:  sta r1H                 ; n * 128: low byte (n & 1) << 7, high
         lda #0
         ror a
         sta r1L                 ; (bit 0 of n: $80 or 0)
-        lda r3L                 ; bank: ENTRY_BANK + n / 512
+        lda r3L                 ; bank: the pane's first + n / 512
         clc
-        adc #ENTRY_BANK
+        adc entryBank
         sta r3L
         lda #<entryInfo
         sta r0L
@@ -1468,7 +1471,8 @@ SelCount:
 :       cmp #0
         bne @bit
 @next:  iny
-        bne @byte
+        cpy #SEL_LEN
+        bcc @byte
         ldy tmp
         lda numL
         ldx numH
@@ -1615,11 +1619,12 @@ VerbAt:         .byte 0, VERB_MOVE, VERB_DELETE
 ; ClearSel: nothing selected.
 ClearSel:
         lda #0
-        tay
+        ldy #SEL_LEN - 1
 @clr:   sta sel,y
-        iny
-        bne @clr
+        dey
+        bpl @clr
         rts
+        .assert SEL_LEN <= 128, error, "ClearSel: dey/bpl counts to 128"
 
 ; IsSelected: Z clear when entry A/X is selected.
 IsSelected:
@@ -1886,6 +1891,62 @@ SelAll: jsr ClearSel
 @draw:  jmp ListDraw
         .assert ENTRY_MAX <= 2048, error, "SelAll: sel at most 256 bytes"
 
+; SwapPane: the active pane's state (path, count, top, cur, entryBank,
+; sel) exchanged with the other pane's in the REU (bank PANE_BANK from
+; PANE_PAGE: after the clipboard, actions.s). Destroys A, X, Y, r0-r3.
+SwapPane:
+        ldx #2
+@part:  lda PartLo,x            ; r0 = the part here
+        sta r0L
+        lda PartHi,x
+        sta r0H
+        lda #0                  ; r1 = its place in the REU
+        sta r1L
+        txa
+        clc
+        adc #PANE_PAGE
+        sta r1H
+        lda PartLen,x
+        sta r2L
+        lda #0
+        sta r2H
+        cpx #0                  ; (the path: 256 bytes)
+        bne :+
+        sta r2L
+        inc r2H
+:       lda #PANE_BANK
+        sta r3L
+        txa
+        pha
+        jsr SwapRAM
+        pla
+        tax
+        dex
+        bpl @part
+        rts
+PartLo: .byte <path, <sel, <count
+PartHi: .byte >path, >sel, >count
+PartLen:.byte 0, SEL_LEN, PANE_VARS ; (the path: 256, see above)
+
+; PaneInit (desktop.s, at the start): the other pane's state: "/" and
+; empty, its table in banks 3-4.
+PaneInit:
+        jsr SwapPane            ; (its garbage here, ours there)
+        lda #'/'
+        sta path
+        lda #0
+        sta path + 1
+        sta count
+        sta count+1
+        sta top
+        sta top+1
+        sta cur
+        sta cur+1
+        jsr ClearSel
+        lda #ENTRY_BANK2
+        sta entryBank
+        jmp SwapPane            ; (ours back)
+
 ; Follow: top moved so the cursor is on the screen.
 Follow: lda cur+1               ; cur < top: top = cur
         cmp top+1
@@ -1932,6 +1993,8 @@ sortPending:    .byte 0         ; 1: read, not yet sorted (SortNow)
 count:          .word 0         ; entries in the table
 top:            .word 0         ; the first shown
 cur:            .word 0         ; the cursor
+entryBank:      .byte ENTRY_BANK ; the entry table's first bank (the pane's)
+PANE_VARS = * - count           ; count to entryBank: a pane's (SwapPane)
 pick:           .word 0
 last:           .word $FFFF         ; the entry clicked last
 handle:         .byte 0
@@ -1974,5 +2037,5 @@ freePre:        .res FREE_PRE_MAX + 2
 path:           .res 256
 entryInfo:      .res INFO_LEN
 entryName:      .res NAME_LEN + 2
-sel:            .res ENTRY_MAX / 8
+sel:            .res SEL_LEN
 stBuf:          .res ST_BUF_LEN ; the status line's text
