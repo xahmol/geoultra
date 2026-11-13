@@ -1,0 +1,14 @@
+{
+  "_note": "GeoUltra first-look video: one line per scene (draft for the user, 2026-11-14). Spoken by Piper voice Alba; spelled for TTS where needed. User 2026-11-14: a sneak peek (the repository stays private until the release), 'aims to run'.",
+  "title": "GeoUltra. A GEOS compatible system for the Ultimate sixty-four. A sneak peek at version zero point one, in development.",
+  "boot": "GeoUltra boots from a cartridge on the Ultimate sixty-four. It is a new, clean-room GEOS compatible system: it aims to run existing GEOS applications, and uses the Ultimate for its drives, its memory and its network.",
+  "desktop": "This is GeoUltra's own desktop. On the left, the drives, the Ultimate's own storage, favourites and recent documents. On the right, the current folder.",
+  "views": "Three views: a list, icons from the files' own GEOS headers, and a detailed view with sizes and dates. Themes change the colours, and on the Ultimate sixty-four even the palette.",
+  "panes": "Two panes show two folders side by side. Each pane has its own drive letters, and the U button reaches the Ultimate's USB sticks and SD card.",
+  "drag": "Files are dragged from one pane to the other. A GEOS file copied to the Ultimate becomes a C V T file, and comes back as a GEOS file the other way.",
+  "geowrite": "Existing applications run here too. In this example geoWrite starts from a folder on a large native drive, and its Open dialog lists the folders.",
+  "geofolder": "From any application's GEOS menu, geoFolder changes the current folder of each drive.",
+  "gush": "Gush is GeoUltra's shell: a command line with many commands, scripts, pipes, and network tools such as wget and N T P time.",
+  "settings": "GeoUltra Settings edits the desktop, the system, the time, the mouse pointer, and the themes, with a live preview and the palette in R G B.",
+  "closing": "GeoUltra is in development and will be free, under the G P L, at its first release. Made with the help of Claude, an A I from Anthropic. Thanks for watching."
+}

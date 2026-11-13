@@ -610,6 +610,13 @@ the Ultimate's own back when its theme has none). Dropped by the user:
 the choice of GEOS 2.0's deskTop and the Classic style. Failed: see the
 list above (the INI bug, the Time page).
 
+Hand tests 2026-11-14 (the user, build 060f600): a disk image dropped
+on drive C refused ("Disk images stay on the Ultimate"), the places'
+list under a pane's path text, the U button's roots, the frame round the
+Theme page's swatch rows and Copy with a full list: all pass. The
+earlier retests of 2026-11-13 evening (Settings' lines kept, the Time
+page, MegaPatch's drive letters, the pane letters) pass as well.
+
 Requests from the same session, to do:
 - Done 2026-11-13: the GeoUltra info box: the version as
   vMAJOR.MINOR.PATCH-YYYYMMDD-HHMM (as UBoot64-v2; the numbers in the
