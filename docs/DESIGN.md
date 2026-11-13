@@ -530,34 +530,21 @@ Log:
 
 ## For the user, at the computer
 
-To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
-(drive C is now the apps DNP, 8 MB):
+To do (updated 2026-11-13), on the U64 with the cartridge from
+`/SD/idi8b/geoultra/` (drive C is the apps DNP, 8 MB). Passed by hand on
+2026-11-13 and taken off: the right button, the menus and keys, the
+toolbar's buttons, sorting, the icon view, the look, two panes, the
+drag start (see "Hand tests 2026-11-13" below).
 
-- The right mouse button in the list: the context menu at the pointer,
-  the item under the pointer inverted, a click on an item, a click
-  outside (closes), the right button again (closes); Info on a GEOS
-  file, a folder and a file on usb0 (its size in bytes). The automatic
-  tests drive it through VICE's joyport simulation and the U64 test
-  calls Info directly, so the real mouse is untested.
-- The menus: geos (gush, the desk accessories still start), file (info,
-  select all), view (refresh), the new go menu; the keys C=I, C=A, C=G,
-  C=cursor left and right (back, forward).
-- The toolbar's gush button (the last one) and the info button.
-- Sorting: folders first, then files, by name in any case; a large
-  folder on usb0.
-- The icon view on drive C (GEOS icons from the headers; folders and
-  ".." with the generic icons) and with the narrow sidebar (theme
-  Detailed).
-- The look: the frame lines, menus and dialogs in the theme's colours
-  (Night especially), the border in the menu bar's colour.
-- Two panes (C=P, view > two panes, the toolbar's button between view
-  and refresh): both folders, a click in the other pane (it becomes
-  active: its path line inverted), C=SPACE, copy in one and paste in
-  the other, copy to other (C=T) and move to other (C=M), each pane's
-  half of the status line with the divider, back to one list (the view
-  from before).
-- Drag and drop (2026-11-12): a selection dragged with the mouse (its
-  icon follows the pointer) onto the other pane (same drive: moved,
+- The fixes of 2026-11-13: geoFolder first in the geos menu (on drive C
+  too, with its full list of accessories), and in an application's;
+  the Settings Desktop page's boxes in columns; the theme dialogs
+  without stray colours; the preview's frame and the "palette" button
+  on the Theme page; a double click in an Open dialog (folder, file):
+  confirmed by the user the same day.
+- Drag and drop (2026-11-12; the drag start confirmed 2026-11-13): a
+  selection dragged with the mouse (its icon follows the pointer) onto
+  the other pane (same drive: moved,
   another drive: copied) and onto a folder in the same list; C= held at
   the release the other way; a quick double click still opens; a press
   held still for two seconds stays a click.
@@ -588,7 +575,8 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   kept), Delete "at once"; two panes, a program started and quit: both
   folders back.
 - The Time page (2026-11-12): the zone (UTC+01:00 for the Netherlands)
-  and summer time "EU rule", the server, Save, then "now": the clock in
+  and summer time "EU rule", the server from the new list (2026-11-13:
+  none, time.google.com, time.windows.com, pool.ntp.org, custom...), Save, then "now": the clock in
   the menu bar right; set... with a date typed; a reboot keeps the right
   time (the server at every start). Verified on the U64 by
   s3bu64.py on 2026-11-12; the summer switch itself in March 2027.
@@ -624,6 +612,49 @@ typing; `wget http://...` and `ifconfig`; an external command: copy
 Ideas welcome for which commands should become external ones, and
 whether `/e` (drive E) should be reachable by path next (then modules
 could live on the system drive).
+
+Hand tests 2026-11-13 (the user at the U64, one at a time): the right
+button, the menus and keys, the toolbar's buttons, sorting, the icon
+view, the look and two panes pass. Found and fixed the same day: geos >
+gush and settings did nothing (RunSys's name lost in r0), the delete
+question named another file (now the entry or "N entries"), a drag never
+started at turbo speed (the wait counted in rounds, now by the clock;
+an unselected entry can be dragged at once), the desktop ignored the
+folder chosen in geoFolder with two panes, the Settings boxes not in
+columns, the theme dialogs over coloured cells, geoWrite 2.1 and geoPaint
+patched for MegaPatch 3 hung at Open (DBGETFILES with MegaPatch's flag
+bits, now taken as the plain list), the root merge searching again
+inside itself, geoFolder falling off full geos menus (drive E's desk
+accessories now first, with a place kept for them). New in Open
+dialogs: a double click opens (a folder entered, a file opened).
+
+Requests from the same session, to do:
+- The GeoUltra info box: the full version, a short credits list, and a
+  button that shows the splash screen.
+- gush: a close button (x) in its title bar.
+- File boxes (DBGETFILES), decided by the user 2026-11-13: drive letters
+  A B C D in every file box (not only for MegaPatch's DBSETDRVICON flag),
+  four small buttons in the bottom strip left of the scroll arrows, only
+  drives with an image, the current one inverted; a click switches the
+  drive and builds the list anew (as entering a folder); the
+  application gets the chosen name back on the current drive, as under
+  MegaPatch. A new kernal overlay module (the resident areas are full).
+  Built after the info box and gush's close button.
+- The menus: keyboard shortcuts right-aligned (by measured width).
+- Two panes: the inactive pane's selection hidden (kept, shown again
+  when it is active); the new-folder report (left pane read, both path
+  lines inverted) not reproduced in VICE yet: which way it was made.
+- The Time page: the NTP server from a list (time.google.com,
+  time.windows.com, pool.ntp.org, as UBoot-v2) or custom.
+- Closing an application on a large image (the 8 MB apps DNP) takes
+  seconds: the whole image is written back. A message while it runs
+  ("Writing drive C back"), and only the changed tracks: the Command
+  Interface seeks in an open file (`DOS_CMD_FILE_SEEK`) and saves an REU
+  range into it (`DOS_CMD_SAVE_REU` with address and length); to test
+  on the U64: an open for writing that does not truncate the image.
+- tests/gush/gu64.py edits a mounted image outside GeoUltra (FTP and
+  c1541), which damaged geoFolder on the test D81 (the REU copy written
+  back over it): to change, and a warning in the docs.
 
 ## Still open
 
