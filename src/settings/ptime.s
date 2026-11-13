@@ -440,7 +440,10 @@ NowNtp: lda #<Now               ; the button inverted while it asks (the
         stx ntpErr
         jsr @back
         lda ntpErr
-        beq :+
+        bne @fail
+        jsr AdjClear            ; (the server's time counts: no adjust=)
+        jmp DateDraw
+@fail:
         lda #<NtpFail
         sta r0L
         lda #>NtpFail
@@ -458,13 +461,22 @@ NowNtp: lda #<Now               ; the button inverted while it asks (the
 ReadZone:
         lda #0
         sta zone
+        jsr OffKey
+        jsr ParseNum
+        bcc Quarters
+        rts                     ; (none: UTC)
+
+; ParseNum: the key in r0/r1 (OffKey, AdjKey) found and its value read:
+; num = its digits (16 bits), neg = 1 with a "-" in front. C set when the
+; key is not there (num 0, neg 0).
+ParseNum:
+        lda #0
         sta neg
         sta num
         sta num+1
-        jsr OffKey
         jsr IniFind
         bcc :+
-        rts                     ; (none: UTC)
+        rts
 :       sta len
         ldy #0
         lda (r2),y
@@ -477,12 +489,12 @@ ReadZone:
         bne @dig
         iny
 @dig:   cpy len
-        bcs @quarters
+        bcs @done
         lda (r2),y
         sec
         sbc #'0'
         cmp #10
-        bcs @quarters
+        bcs @done
         pha                     ; num = num * 10 + the digit (16 bits:
         lda num                 ; enough for 14 hours, 50400 s)
         asl a
@@ -511,7 +523,11 @@ ReadZone:
         inc num+1
 :       iny
         bne @dig
-@quarters:
+@done:  clc
+        rts
+
+; Quarters (ReadZone, on): zone from num seconds and neg.
+Quarters:
         lda num                 ; quarters: num / 900, rounded
         sec
         sbc #<450
@@ -715,130 +731,234 @@ DateText:
 
 ; --- the clock shifted with the zone and summer time
 
-; Shift: GEOS's clock moved by A/X minutes (signed), over midnight into
-; the next or the day before (months, leap years: 2000-2099), then the
-; Ultimate's and the CIA's from it (FE_SETTIME) and the date line drawn.
-Shift:  sta delta
-        stx delta+1
-        php
-        sei
-        lda hour                ; t = hour * 60 + minutes + delta
-        sta tL
-        lda #0
-        sta tH
-        ldx #5                  ; hour * 60 = hour * 64 - hour * 4
-@x64:   asl tL
-        rol tH
-        dex
-        bpl @x64
-        lda hour
-        asl a
-        asl a
-        sta tmp
-        lda tL
+; AdjAdd: [time] adjust= (signed minutes) plus delta, written back; 0
+; takes the line out. (Kept within 16 bits: about 22 days either way.)
+AdjAdd: jsr AdjKey
+        jsr ParseNum            ; (none: 0)
+        lda neg
+        beq :+
+        lda #0                  ; num = -num
         sec
-        sbc tmp
-        sta tL
-        lda tH
-        sbc #0
-        sta tH
-        lda tL
-        clc
-        adc minutes
-        sta tL
-        lda tH
-        adc #0
-        sta tH
-        lda tL
+        sbc num
+        sta num
+        lda #0
+        sbc num+1
+        sta num+1
+:       lda num
         clc
         adc delta
-        sta tL
-        lda tH
+        sta num
+        lda num+1
         adc delta+1
-        sta tH
-@neg:   lda tH                  ; below 0: the day before
-        bpl @over
-        lda tL
+        sta num+1
+        ora num
+        bne @put
+        jsr AdjKey              ; 0: the line out
+        jsr IniDel
+        jmp @dirty
+@put:   ldx #0                  ; buf = [-]num
+        lda num+1
+        bpl :+
+        lda #'-'
+        sta buf
+        inx
+        lda #0
+        sec
+        sbc num
+        sta num
+        lda #0
+        sbc num+1
+        sta num+1
+:       jsr Decimal             ; (num into buf from X)
+        lda #0
+        sta buf,x
+        jsr AdjKey
+        lda #<buf
+        sta r2L
+        lda #>buf
+        sta r2H
+        jsr IniSet
+        bcc @dirty
+        jmp NoRoom
+@dirty: lda #1
+        sta dirty
+        rts
+
+; DaysOld: oldDays = GEOS's date as days since 2000-01-01, oldMin = its
+; time of day in minutes (before EditDate changes it).
+DaysOld:
+        jsr DayNum
+        lda dNum
+        sta oldDays
+        lda dNum+1
+        sta oldDays+1
+        jsr MinNum
+        sta oldMin
+        stx oldMin+1
+        rts
+
+; DiffAdj (after EditDate): delta = the new time minus the old, in
+; minutes, added to adjust= (AdjAdd); more than 21 days apart: adjust= is
+; left as it was (16 bits; the time set then lasts until a cold start).
+DiffAdj:
+        jsr DayNum
+        lda dNum                ; days apart: dNum - oldDays
+        sec
+        sbc oldDays
+        sta dNum
+        lda dNum+1
+        sbc oldDays+1
+        sta dNum+1
+        bpl @pos                ; |days| <= 21
+        cmp #$FF
+        bne @far
+        lda dNum
+        cmp #<-21
+        bcc @far
+        bcs @ok
+@pos:   bne @far
+        lda dNum
+        cmp #22
+        bcs @far
+@ok:    jsr MinNum              ; delta = days * 1440 + new min - old min
+        sec
+        sbc oldMin
+        sta delta
+        txa
+        sbc oldMin+1
+        sta delta+1
+@days:  lda dNum
+        ora dNum+1
+        beq @add
+        lda dNum+1
+        bmi @back
+        lda delta
         clc
         adc #<1440
-        sta tL
-        lda tH
+        sta delta
+        lda delta+1
         adc #>1440
-        sta tH
-        jsr DayDown
-        jmp @neg
-@over:  lda tL                  ; 1440 or more: the next day
-        cmp #<1440
-        lda tH
-        sbc #>1440
-        bcc @split
-        sta tH
-        lda tL
+        sta delta+1
+        lda dNum
+        bne :+
+        dec dNum+1
+:       dec dNum
+        jmp @days
+@back:  lda delta
         sec
         sbc #<1440
-        sta tL
-        jsr DayUp
-        jmp @over
-@split: ldx #$FF                ; hour = t / 60, minutes = t mod 60
-@div:   inx
-        lda tL
-        sec
-        sbc #60
-        sta tL
-        lda tH
-        sbc #0
-        sta tH
-        bcs @div
-        lda tL
-        adc #60
-        sta minutes
-        stx hour
-        plp
-        lda #FE_SETTIME
-        jsr FileEngine          ; (the Ultimate refusing: GEOS's clock set)
-        jmp DateDraw
+        sta delta
+        lda delta+1
+        sbc #>1440
+        sta delta+1
+        inc dNum
+        bne @days
+        inc dNum+1
+        jmp @days
+@add:   jmp AdjAdd
+@far:   rts
 
-; DayUp, DayDown: the date a day on or back.
-DayUp:  inc day
-        jsr MonthDays
-        cmp day
-        bcs @end
-        lda #1
-        sta day
-        inc month
-        lda month
-        cmp #13
-        bcc @end
-        lda #1
-        sta month
-        inc year
-@end:   rts
-DayDown:
-        dec day
-        bne @end
-        dec month
-        bne :+
-        lda #12
-        sta month
-        dec year
-:       jsr MonthDays
-        sta day
-@end:   rts
-
-; MonthDays: A = the days of month (in year: February 29 when the year
-; divides by 4, right for 2000-2099).
-MonthDays:
-        ldx month
-        lda Days - 1,x
-        cpx #2
-        bne @end
+; DayNum: dNum = GEOS's date as days since 2000-01-01 (2000-2099).
+DayNum: lda #0
+        sta dNum
+        sta dNum+1
+        ldx year                ; 365 a year, one more per leap year
+@year:  dex                     ; before it
+        bmi @leap
+        lda dNum
+        clc
+        adc #<365
+        sta dNum
+        lda dNum+1
+        adc #>365
+        sta dNum+1
+        jmp @year
+@leap:  lda year                ; (year + 3) / 4 leap days
+        clc
+        adc #3
+        lsr a
+        lsr a
+        jsr AddD
+        ldx #1                  ; the months before
+@mon:   cpx month
+        bcs @day
+        lda ClockDays - 1,x
+        jsr AddD
+        inx
+        bne @mon
+@day:   lda month               ; February 29 passed in a leap year
+        cmp #3
+        bcc :+
         lda year
         and #3
         bne :+
-        lda #29
+        lda #1
+        jsr AddD
+:       ldx day
+        dex
+        txa
+AddD:   clc
+        adc dNum
+        sta dNum
+        bcc :+
+        inc dNum+1
+:       rts
+
+; MinNum: A/X = hour * 60 + minutes.
+MinNum: lda hour
+        sta dTmp
+        lda #0
+        sta dTmp+1
+        ldx #5                  ; * 64
+@x:     asl dTmp
+        rol dTmp+1
+        dex
+        bpl @x
+        lda hour                ; - hour * 4
+        asl a
+        asl a
+        sta dTmp2
+        lda dTmp
+        sec
+        sbc dTmp2
+        sta dTmp
+        lda dTmp+1
+        sbc #0
+        sta dTmp+1
+        lda dTmp
+        clc
+        adc minutes
+        tay
+        lda dTmp+1
+        adc #0
+        tax
+        tya
         rts
-:       lda #28
-@end:   rts
+
+; AdjClear: [time] adjust= taken out ("now": the server's time counts).
+AdjClear:
+        jsr AdjKey
+        jsr IniDel
+        bcs :+                  ; (none: nothing changed)
+        lda #1
+        sta dirty
+:       rts
+
+CLOCK_OV4 = 1                   ; (clock.inc's variables in this overlay)
+        .include "clock.inc"    ; ClockShift (delta), DayUp, DayDown,
+                                ; MonthDays: shared with the desktop
+
+; Shift: GEOS's clock moved by A/X minutes (signed; clock.inc), then
+; the CIA's from it (FE_SETTIME), the date line drawn, and the move added
+; to [time] adjust= (minutes from the Ultimate's clock, which the desktop
+; adds after every cold start; the user, 2026-11-13).
+Shift:  sta delta
+        stx delta+1
+        jsr ClockShift
+        lda #FE_SETTIME
+        jsr FileEngine
+        jsr AdjAdd
+        jmp DateDraw
 
 ; SummerNow: A = 1 with summer=eu in the text, else 0.
 SummerNow:
@@ -905,8 +1025,6 @@ LastSun:
         sbc tmp
         rts
 
-Days:   .byte 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-
 ; EditDate: the date and time typed as "YYYY-MM-DD HH:MM" (shown as it
 ; is now); a valid one into GEOS's clock (seconds 0) and the Ultimate's
 ; and the CIA's (FE_SETTIME); else said.
@@ -955,6 +1073,7 @@ EditDate:
         bcs @bad
 @set:   php
         sei
+        jsr DaysOld             ; (the time before: for adjust=)
         ldx #FIELDS - 2         ; year (its last two digits) .. minutes
 @put:   lda new + 1,x
         sta year,x
@@ -964,8 +1083,9 @@ EditDate:
         sta seconds
         plp
         lda #FE_SETTIME
-        jsr FileEngine          ; (the Ultimate refusing: GEOS's clock set)
-        jmp DateDraw
+        jsr FileEngine
+        jsr DiffAdj             ; adjust= with the difference (kept after
+        jmp DateDraw            ; a cold start; the user, 2026-11-13)
 @bad:   lda #<DateFail
         sta r0L
         lda #>DateFail
@@ -1073,6 +1193,9 @@ Decimal:
         rts
 
 ; NtpKey, OffKey: r0 = "time", r1 = "ntp" or "offset".
+AdjKey: lda #<KAdjust
+        ldx #>KAdjust
+        bne Keys
 SumKey: lda #<KSummer
         ldx #>KSummer
         bne Keys
@@ -1091,10 +1214,7 @@ Keys:   sta r1L
 
 ; --- layout and data
 
-month           = year + 1      ; GEOS's clock (geos.inc: year)
-day             = year + 2
-hour            = year + 3
-minutes         = year + 4
+; (month, day, hour, minutes: clock.inc)
 seconds         = year + 5
 LABEL_X         = PAGE_LEFT + 2
 SERVER_Y        = PAGE_TOP + 20 ; the rows' baselines
@@ -1188,6 +1308,7 @@ STime:          .byte "time", 0
 KNtp:           .byte "ntp", 0
 KOff:           .byte "offset", 0
 KSummer:        .byte "summer", 0
+KAdjust:        .byte "adjust", 0      ; minutes from the Ultimate's clock
 LServer:        .byte "Server", 0
 LClock:         .byte "Clock", 0
 LZone:          .byte "Zone", 0
@@ -1223,9 +1344,12 @@ at:             .byte 0
 hover:          .byte 0             ; ServerMenu: the item inverted
 wasSum:         .byte 0             ; Ov_TimePress: summer time before
 ntpErr:         .byte 0             ; NowNtp: FE_NTP's error
-delta:          .word 0             ; Shift: the minutes, the time of day
-tL:             .byte 0
-tH:             .byte 0
+delta:          .word 0             ; Shift: the minutes
+oldDays:        .word 0             ; EditDate: the date and time before
+oldMin:         .word 0
+dNum:           .word 0             ; DayNum: days since 2000-01-01
+dTmp:           .word 0
+dTmp2:          .byte 0
 rowT:           .byte 0
 neg:            .byte 0
 len:            .byte 0

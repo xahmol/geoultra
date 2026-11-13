@@ -86,6 +86,9 @@ month           = $8517
 day             = $8518
 hour            = $8519
 minutes         = $851A
+GU_CLOCK_FRESH  = $C0FB         ; the kernal's info block: the clock fresh
+                                ; from the Ultimate's (inifile.s ClockAdjust)
+FE_SETTIME      = 27
 
 ; The icons (icons.s)
 IC_FOLDER       = 0

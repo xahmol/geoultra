@@ -255,6 +255,16 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   of 2026 to the second, summer and winter days, the rule off, a
   negative offset, February 2028), s3b.py (9 checks in VICE),
   s3bu64.py ("now" with pool.ntp.org on the U64: the clock right).
+  **Changed 2026-11-13 (the user's hand tests and decisions):** the
+  server from a list (time.google.com, time.windows.com, pool.ntp.org,
+  custom); a zone step moves GEOS's clock by 15 minutes at once, summer
+  time switched by an hour in the EU's summer time (clock.inc, shared
+  with the desktop); "now" inverted while it asks. GeoUltra no longer
+  writes the Ultimate's clock (its SET_TIME stored an hour less; its
+  firmware keeps it with SNTP): a time changed here is kept as `[time]
+  adjust=` (minutes from the Ultimate's clock, within 21 days), which
+  the desktop adds after every cold start (the kernal's mark at $C0FB);
+  "now" takes it out. Tests: s3b.py (13 checks), s3cu64.py (U64).
 - **S4, the Theme page:** the theme editor (themefile.s's parsing
   shared, the mock preview, palettes).
 - **S5, the Drives page:** MOUNTS.INI, DNP sizes, long names, new

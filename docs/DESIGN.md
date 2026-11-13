@@ -664,9 +664,17 @@ Requests from the same session, to do:
   an hour when the date is in the EU's summer time (over midnight into
   the next day or the one before; the user chose the shift over asking
   the server); "now" stays inverted while it asks, the date line drawn
-  again after, a failure said. Open: a time set by hand came back an
-  hour early after a reboot (offset was 6300 then; to measure on the
-  U64: the Ultimate's clock round trip, a resumed session).
+  again after, a failure said. The hour lost after a reboot
+  (measured on the U64, 2026-11-13): the Ultimate's SET_TIME stores an
+  hour less than given (firmware 3.15a, zones Western Europe and UK),
+  while its GET_TIME gives the clock as the firmware's SNTP keeps it, in
+  local time. Decided by the user: GeoUltra no longer writes the
+  Ultimate's clock (FE_SETTIME, NTP, gush's date set only GEOS's and the
+  CIA's) and takes its time as local time at a cold start. A time
+  changed in GeoUltra (set..., zone, summer time) persists as `[time]
+  adjust=` (minutes from the Ultimate's clock), added by the desktop
+  after every cold start; "now" (a server) takes it out (the user's
+  choice; tests s3b.py, s3cu64.py).
 - Done 2026-11-13: up to 10 themes (the desktop's menu and Settings;
   the user), Copy with a full list says "Room for 10 themes. Delete one
   first." Open: delete on the Theme page for one's own themes (a second

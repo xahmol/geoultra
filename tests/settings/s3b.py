@@ -10,6 +10,7 @@ Screens: build/harness/gush/settings-s3b*.png.
 Usage: tests/settings/s3b.py
 """
 import os
+import re
 import sys
 import time
 
@@ -113,31 +114,51 @@ def main():
         press(20, SIDE_TOP + PAGE_TIME * SIDE_ROW + 7)
         check("the Time page", sbyte("page"), PAGE_TIME)
         check("defaults: summer time off, an empty text", (sbyte("sel", 0), ini()), (1, b""))
+        def noadj():                                         # the text without adjust=
+            return re.sub(rb"adjust=-?\d+\r\n", b"", ini())  # (set... adds the warp's drift)
+
+        def setclock(text):                                  # set... with a typed time
+            press(270, DATE_Y - 3, t=4)
+            g.keys([KEY_DELETE] * 20, settle=0.1)
+            g.keys(text + "\r", settle=0.3)
+            settle(3)
+
         g.png("settings-s3b")
-        v.mem_set(0x8516, bytes([26, 12, 31, 23, 30]))      # 2026-12-31 23:30: a year's end
         for _ in range(4):
             press(*PLUS_XY, t=2)
-        check("the zone 4 quarters up: offset=3600", ini(), b"[time]\r\noffset=3600\r\n")
-        check("the clock with it: an hour on, into the next year (2027-01-01; VICE's warp moves "
-              "the minutes on meanwhile)", list(v.mem_get(0x8516, 0x8518)), [27, 1, 1])
+        check("the zone 4 quarters up: offset=3600, the clock an hour on (adjust=60)", ini(),
+              b"[time]\r\nadjust=60\r\noffset=3600\r\n")
+        setclock("2026-12-31 23:55")                        # a year's end (set..., as by hand)
+        press(*PLUS_XY, t=2)                                # (one step: VICE's warp moves the
+        check("a step on: the clock 15 minutes on, into 2027-01-01",  # minutes on meanwhile)
+              list(v.mem_get(0x8516, 0x8518)), [27, 1, 1])
+        press(*MINUS_XY, t=2)
         for _ in range(5):
             press(*MINUS_XY, t=2)
-        check("5 down: below UTC, offset=-900", ini(), b"[time]\r\noffset=-900\r\n")
-        check("5 quarters back: into 2026-12-31 again", list(v.mem_get(0x8516, 0x8518)), [26, 12, 31])
+        check("5 down: below UTC, offset=-900", noadj(), b"[time]\r\noffset=-900\r\n")
+        setclock("2027-01-01 00:02")
+        press(*PLUS_XY, t=2)
+        press(*MINUS_XY, t=2)                               # (on and back: the INI as before)
+        check("on and back over midnight: 2027-01-01 again (the step back crossed into 2026 "
+              "and the step on back)", list(v.mem_get(0x8516, 0x8518)), [27, 1, 1])
+        setclock("2027-01-01 00:00")
+        press(*MINUS_XY, t=2)
+        check("a step back from 00:00: 2026-12-31", list(v.mem_get(0x8516, 0x8518)), [26, 12, 31])
+        press(*PLUS_XY, t=2)
         g.png("settings-s3b-zone")
         press(150 + 3, SUMMER_Y - 3)
-        check("summer time EU: summer=eu", ini(), b"[time]\r\noffset=-900\r\nsummer=eu\r\n")
+        check("summer time EU: summer=eu", noadj(), b"[time]\r\noffset=-900\r\nsummer=eu\r\n")
         press(200, SERVER_Y - 3, t=3)                       # the server's box: the list
         g.png("settings-s3b-list")
         press(200, LIST_Y + 1 * 12 + 6, t=4)                # time.google.com
-        check("the list: time.google.com picked: ntp=time.google.com", ini(),
+        check("the list: time.google.com picked: ntp=time.google.com", noadj(),
               b"[time]\r\noffset=-900\r\nsummer=eu\r\nntp=time.google.com\r\n")
         press(200, SERVER_Y - 3, t=3)
         press(200, LIST_Y + 4 * 12 + 6, t=4)                # custom...: typed
         g.keys([KEY_DELETE] * 20, settle=0.1)
         g.keys("pool.ntp.org\r", settle=0.3)
         settle(3)
-        check("custom: the server typed: ntp=pool.ntp.org", ini(),
+        check("custom: the server typed: ntp=pool.ntp.org", noadj(),
               b"[time]\r\noffset=-900\r\nsummer=eu\r\nntp=pool.ntp.org\r\n")
         g.png("settings-s3b-server")
         press(270, DATE_Y - 3, t=4)                         # set...

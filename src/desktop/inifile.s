@@ -32,6 +32,8 @@ Ov_PanesKeep = PanesKeep
 
 INI_OV4 = 1                     ; (ini.inc's variables in this overlay:
                                 ; they are used only while it runs)
+CLOCK_OV4 = 1                   ; (clock.inc's variables in this overlay)
+        .include "clock.inc"    ; ClockShift: [time] adjust= (ClockAdjust)
         .include "ini.inc"      ; (SETTINGS.INI's [desktop] keys: DeskText,
                                 ; KeyVal, SetLine; shared with Settings)
 
@@ -434,7 +436,8 @@ DeskRead:
         jsr DeskText
         bcc :+
         rts                     ; (no file: the defaults)
-:       ldx #KEY_THEME
+:       jsr ClockAdjust         ; (after a cold start: [time] adjust=)
+        ldx #KEY_THEME
         jsr KeyVal             ; (A: its slot)
         bcs @view
         ldy #0
@@ -767,6 +770,86 @@ DeskText:
 @fail:  sec
 @end:   rts
 
+; ClockAdjust (DeskRead, the text read): right after a cold start, which
+; took the time from the Ultimate's clock (the kernal's guClockFresh,
+; $C0FB), GEOS's clock moved by [time] adjust= (signed minutes, set by
+; Settings' Time page; the user, 2026-11-13), the CIA's from it
+; (FE_SETTIME, which also clears the flag). Once per cold start.
+ClockAdjust:
+        lda GU_CLOCK_FRESH
+        bne :+
+        rts
+:       lda #0
+        sta GU_CLOCK_FRESH
+        lda #<STime
+        sta r0L
+        lda #>STime
+        sta r0H
+        lda #<KAdjust
+        sta r1L
+        lda #>KAdjust
+        sta r1H
+        jsr IniFind
+        bcc :+
+        rts                     ; (none)
+:       sta adjLen
+        lda #0
+        sta delta
+        sta delta+1
+        sta adjNeg
+        tay
+        lda (r2),y
+        cmp #'-'
+        bne @dig
+        inc adjNeg
+        iny
+@dig:   cpy adjLen
+        bcs @sign
+        lda (r2),y
+        sec
+        sbc #'0'
+        cmp #10
+        bcs @sign
+        pha                     ; delta = delta * 10 + the digit
+        lda delta
+        ldx delta+1
+        asl delta
+        rol delta+1
+        asl delta
+        rol delta+1             ; (* 4)
+        clc
+        adc delta
+        sta delta
+        txa
+        adc delta+1
+        sta delta+1             ; (* 5)
+        asl delta
+        rol delta+1             ; (* 10)
+        pla
+        clc
+        adc delta
+        sta delta
+        bcc :+
+        inc delta+1
+:       iny
+        bne @dig
+@sign:  lda adjNeg
+        beq :+
+        lda #0
+        sec
+        sbc delta
+        sta delta
+        lda #0
+        sbc delta+1
+        sta delta+1
+:       lda delta
+        ora delta+1
+        beq @end
+        jsr ClockShift
+        lda #FE_SETTIME
+        jmp FileEngine
+@end:   rts
+
 ; KeyVal: key X's value in the text (DeskText): C clear and r0 = its
 ; first character (the line goes on to its CR), C set when not there.
 KeyVal: jsr KeyRegs
@@ -802,6 +885,8 @@ KEY_DEL         = 8
 KeyLo:  .byte <KTheme, <KView, <KClock, <KToolbar, <KPanes, <KPane2, <KSort, <KCopy, <KDel
 KeyHi:  .byte >KTheme, >KView, >KClock, >KToolbar, >KPanes, >KPane2, >KSort, >KCopy, >KDel
 SDesk:          .byte "desktop", 0
+STime:          .byte "time", 0
+KAdjust:        .byte "adjust", 0
 KTheme:         .byte "theme", 0
 KView:          .byte "view", 0
 KClock:         .byte "clock", 0
@@ -843,6 +928,9 @@ inSect:         .byte 0
 lineLen:        .byte 0
 key:            .byte 0         ; SetLine: the key (KEY_*)
 valPtr:         .word 0         ; SetLine: the value
+delta:          .word 0         ; ClockAdjust: the minutes (clock.inc)
+adjLen:         .byte 0
+adjNeg:         .byte 0
 textLen:        .word 0
 textEnd:        .word 0
 
