@@ -164,10 +164,21 @@ def scenes(t):
     p.click(314, PATH_Y - 3)                     # U in the right pane (x 312-315)
     time.sleep(2)
     t.mark("roots")
-    p.click(300, PATH_Y + 8)                     # its first root
+    p.click(296, PATH_Y + 8)                     # its first root (usb0)
     time.sleep(4)
     t.mark("root")
+    p.click(135, PATH_Y - 3)                     # C in the left pane (A B C E U)
+    time.sleep(4)
+    t.mark("leftc")
+    y = ROW0_Y + 8 * ROW_H                       # a file in C (folders come first)
+    p.drag(60, y, 240, ROW0_Y + 3 * ROW_H)       # onto the right pane: copied as .cvt
+    time.sleep(6)
+    t.mark("dragged")
     # 3. geoWrite from the geos menu's geoFolder, and gush
+    t.ev("scene", name="geowrite")
+    p.double(60, ROW0_Y)                         # C's first folder (Writing?)
+    time.sleep(4)
+    t.mark("folder")
     t.ev("scene", name="geos")
     p.click(*MENU_GEOS)
     time.sleep(1)
@@ -199,6 +210,9 @@ def main():
     mode, out = sys.argv[1], sys.argv[2]
     t = Take(out, mode)
     keep = {n: t.get(n) for n in ("SETTINGS.INI", "RECENT.INI", "HIBERNAT.BIN")}
+    f = t.ftp()
+    usb0 = set(f.nlst("/USB0"))                  # (the drag's copy taken away after)
+    f.quit()
     cap = None
     try:
         t.put("HIBERNAT.BIN", None)
@@ -214,6 +228,14 @@ def main():
             cap.join()
         for n, d in keep.items():
             t.put(n, d)
+        f = t.ftp()
+        for n in set(f.nlst("/USB0")) - usb0:
+            print("removed from usb0:", n)
+            try:
+                f.delete(n if n.startswith("/") else "/USB0/" + n)
+            except ftplib.error_perm:
+                pass
+        f.quit()
         json.dump(t.events, open(os.path.join(out, "events.json"), "w"), indent=1)
         t.sheet()
         print("files back:", all(t.get(n) == d for n, d in keep.items()))
