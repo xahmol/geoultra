@@ -264,9 +264,11 @@ ThemeUse:
         lda #>curName
         sta r0H
         jsr ThemeLoad           ; (C set: no file; the built-in stays)
-        lda hasPal              ; its palette to the Ultimate 64
-        beq :+
-        jsr PalSend
+        lda hasPal              ; its palette to the Ultimate 64; none:
+        bne @pal                ; the Ultimate's own (after a palette
+        jsr PalReset            ; tried in Settings and Cancel, or a
+        jmp :+                  ; program's own; the user, 2026-11-13)
+@pal:   jsr PalSend
 :       lda cProgs              ; its programs' colours (programs=): GEOS's
         sta screencolors        ; screen colours now, and the kernal's for
         sta PROG_COLOURS        ; FirstInit (info.s)

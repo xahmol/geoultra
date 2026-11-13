@@ -527,9 +527,33 @@ DeskRead:
 ; takes over): with two panes, the other pane's folder as [desktop]
 ; pane2= when it changed (a path longer than a line holds: not kept).
 ; The pane in use is the file engine's current folder: it comes back by
-; itself.
+; itself. Keeps r2, r3 and r6: the callers set the program's name (r6)
+; and a document's disk and name (r2, r3) before Leave (found 2026-11-13:
+; in two panes geoFolder and programs did not start, the INI code's Slot
+; had changed r6).
 PanesKeep:
-        lda panes
+        ldx #3
+@save:  lda r2L,x               ; (r2, r3: $06-$09)
+        sta keepRegs,x
+        dex
+        bpl @save
+        lda r6L
+        sta keepR6
+        lda r6H
+        sta keepR6+1
+        jsr Keep2
+        ldx #3
+@back:  lda keepRegs,x
+        sta r2L,x
+        dex
+        bpl @back
+        lda keepR6
+        sta r6L
+        lda keepR6+1
+        sta r6H
+        rts
+
+Keep2:  lda panes
         beq @end
         jsr PaneRegs            ; its path's start from the REU
         jsr FetchRAM
@@ -793,6 +817,8 @@ textLen:        .word 0
 textEnd:        .word 0
 
 pbuf:           .res PATH_LEN   ; PanesKeep, DeskRead: the other pane's path
+keepRegs:       .res 4          ; PanesKeep: r2, r3
+keepR6:         .res 2
 
 ; (in the overlay: Files sets both in every call that uses them)
 iniPath:        .res 48
