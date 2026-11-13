@@ -69,6 +69,25 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   blue); the Pointer page's colour row with - and +, the theme files'
   colour names. Still to do of the list: the theme items (S4), the
   background picture.
+- **S4 decisions (the user, 2026-11-13):** the Theme page in compact
+  rows: Theme [-] name [+] with "use" and a new copy; Part [-] name
+  [+] (the theme file's lines); the part's style as a choice row; Ink
+  and Paper as 16 swatches each; a preview strip across the page under
+  them (a mini desktop: menu bar, sidebar, rows, status), redrawn at
+  each change. The palette's RGB editing in S4 too (a colour picked,
+  its R, G, B with - and +, sent to the Ultimate 64 at once). GEOS's
+  own colours: a theme line `programs=ink on paper` that every program
+  gets at its start (the kernal's screencolors, one colour pair as in
+  GEOS 2.0; dialogs and menus inside programs keep it; colouring those
+  separately, as MegaPatch, would need resident kernal room). Icon
+  colours by GEOS file type: a theme option in the icon view only (list
+  rows of 9 pixels share the C64's 8 x 8 colour cells).
+  Steps: S4.1 the theme format's tables shared (src/inc/themedef.inc,
+  the desktop's themefile.s and the editor); S4.2 ini.inc on more than
+  one text (a theme file beside SETTINGS.INI); S4.3 the editor (theme,
+  part, style, swatches, preview, save, use, new copy); S4.4 the
+  palette's RGB; S4.5 programs= in the kernal; S4.6 icon colours by
+  type (the desktop's core needs room first).
 - Pages:
   - *Theme:* the theme editor: each line of a theme file; colours from
     16 swatches (in the theme's palette) for ink and paper, plus the RGB
