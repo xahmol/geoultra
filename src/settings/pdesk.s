@@ -28,17 +28,12 @@ Ov_DeskPress:
         ldx #>Rows
         jmp ChoicePress
 
-X1              = 150           ; the options' columns
-X2              = 212
-X3              = 266
-C1              = 150           ; the copy row's four columns
-C2              = 186
-C3              = 240
-C4              = 276
-S1              = 150           ; the sort row's four columns
-S2              = 192
-S3              = 234
-S4              = 276
+COL1            = 137           ; the options' four columns, the same in
+COL2            = 191           ; every row (the user, 2026-11-13: boxes
+COL3            = 251           ; aligned), from the system font's widths:
+COL4            = 282           ; labels to 134, each column's longest
+                                ; option (40, 46, 17 or 32 without a 4th,
+                                ; 26) and 11 for its box; "newer" to 318
 Y0              = PAGE_TOP + 20 ; the rows' baselines, 18 apart
 DY              = 18
 
@@ -46,50 +41,50 @@ Rows:   .byte 8
         .byte Y0                                ; the desktop at the start
         .word LDesk, SSystem, KDesk
         .byte 2, 0
-        .word X1, TUltra, VUltra
-        .word X2 + 14, TGeos, VGeos
+        .word COL1, TUltra, VUltra
+        .word COL2, TGeos, VGeos
         .byte Y0 + DY                           ; the view
         .word LView, SDesktop, KView
         .byte 3, 0
-        .word X1, TList, VList
-        .word X2, TIcons, VIcons
-        .word X3, TDetail, VDetail
+        .word COL1, TList, VList
+        .word COL2, TIcons, VIcons
+        .word COL3, TDetail, VDetail
         .byte Y0 + 2 * DY                       ; the toolbar
         .word LBar, SDesktop, KBar
         .byte 3, 0
-        .word X1, TTwo, V16
-        .word X2, TOne, V8
-        .word X3, TOff, VOff
+        .word COL1, TTwo, V16
+        .word COL2, TOne, V8
+        .word COL3, TOff, VOff
         .byte Y0 + 3 * DY                       ; the clock
         .word LClock, SDesktop, KClock
         .byte 3, 0
-        .word X1, T24, V24
-        .word X2, T12, V12
-        .word X3, TOff, VOff
+        .word COL1, T24, V24
+        .word COL2, T12, V12
+        .word COL3, TOff, VOff
         .byte Y0 + 4 * DY                       ; two panes
         .word LPanes, SDesktop, KPanes
         .byte 2, 0
-        .word X1, TOneList, V1
-        .word X2 + 14, TTwoPanes, V2
+        .word COL1, TOneList, V1
+        .word COL2, TTwoPanes, V2
         .byte Y0 + 5 * DY                       ; the sort order
         .word LSort, SDesktop, KSort
         .byte 4, 0
-        .word S1, TName, VName
-        .word S2, TDate, VDate
-        .word S3, TSize, VSize
-        .word S4, TType, VType
+        .word COL1, TName, VName
+        .word COL2, TDate, VDate
+        .word COL3, TSize, VSize
+        .word COL4, TType, VType
         .byte Y0 + 6 * DY                       ; a file at the target
         .word LCopy, SDesktop, KCopy
         .byte 4, 0
-        .word C1, TAsk, VAsk
-        .word C2, TReplace, VReplace
-        .word C3, TSkip, VSkip
-        .word C4, TNewer, VNewer
+        .word COL1, TAsk, VAsk
+        .word COL2, TReplace, VReplace
+        .word COL3, TSkip, VSkip
+        .word COL4, TNewer, VNewer
         .byte Y0 + 7 * DY                       ; deleting
         .word LDel, SDesktop, KDel
         .byte 2, 0
-        .word X1, TAskFirst, VAsk
-        .word X2 + 14, TAtOnce, VNow
+        .word COL1, TAskFirst, VAsk
+        .word COL2, TAtOnce, VNow
 
 SSystem:        .byte "system", 0
 SDesktop:       .byte "desktop", 0

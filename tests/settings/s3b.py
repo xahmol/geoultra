@@ -3,8 +3,8 @@
 page. Started from the desktop as in s1.py, with an empty INI text
 (VICE): the defaults (no server, UTC+00:00, summer time off); the zone
 four quarters up (offset=3600, UTC+01:00) and below UTC (offset=-900);
-summer time EU (summer=eu); the server typed in the input dialog
-(ntp=); the date and time typed (GEOS's clock set), a wrong one
+summer time EU (summer=eu); the server from the list (time.google.com)
+and as custom, typed in the input dialog (ntp=); the date and time typed (GEOS's clock set), a wrong one
 refused; "now" without a network (VICE): its failure said.
 Screens: build/harness/gush/settings-s3b*.png.
 Usage: tests/settings/s3b.py
@@ -20,6 +20,7 @@ from vicemon import RESP_CHECKPOINT  # noqa: E402
 
 PAGE_TIME = 3
 SERVER_Y, NOW_Y = 36, 45
+LIST_Y = SERVER_Y + 4            # ptime.s LIST_TOP + 1: the first row's top
 ZONE_Y, SUMMER_Y, DATE_Y = 80, 100, 124
 MINUS_XY, PLUS_XY = (156, 76), (236, 76)
 OK_XY = (90, 110)
@@ -73,6 +74,10 @@ def main():
         pf = v.mem_get(0x39, 0x39)[0]
         v.mem_set(0x39, bytes([pf | 0x20]))
         v.resume()
+        time.sleep(0.5)                             # (released, as a real
+        v.ping()                                    # click: Drag waits
+        v.mem_set(0x8505, b"\x80")                # for it)
+        v.resume()
         settle(t)
 
     def ini():
@@ -118,10 +123,17 @@ def main():
         g.png("settings-s3b-zone")
         press(150 + 3, SUMMER_Y - 3)
         check("summer time EU: summer=eu", ini(), b"[time]\r\noffset=-900\r\nsummer=eu\r\n")
-        press(200, SERVER_Y - 3, t=4)                       # the server's box
+        press(200, SERVER_Y - 3, t=3)                       # the server's box: the list
+        g.png("settings-s3b-list")
+        press(200, LIST_Y + 1 * 12 + 6, t=4)                # time.google.com
+        check("the list: time.google.com picked: ntp=time.google.com", ini(),
+              b"[time]\r\noffset=-900\r\nsummer=eu\r\nntp=time.google.com\r\n")
+        press(200, SERVER_Y - 3, t=3)
+        press(200, LIST_Y + 4 * 12 + 6, t=4)                # custom...: typed
+        g.keys([KEY_DELETE] * 20, settle=0.1)
         g.keys("pool.ntp.org\r", settle=0.3)
         settle(3)
-        check("the server typed: ntp=pool.ntp.org", ini(),
+        check("custom: the server typed: ntp=pool.ntp.org", ini(),
               b"[time]\r\noffset=-900\r\nsummer=eu\r\nntp=pool.ntp.org\r\n")
         g.png("settings-s3b-server")
         press(270, DATE_Y - 3, t=4)                         # set...

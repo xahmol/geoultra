@@ -13,6 +13,7 @@
 
         .import ChoiceDraw, ChoicePress, ButtonDraw, OnButton
         .import IniFind, IniSet, IniDel, dirty, NoRoom, FileEngine, Write
+        .import DrawPage
         .export Ov_TimeDraw, Ov_TimePress
 
         .segment "ZEROPAGE"
@@ -80,7 +81,7 @@ Ov_TimePress:
         jsr ChoicePress
         jsr OnServer
         bcs :+
-        jmp EditServer
+        jmp ServerMenu
 :       lda #<Minus
         ldx #>Minus
         jsr OnButton
@@ -200,6 +201,171 @@ EditServer:
         sta dirty
         jmp ServerDraw
 @end:   rts
+
+; ServerMenu: a click on the server's box: a list under it (none, three
+; well-known servers as in UBoot-v2, custom...) with the item under the
+; pointer inverted; a click picks one (custom: typed), a click outside
+; or RUN/STOP closes it. Its own loop, as the desktop's context menu
+; (ctxmenu.s); the page drawn again after. The user, 2026-11-13.
+ServerMenu:
+        jsr ListRegs            ; the list: cleared, framed, its items
+        lda #0
+        jsr SetPattern
+        jsr Rectangle
+        lda #$FF
+        jsr FrameRectangle
+        lda #0
+        sta at
+@item:  ldx at
+        lda ItemLo,x
+        sta r0L
+        lda ItemHi,x
+        sta r0H
+        lda #<(BOX_X + 3)
+        sta r11L
+        lda #>(BOX_X + 3)
+        sta r11H
+        lda at
+        jsr RowTop
+        clc
+        adc #ROW_BASE
+        sta r1H
+        jsr PutString
+        inc at
+        lda at
+        cmp #ITEMS
+        bcc @item
+        lda #NONE
+        sta hover
+        jsr ClearMouse          ; (a press before the list: not its)
+@loop:  jsr Under
+        cmp hover
+        beq @input
+        pha
+        lda hover
+        jsr InvRow              ; (the old one back; NONE: nothing)
+        pla
+        sta hover
+        jsr InvRow
+@input: jsr GetNextChar
+        cmp #KEY_STOP
+        beq @none
+        lda pressFlag
+        and #MOUSE_BIT
+        beq @loop
+        jsr ClearMouse
+        lda mouseData
+        bmi @loop               ; (a release: on)
+        jsr Under               ; the item where it was pressed
+        jmp @pick
+@none:  lda #NONE
+@pick:  sta hover
+        cmp #ITEMS - 1          ; custom...: the list away, then typed
+        beq @custom
+        cmp #NONE
+        beq @draw
+        jsr NtpKey
+        lda hover               ; none: ntp= out
+        bne @set
+        jsr IniDel
+        jmp @dirty
+@set:   tax
+        lda ItemLo,x
+        sta r2L
+        lda ItemHi,x
+        sta r2H
+        jsr IniSet
+        bcc @dirty
+        jsr DrawPage
+        jmp NoRoom
+@dirty: lda #1
+        sta dirty
+@draw:  jmp DrawPage
+@custom:
+        jsr DrawPage
+        jmp EditServer
+
+; ClearMouse: the mouse bit of pressFlag cleared (safe against the IRQ).
+ClearMouse:
+        php
+        sei
+        lda pressFlag
+        and #$FF - MOUSE_BIT
+        sta pressFlag
+        plp
+        rts
+
+; ListRegs: r2-r4 = the server list's box.
+ListRegs:
+        lda #LIST_TOP
+        sta r2L
+        lda #LIST_TOP + ITEMS * ROW_H + 1
+        sta r2H
+        lda #<BOX_X
+        sta r3L
+        lda #>BOX_X
+        sta r3H
+        lda #<(BOX_X + BOX_W - 1)
+        sta r4L
+        lda #>(BOX_X + BOX_W - 1)
+        sta r4H
+        rts
+
+; RowTop: A = the top line of item A (inside the frame). Destroys A.
+RowTop: asl a                   ; A * ROW_H (12)
+        asl a
+        sta rowT
+        asl a
+        clc
+        adc rowT
+        clc
+        adc #LIST_TOP + 1
+        rts
+
+; InvRow: item A inverted (NONE: nothing).
+InvRow: cmp #NONE
+        beq @end
+        jsr RowTop
+        sta r2L
+        clc
+        adc #ROW_H - 1
+        sta r2H
+        lda #<(BOX_X + 1)
+        sta r3L
+        lda #>(BOX_X + 1)
+        sta r3H
+        lda #<(BOX_X + BOX_W - 2)
+        sta r4L
+        lda #>(BOX_X + BOX_W - 2)
+        sta r4H
+        jsr InvertRectangle
+@end:   rts
+
+; Under: A = the item under the pointer, NONE outside the list.
+Under:  lda mouseXPos+1         ; x in BOX_X to BOX_X + BOX_W - 1
+        bne @hi
+        lda mouseXPos
+        cmp #BOX_X
+        bcc @none
+        bcs @y
+@hi:    lda mouseXPos
+        cmp #<(BOX_X + BOX_W)
+        bcs @none
+@y:     lda mouseYPos
+        sec
+        sbc #LIST_TOP + 1
+        bcc @none
+        ldx #$FF
+@div:   inx
+        sec
+        sbc #ROW_H
+        bcs @div
+        cpx #ITEMS
+        bcs @none
+        txa
+        rts
+@none:  lda #NONE
+        rts
 
 ; OnServer: C clear when the pointer is in the server's box.
 OnServer:
@@ -714,6 +880,12 @@ DATE_Y          = SUMMER_Y + 24
 BOX_X           = 150           ; the server's box
 BOX_W           = 156
 SERVER_MAX      = 40            ; a server's name, at most
+GetNextChar     = $C2A7         ; GEOS jump table
+LIST_TOP        = SERVER_Y + 3  ; ServerMenu: the list under the box
+ROW_H           = 12
+ROW_BASE        = 9             ; a row's baseline below its top
+ITEMS           = 5
+NONE            = $FF
 NOW_X           = 150
 NOW_W           = 36
 MINUS_X         = 150
@@ -805,6 +977,12 @@ TMinus:         .byte "-", 0
 TPlus:          .byte "+", 0
 TSet:           .byte "set...", 0
 NoneText:       .byte "none", 0
+ItemLo:         .byte <NoneText, <Google, <Windows, <Pool, <Custom
+ItemHi:         .byte >NoneText, >Google, >Windows, >Pool, >Custom
+Google:         .byte "time.google.com", 0
+Windows:        .byte "time.windows.com", 0
+Pool:           .byte "pool.ntp.org", 0
+Custom:         .byte "custom...", 0
 NowNote:        .byte "from the server", 0
 ServerAsk:      .byte BOLDON, "Time server:", PLAINTEXT, 0
 DateAsk:        .byte BOLDON, "Date and time:", PLAINTEXT, 0
@@ -817,6 +995,8 @@ DateBad:        .byte BOLDON, "Not a date.", PLAINTEXT, 0
 ; drawn)
 zone:           .byte 0         ; quarter hours from UTC (signed)
 at:             .byte 0
+hover:          .byte 0             ; ServerMenu: the item inverted
+rowT:           .byte 0
 neg:            .byte 0
 len:            .byte 0
 lead:           .byte 0

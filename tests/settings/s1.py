@@ -19,7 +19,7 @@ from vicemon import RESP_CHECKPOINT  # noqa: E402
 
 PAGE_DESKTOP, PAGE_SYSTEM = 1, 2
 SIDE_TOP, SIDE_ROW = 20, 14
-Y0, DY, X1, X2 = 16 + 20, 18, 150, 212
+Y0, DY, X1, X2 = 16 + 20, 18, 137, 191         # pdesk.s COL1, COL2
 CANCEL_XY = (27 * 8 + 24, 188)
 YES_XY = (90, 110)
 
@@ -62,6 +62,10 @@ def main():
         pf = v.mem_get(0x39, 0x39)[0]
         v.mem_set(0x39, bytes([pf | 0x20]))
         v.resume()
+        time.sleep(0.5)                             # (released, as a real
+        v.ping()                                    # click: Drag waits
+        v.mem_set(0x8505, b"\x80")                # for it)
+        v.resume()
         settle(t)
 
     def ini():
@@ -103,7 +107,7 @@ def main():
         press(X2 + 3, Y0 + DY - 3)                          # view: icons
         check("view: icons chosen, marked changed", (sbyte("sel", 1), sbyte("dirty")), (1, 1))
         check("the INI text: [desktop] view=icons", ini(), b"[desktop]\r\nview=icons\r\n")
-        press(X2 + 14 + 3, Y0 - 3)                          # start with: GEOS 2.0's
+        press(X2 + 3, Y0 - 3)                          # start with: GEOS 2.0's
         check("start with GEOS 2.0's: [system] desktop=geos added", ini(),
               b"[desktop]\r\nview=icons\r\n[system]\r\ndesktop=geos\r\n")
         press(X1 + 3, Y0 + 4 * DY - 3)                      # panes: one list (in force)
@@ -111,11 +115,11 @@ def main():
               b"[desktop]\r\nview=icons\r\n[system]\r\ndesktop=geos\r\n")
         press(X1 + 3, Y0 + DY - 3)                          # view: list again
         check("view: list again (replaced)", ini(), b"[desktop]\r\nview=list\r\n[system]\r\ndesktop=geos\r\n")
-        press(234 + 3, Y0 + 5 * DY - 3)                     # sort by: size
+        press(251 + 3, Y0 + 5 * DY - 3)                     # sort by: size
         check("sort by size: [desktop] sort=size", ini(),
               b"[desktop]\r\nview=list\r\nsort=size\r\n[system]\r\ndesktop=geos\r\n")
-        press(240 + 3, Y0 + 6 * DY - 3)                     # existing: skip
-        press(X2 + 14 + 3, Y0 + 7 * DY - 3)                 # delete: at once
+        press(251 + 3, Y0 + 6 * DY - 3)                     # existing: skip
+        press(X2 + 3, Y0 + 7 * DY - 3)                 # delete: at once
         check("existing files skipped, deleting at once: copy=skip, delete=now", ini(),
               b"[desktop]\r\nview=list\r\nsort=size\r\ncopy=skip\r\ndelete=now\r\n"
               b"[system]\r\ndesktop=geos\r\n")

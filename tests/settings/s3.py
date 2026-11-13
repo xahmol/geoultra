@@ -67,6 +67,10 @@ def main():
         pf = v.mem_get(0x39, 0x39)[0]
         v.mem_set(0x39, bytes([pf | 0x20]))
         v.resume()
+        time.sleep(0.5)                             # (released, as a real
+        v.ping()                                    # click: Drag waits
+        v.mem_set(0x8505, b"\x80")                # for it)
+        v.resume()
         settle(t)
 
     def ini():

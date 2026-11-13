@@ -26,7 +26,7 @@ TEST_INI = (b"; a test file of tests/settings/s1u64.py\r\n"
 WANT_INI = (b"; a test file of tests/settings/s1u64.py\r\n"
             b"[favourites]\r\n/usb0/geoultra\r\n\r\n"
             b"[desktop]\r\nview=list\r\nclock=12\r\n")
-Y0, DY, X1, X2 = 16 + 20, 18, 150, 212
+Y0, DY, X1, X2 = 16 + 20, 18, 137, 191         # pdesk.s COL1, COL2
 SAVE_XY = (33 * 8 + 24, 188)
 OK_XY = (21 * 8 + 24, 188)
 
@@ -89,6 +89,8 @@ def main():
         u.write(0x3A, bytes([x & 0xFF, x >> 8, y]))
         u.write(0x8505, b"\x00")
         u.write(0x39, bytes([u.read(0x39, 1)[0] | 0x20]))
+        time.sleep(0.5)                             # (released, as a real
+        u.write(0x8505, b"\x80")                  # click: Drag waits)
         time.sleep(t)
 
     keep = fetch()
