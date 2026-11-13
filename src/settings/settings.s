@@ -13,7 +13,9 @@
         .import TimeDraw, TimePress, ThemeDraw, ThemePress
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
         .export themeLoaded, themeNo, themeCount, themePart, themeNames
-        .export themePath, themeTmp, noFile, PageColours, DrawPage
+        .export themePath, themeTmp, noFile, PageColours, DrawPage, BarOn, BarOff
+        .import row
+        .importzp SWATCH_X        ; (152: exported as zero page)
         .export IniPaths, IniLoad, IniEmpty, IniSet, IniFind, iniLen
 
         .segment "ZEROPAGE"
@@ -365,11 +367,8 @@ DoCancel:
         ora themeDirty
         beq @leave
         lda #<LeaveDlg
-        sta r0L
-        lda #>LeaveDlg
-        sta r0H
-        jsr DoDlgBox
-        lda r0L
+        ldx #>LeaveDlg
+        jsr Plain
         cmp #YES
         beq @leave
         rts
@@ -413,19 +412,65 @@ Write:  lda noFile              ; (no Ultimate: nothing to write)
         rts
 @fail:  jsr Hex                 ; "Not saved: error $xx"
         lda #<FailDlg
-        sta r0L
-        lda #>FailDlg
-        sta r0H
-        jsr DoDlgBox
+        ldx #>FailDlg
+        jsr Plain
         sec
         rts
 
 ; NoRoom (choice.s): the INI text is full; the change is not made.
 NoRoom: lda #<RoomDlg
-        sta r0L
-        lda #>RoomDlg
+        ldx #>RoomDlg
+        ; (falls into Plain)
+
+; BarOn, BarOff (the Theme page's swatch rows, ptheme.s): a one-pixel
+; frame round card row `row`'s 16 swatches drawn or taken away, just
+; outside their cells (in the page's colours), so a swatch in the
+; page's own colour shows too (the user, 2026-11-13). Destroys A, r2-r4.
+BarOn:  lda #$FF
+        bne BarFrame
+BarOff: lda #0
+BarFrame:
+        pha
+        lda row
+        asl a
+        asl a
+        asl a
+        sta r2H                 ; (the row's top)
+        sec
+        sbc #1
+        sta r2L
+        lda r2H
+        clc
+        adc #8
+        sta r2H
+        lda #<(SWATCH_X - 1)
+        sta r3L
+        lda #>(SWATCH_X - 1)
+        sta r3H
+        lda #<(SWATCH_X + 8 * 16)
+        sta r4L
+        lda #>(SWATCH_X + 8 * 16)
+        sta r4H
+        pla
+        jmp FrameRectangle
+
+; Plain: the dialog at A/X over the page's plain colours (a dialog draws
+; no colours: the Theme page's swatches and preview showed through; the
+; user's test 2026-11-13), then the page drawn again; A = the answer.
+Plain:  pha
+        txa
+        pha
+        jsr PageColours
+        pla
         sta r0H
-        jmp DoDlgBox
+        pla
+        sta r0L
+        jsr DoDlgBox
+        lda r0L
+        pha
+        jsr DrawPage
+        pla
+        rts
 
 ; Hex: A as two hex digits into FailText's end.
 Hex:    pha

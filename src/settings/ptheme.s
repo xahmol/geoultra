@@ -23,7 +23,8 @@
         .import KeyLo, KeyHi, LColKind, WordsLo, WordsHi, ColourNames
         .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
         .import PalKey, IniDel
-        .export Ov_ThemeDraw, Ov_ThemePress
+        .export Ov_ThemeDraw, Ov_ThemePress, row, SWATCH_X
+        .import BarOn, BarOff
 
         .segment "ZEROPAGE"
 
@@ -1105,7 +1106,7 @@ RowClear:
 @c:     sta (vp),y
         dey
         bpl @c
-        rts
+        jmp BarOff              ; (settings.s: the frame round it away)
 
 ; Swatches: card row A: the 16 colours as cells (the colour as paper),
 ; colour X framed (in black or white, whichever shows).
@@ -1149,7 +1150,9 @@ Swatches:
         asl a
         ora chosen
         sta (vp),y
-        rts
+        jmp BarOn               ; (settings.s: a frame round the row, so
+                                ; the page's own colour shows too; the
+                                ; user, 2026-11-13)
 
 ; RowBox: r2-r4 = card row row's swatches (8 pixels high).
 RowBox: lda row
