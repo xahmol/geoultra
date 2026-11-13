@@ -108,6 +108,10 @@ DBGETFILES = 16
 NAMEBUF = 0x4500                # not $4F00: the harness's clean-up code
 FILES_DLG = [DEF_DB_POS | 1, DBGETFILES, 4, 4, OPEN, DBI_X_2, 16, 0]
 FILES_AFTER = ["fore", "mem:$4500-$4510", "mem:$4380-$4380"]
+# GeoUltra's drive letters in the box's bottom strip (module 87,
+# drvlist.s: x 3-54, y 74-84 in the 124 x 88 box at 68, 36), not GEOS
+# 2.0's: left out of the screens' comparison
+LETTERS = (68 + 3, 36 + 74, 68 + 3 + 3 * 13 + 10, 36 + 74 + 10)
 
 
 def files(name, ftype, events, buf="", cls=None, compare=FILES_AFTER):
@@ -116,7 +120,9 @@ def files(name, ftype, events, buf="", cls=None, compare=FILES_AFTER):
     if cls:
         extra[TEXT_AT + 0x60] = text(cls)
         r["r10"] = TEXT_AT + 0x60
-    return dlg(name, FILES_DLG, events, extra=extra, r=r, compare=compare)
+    c = dlg(name, FILES_DLG, events, extra=extra, r=r, compare=compare)
+    c["mask"] = [LETTERS]
+    return c
 
 
 IDLE = [dict(x=300, y=190)]

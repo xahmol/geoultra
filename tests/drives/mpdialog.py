@@ -117,6 +117,11 @@ def main():
         r = rows()
         check(1, "Open: the file list (DBGETFILES with MegaPatch's drive flag), \"..\" first",
               r[0] == "..", "rows %r" % r)
+        click(75, 116)                          # letter A (module 87): the answer $88
+        wait(8)
+        check(2, "letter A: the dialog ends with $88, geoWrite switches to drive A itself and "
+              "opens its box again", v.mem_get(0x8489, 0x8489)[0] == 8,
+              "curDrive %d" % v.mem_get(0x8489, 0x8489)[0])
     finally:
         v.quit()
         proc.kill()

@@ -5,9 +5,10 @@ Drive B is a copy of GEOS_NATIVE_DISK (default the user's own
 ~/geos-dev/u64-usb/ramapps.DNP with geoWrite 2.0, only read). A folder is
 made with MakeDir (extension jump table), geoWrite is started and its
 "Open" dialog shown: the first row must be "/GU folder"; RETURN enters it
-(the list shows ".." only); DEL goes back (the folder row again); a
-double click enters the folder, and on a file ends the dialog with
-OPEN (2026-11-13). The
+(the list shows ".." only); DEL goes back (the folder row again); the
+drive letters (module 87) are not there, as geoWrite 2.0 asks for no
+drive button (it keeps its own document drive); a double click enters the folder, and on a file ends the dialog
+with OPEN (2026-11-13). The
 rows are read from fileTrScTab, where DBGETFILES keeps the names; the
 screens are written to build/harness/filedialog-N.png.
 Usage: tests/drives/filedialog.py
@@ -121,6 +122,11 @@ def main():
         key(29)
         r = rows()
         check(3, "DEL goes up", r[0] == "/GU folder", "rows %r" % r)
+        click(75, 116)                          # where module 87's letters would be
+        r = rows()
+        check(6, "GEOS 2.0's box (no drive button asked): no letters, a click there changes "
+              "nothing", v.mem_get(0x8489, 0x8489)[0] == 9 and r[0] == "/GU folder",
+              "drive %d, rows %r" % (v.mem_get(0x8489, 0x8489)[0], r))
         click(90, 46)                           # the folder row
         v.mem_set(0x8515, b"\x1e")              # (dblClickCount: in time;
         click(90, 46)                           # VICE runs in warp)

@@ -17,6 +17,9 @@
         .include "hw.inc"
 
         .export DoDlgBox, RstrFrmDialogue, SaveState, RestoreState, InitGEOEnv
+        .export gfLeft, gfTop, gfSel, gfFirst, gfType, gfCls     ; (module 87,
+        .export GfFind, GfCopy, GfDraw, dbIndex, gfDrvOn         ; drvlist.s)
+        .export gfDrvPick
         .import OvlCall
         .import DoIcons, StartMouseMode, UseSystemFont, PutString
         .import SetPattern, Rectangle, FrameRectangle, RecoverRectangle
@@ -485,6 +488,7 @@ DbGetFiles:
         sta r11L
         lda #$FF
         jsr HorizontalLine
+        jsr GfLetters           ; (module 87: the drive letters)
         pla
         sta r10H
         sta gfCls+1
@@ -698,10 +702,12 @@ GfDraw: lda rightMargin
         sta rightMargin+1
         pla
         sta rightMargin
-        rts
+GfNone: rts
 
 ; GfInvert: invert the selected row.
 GfInvert:
+        lda gfFound             ; (an empty list: no bar; a drive letter,
+        beq GfNone              ; module 87, can show one)
         lda gfSel
         sec
         sbc gfFirst
@@ -962,7 +968,7 @@ GfPress:
         adc #GF_ROWS * GF_ROW - 1
         sta r2H
         jsr IsMseInRegion
-        beq @end
+        beq @strip
         sec
         lda mouseYPos
         sbc gfTop
@@ -992,7 +998,24 @@ GfPress:
         sta dblClickCount
         lda #OPEN
         jmp DbCommand
+@strip: jsr GfLetterPress       ; (below the rows: a drive letter? Its
+        lda gfDrvPick           ; answer ends the dialog here, outside the
+        beq @end                ; overlay: MegaPatch's $88-$8B)
+        sta sysDBData
+        jmp RstrFrmDialogue
 @end:   rts
+
+; GfLetters, GfLetterPress: the file box's drive letters (module 87,
+; drvlist.s; the user, 2026-11-13).
+GfLetters:
+        jsr OvlCall
+        .byte 87, 0
+gfDrvOn:        .byte 0         ; module 87: the box asked for drive
+                                ; letters (MegaPatch's DBSETDRVICON, $40)
+gfDrvPick:      .byte 0         ; module 87: a letter's answer ($88-$8B)
+GfLetterPress:
+        jsr OvlCall
+        .byte 87, 3
 
 ; GfArrow (icon): the arrows; in module 11 (KEXT is full).
 GfArrow:

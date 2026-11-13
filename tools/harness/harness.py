@@ -40,6 +40,8 @@ Case files define CASES, a list of dicts:
   writes   True when the case writes to the disk: such cases run after
            all others, and each on a fresh copy of the oracle disk (GEOS
            2.0's disk keeps the changes; GeoUltra's REU is restored)
+  mask     optional: pixel rectangles (x0, y0, x1, y1) left out of "fore"
+           (GeoUltra's deliberate additions, e.g. the file box's letters)
   compare  list of: "fore", "back" (screen buffers), "A", "X", "Y",
            r-register names (r0..r15, r0L..r15H), "mem:$ADDR-$ADDR",
            "io:$ADDR-$ADDR" (I/O, e.g. VIC-II registers)
@@ -485,6 +487,18 @@ def describe(item, ours, ref):
                                      ours.hex() if isinstance(ours, bytes) else ours)
 
 
+def masked(fore, rects):
+    """The foreground screen with the pixels in rects (x0, y0, x1, y1,
+    inclusive) cleared: GeoUltra's deliberate additions left out of the
+    comparison (a case's "mask", e.g. the file box's drive letters)."""
+    b = bytearray(fore)
+    for x0, y0, x1, y1 in rects:
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                b[(y >> 3) * 320 + (y & 7) + (x & 0x1F8)] &= ~(0x80 >> (x & 7)) & 0xFF
+    return bytes(b)
+
+
 def pixels(fore, x0, y0, x1, y1):
     """ASCII rows of the foreground screen area (inclusive)."""
     out = []
@@ -555,6 +569,9 @@ def main():
     failed = 0
     for i, case in enumerate(cases):
         ref, ours = results["geos"][i], results["geoultra"][i]
+        if case.get("mask") and "fore" in ref:
+            ref["fore"] = masked(ref["fore"], case["mask"])
+            ours["fore"] = masked(ours["fore"], case["mask"])
         bad = [k for k in case["compare"] if ref[k] != ours[k]]
         if bad:
             failed += 1
