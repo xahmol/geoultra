@@ -46,6 +46,10 @@ PATH_Y = 39                     # the path line's baseline on the U64 (letters a
                                 # rows 33-39; measured from a dry run's frame)
 ROW0_Y = 47                     # the list's first row
 ROW_H = 9
+GW_FILE = 38                    # geoWrite's file menu; its quit (7th item)
+GW_QUIT_Y = 15 + 6 * 14 + 7
+SIDE_TOP, SIDE_ROW = 20, 14     # Settings (tests/settings/s2.py, s4.py)
+THEME_Y, PART_Y, STYLE_Y = 36, 54, 72
 START_INI = b"[desktop]\r\ntheme=GeoUltra\r\nview=list\r\n"
 
 
@@ -215,10 +219,16 @@ def scenes(t):
     time.sleep(6)
     p.install()
     t.mark("open-a")
-    p.click(222, 115)                            # Cancel (the box's right icon)
-    time.sleep(3)
+    p.double(90, 46)                             # "ReadMe 1581" on A: opened
+    time.sleep(10)                               # (read only: nothing written)
     p.install()
-    p.click(102, 110)                            # Quit on its start dialog
+    t.mark("document")
+    p.glide(200, 150)
+    time.sleep(3)
+    p.click(GW_FILE, 5)                          # geoWrite's file menu
+    time.sleep(1)
+    t.mark("gwfile")
+    p.click(GW_FILE + 10, GW_QUIT_Y)             # quit
     time.sleep(14)
     p.install()
     t.mark("back")
@@ -250,6 +260,39 @@ def scenes(t):
     time.sleep(8)
     p.install()
     t.mark("settings")
+    p.click(20, SIDE_TOP + 0 * SIDE_ROW + 7)     # the Theme page
+    time.sleep(4)
+    t.mark("theme")
+    for _ in range(2):                           # the next themes in the preview
+        p.click(242, THEME_Y - 3)
+        time.sleep(3)
+    t.mark("theme-next")
+    p.click(286, PART_Y - 3)                     # the palette part
+    time.sleep(3)
+    p.click(152 + 6 * 8 + 3, 99)                 # blue
+    for _ in range(6):                           # R + : the colour changes live
+        p.click(165, STYLE_Y - 3, after=0.4)
+    t.mark("palette")
+    p.click(20, SIDE_TOP + 6 * SIDE_ROW + 7)     # the Pointer page
+    time.sleep(4)
+    for x in (100 + 2 * 56 + 3, 100 + 3 * 56 + 3, 100 + 3):   # hand, cross, classic
+        p.click(x, 33, after=2.5)
+        t.mark("pointer")
+    p.click(20, SIDE_TOP + 3 * SIDE_ROW + 7)     # the Time page
+    time.sleep(4)
+    p.click(200, 33)                             # the server list
+    time.sleep(2)
+    t.mark("time-list")
+    p.click(200, 170)                            # (closed: a click outside)
+    time.sleep(2)
+    p.click(240, 188)                            # Cancel
+    time.sleep(2)
+    p.install()                                  # (its question: a dialog)
+    t.mark("leave")
+    p.click(90, 110)                             # Yes: nothing saved
+    time.sleep(14)
+    p.install()
+    t.mark("end")
 
 
 def main():
