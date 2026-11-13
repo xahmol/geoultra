@@ -61,7 +61,8 @@ class Vice:
 
 
 KEYNAMES = {" ": "space", "\r": "return", "/": "slash", "-": "minus", ".": "period",
-            ",": "comma", ":": "colon", "=": "equal", "*": "asterisk", "+": "plus"}
+            ",": "comma", ":": "colon", "=": "equal", "*": "asterisk", "+": "plus",
+            ";": "semicolon"}
 
 
 class Pilot:

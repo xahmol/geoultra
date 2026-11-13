@@ -132,6 +132,20 @@ class Take:
         sheet.save(os.path.join(self.out, "sheet.png"))
 
 
+def remove(f, path):
+    """A file (only .cvt) or a folder with everything in it, over FTP."""
+    try:
+        f.cwd(path)
+    except ftplib.error_perm:
+        if path.lower().endswith(".cvt"):
+            f.delete(path)
+        return
+    f.cwd("/")
+    for n in f.nlst(path):
+        remove(f, n if n.startswith("/") else path + "/" + n)
+    f.rmd(path)
+
+
 def scenes(t):
     p = t.p
     # 1. boot and the desktop's views
@@ -194,9 +208,12 @@ def scenes(t):
     time.sleep(8)
     p.install()                                  # (a program's start resets
     t.mark("gush")                               # GEOS's vectors: hooked again)
-    p.type("ls /\r")
-    time.sleep(3)
-    t.mark("gush-ls")
+    for line, wait in (("ls /usb0", 3), ("ifconfig", 4),              # (the user: commands,
+                       ("for D in a b c; do ls /$D; done", 5),     # scripting, ifconfig)
+                       ("if test -d /usb0; then echo the Ultimate is there; fi", 3)):
+        p.type(line + "\r")
+        time.sleep(wait)
+        t.mark("gush-" + line.split()[0])
     p.click(308, 3)                              # its close button
     time.sleep(10)
     p.install()
@@ -231,12 +248,9 @@ def main():
         for n, d in keep.items():
             t.put(n, d)
         f = t.ftp()
-        for n in set(f.nlst("/USB0")) - usb0:
-            print("removed from usb0:", n)
-            try:
-                f.delete(n if n.startswith("/") else "/USB0/" + n)
-            except ftplib.error_perm:
-                pass
+        for n in set(f.nlst("/USB0")) - usb0:   # (only what the take made: new
+            print("removed from usb0:", n)      # entries, files only .cvt)
+            remove(f, n if n.startswith("/") else "/USB0/" + n)
         f.quit()
         json.dump(t.events, open(os.path.join(out, "events.json"), "w"), indent=1)
         t.sheet()
