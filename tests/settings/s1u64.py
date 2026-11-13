@@ -101,8 +101,8 @@ def main():
         call(k["Settings"])
         check("settings started: its Desktop page, a file to write",
               (u.read(s["page"], 1)[0], u.read(s["noFile"], 1)[0]), (1, 0))
-        press(X2 + 3, Y0 + 3 * DY - 3)                      # clock: 12 hours
-        press(X1 + 3, Y0 + DY - 3)                          # view: list
+        press(X2 + 3, Y0 + 2 * DY - 3)                      # clock: 12 hours
+        press(X1 + 3, Y0 - 3)                               # view: list
         check("two options chosen: marked changed", u.read(s["dirty"], 1)[0], 1)
         press(*SAVE_XY, t=8)
         check("Save: written, no longer marked", u.read(s["dirty"], 1)[0], 0)

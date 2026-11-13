@@ -1,6 +1,5 @@
 ; Cold start: hardware, screen, mouse pointer, IRQ, then EnterDeskTop
-; (GeoUltra's desktop, or GEOS 2.0's with SETTINGS.INI desktop=geos;
-; gush with start=gush). Runs
+; (GeoUltra's desktop; gush with start=gush). Runs
 ; once from $4F00 (segment INIT, loaded by the boot ROM; applications
 ; overwrite it later), so cold-start-only code costs no kernal space.
 

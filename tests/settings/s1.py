@@ -104,25 +104,19 @@ def main():
         g.png("settings-s1-system")
         press(20, SIDE_TOP + PAGE_DESKTOP * SIDE_ROW + 7)
         check("and back on Desktop", sbyte("page"), PAGE_DESKTOP)
-        press(X2 + 3, Y0 + DY - 3)                          # view: icons
-        check("view: icons chosen, marked changed", (sbyte("sel", 1), sbyte("dirty")), (1, 1))
+        press(X2 + 3, Y0 - 3)                               # view: icons
+        check("view: icons chosen, marked changed", (sbyte("sel", 0), sbyte("dirty")), (1, 1))
         check("the INI text: [desktop] view=icons", ini(), b"[desktop]\r\nview=icons\r\n")
-        press(X2 + 3, Y0 - 3)                          # start with: GEOS 2.0's
-        check("start with GEOS 2.0's: [system] desktop=geos added", ini(),
-              b"[desktop]\r\nview=icons\r\n[system]\r\ndesktop=geos\r\n")
-        press(X1 + 3, Y0 + 4 * DY - 3)                      # panes: one list (in force)
-        check("a click on the option in force: no change", ini(),
-              b"[desktop]\r\nview=icons\r\n[system]\r\ndesktop=geos\r\n")
-        press(X1 + 3, Y0 + DY - 3)                          # view: list again
-        check("view: list again (replaced)", ini(), b"[desktop]\r\nview=list\r\n[system]\r\ndesktop=geos\r\n")
-        press(251 + 3, Y0 + 5 * DY - 3)                     # sort by: size
-        check("sort by size: [desktop] sort=size", ini(),
-              b"[desktop]\r\nview=list\r\nsort=size\r\n[system]\r\ndesktop=geos\r\n")
-        press(251 + 3, Y0 + 6 * DY - 3)                     # existing: skip
-        press(X2 + 3, Y0 + 7 * DY - 3)                 # delete: at once
+        press(X1 + 3, Y0 + 3 * DY - 3)                      # panes: one list (in force)
+        check("a click on the option in force: no change", ini(), b"[desktop]\r\nview=icons\r\n")
+        press(X1 + 3, Y0 - 3)                               # view: list again
+        check("view: list again (replaced)", ini(), b"[desktop]\r\nview=list\r\n")
+        press(251 + 3, Y0 + 4 * DY - 3)                     # sort by: size
+        check("sort by size: [desktop] sort=size", ini(), b"[desktop]\r\nview=list\r\nsort=size\r\n")
+        press(251 + 3, Y0 + 5 * DY - 3)                     # existing: skip
+        press(X2 + 3, Y0 + 6 * DY - 3)                      # delete: at once
         check("existing files skipped, deleting at once: copy=skip, delete=now", ini(),
-              b"[desktop]\r\nview=list\r\nsort=size\r\ncopy=skip\r\ndelete=now\r\n"
-              b"[system]\r\ndesktop=geos\r\n")
+              b"[desktop]\r\nview=list\r\nsort=size\r\ncopy=skip\r\ndelete=now\r\n")
         g.png("settings-s1-rows")
         g.png("settings-s1-chosen")
         press(*CANCEL_XY)

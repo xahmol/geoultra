@@ -27,7 +27,6 @@
 
         .export MountAll, SerialFromDisk, TurboInit, PointerInit
         .export startGush
-        .import ownDesk
         .import turboWant, turboNow, OvlCall
 .ifdef BYPASS
         .import bypassOn
@@ -473,22 +472,8 @@ ReadSettings:
         jsr Decimal
         sta ptrColour
 @skipP: jmp @skip
-@serial:
-        cmp #'D'
-        bne @hib
-        ldx #deskKey - keys     ; "ESKTOP=GEOS": GEOS 2.0's deskTop, unless
-        jsr Match               ; "ULTRA" follows (GeoUltra's desktop, the
-        beq :+                  ; default: docs/DESKTOP.md). The next
-        jmp @skip               ; character only looked at, not read: the
-:       ldy #0                  ; line's end stays for SkipLine
-        lda (r1),y
-        and #$DF
-        cmp #'U'
-        beq :+
-        lda #0
-        sta ownDesk
-:       jmp @skip
-@hib:   cmp #'H'
+@serial:                        ; (desktop= is no longer read: GeoUltra's
+@hib:   cmp #'H'                ; desktop always; the user, 2026-11-13)
         bne @serial2
         ldx #hibKey - keys      ; "IBERNATE=" seconds after a change (0:
         jsr Match               ; off), in steps of 256 frames (about 5 s)
@@ -602,7 +587,6 @@ hibKey:         .byte "IBERNATE=", 0
 turboKey:       .byte "URBO=", 0
 slowKey:        .byte "LOW=", 0
 startKey:       .byte "TART=GUSH", 0
-deskKey:        .byte "ESKTOP=GEOS", 0
 .ifdef BYPASS
 protKey:        .byte "ROTECTION=BYPASS", 0
 ptrKey:         .byte "OINTER=", 0

@@ -1,13 +1,11 @@
 ; GeoUltra Settings: the Desktop page (overlay 1, ovl.s; docs/SETTINGS.md,
-; "Pages"): which desktop starts, and the desktop's view, toolbar, clock
-; panes, the sort order, what an existing file at a copy's target gets
-; and whether deleting asks first (the user, 2026-11-12, after
-; GeoDesk64), as
-; choice rows (choice.s) over SETTINGS.INI's keys, written
-; with the values the kernal and the desktop read ([system] desktop=;
-; [desktop] view=, toolbar=, clock=, panes=, sort=, copy=, delete=;
-; src/desktop/
-; inifile.s).
+; "Pages"): the desktop's view, toolbar, clock, panes, the sort order,
+; what an existing file at a copy's target gets and whether deleting
+; asks first (the user, 2026-11-12, after GeoDesk64), as choice rows
+; (choice.s) over SETTINGS.INI's keys, written with the values the
+; desktop reads ([desktop] view=, toolbar=, clock=, panes=, sort=,
+; copy=, delete=; src/desktop/inifile.s). The choice of GEOS 2.0's
+; deskTop is gone (the user, 2026-11-13: GeoUltra's desktop only).
 ; Own design and code.
 
         .include "geos.inc"
@@ -37,58 +35,51 @@ COL4            = 282           ; labels to 134, each column's longest
 Y0              = PAGE_TOP + 20 ; the rows' baselines, 18 apart
 DY              = 18
 
-Rows:   .byte 8
-        .byte Y0                                ; the desktop at the start
-        .word LDesk, SSystem, KDesk
-        .byte 2, 0
-        .word COL1, TUltra, VUltra
-        .word COL2, TGeos, VGeos
-        .byte Y0 + DY                           ; the view
+Rows:   .byte 7
+        .byte Y0                                ; the view
         .word LView, SDesktop, KView
         .byte 3, 0
         .word COL1, TList, VList
         .word COL2, TIcons, VIcons
         .word COL3, TDetail, VDetail
-        .byte Y0 + 2 * DY                       ; the toolbar
+        .byte Y0 + DY                           ; the toolbar
         .word LBar, SDesktop, KBar
         .byte 3, 0
         .word COL1, TTwo, V16
         .word COL2, TOne, V8
         .word COL3, TOff, VOff
-        .byte Y0 + 3 * DY                       ; the clock
+        .byte Y0 + 2 * DY                       ; the clock
         .word LClock, SDesktop, KClock
         .byte 3, 0
         .word COL1, T24, V24
         .word COL2, T12, V12
         .word COL3, TOff, VOff
-        .byte Y0 + 4 * DY                       ; two panes
+        .byte Y0 + 3 * DY                       ; two panes
         .word LPanes, SDesktop, KPanes
         .byte 2, 0
         .word COL1, TOneList, V1
         .word COL2, TTwoPanes, V2
-        .byte Y0 + 5 * DY                       ; the sort order
+        .byte Y0 + 4 * DY                       ; the sort order
         .word LSort, SDesktop, KSort
         .byte 4, 0
         .word COL1, TName, VName
         .word COL2, TDate, VDate
         .word COL3, TSize, VSize
         .word COL4, TType, VType
-        .byte Y0 + 6 * DY                       ; a file at the target
+        .byte Y0 + 5 * DY                       ; a file at the target
         .word LCopy, SDesktop, KCopy
         .byte 4, 0
         .word COL1, TAsk, VAsk
         .word COL2, TReplace, VReplace
         .word COL3, TSkip, VSkip
         .word COL4, TNewer, VNewer
-        .byte Y0 + 7 * DY                       ; deleting
+        .byte Y0 + 6 * DY                       ; deleting
         .word LDel, SDesktop, KDel
         .byte 2, 0
         .word COL1, TAskFirst, VAsk
         .word COL2, TAtOnce, VNow
 
-SSystem:        .byte "system", 0
 SDesktop:       .byte "desktop", 0
-KDesk:          .byte "desktop", 0
 KView:          .byte "view", 0
 KBar:           .byte "toolbar", 0
 KClock:         .byte "clock", 0
@@ -118,13 +109,10 @@ VName:          .byte "name", 0
 VDate:          .byte "date", 0
 VSize:          .byte "size", 0
 VType:          .byte "type", 0
-LDesk:          .byte "Start with", 0
 LView:          .byte "View", 0
 LBar:           .byte "Toolbar", 0
 LClock:         .byte "Clock", 0
 LPanes:         .byte "Panes", 0
-TUltra:         .byte "GeoUltra's", 0
-TGeos:          .byte "GEOS 2.0's", 0
 TList:          .byte "list", 0
 TIcons:         .byte "icons", 0
 TDetail:        .byte "detailed", 0
@@ -135,8 +123,6 @@ T24:            .byte "24 hours", 0
 T12:            .byte "12 hours", 0
 TOneList:       .byte "one list", 0
 TTwoPanes:      .byte "two panes", 0
-VUltra:         .byte "geoultra", 0
-VGeos:          .byte "geos", 0
 VList:          .byte "list", 0
 VIcons:         .byte "icons", 0
 VDetail:        .byte "detailed", 0

@@ -597,10 +597,11 @@ OvEnterDeskTop:
         jsr InitMachine
         jsr Background
         jsr RefusedMsg          ; an application refused: why (sysdrive.s)
-        bit ownDesk             ; [system] desktop=geoultra: GeoUltra's
-        bpl @old                ; desktop from drive E (FE_RUNSYS); back
-        ldx #OWN_LEN            ; only when it cannot start: then GEOS
-@name:  lda ownName,x           ; 2.0's deskTop as before. The name goes
+        bit ownDesk             ; GeoUltra's desktop (sysdrive.s ownDesk)
+        bpl @old                ; from drive E (FE_RUNSYS); back only
+        ldx #OWN_LEN            ; when it cannot start: then GEOS 2.0's
+@name:  lda ownName,x           ; deskTop of the boot disk as a last
+                                ; resort (no option any more). The name goes
         sta APP_RAM,x           ; to application memory first: this
         dex                     ; module's bytes are gone once the engine's
         bpl @name               ; modules use the slot (and the

@@ -13,8 +13,9 @@ them.
 
 - The **Modern** view with the **list** only: one full-screen view, a
   menu bar on top, a sidebar on the left, the current folder as a list
-  of names on the right. The detailed and icon views, two panes and the
-  Classic style come later, each its own step; the core is written so
+  of names on the right. The detailed and icon views and two panes
+  come later, each its own step (the Classic style was dropped by the
+  user on 2026-11-13: the icon view looks classic enough); the core is written so
   that they are only other ways of drawing the same list.
 - **Sidebar:** drives A-D, drive E (the system drive), the Ultimate's
   roots (usb0, usb1, sd), favourite folders (kept in `SETTINGS.INI`) and
@@ -36,10 +37,10 @@ them.
   switcher.
 - **The default since 2026-11-11 (user):** `EnterDeskTop` starts it
   from drive E, and the cold start ends in `EnterDeskTop` (the kernal's
-  temporary banner is gone). `SETTINGS.INI` `[system] desktop=geos`
-  brings back GEOS 2.0's deskTop (searched on the drives as before);
-  `start=gush` still starts gush instead. Until 2026-11-11 it was
-  opt-in (`desktop=geoultra`, still accepted).
+  temporary banner is gone). `start=gush` still starts gush instead.
+  Until 2026-11-11 it was opt-in (`desktop=geoultra`); from 2026-11-13
+  `desktop=` is not read at all (the user: no choice of GEOS 2.0's
+  deskTop; it only starts when GeoUltra's cannot).
 
 ## Screen (320 x 200)
 
@@ -680,7 +681,7 @@ colour is a property of an element, by name:
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,
   pointer designs, turbo and slow list, NTP and clock, the default
-  desktop); the Classic style.
+  desktop); the Classic style (dropped 2026-11-13).
 
 ## Open bugs
 

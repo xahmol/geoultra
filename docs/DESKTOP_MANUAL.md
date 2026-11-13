@@ -4,8 +4,8 @@ GeoUltra's own desktop is what you see after the start: a file manager
 for the GEOS drives and the Ultimate's own file system, and the place
 programs are started from. It is still being built (docs/DESKTOP.md has
 the plan and the state of the work); this manual describes what is
-there now. GEOS 2.0's own deskTop can still be used instead:
-`SETTINGS.INI`, `[system] desktop=geos` (see "Settings").
+there now. GeoUltra always starts its own desktop (GEOS 2.0's deskTop
+of the boot disk only starts when this one cannot).
 
 ## The screen
 
@@ -246,8 +246,7 @@ panes=1              (1: one list, 2: two panes)
 ```
 
 `RECENT.INI` holds the recent documents. Other sections of
-`SETTINGS.INI` belong to the system (`[system] desktop=geos` starts
-GEOS 2.0's deskTop instead of this one).
+`SETTINGS.INI` belong to the system.
 
 **GeoUltra Settings** (geos > settings, or the toolbar's settings
 button; in gush: `"/e/GU Settings"`) changes these without editing the

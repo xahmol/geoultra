@@ -129,8 +129,9 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
     value of a colour for themes with a palette (Ultimate 64); a small
     desktop mock on the page's right half, redrawn at each change; saved
     as a theme file.
-  - *Desktop:* the default desktop (GeoUltra's or GEOS 2.0's), the
-    view, the toolbar, the clock, two panes.
+  - *Desktop:* the view, the toolbar, the clock, two panes, the sort
+    order, existing files, deleting (the choice of GEOS 2.0's deskTop
+    removed 2026-11-13: GeoUltra's desktop only, the user).
   - *System:* turbo and the slow list (applications picked from the
     GEOS drives by their permanent names, up to 6; remove); the
     hibernation delay; time: the NTP server with a "now" button, the
