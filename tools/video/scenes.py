@@ -201,12 +201,15 @@ def scenes(t):
     t.mark("geowrite")
     p.click(102, 86)                             # its Open
     time.sleep(4)
-    t.mark("open")
+    p.install()                                  # (every dialog box resets the
+    t.mark("open")                               # vectors too: DoDlgBox)
     p.click(75, 116)                             # the drive letter A (MegaPatch's)
     time.sleep(6)
+    p.install()
     t.mark("open-a")
     p.click(222, 115)                            # Cancel (the box's right icon)
     time.sleep(3)
+    p.install()
     p.click(102, 110)                            # Quit on its start dialog
     time.sleep(14)
     p.install()
