@@ -25,6 +25,7 @@ KEY_DOWN, KEY_HOME, KEY_LEFT, CR, DEL = 17, 18, 8, 13, 29
 C = 0x80
 YES_XY = (90, 110)              # the question's left button
 YES_ALL_XY = (150, 110)         # its "Yes to all" (cards 8-15 of the dialog)
+NO_XY = (220, 110)              # the question's right button
 
 
 def main():
@@ -56,6 +57,10 @@ def main():
         v.mem_set(0x3A, bytes([xy[0] & 0xFF, xy[0] >> 8, xy[1]]))
         v.mem_set(0x8505, b"\x00")
         v.mem_set(0x39, bytes([v.mem_get(0x39, 0x39)[0] | 0x20]))
+        v.resume()
+        time.sleep(0.5)                             # (released, as a real
+        v.ping()                                    # click: Drag waits
+        v.mem_set(0x8505, b"\x80")                # for it)
         v.resume()
         settle(s)
 
@@ -127,6 +132,8 @@ def main():
         cursor_to("OUTER")
         g.keys([DEL], settle=0.5)
         settle(3)
+        check("the question names what goes: OUTER (the user's test 2026-11-13)",
+              bytes(v.mem_get(k["entryName"], k["entryName"] + 15)).split(b"\0")[0].lower(), b"outer")
         press(YES_XY, s=4)                                   # "Delete the selection?"
         g.png("desktop-d8-everything")
         press(YES_XY, s=15)                                  # "Delete everything in it?"
@@ -182,6 +189,15 @@ def main():
         settle(6)
         check("delete=now: TWO deleted without a question",
               (count(), "two" in [n.lower() for n in names()]), (before - 1, False))
+        v.mem_set(k["deskPrefs"], b"\x00")                  # asking again
+        n = count()
+        g.keys([C | ord("a"), DEL], settle=0.5)              # all of them: "N entries"
+        settle(3)
+        check("all selected: the question says how many (\"..\" not counted)",
+              bytes(v.mem_get(k["entryName"], k["entryName"] + 15)).split(b"\0")[0],
+              b"%d entries" % (n - 1))
+        press(NO_XY, s=3)                                    # No: nothing deleted
+        check("No: all still there", count(), n)
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

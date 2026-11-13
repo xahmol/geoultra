@@ -63,6 +63,8 @@ def main():
         u.write(0x3A, bytes([x, 0, y]))
         u.write(0x8505, b"\x00")
         u.write(0x39, bytes([u.read(0x39, 1)[0] | 0x20]))
+        time.sleep(0.5)                             # (released, as a real
+        u.write(0x8505, b"\x80")                  # click: Drag waits)
         time.sleep(s)
 
     def side(code, s=6):

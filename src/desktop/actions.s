@@ -116,6 +116,107 @@ Wanted: ldy some
 @no:    sec
         rts
 
+; WhatGoes: entryName = what Delete will delete, for its question: the
+; one entry's name, or "N entries" (Wanted's, ".." left out, as the
+; delete loop takes them; the user's test 2026-11-13: the question named
+; the last entry read, another file). C set when there is none.
+WhatGoes:
+        lda #0
+        sta n
+        sta n+1
+        sta goes
+        sta goes+1
+@entry: lda n
+        cmp count
+        bne :+
+        lda n+1
+        cmp count+1
+        beq @done
+:       lda n
+        ldx n+1
+        jsr Wanted
+        bcs @next
+        lda n
+        ldx n+1
+        jsr Fetch
+        jsr IsDotDot
+        beq @next
+        lda goes                ; the first one kept
+        ora goes+1
+        bne :+
+        lda n
+        sta first
+        lda n+1
+        sta first+1
+:       inc goes
+        bne @next
+        inc goes+1
+@next:  inc n
+        bne @entry
+        inc n+1
+        bne @entry
+@done:  lda goes
+        ora goes+1
+        bne :+
+        sec                     ; (none)
+        rts
+:       lda goes+1              ; one: its name
+        bne @many
+        lda goes
+        cmp #1
+        bne @many
+        lda first
+        ldx first+1
+        jsr Fetch
+        clc
+        rts
+@many:  ldy #0                  ; several: "N entries"
+        ldx #4                  ; (powers 10000 .. 10, then the ones)
+        lda #0
+        sta lead
+@pow:   lda #'0'
+        sta digit
+@sub:   lda goes
+        sec
+        sbc PowLo,x
+        sta tmpL
+        lda goes+1
+        sbc PowHi,x
+        bcc @dig
+        sta goes+1
+        lda tmpL
+        sta goes
+        inc digit
+        bne @sub
+@dig:   lda digit
+        cmp #'0'
+        bne :+
+        lda lead
+        beq @skip
+        lda digit
+:       sta entryName,y
+        sta lead
+        iny
+@skip:  dex
+        bne @pow
+        lda goes
+        ora #'0'
+        sta entryName,y
+        iny
+        ldx #0
+@w:     lda EntriesWord,x
+        sta entryName,y
+        beq @end
+        inx
+        iny
+        bne @w
+@end:   clc
+        rts
+
+PowLo:  .byte 0, <10, <100, <1000, <10000
+PowHi:  .byte 0, >10, >100, >1000, >10000
+EntriesWord:    .byte " entries", 0
+
 ; AnySelected: A nonzero when any entry is selected.
 AnySelected:
         lda #0
@@ -225,11 +326,13 @@ Delete: jsr AnySelected
 :       lda deskPrefs           ; (delete=now: no question; a folder with
         and #PREF_NOASK         ; things in it is still asked, tree.s)
         bne :+
+        jsr WhatGoes            ; (the question names them: entryName)
+        bcs @none               ; (nothing to delete)
         lda #<DeleteText
         ldx #>DeleteText
         jsr Ask
         beq :+
-        rts                     ; (NO)
+@none:  rts                     ; (NO)
 :       jsr Busy
         jsr TreeStart
         lda #0
@@ -388,6 +491,13 @@ nameDlg:
         .byte OK, DBI_X_0, DBI_Y_2
         .byte CANCEL, DBI_X_2, DBI_Y_2
         .byte 0
+
+; WhatGoes's scratch (overlay data: set in each call)
+goes:           .word 0         ; the entries Delete takes
+first:          .word 0         ; the first of them
+tmpL:           .byte 0
+lead:           .byte 0
+digit:          .byte 0
 
         .segment "BSS"
 

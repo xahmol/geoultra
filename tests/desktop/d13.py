@@ -74,6 +74,10 @@ def main():
         pf = v.mem_get(0x39, 0x39)[0]
         v.mem_set(0x39, bytes([pf | 0x20]))
         v.resume()
+        time.sleep(0.5)                             # (released, as a real
+        v.ping()                                    # click: Drag waits
+        v.mem_set(0x8505, b"\x80")                # for it)
+        v.resume()
         settle(s)
 
     def here():
@@ -163,9 +167,10 @@ def main():
         def row_y(n):
             return byte("listTop") + n * byte("rowH") + 3
 
-        def drag(x0, y0, x1, y1, shot=None):
+        def drag(x0, y0, x1, y1, shot=None, select=True):
             v.mem_set(0x8515, b"\x00")                            # (no double click)
-            press(x0, y0, s=2)                                     # select
+            if select:
+                press(x0, y0, s=2)                                 # select
             v.mem_set(0x8515, b"\x00")
             v.mem_set(0x3A, bytes([x0 & 0xFF, x0 >> 8, y0]))
             v.mem_set(0x8505, b"\x00")                            # held:
@@ -214,7 +219,9 @@ def main():
         letters = bytes(v.mem_get(k["sideLetters"], k["sideLetters"] + n - 1))
         tops = bytes(v.mem_get(k["sideTops"], k["sideTops"] + n - 1))
         y = tops[letters.index(b"b")] + 3
-        drag(120, row_y(1), 20, y, shot="desktop-d13-markside")
+        g.keys([KEY_HOME], settle=0.5)                             # (nothing selected:
+        settle(2)                                                  # the drag selects it)
+        drag(120, row_y(1), 20, y, shot="desktop-d13-markside", select=False)
         check("F1 dropped on drive b's line: gone from /b/box", word("count"), 1)
         g.keys([8], settle=0.5)                                    # up: /b
         settle(5)

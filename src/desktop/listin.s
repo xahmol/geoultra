@@ -27,6 +27,9 @@ EnablSprite     = $C1D2
 DisablSprite    = $C1D5
 DRAG_SPR        = 2             ; (0 the pointer, 1 the text cursor)
 DRAG_MIN        = 5             ; pixels moved before a press is a drag
+DRAG_HOLD       = 3             ; seconds by the clock (2-3) held still: a
+                                ; click
+seconds         = year + 5      ; GEOS's clock (geos.inc: year)
 DRAG_COLOR      = 6             ; blue (the pointer's, kernal load.s)
 cutPath = text                  ; (list.s's PathPress buffer: side.s's text)
 Ov_ListPress = ListPress
@@ -403,14 +406,16 @@ ListKey:
 ; selected, or on a sidebar drive or favourite, the core copies or moves
 ; it there (dropReq; dropPath the target folder; desktop.s DropDo): the
 ; same drive moves, another
-; copies, C= held the other way. C set: no drag (a click: on as usual):
-; an entry not selected, the second press of a double click, a release
-; before the move, or a press held still for about two seconds (the wait
-; keeps MainLoop, the clock and processes, from running).
+; copies, C= held the other way. An entry not selected becomes the
+; selection when the drag starts (the user's test 2026-11-13: press and
+; drag at once). C set: no drag (a click: on as usual): the second press
+; of a double click, a release before the move, or a press held still
+; for two to three seconds (the wait keeps MainLoop, the clock and
+; processes, from running).
 Drag:   lda pick
         ldx pick+1
         jsr IsSelected
-        beq @click
+        sta wasSel
         lda dblClickCount       ; (the same entry pressed again in time)
         beq :+
         lda pick
@@ -423,14 +428,16 @@ Drag:   lda pick
         sta dx
         lda mouseYPos
         sta dy
-        lda #0
-        sta waitL
-        sta waitH
-@wait:  inc waitL               ; (65536 rounds: about two seconds)
-        bne :+
-        inc waitH
-        beq @click
-:       lda mouseData           ; released before it moved: a click
+        lda seconds             ; (the wait timed by GEOS's clock, not by
+        sta waitL               ; rounds: at the U64's turbo 65536 rounds
+@wait:  lda seconds             ; took 30 ms; the user's test 2026-11-13)
+        sec
+        sbc waitL
+        bcs :+
+        adc #60                 ; (the minute turned)
+:       cmp #DRAG_HOLD
+        bcs @click
+        lda mouseData           ; released before it moved: a click
         bpl :+
 @click: sec
         rts
@@ -444,7 +451,15 @@ Drag:   lda pick
         sbc dx
         jsr Far
         bcc @wait
-@drag:  jsr Sprite              ; the entry's icon at the pointer
+@drag:  lda wasSel              ; not selected: it alone the selection
+        bne :+
+        jsr ClearSel
+        lda pick
+        ldx pick+1
+        ldy #1
+        jsr Select
+        jsr ListDraw
+:       jsr Sprite              ; the entry's icon at the pointer
         lda #0
         sta hover
 @track: jsr Hover               ; (the target under the pointer marked)
@@ -889,9 +904,9 @@ SelAll: jsr ClearSel
 ; Scratch (overlay data: fetched anew with the overlay)
 dx:     .byte 0                 ; Drag: where the press was
 hover:  .byte 0                 ; Drag: the mark shown (MarkTo)
+wasSel: .byte 0                 ; Drag: pick selected at the press
 dropAt: .word 0                 ; Drag, Hover: the folder entry under it
-waitL:  .byte 0                 ; Drag: rounds waited for a move
-waitH:  .byte 0
+waitL:  .byte 0                 ; Drag: the second the wait began
 dy:     .byte 0
 flip:   .byte 0                 ; C= held at the drop
 sprite: .res 64                 ; the dragged icon's sprite image

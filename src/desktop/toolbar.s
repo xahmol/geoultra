@@ -22,6 +22,7 @@
         .import HistBack, HistForward, text, Info, Gush, TwoPanes, Settings
 homePath        = text          ; (side.s's text buffer: free between actions)
         .export ToolPress, ToolPaint, Cards, Root, Home, Top
+        .export Refresh
 
         .segment "CODE"
 
@@ -127,7 +128,10 @@ ViewNext:
         lda #VIEW_LIST
 :       jmp View
 ; Refresh: the folder read again (and sorted, list.s).
+; Refresh (the toolbar; view > refresh, disk > refresh): the list read
+; again (the menu closed first when one is open).
 Refresh:
+        jsr GotoFirstMenu
         jsr ListRead
         jmp ListDraw
 Acts:   .word HistBack-1, HistForward-1, Up-1, Root-1

@@ -18,6 +18,7 @@
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
+        .import Refresh
         .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
         .import CopyOther, MoveOther, CdPath
         .export dropReq, dropPath, sideCount, sideTops, sideLetters
@@ -1205,10 +1206,15 @@ Settings:
         ldx #>SettingsName
 ; RunSys: the program on drive E named at A/X started in the desktop's
 ; place (FE_RUNSYS); back here only when it cannot start.
-RunSys: sta r0L
-        stx r0H
-        jsr GotoFirstMenu
+RunSys: pha                     ; (the name kept: GotoFirstMenu, with a
+        txa                     ; menu open, and Leave change r0; the
+        pha                     ; user's test 2026-11-13: geos > gush and
+        jsr GotoFirstMenu       ; settings did nothing)
         jsr Leave
+        pla
+        sta r0H
+        pla
+        sta r0L
         lda #FE_RUNSYS
         jsr FileEngine
         jmp Back
@@ -1219,11 +1225,6 @@ RunSys: sta r0L
 Leave:  jsr PanesKeep
         jmp Neutral
 
-; Refresh (disk > refresh): the list read again.
-Refresh:
-        jsr GotoFirstMenu
-        jsr ListRead
-        jmp ListDraw
 
 ; The accessories' names in daNames, DA_NAME_LEN apart.
 DaLo:   .repeat DA_MAX, i

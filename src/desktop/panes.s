@@ -35,7 +35,7 @@ TwoPanes:
         lda panes
         bne @off
         jsr PanesOn
-        jmp @draw
+        beq @draw               ; (PanesOn ends with A = 0)
 @off:   lda #0
         sta panes
         lda viewSave            ; the view and the title bar from before
@@ -82,10 +82,14 @@ PaneSwitch:
         jmp ListDraw
 @end:   rts
 
-; DrawPanes (desktop.s, Draw): both panes read and drawn: the other one
-; first (read, sorted, drawn plainly), then the active one (read; list.s
-; sorts and draws it from MainLoop, SortNow).
+; DrawPanes (desktop.s, Draw): both panes read and drawn: the active
+; one's folder taken from the file engine first (ListRead: FE_PWD; a
+; desk accessory such as geoFolder may have chosen another; the user's
+; test 2026-11-13), then the other one (read, sorted, drawn plainly),
+; then the active one (read; list.s sorts and draws it from MainLoop,
+; SortNow).
 DrawPanes:
+        jsr ListRead
         jsr Other
         jsr CdPath
         jsr ListRead
