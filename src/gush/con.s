@@ -347,7 +347,7 @@ ConCell:
         rts
 
 ; ConStatus: row 0 inverted: "gush", the text at (r0) cut from the left to
-; fit, the time (hour, minutes). Destroys A, X, Y, r0.
+; fit, the time (hour, minutes), the close "x". Destroys A, X, Y, r0.
 ConStatus:
         lda #$FC
         sta conInv
@@ -406,15 +406,19 @@ ConStatus:
         iny
         bne @chars
 @time:  lda hour
-        ldx #COLS - 6
+        ldx #COLS - 8
         jsr Two
         lda #':'
-        ldx #COLS - 4
+        ldx #COLS - 6
         ldy #0
         jsr ConCell
         lda minutes
-        ldx #COLS - 3
+        ldx #COLS - 5
         jsr Two
+        lda #'x'                ; the close button (edit.s EdPress)
+        ldx #CLOSE_COL
+        ldy #0
+        jsr ConCell
         lda #0
         sta conInv
         rts
@@ -438,7 +442,7 @@ Two:    ldy #'0' - 1
         jmp ConCell
 
 Name:   .byte "gush", 0
-        .assert STATUS_FROM + STATUS_PATH + 7 = COLS, error, "ConStatus: the columns"
+        .assert STATUS_FROM + STATUS_PATH + 9 = COLS, error, "ConStatus: the columns"
 
 ; Tables: each row's first bitmap byte; each column's byte offset and
 ; pixel shift (column * 6 pixels).

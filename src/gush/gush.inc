@@ -5,7 +5,9 @@ ROWS            = 25            ; row 0 the status line
 ROWS_TEXT       = 24            ; rows 1-24 text
 ROWS_LAST       = 24
 STATUS_FROM     = 6             ; the status line: "gush", the path from
-STATUS_PATH     = 40            ; column 6 (at most 40 columns), the time
+STATUS_PATH     = 38            ; column 6 (at most 38 columns), the time,
+CLOSE_COL       = COLS - 2      ; the close "x" (a click there: exit; the
+                                ; user, 2026-11-13)
 LINE_MAX        = 254           ; an input line, without its zero
 ARGS_MAX        = 32            ; words of a command line (after * and ?)
 ARGBUF_SIZE     = 1024          ; their bytes

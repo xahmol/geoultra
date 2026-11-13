@@ -15,9 +15,10 @@
         .export EdKey, EdPress, Prompt, lineBuf, lineLen, testCtrl
         .export histTop, histCount, histSlot, histBuf, Fetch, Keep
         .export linePos, prevKey, Show, InsCh
-        .import Complete
+        .import Complete, HistSave
 
 StashRAM        = $C2C8         ; GEOS jump table
+EnterDeskTop    = $C22C
 FetchRAM        = $C2CB
 
 PROMPT_W        = 2             ; "$ "
@@ -86,7 +87,8 @@ Show:   lda linePos             ; the view follows the cursor
         jmp ConCursor
 
 ; EdPress (otherPressVec): a mouse press on the input line puts the
-; cursor on the character pressed (or at the line's end). Only while the
+; cursor on the character pressed (or at the line's end); on the status
+; line's "x" (con.s ConStatus) gush ends as `exit` does. Only while the
 ; editor has the keys (keyVector = EdKey: not while a question waits).
 EdPress:
         lda mouseData           ; (a press, not the release)
@@ -97,7 +99,17 @@ EdPress:
         lda keyVector+1
         cmp #>EdKey
         bne @end
-        lda mouseYPos           ; its row: 8 pixels each
+        lda mouseYPos           ; the status line's close button: its
+        cmp #8                  ; column and the ones beside it
+        bcs @line
+        lda mouseXPos+1
+        beq @end
+        lda mouseXPos
+        cmp #<((CLOSE_COL - 1) * 6)
+        bcc @end
+        jsr HistSave            ; (as cmds.s CmdExit)
+        jmp EnterDeskTop
+@line:  lda mouseYPos           ; its row: 8 pixels each
         lsr a
         lsr a
         lsr a

@@ -24,7 +24,9 @@ between GEOS drives and the Ultimate is raw, as the engine does it now.
   font is GeoUltra's own (clean-room, like the system font; ASCII 32-126
   plus a cursor block).
 - Row 0 is a status line (inverted): the current directory, cut from
-  the left when long, and the time. Rows 1-24 scroll.
+  the left when long, the time and a close button "x" at the right end
+  (a click on it ends gush as `exit` does; the user, 2026-11-13).
+  Rows 1-24 scroll.
 - A text shadow of the screen (53x24 characters) in memory: scrolling,
   redrawing after a dialog or an application, and the tests read it.
 - Scrolling moves the bitmap up by one text row (2560 bytes of the 8000;

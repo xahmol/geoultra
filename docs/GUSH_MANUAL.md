@@ -29,7 +29,9 @@ folder on the stick (`/USB0/GEOULTRA`).
 ## The screen
 
 53 columns by 24 rows of text, with a status line on top showing the
-current folder and the time. Long input lines scroll sideways. gush
+current folder, the time and a close button: a click on the "x" at its
+right end leaves gush, as `exit` does. Long input lines scroll
+sideways. gush
 draws only on GEOS's foreground screen and redraws itself after a desk
 accessory.
 
