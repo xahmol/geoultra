@@ -88,6 +88,19 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   part, style, swatches, preview, save, use, new copy); S4.4 the
   palette's RGB; S4.5 programs= in the kernal; S4.6 icon colours by
   type (the desktop's core needs room first).
+  **S4.3 done (2026-11-13):** the Theme page (ptheme.s, overlay 5): the
+  THEMES folder listed, the theme in use first; Theme [-] [+] (unsaved
+  changes: asked), "use", "copy" (a new name: its file at Save); Part
+  [-] [+] over themedef.inc's lines; the style row laid out by measured
+  widths; Ink and Paper as 16 coloured cells, the chosen one framed;
+  the preview (border, menu bar, toolbar, sidebar, heading, list, a
+  selected row, status) in colour cells. The theme's text is the core's
+  second (UseTheme), written by Write as THEMES/<name>.ini. Fixed on
+  the way: inifile.inc renamed the temporary file to the whole path
+  (THEMES/x.ini), which FE_RENAME refuses after the old file was
+  already deleted; it now passes the name's last part (SETTINGS.INI
+  was not affected). Tests: s4.py (8 checks in VICE), s4u64.py
+  (Custom.ini on the U64: only its border line changed; restored).
 - Pages:
   - *Theme:* the theme editor: each line of a theme file; colours from
     16 swatches (in the theme's palette) for ink and paper, plus the RGB

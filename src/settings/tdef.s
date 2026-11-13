@@ -7,4 +7,4 @@
         .include "themedef.inc"
 
         .export KeyLo, KeyHi, LColKind, WordsLo, WordsHi, ColourNames, PalKey
-        .export LINES_N, KIND_PALETTE, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
+        .exportzp LINES_N, KIND_PALETTE, CK_NONE, CK_PAIR, CK_INK, CK_PAPER

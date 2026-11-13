@@ -192,14 +192,28 @@ IniSave:
         sta r0H
         lda #FE_DELETE
         jsr FileEngine
-        lda #<iniTmp
+        lda iniName             ; the new name: the name's last part (a
+        sta r1L                 ; folder in front, THEMES/x.ini: FE_RENAME
+        lda iniName+1           ; takes a name, not a path; found
+        sta r1H                 ; 2026-11-13 with the theme editor)
+        ldy #$FF
+@last:  iny
+        lda (r1),y
+        beq @named
+        cmp #'/'
+        bne @last
+        tya                     ; past this "/"
+        sec
+        adc r1L
+        sta r1L
+        bcc :+
+        inc r1H
+:       ldy #$FF
+        bne @last
+@named: lda #<iniTmp
         sta r0L
         lda #>iniTmp
         sta r0H
-        lda iniName
-        sta r1L
-        lda iniName+1
-        sta r1H
         lda #FE_RENAME
         jmp FileEngine
 

@@ -1,0 +1,1423 @@
+; GeoUltra Settings: the Theme page (overlay 5, ovl.s; docs/SETTINGS.md,
+; "S4 decisions"): the theme editor, in compact rows: Theme [-] name [+]
+; with "use" (SETTINGS.INI [desktop] theme=) and "copy" (a new theme
+; file from this one); Part [-] name [+] (the theme file's lines,
+; src/inc/themedef.inc); the part's style; its ink and paper as 16
+; swatches; a preview strip across the page (a mini desktop in the
+; theme's colours), drawn again at each change. The theme file is the
+; core's second text (UseTheme); a change rewrites its line in the
+; file's own words ("clock, dark grey on light grey"); OK and Save write
+; it as THEMES/<name>.ini (settings.s Write). Without an Ultimate (VICE)
+; there are no theme files: the page edits an empty text. Own design
+; and code.
+
+        .include "geos.inc"
+        .include "engine.inc"
+        .include "settings.inc"
+
+        .import ButtonDraw, OnButton, TextWidth, FileEngine
+        .import IniFind, IniSet, iniLen, NoRoom, dirty, Write
+        .import UseSettings, UseTheme, themeDirty, themeLoaded, themeNo
+        .import themeCount, themePart, themeNames, themePath, themeTmp
+        .import IniPaths, IniLoad, IniEmpty, noFile
+        .import KeyLo, KeyHi, LColKind, WordsLo, WordsHi, ColourNames
+        .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
+        .export Ov_ThemeDraw, Ov_ThemePress
+
+        .segment "ZEROPAGE"
+
+vp:             .res 2          ; a word or a name being walked
+askText:        .res 2          ; the copy's question (DBVARSTR)
+
+        .segment "OV5"
+
+; Ov_ThemeDraw: the theme read (once), the rows, the swatches, the
+; preview.
+Ov_ThemeDraw:
+        lda themeLoaded
+        bne :+
+        jsr FirstLoad
+:       jsr UseTheme
+        ldx #0                  ; the labels
+@label: stx at
+        lda LabelLo,x
+        sta r0L
+        lda LabelHi,x
+        sta r0H
+        lda #<LABEL_X
+        sta r11L
+        lda #>LABEL_X
+        sta r11H
+        lda LabelY,x
+        sta r1H
+        jsr PutString
+        ldx at
+        inx
+        cpx #LABELS
+        bcc @label
+        ldx #0                  ; the buttons
+@btn:   stx at
+        lda BtnLo,x
+        pha
+        lda BtnHi,x
+        tax
+        pla
+        jsr ButtonDraw
+        ldx at
+        inx
+        cpx #BUTTONS
+        bcc @btn
+        jsr NameDraw
+        jmp PartDraw
+
+; Ov_ThemePress: a click on a button, the style row or a swatch.
+Ov_ThemePress:
+        jsr UseTheme
+        ldx #0
+@btn:   stx at
+        lda BtnLo,x
+        pha
+        lda BtnHi,x
+        tax
+        pla
+        jsr OnButton
+        bcs @next
+        ldx at
+        lda ActLo,x
+        sta vp
+        lda ActHi,x
+        sta vp+1
+        jmp (vp)
+@next:  ldx at
+        inx
+        cpx #BUTTONS
+        bcc @btn
+        jsr StylePress
+        bcc @end
+        jmp SwatchPress
+@end:   rts
+
+; --- the theme: its file, its name
+
+; FirstLoad: the theme files listed (THEMES), the one SETTINGS.INI uses
+; ([desktop] theme=; none: GeoUltra) chosen and read.
+FirstLoad:
+        jsr ListThemes
+        jsr UseSettings         ; the theme in use
+        lda #<SDesktop
+        sta r0L
+        lda #>SDesktop
+        sta r0H
+        lda #<KTheme
+        sta r1L
+        lda #>KTheme
+        sta r1H
+        jsr IniFind
+        bcs @default
+        cmp #THEME_NAME
+        bcs @default
+        tay
+        lda #0
+        sta name,y
+@ch:    dey
+        bmi @find
+        lda (r2),y
+        sta name,y
+        jmp @ch
+@default:
+        ldx #0
+@def:   lda DefaultName,x
+        sta name,x
+        beq @find
+        inx
+        bne @def
+@find:  ldx #0                  ; its place in the list (or added)
+@try:   cpx themeCount
+        bcs @add
+        stx themeNo
+        jsr SameName
+        bcc @load
+        ldx themeNo
+        inx
+        bne @try
+@add:   jsr AddName
+@load:  lda #1
+        sta themeLoaded
+        lda #0
+        sta themePart
+        jmp LoadTheme
+
+; ListThemes: themeNames = the THEMES folder's files ("<name>.ini", up
+; to THEMES_MAX), themeCount their number; none without an Ultimate.
+ListThemes:
+        lda #0
+        sta themeCount
+        lda #<buf               ; the home folder
+        sta r1L
+        lda #>buf
+        sta r1H
+        lda #0
+        sta buf
+        lda #FE_HOME
+        jsr FileEngine
+        txa
+        bne @end
+        ldy #$FF                ; + "THEMES"
+@home:  iny
+        lda buf,y
+        bne @home
+        ldx #0
+@dir:   lda ThemesDir,x
+        sta buf,y
+        beq @open
+        iny
+        inx
+        bne @dir
+@open:  lda #<buf
+        sta r0L
+        lda #>buf
+        sta r0H
+        lda #FE_OPENDIR
+        jsr FileEngine
+        sta handle
+        txa
+        bne @end
+@read:  lda themeCount
+        cmp #THEMES_MAX
+        bcs @close
+        lda #<info
+        sta r1L
+        lda #>info
+        sta r1H
+        lda #<name
+        sta r2L
+        lda #>name
+        sta r2H
+        lda #0
+        sta r3L
+        sta r3H
+        lda #FE_READDIR
+        ldy handle
+        jsr FileEngine
+        txa
+        bne @close
+        jsr IniName             ; "x.ini": its name to the list
+        bcs @read
+        jsr AddName
+        jmp @read
+@close: lda #FE_CLOSE
+        ldy handle
+        jsr FileEngine
+@end:   rts
+
+; IniName: C clear when name ends in ".ini" (any case): that cut off.
+IniName:
+        ldy #$FF
+@end:   iny
+        lda name,y
+        bne @end
+        cpy #5
+        bcc @no
+        ldx #2                  ; ("ini" backwards)
+@ext:   dey
+        lda name,y
+        ora #$20
+        cmp IniExt,x
+        bne @no
+        dex
+        bpl @ext
+        dey                     ; (the ".")
+        lda name,y
+        cmp #'.'
+        bne @no
+        lda #0
+        sta name,y
+        clc
+        rts
+@no:    sec
+        rts
+
+; AddName: name (zero-ended, THEME_NAME at most) as the list's next one
+; (when there is room); themeNo = it.
+AddName:
+        lda themeCount
+        cmp #THEMES_MAX
+        bcs @end
+        sta themeNo
+        jsr NameAt
+        ldy #0
+@ch:    lda name,y
+        sta (vp),y
+        beq @done
+        iny
+        cpy #THEME_NAME - 1
+        bcc @ch
+        lda #0
+        sta (vp),y
+@done:  inc themeCount
+@end:   rts
+
+; SameName: C clear when themeNames[themeNo] is name (any case).
+SameName:
+        jsr NameAt
+        ldy #$FF
+@ch:    iny
+        lda (vp),y
+        beq @end                ; (the list's name ends: name's too?)
+        ora #$20
+        sta tmp
+        lda name,y
+        beq @no
+        ora #$20
+        cmp tmp
+        beq @ch
+@no:    sec
+        rts
+@end:   lda name,y
+        bne @no
+        clc
+        rts
+
+; NameAt: vp = themeNames[themeNo].
+NameAt: lda themeNo
+        asl a
+        asl a
+        asl a
+        asl a                   ; (THEME_NAME 16)
+        clc
+        adc #<themeNames
+        sta vp
+        lda #>themeNames
+        adc #0
+        sta vp+1
+        rts
+        .assert THEME_NAME = 16, error, "NameAt: * 16"
+
+; LoadTheme: themePath/themeTmp for themeNames[themeNo], its file read
+; into the theme's text (not there, no Ultimate: an empty text);
+; themeDirty cleared.
+LoadTheme:
+        jsr ThemePaths
+        jmp ReadTheme
+
+; ThemePaths: themePath, themeTmp for themeNames[themeNo].
+ThemePaths:
+        jsr NameAt
+        ldx #0                  ; "THEMES/" name ".ini" and ".tmp"
+@dir:   lda ThemesDir,x
+        beq :+
+        sta themePath,x
+        sta themeTmp,x
+        inx
+        bne @dir
+:       lda #'/'
+        sta themePath,x
+        sta themeTmp,x
+        inx
+        ldy #0
+@name:  lda (vp),y
+        beq @ext
+        sta themePath,x
+        sta themeTmp,x
+        inx
+        iny
+        bne @name
+@ext:   ldy #0
+@e:     lda IniDot,y
+        sta themePath,x
+        lda TmpDot,y
+        sta themeTmp,x
+        beq @end
+        inx
+        iny
+        bne @e
+@end:   rts
+
+; ReadTheme: the theme's file (themePath) into its text (not there, no
+; Ultimate: an empty text); themeDirty cleared.
+ReadTheme:
+        jsr UseTheme
+        lda #0
+        sta themeDirty
+        sta iniLen
+        sta iniLen+1
+        jsr IniEmpty
+        lda noFile
+        bne @end
+        lda #<themePath
+        sta r0L
+        lda #>themePath
+        sta r0H
+        lda #<themeTmp
+        sta r1L
+        lda #>themeTmp
+        sta r1H
+        jsr IniPaths
+        bcs @end
+        jsr IniLoad
+@end:   rts
+
+; NameDraw: the theme's name between its buttons.
+NameDraw:
+        lda #THEME_Y
+        ldx #NAME_X
+        jsr Clear
+        jsr NameAt
+        lda vp
+        sta r0L
+        lda vp+1
+        sta r0H
+        lda themeCount          ; (none listed: the name in name)
+        bne :+
+        lda #<name
+        sta r0L
+        lda #>name
+        sta r0H
+:       lda #NAME_X
+        sta r11L
+        lda #0
+        sta r11H
+        lda #THEME_Y
+        sta r1H
+        jmp PutString
+
+; Clear: the text's place at baseline A from x X to NEXT_X - 2 (a
+; name's room, before its [+]); ClearRow: to the screen's right edge.
+Clear:  ldy #<(NEXT_X - 2)
+        sty r4L
+        ldy #>(NEXT_X - 2)
+        jmp ClearAt
+ClearRow:
+        ldy #<SCREEN_RIGHT
+        sty r4L
+        ldy #>SCREEN_RIGHT
+ClearAt:
+        sty r4H
+        sta tmp
+        stx r3L
+        lda #0
+        sta r3H
+        lda tmp
+        sec
+        sbc #9
+        sta r2L
+        lda tmp
+        clc
+        adc #2
+        sta r2H
+        lda #0
+        jsr SetPattern
+        jmp Rectangle
+
+; --- the buttons
+
+; ThemeDown, ThemeUp: the previous or next theme file (the changes to
+; this one written first when asked: Yes saves, No drops them).
+ThemeDown:
+        lda themeNo
+        bne :+
+        lda themeCount
+:       sec
+        sbc #1
+        jmp NewTheme
+ThemeUp:
+        ldx themeNo
+        inx
+        txa
+        cmp themeCount
+        bcc NewTheme
+        lda #0
+NewTheme:
+        sta new
+        lda themeCount
+        cmp #2
+        bcc @end                ; (one or none: nothing to go to)
+        lda themeDirty
+        beq @go
+        lda #<SaveDlg
+        sta r0L
+        lda #>SaveDlg
+        sta r0H
+        jsr DoDlgBox
+        lda r0L
+        cmp #YES
+        bne @go
+        jsr Write               ; (settings.s: both texts)
+        bcs @end
+@go:    lda new
+        sta themeNo
+        jsr LoadTheme
+        jsr NameDraw
+        jmp PartDraw
+@end:   rts
+
+; PartDown, PartUp: the previous or next part.
+PartDown:
+        ldx themePart
+        bne :+
+        ldx #LINES_N
+:       dex
+        stx themePart
+        jmp PartDraw
+PartUp: ldx themePart
+        inx
+        cpx #LINES_N
+        bcc :+
+        ldx #0
+:       stx themePart
+        jmp PartDraw
+
+; UseIt: SETTINGS.INI [desktop] theme= this theme (the desktop's from
+; its next start).
+UseIt:  jsr UseSettings
+        jsr NameAt
+        lda #<SDesktop
+        sta r0L
+        lda #>SDesktop
+        sta r0H
+        lda #<KTheme
+        sta r1L
+        lda #>KTheme
+        sta r1H
+        lda vp
+        sta r2L
+        lda vp+1
+        sta r2H
+        jsr IniSet
+        php
+        jsr UseTheme
+        plp
+        bcc :+
+        jmp NoRoom
+:       lda #1
+        sta dirty
+        rts
+
+; Copy: a new theme from this one: its name typed (the input dialog),
+; added to the list and shown; its text this one's with name= changed;
+; written as THEMES/<name>.ini at Save or OK.
+Copy:   lda themeCount
+        cmp #THEMES_MAX
+        bcs @end
+        lda #0
+        sta name
+        lda #<CopyAsk
+        sta askText
+        lda #>CopyAsk
+        sta askText+1
+        lda #<name
+        sta r5L
+        lda #>name
+        sta r5H
+        lda #<NameDlg
+        sta r0L
+        lda #>NameDlg
+        sta r0H
+        jsr DoDlgBox
+        lda r0L
+        cmp #CANCEL
+        beq @end
+        lda name
+        beq @end
+        jsr AddName
+        jsr ThemePaths          ; (its paths; the text stays: a copy)
+        lda #<STheme            ; name= the new name
+        sta r0L
+        lda #>STheme
+        sta r0H
+        lda #<KName
+        sta r1L
+        lda #>KName
+        sta r1H
+        lda #<name
+        sta r2L
+        lda #>name
+        sta r2H
+        jsr IniSet
+        bcc :+
+        jmp NoRoom
+:       lda #1
+        sta themeDirty
+        jmp NameDraw
+@end:   rts
+
+; --- the part: its style, its colours
+
+; PartDraw: the part's name, its style row, its swatches (by its kind
+; of colours), the preview.
+PartDraw:
+        lda #PART_Y
+        ldx #NAME_X
+        jsr Clear
+        ldx themePart
+        lda KeyLo,x
+        sta r0L
+        lda KeyHi,x
+        sta r0H
+        lda #NAME_X
+        sta r11L
+        lda #0
+        sta r11H
+        lda #PART_Y
+        sta r1H
+        jsr PutString
+        jsr ReadPart
+        jsr StyleDraw
+        jsr SwatchesDraw
+        jmp Preview
+
+; ReadPart: style, ink, paper of the part from its line (missing: the
+; first style, dark grey on light grey).
+ReadPart:
+        lda themePart
+; ReadLine: style, ink, paper of line A (as ReadPart).
+ReadLine:
+        sta line
+        lda #0
+        sta style
+        lda #DEF_INK
+        sta ink
+        lda #DEF_PAPER
+        sta paper
+        jsr LineKey
+        jsr IniFind             ; (r2 its value, A its length)
+        bcs @end
+        cmp #VAL_MAX
+        bcc :+
+        lda #VAL_MAX
+:       tay                     ; the value, lower case, to val
+        lda #0
+        sta val,y
+@ch:    dey
+        bmi @parse
+        lda (r2),y
+        cmp #'A'
+        bcc :+
+        cmp #'Z' + 1
+        bcs :+
+        ora #$20
+:       sta val,y
+        jmp @ch
+@parse: ldy #0
+        jsr HasWords
+        beq @colours
+        jsr Word                ; the style: its word's index
+        bcs :+
+        sta style
+:       jsr Past                ; (to after ", ")
+@colours:
+        ldx line
+        lda LColKind,x
+        cmp #CK_NONE
+        beq @end
+        jsr Colour              ; the first colour (Y: the place in val)
+        bcs @end
+        pha
+        ldx line
+        lda LColKind,x
+        cmp #CK_PAPER
+        bne :+
+        pla
+        sta paper
+        rts
+:       pla
+        sta ink
+        jsr OnWord              ; " on " and the second
+        bcs @end
+        jsr Colour
+        bcs @end
+        sta paper
+@end:   rts
+
+; LineKey: r0 = "theme", r1 = line's key.
+LineKey:
+        lda #<STheme
+        sta r0L
+        lda #>STheme
+        sta r0H
+        ldx line
+        lda KeyLo,x
+        sta r1L
+        lda KeyHi,x
+        sta r1H
+        rts
+
+; HasWords: Z clear when line has style words (themedef.inc).
+HasWords:
+        ldx line
+        lda WordsLo,x
+        sta vp
+        lda WordsHi,x
+        sta vp+1
+        sty tmp
+        ldy #0
+        lda (vp),y
+        ldy tmp
+        cmp #0
+        rts
+
+; Word: A = the index of the word of line's list (vp) at val + Y (to
+; its "," or end), Y past it; C set when none matches.
+Word:   sty start
+        lda #0
+        sta idx
+@word:  ldy #0
+        lda (vp),y
+        beq @none               ; (the list's end)
+        ldx start
+@ch:    lda (vp),y
+        beq @end
+        cmp val,x
+        bne @skip
+        inx
+        iny
+        bne @ch
+@end:   lda val,x               ; (the text's word ends here too)
+        beq @yes
+        cmp #','
+        beq @yes
+@skip:  jsr NextWord
+        inc idx
+        jmp @word
+@yes:   txa
+        tay
+        lda idx
+        clc
+        rts
+@none:  ldy start
+        sec
+        rts
+
+; NextWord: vp past its word and the word's zero.
+NextWord:
+        ldy #0
+@ch:    lda (vp),y
+        iny
+        cmp #0
+        bne @ch
+        tya
+        clc
+        adc vp
+        sta vp
+        bcc :+
+        inc vp+1
+:       rts
+
+; Past: Y past "," and the spaces after it.
+Past:   lda val,y
+        beq @end
+        iny
+        cmp #','
+        bne Past
+@sp:    lda val,y
+        cmp #' '
+        bne @end
+        iny
+        bne @sp
+@end:   rts
+
+; Colour: A = the colour named at val + Y (to " on " or the end), Y
+; past it; C set when no name matches.
+Colour: sty start
+        lda #0
+        sta idx
+        lda #<ColourNames
+        sta vp
+        lda #>ColourNames
+        sta vp+1
+@name:  ldy #0
+        lda (vp),y
+        beq @none
+        ldx start
+@ch:    lda (vp),y
+        beq @end
+        cmp val,x
+        bne @skip
+        inx
+        iny
+        bne @ch
+@end:   lda val,x               ; (the text's name ends here too)
+        beq @yes
+        cmp #' '
+        beq @yes
+@skip:  jsr NextWord
+        inc idx
+        jmp @name
+@yes:   txa
+        tay
+        lda idx
+        clc
+        rts
+@none:  ldy start
+        sec
+        rts
+
+; OnWord: Y past " on "; C set when it is not there.
+OnWord: ldx #0
+@ch:    lda OnText,x
+        beq @yes
+        cmp val,y
+        bne @no
+        inx
+        iny
+        bne @ch
+@yes:   clc
+        rts
+@no:    sec
+        rts
+
+; WriteLine: line's value in the file's words from style, ink, paper
+; (by its kind), set in the theme's text; themeDirty; the preview.
+WriteLine:
+        ldy #0
+        jsr HasWords
+        beq @colours
+        ldx style               ; the style's word
+@find:  dex
+        bmi @copy
+        jsr NextWord
+        jmp @find
+@copy:  ldy #0                  ; (val from its start)
+        jsr Put
+        ldx line
+        lda LColKind,x
+        cmp #CK_NONE
+        beq @done
+        lda #','
+        jsr PutCh
+        lda #' '
+        jsr PutCh
+        jmp @kind
+@colours:
+        ldy #0                  ; (no style word: val from its start)
+@kind:  ldx line
+        lda LColKind,x
+        cmp #CK_NONE
+        beq @done
+        cmp #CK_PAPER
+        bne :+
+        lda paper
+        jsr PutColour
+        jmp @done
+:       lda ink
+        jsr PutColour
+        ldx line
+        lda LColKind,x
+        cmp #CK_INK
+        beq @done
+        ldx #0
+@on:    lda OnText,x
+        beq :+
+        jsr PutCh
+        inx
+        bne @on
+:       lda paper
+        jsr PutColour
+@done:  lda #0
+        sta val,y
+        jsr LineKey
+        lda #<val
+        sta r2L
+        lda #>val
+        sta r2H
+        jsr IniSet
+        bcc :+
+        jmp NoRoom
+:       lda #1
+        sta themeDirty
+        rts
+
+; Put: the zero-ended word at vp to val + Y. PutCh: A. PutColour: the
+; name of colour A.
+Put:    sty tmp
+        ldy #0
+        lda (vp),y
+        beq @end
+        ldy tmp
+        jsr PutCh
+        inc vp
+        bne Put
+        inc vp+1
+        bne Put
+@end:   ldy tmp
+        rts
+PutCh:  cpy #VAL_MAX
+        bcs :+
+        sta val,y
+        iny
+:       rts
+PutColour:
+        tax
+        lda #<ColourNames
+        sta vp
+        lda #>ColourNames
+        sta vp+1
+@skip:  dex
+        bmi Put
+        sty tmp
+        jsr NextWord
+        ldy tmp
+        jmp @skip
+
+; StyleDraw: the part's style words as boxes, laid out by their
+; measured widths (none: the row empty); styleN of them, at styleXLo/Hi.
+StyleDraw:
+        lda #STYLE_Y
+        ldx #STYLE_X - 2
+        jsr ClearRow
+        lda #0
+        sta styleN
+        lda #<STYLE_X
+        sta posL
+        lda #>STYLE_X
+        sta posH
+        ldy #0
+        jsr HasWords
+        beq @end
+@word:  ldy #0
+        lda (vp),y
+        beq @end
+        ldx styleN
+        cpx #STYLES_MAX
+        bcs @end
+        lda posL
+        sta styleXLo,x
+        lda posH
+        sta styleXHi,x
+        stx idx
+        jsr StyleBox
+        lda vp                  ; its word after the box
+        sta r0L
+        lda vp+1
+        sta r0H
+        lda posL
+        clc
+        adc #BOX_TEXT
+        sta r11L
+        lda posH
+        adc #0
+        sta r11H
+        lda #STYLE_Y
+        sta r1H
+        jsr PutString
+        lda vp                  ; the next box: after its word and a gap
+        sta r0L
+        lda vp+1
+        sta r0H
+        jsr TextWidth
+        clc
+        adc #BOX_TEXT + STYLE_GAP
+        adc posL
+        sta posL
+        bcc :+
+        inc posH
+:       jsr NextWord
+        inc styleN
+        jmp @word
+@end:   rts
+
+; StyleBox: style box idx framed, filled when it is the style.
+StyleBox:
+        ldx idx
+        lda styleXLo,x
+        sta r3L
+        clc
+        adc #BOX - 1
+        sta r4L
+        lda styleXHi,x
+        sta r3H
+        adc #0
+        sta r4H
+        lda #STYLE_Y - BOX + 1
+        sta r2L
+        lda #STYLE_Y
+        sta r2H
+        lda #0
+        jsr SetPattern
+        jsr Rectangle
+        lda #$FF
+        jsr FrameRectangle
+        lda idx
+        cmp style
+        bne @end
+        inc r2L
+        inc r2L
+        dec r2H
+        dec r2H
+        lda r3L
+        clc
+        adc #2
+        sta r3L
+        bcc :+
+        inc r3H
+:       lda r4L
+        sec
+        sbc #2
+        sta r4L
+        bcs :+
+        dec r4H
+:       lda #1
+        jsr SetPattern
+        jsr Rectangle
+@end:   rts
+
+; StylePress: C clear when the click was on the style row: the last box
+; left of the pointer becomes the style (written, drawn again).
+StylePress:
+        lda mouseYPos
+        cmp #STYLE_Y - 9
+        bcc @no
+        cmp #STYLE_Y + 3
+        bcs @no
+        ldx styleN
+        beq @no
+@box:   dex
+        bmi @no
+        lda mouseXPos+1         ; its x <= the pointer's?
+        cmp styleXHi,x
+        bcc @box
+        bne @hit
+        lda mouseXPos
+        cmp styleXLo,x
+        bcc @box
+@hit:   stx style
+        jsr WriteLine
+        lda themePart           ; (WriteLine kept line: the part's)
+        jsr ReadLine
+        jsr StyleDraw
+        jsr Preview
+        clc
+        rts
+@no:    sec
+        rts
+
+; SwatchesDraw: the ink row and the paper row (each only when the part
+; has it), the one in use framed.
+SwatchesDraw:
+        lda #INK_ROW
+        jsr RowClear
+        lda #PAPER_ROW
+        jsr RowClear
+        ldx line
+        lda LColKind,x
+        cmp #CK_PAIR
+        beq @both
+        cmp #CK_INK
+        beq @ink
+        cmp #CK_PAPER
+        beq @paper
+        rts
+@both:  jsr @ink
+@paper: lda #PAPER_ROW
+        ldx paper
+        jmp Swatches
+@ink:   lda #INK_ROW
+        ldx ink
+        jmp Swatches
+
+; RowClear: card row A's swatches cleared to the screen's colours.
+RowClear:
+        sta row
+        jsr RowBox
+        lda #0
+        jsr SetPattern
+        jsr Rectangle
+        lda row
+        jsr Cells
+        ldy #SWATCHES - 1
+        lda screencolors
+@c:     sta (vp),y
+        dey
+        bpl @c
+        rts
+
+; Swatches: card row A: the 16 colours as cells (the colour as paper),
+; colour X framed (in black or white, whichever shows).
+Swatches:
+        sta row
+        stx chosen
+        jsr Cells
+        ldy #SWATCHES - 1
+@c:     tya
+        sta (vp),y
+        dey
+        bpl @c
+        jsr RowBox              ; the chosen one framed
+        lda chosen
+        asl a
+        asl a
+        asl a
+        clc
+        adc #<SWATCH_X
+        sta r3L
+        lda #>SWATCH_X
+        adc #0
+        sta r3H
+        lda r3L
+        clc
+        adc #7
+        sta r4L
+        lda r3H
+        adc #0
+        sta r4H
+        lda #$FF
+        jsr FrameRectangle
+        lda row
+        jsr Cells
+        ldy chosen
+        ldx chosen
+        lda Contrast,x
+        asl a
+        asl a
+        asl a
+        asl a
+        ora chosen
+        sta (vp),y
+        rts
+
+; RowBox: r2-r4 = card row row's swatches (8 pixels high).
+RowBox: lda row
+        asl a
+        asl a
+        asl a
+        sta r2L
+        clc
+        adc #7
+        sta r2H
+        lda #<SWATCH_X
+        sta r3L
+        lda #>SWATCH_X
+        sta r3H
+        lda #<(SWATCH_X + 8 * SWATCHES - 1)
+        sta r4L
+        lda #>(SWATCH_X + 8 * SWATCHES - 1)
+        sta r4H
+        rts
+
+; Cells: vp = the colour matrix at card row A, the swatches' first card.
+Cells:  ldx #0
+        stx vp+1
+        sta vp                  ; A * 40 = A * 32 + A * 8
+        asl vp
+        asl vp
+        asl vp                  ; (* 8; rows below 32: no carry yet)
+        lda vp
+        asl a
+        rol vp+1
+        asl a
+        rol vp+1                ; (* 32)
+        clc
+        adc vp
+        sta vp
+        lda vp+1
+        adc #>COLOR_MATRIX
+        sta vp+1
+        lda vp
+        clc
+        adc #<COLOR_MATRIX + SWATCH_CARD
+        sta vp
+        bcc :+
+        inc vp+1
+:       rts
+
+; SwatchPress: a click on a swatch row: that colour as ink or paper.
+SwatchPress:
+        lda mouseXPos           ; (x - SWATCH_X: 0-127 on a swatch)
+        sec
+        sbc #<SWATCH_X
+        tax
+        lda mouseXPos+1
+        sbc #>SWATCH_X
+        bne @end
+        txa
+        lsr a
+        lsr a
+        lsr a
+        cmp #SWATCHES
+        bcs @end
+        sta new
+        lda mouseYPos
+        lsr a
+        lsr a
+        lsr a
+        ldx line
+        cmp #INK_ROW
+        bne :+
+        ldy LColKind,x          ; (the ink row: shown for pairs and ink)
+        cpy #CK_PAIR
+        beq @ink
+        cpy #CK_INK
+        beq @ink
+        rts
+:       cmp #PAPER_ROW
+        bne @end
+        ldy LColKind,x
+        cpy #CK_PAIR
+        beq @paper
+        cpy #CK_PAPER
+        beq @paper
+@end:   rts
+@ink:   lda new
+        sta ink
+        jmp @set
+@paper: lda new
+        sta paper
+@set:   jsr WriteLine
+        jsr SwatchesDraw
+        jmp Preview
+
+; --- the preview: a mini desktop in the theme's colours
+
+; Preview: card rows PREV_ROW to PREV_ROW + 5, cards PREV_CARD to
+; PREV_CARD + 19: the border at both ends, the menu bar, the toolbar,
+; the sidebar with its heading, the list with a selected row, the
+; status line; their words in their inks.
+Preview:
+        lda #0                  ; its bitmap cleared
+        jsr SetPattern
+        lda #PREV_ROW * 8
+        sta r2L
+        lda #PREV_ROW * 8 + 6 * 8 - 1
+        sta r2H
+        lda #<(PREV_CARD * 8)
+        sta r3L
+        lda #>(PREV_CARD * 8)
+        sta r3H
+        lda #<(PREV_CARD * 8 + 20 * 8 - 1)
+        sta r4L
+        lda #>(PREV_CARD * 8 + 20 * 8 - 1)
+        sta r4H
+        jsr Rectangle
+        lda line                ; (ReadLine below changes it)
+        pha
+        lda style
+        pha
+        lda ink
+        pha
+        lda paper
+        pha
+        ldx #0                  ; each area: its line's colours to its cells
+@area:  stx at
+        lda AreaLine,x
+        jsr ReadLine
+        ldx at
+        lda line
+        tay
+        lda LColKind,y
+        cmp #CK_PAPER
+        bne :+
+        lda paper               ; (the border: paper only)
+        jmp @cell
+:       lda ink
+        asl a
+        asl a
+        asl a
+        asl a
+        ora paper
+@cell:  sta colour
+        lda AreaRow,x
+        sta row
+        lda AreaRows,x
+        sta rows
+@rows:  lda row
+        jsr PrevCells
+        ldx at
+        ldy AreaCard,x
+        lda AreaCards,x
+        sta cards
+        lda colour
+@c:     sta (vp),y
+        iny
+        dec cards
+        bne @c
+        inc row
+        dec rows
+        bne @rows
+        ldx at
+        inx
+        cpx #AREAS
+        bcc @area
+        pla
+        sta paper
+        pla
+        sta ink
+        pla
+        sta style
+        pla
+        sta line
+        ldx #0                  ; the words
+@word:  stx at
+        lda PrevLo,x
+        sta r0L
+        lda PrevHi,x
+        sta r0H
+        lda PrevX,x
+        sta r11L
+        lda #0
+        sta r11H
+        lda PrevY,x
+        sta r1H
+        jsr PutString
+        ldx at
+        inx
+        cpx #PREV_WORDS
+        bcc @word
+        rts
+
+; PrevCells: vp = the colour matrix at card row A, the preview's first
+; card.
+PrevCells:
+        jsr Cells
+        lda vp
+        sec
+        sbc #SWATCH_CARD - PREV_CARD
+        sta vp
+        bcs :+
+        dec vp+1
+:       rts
+
+; --- layout and data
+
+LABEL_X         = PAGE_LEFT + 2
+THEME_Y         = PAGE_TOP + 20 ; the rows' baselines
+PART_Y          = THEME_Y + 18
+STYLE_Y         = PART_Y + 18
+INK_ROW         = 10            ; the swatches' card rows (y 80, 96)
+PAPER_ROW       = 12
+SWATCH_CARD     = 19            ; their first card (x 152)
+SWATCH_X        = SWATCH_CARD * 8
+SWATCHES        = 16
+PREV_ROW        = 15            ; the preview: card rows 15-20 (y 120-167),
+PREV_CARD       = 19            ; cards 19-38 (x 152-311)
+MINUS_X         = 150           ; the buttons: [-] name [+] use copy
+NAME_X          = MINUS_X + 18
+PLUS_X          = 236
+NEXT_X          = PLUS_X        ; (a name's room ends at [+])
+USE_X           = 254
+COPY_X          = 286
+STYLE_X         = 118           ; (after "Style")
+BOX             = 7
+BOX_TEXT        = 11
+STYLE_GAP       = 8             ; between a word and the next box
+STYLES_MAX      = 4
+VAL_MAX         = 60            ; a line's value, at most
+DEF_INK         = 11            ; a missing line: dark grey on light grey
+DEF_PAPER       = 15
+LABELS          = 5
+BUTTONS         = 6
+AREAS           = 9
+PREV_WORDS      = 6
+
+LabelLo:        .byte <LTheme, <LPart, <LStyle, <LInk, <LPaper
+LabelHi:        .byte >LTheme, >LPart, >LStyle, >LInk, >LPaper
+LabelY:         .byte THEME_Y, PART_Y, STYLE_Y, INK_ROW * 8 + 7, PAPER_ROW * 8 + 7
+BtnLo:          .byte <BThemeDn, <BThemeUp, <BUse, <BCopy, <BPartDn, <BPartUp
+BtnHi:          .byte >BThemeDn, >BThemeUp, >BUse, >BCopy, >BPartDn, >BPartUp
+ActLo:          .byte <ThemeDown, <ThemeUp, <UseIt, <Copy, <PartDown, <PartUp
+ActHi:          .byte >ThemeDown, >ThemeUp, >UseIt, >Copy, >PartDown, >PartUp
+
+BThemeDn:       .word MINUS_X
+                .byte THEME_Y - 9, 14
+                .word TMinus
+BThemeUp:       .word PLUS_X
+                .byte THEME_Y - 9, 14
+                .word TPlus
+BUse:           .word USE_X
+                .byte THEME_Y - 9, 28
+                .word TUse
+BCopy:          .word COPY_X
+                .byte THEME_Y - 9, 32
+                .word TCopy
+BPartDn:        .word MINUS_X
+                .byte PART_Y - 9, 14
+                .word TMinus
+BPartUp:        .word PLUS_X
+                .byte PART_Y - 9, 14
+                .word TPlus
+
+; The preview's areas: the line whose colours they take (themedef.inc's
+; order: 0 border, 1 desk, 2 menubar, 3 sidebar, 4 headings, 9
+; selection, 12 status, 13 toolbar), their first card row, rows, first
+; card (from PREV_CARD) and cards.
+AreaLine:       .byte 0, 0, 2, 13, 3, 4, 1, 9, 12
+AreaRow:        .byte 15, 15, 15, 16, 17, 17, 17, 18, 20
+AreaRows:       .byte 6, 6, 1, 1, 3, 1, 3, 1, 1
+AreaCard:       .byte 0, 19, 1, 1, 1, 1, 6, 7, 1
+AreaCards:      .byte 1, 1, 18, 18, 5, 5, 13, 9, 18
+PrevLo:         .byte <WMenu, <WSide, <WFile1, <WSel, <WFile2, <WStatus
+PrevHi:         .byte >WMenu, >WSide, >WFile1, >WSel, >WFile2, >WStatus
+PrevX:          .byte (PREV_CARD + 1) * 8 + 2, (PREV_CARD + 1) * 8 + 2, (PREV_CARD + 6) * 8 + 2
+                .byte (PREV_CARD + 7) * 8 + 2, (PREV_CARD + 6) * 8 + 2, (PREV_CARD + 1) * 8 + 2
+PrevY:          .byte 15 * 8 + 7, 17 * 8 + 7, 17 * 8 + 7, 18 * 8 + 7, 19 * 8 + 7, 20 * 8 + 7
+
+; Black or white on each colour (1 white on the dark ones).
+Contrast:       .byte 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0
+
+SaveDlg:        .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word SaveText
+                .byte YES, 1, DBI_Y_2
+                .byte NO, DBI_X_2, DBI_Y_2
+                .byte 0
+NameDlg:        .byte DEF_DB_POS | 1
+                .byte DBVARSTR, TXT_LN_X, TXT_LN_1_Y + 6, askText
+                .byte DBGETSTRING, TXT_LN_X, TXT_LN_2_Y, r5, THEME_NAME - 1
+                .byte OK, 1, DBI_Y_2
+                .byte CANCEL, DBI_X_2, DBI_Y_2
+                .byte 0
+
+SDesktop:       .byte "desktop", 0
+KTheme:         .byte "theme", 0
+STheme:         .byte "theme", 0
+KName:          .byte "name", 0
+DefaultName:    .byte "GeoUltra", 0
+ThemesDir:      .byte "THEMES", 0
+IniDot:         .byte ".ini", 0
+TmpDot:         .byte ".tmp", 0
+IniExt:         .byte "ini"
+                .byte 0
+OnText:         .byte " on ", 0
+LTheme:         .byte "Theme", 0
+LPart:          .byte "Part", 0
+LStyle:         .byte "Style", 0
+LInk:           .byte "Ink", 0
+LPaper:         .byte "Paper", 0
+TMinus:         .byte "-", 0
+TPlus:          .byte "+", 0
+TUse:           .byte "use", 0
+TCopy:          .byte "copy", 0
+SaveText:       .byte BOLDON, "Save this theme first?", PLAINTEXT, 0
+CopyAsk:        .byte BOLDON, "The new theme's name:", PLAINTEXT, 0
+WMenu:          .byte "geos  file  view", 0
+WSide:          .byte "Drives", 0
+WFile1:         .byte "letter", 0
+WSel:           .byte "picture", 0
+WFile2:         .byte "notes", 0
+WStatus:        .byte "3 entries", 0
+
+; Scratch (overlay data: fetched anew with the overlay)
+at:             .byte 0
+tmp:            .byte 0
+tmp2:           .byte 0
+idx:            .byte 0
+start:          .byte 0
+new:            .byte 0
+line:           .byte 0         ; the line being read or written
+style:          .byte 0         ; its style (its word's index)
+ink:            .byte 0         ; its colours
+paper:          .byte 0
+row:            .byte 0
+rows:           .byte 0
+cards:          .byte 0
+chosen:         .byte 0
+styleN:         .byte 0         ; StyleDraw: the style row's boxes
+styleXLo:       .res STYLES_MAX ; and their x
+styleXHi:       .res STYLES_MAX
+posL:           .byte 0
+posH:           .byte 0
+colour:         .byte 0
+handle:         .byte 0
+info:           .res 16
+name:           .res 64         ; a file's name (FE_READDIR), a theme's
+val:            .res VAL_MAX + 1 ; a line's value
+buf:            .res 48         ; the THEMES folder's path

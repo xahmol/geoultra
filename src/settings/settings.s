@@ -10,8 +10,11 @@
         .include "settings.inc"
 
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
-        .import TimeDraw, TimePress
-        .export FileEngine, dirty, NoRoom, Write, UseSettings
+        .import TimeDraw, TimePress, ThemeDraw, ThemePress
+        .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
+        .export themeLoaded, themeNo, themeCount, themePart, themeNames
+        .export themePath, themeTmp, noFile
+        .export IniPaths, IniLoad, IniEmpty, IniSet, IniFind, iniLen
 
         .segment "ZEROPAGE"
 
@@ -58,19 +61,15 @@ FileEngine:
 ; Load: SETTINGS.INI in the home folder into the INI text; noFile set
 ; when there is none to write (no Ultimate, or too large or unreadable:
 ; then it is left alone).
-Load:   jsr UseSettings
+Load:   lda #0
+        sta curText
+        sta themeDirty
+        sta themeLoaded
+        jsr UseSettings
         lda #0
         sta dirty
         sta noFile
-        lda #<IniName
-        sta r0L
-        lda #>IniName
-        sta r0H
-        lda #<TmpName
-        sta r1L
-        lda #>TmpName
-        sta r1H
-        jsr IniPaths
+        jsr SettingsPaths
         bcs @none
         jsr IniLoad
         txa
@@ -82,18 +81,52 @@ Load:   jsr UseSettings
         jmp IniEmpty
 @end:   rts
 
-; UseSettings: ini.inc on SETTINGS.INI's text (iniText; the Theme page
-; uses another one beside it and comes back to this).
+; SettingsPaths: inifile.inc's paths for SETTINGS.INI (C set: no home
+; folder, no Ultimate).
+SettingsPaths:
+        lda #<IniName
+        sta r0L
+        lda #>IniName
+        sta r0H
+        lda #<TmpName
+        sta r1L
+        lda #>TmpName
+        sta r1H
+        jmp IniPaths
+
+; UseSettings, UseTheme: ini.inc on SETTINGS.INI's text (iniText) or
+; the theme file's (themeText; the Theme page): the other one's length
+; kept (curText the one in use). Destroy A, X.
 UseSettings:
-        lda #<iniText
+        ldx #0
+        beq Use
+UseTheme:
+        ldx #1
+Use:    cpx curText
+        beq @set
+        lda iniLen              ; the length of the one left
+        ldy curText
+        sta textLenLo,y
+        lda iniLen+1
+        sta textLenHi,y
+        stx curText
+        lda textLenLo,x
+        sta iniLen
+        lda textLenHi,x
+        sta iniLen+1
+@set:   lda TextLo,x
         sta iniBase
-        lda #>iniText
+        lda TextHi,x
         sta iniBase+1
-        lda #<INI_MAX
+        lda MaxLo,x
         sta iniMax
-        lda #>INI_MAX
+        lda MaxHi,x
         sta iniMax+1
         rts
+TextLo: .byte <iniText, <themeText
+TextHi: .byte >iniText, >themeText
+MaxLo:  .byte <INI_MAX, <THEME_MAX
+MaxHi:  .byte >INI_MAX, >THEME_MAX
 
 ; --- drawing
 
@@ -218,12 +251,39 @@ DrawPage:
         lda #>SCREEN_RIGHT
         sta r4H
         jsr Rectangle
+        jsr PageColours
         ldx page                ; the page's own drawing (its overlay)
         lda DrawLo,x
         sta pageVec
         lda DrawHi,x
         sta pageVec+1
         jmp (pageVec)
+
+; PageColours: the page area's colour cells (rows 2-21, cards 11-39)
+; back to the screen's colours (the Theme page colours its own).
+PageColours:
+        lda #<(COLOR_MATRIX + 2 * 40 + PAGE_CARD)
+        sta r0L
+        lda #>(COLOR_MATRIX + 2 * 40 + PAGE_CARD)
+        sta r0H
+        ldx #PAGE_ROWS
+@row:   ldy #40 - PAGE_CARD - 1
+        lda screencolors
+@cell:  sta (r0),y
+        dey
+        bpl @cell
+        lda r0L
+        clc
+        adc #40
+        sta r0L
+        bcc :+
+        inc r0H
+:       dex
+        bne @row
+        rts
+
+PAGE_CARD       = PAGE_LEFT / 8 ; (card 11: x 88)
+PAGE_ROWS       = 20            ; (rows 2-21: y 16-175)
 
 ; Later: the note on a page still to come.
 Later:  lda #<LaterText
@@ -302,6 +362,7 @@ DoSave: jmp Write
 ; something was changed.
 DoCancel:
         lda dirty
+        ora themeDirty
         beq @leave
         lda #<LeaveDlg
         sta r0L
@@ -316,16 +377,39 @@ DoCancel:
 
 ; Write: SETTINGS.INI written when changed (inifile.inc IniSave). C set
 ; when it failed (the error shown).
-Write:  lda dirty
-        beq @ok
-        lda noFile              ; (no Ultimate: nothing to write)
+Write:  lda noFile              ; (no Ultimate: nothing to write)
         bne @ok
+        lda dirty
+        beq @theme
+        jsr UseSettings         ; SETTINGS.INI (its paths again: the theme's
+        jsr SettingsPaths       ; took inifile.inc's)
         jsr IniSave
         txa
         bne @fail
         lda #0
         sta dirty
-@ok:    clc
+@theme: lda themeDirty          ; the theme file (the Theme page)
+        beq @ok
+        jsr UseTheme
+        lda #<themePath
+        sta r0L
+        lda #>themePath
+        sta r0H
+        lda #<themeTmp
+        sta r1L
+        lda #>themeTmp
+        sta r1H
+        jsr IniPaths
+        jsr IniSave
+        stx at                  ; (its error, across the switch back)
+        jsr UseSettings
+        ldx at
+        txa
+        bne @fail
+        lda #0
+        sta themeDirty
+@ok:    jsr UseSettings
+        clc
         rts
 @fail:  jsr Hex                 ; "Not saved: error $xx"
         lda #<FailDlg
@@ -371,11 +455,13 @@ SIDE_BASE       = 9             ; a page name's baseline below its row top
 
 ; Each page's drawing and click routines (stubs into its overlay, ovl.s;
 ; Later and NoPress for the pages still to come), in PAGE_* order.
-DrawLo:         .byte <Later, <DeskDraw, <SysDraw, <TimeDraw, <Later, <Later, <PtrDraw
-DrawHi:         .byte >Later, >DeskDraw, >SysDraw, >TimeDraw, >Later, >Later, >PtrDraw
-PressLo:        .byte <NoPress, <DeskPress, <SysPress, <TimePress, <NoPress, <NoPress
+DrawLo:         .byte <ThemeDraw, <DeskDraw, <SysDraw, <TimeDraw, <Later, <Later
+                .byte <PtrDraw
+DrawHi:         .byte >ThemeDraw, >DeskDraw, >SysDraw, >TimeDraw, >Later, >Later
+                .byte >PtrDraw
+PressLo:        .byte <ThemePress, <DeskPress, <SysPress, <TimePress, <NoPress, <NoPress
                 .byte <PtrPress
-PressHi:        .byte >NoPress, >DeskPress, >SysPress, >TimePress, >NoPress, >NoPress
+PressHi:        .byte >ThemePress, >DeskPress, >SysPress, >TimePress, >NoPress, >NoPress
                 .byte >PtrPress
         .assert * - PressHi = PAGES_N, error, "a press routine per page"
 
@@ -442,3 +528,15 @@ at:             .res 1
 dirty:          .res 1          ; something changed since the last write
 noFile:         .res 1          ; nothing to write (no Ultimate)
 iniText:        .res INI_MAX + 1 ; SETTINGS.INI's text and its zero
+themeText:      .res THEME_MAX + 1 ; a theme file's text (the Theme page)
+curText:        .res 1          ; ini.inc's text: 0 SETTINGS.INI, 1 the theme
+textLenLo:      .res 2          ; the other text's length while one is used
+textLenHi:      .res 2
+themeDirty:     .res 1          ; the theme's text changed since written
+themeLoaded:    .res 1          ; the Theme page read its theme (once)
+themeNo:        .res 1          ; the theme shown (themeNames)
+themeCount:     .res 1          ; theme files listed
+themePart:      .res 1          ; the part shown (themedef.inc's lines)
+themeNames:     .res THEMES_MAX * THEME_NAME ; the theme files' names
+themePath:      .res THEME_NAME + 11 ; "THEMES/<name>.ini" (inifile.inc),
+themeTmp:       .res THEME_NAME + 11 ; "THEMES/<name>.tmp"

@@ -575,6 +575,9 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   view, toolbar, clock and panes; "Start with GEOS 2.0's" and a reboot
   starts GEOS 2.0's deskTop (set it back afterwards); Cancel after a
   change asks first.
+- The theme editor (2026-11-13): settings, Theme page: a copy of
+  GeoUltra named "Mine", its desk and menu bar recoloured (the preview
+  follows), Save, "use", OK: the desktop in it; view > theme lists it.
 - The GeoDesk64 items (2026-11-12): settings, Desktop page: Sort by
   date and size (folders first), Existing "skip" and "newer" (copy a
   newer geoWrite document over an older copy: replaced; an older one:

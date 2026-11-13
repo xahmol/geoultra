@@ -51,3 +51,6 @@ PAGE_POINTER    = 6
 ; The INI text (src/inc/ini.inc): SETTINGS.INI whole, at most 3072 bytes
 ; as the desktop and gush read it
 INI_MAX         = 3072
+THEME_MAX       = 1024          ; a theme file (the desktop's FILE_MAX)
+THEME_NAME      = 16            ; a theme's name and its zero
+THEMES_MAX      = 8             ; theme files listed (as the desktop's menu)
