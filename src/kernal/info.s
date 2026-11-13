@@ -34,7 +34,8 @@ Reboot: sei
 basicBuf:       .res 46                 ; ToBASIC: command, saved bytes
                 .res $C0E0 - *, 0
 guSignature:    .byte "GU"              ; $C0E0: GeoUltra present
-guVersion:      .byte 0, 1              ; $C0E2: major, minor
+guVersion:      .byte VERSION_MAJOR, VERSION_MINOR
+                                        ; $C0E2: major, minor (the Makefile)
 guExtTable:     .word ExtTable          ; $C0E4: extension jump table (folders.s)
 guMouse2:       .byte $80               ; $C0E6: the right mouse button (the 1351
                                         ; driver): bit 7 clear while held, bit 6
@@ -47,6 +48,10 @@ ptrColour:      .byte 6                 ; $C0F3: the pointer's colour (blue;
 progColours:    .byte $BF               ; $C0F4: programs' colours (ink << 4 |
                                         ; paper; FirstInit gives them; the
                                         ; desktop's theme, programs=, sets it)
+guBuild:        .byte VERSION_PATCH     ; $C0F5: the patch number, then the
+                .byte BUILD_YEAR, BUILD_MONTH, BUILD_DAY, BUILD_HOUR, BUILD_MINUTE
+                                        ; build's time stamp (the year from
+                                        ; 2000; the Makefile): GeoUltra info
         .reloc
 
         .segment "CODE"

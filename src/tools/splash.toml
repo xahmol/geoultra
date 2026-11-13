@@ -1,0 +1,8 @@
+[file]
+name    = "splash"
+type    = "APPL_DATA"
+class   = "GU splash"
+version = "V1.0"
+author  = "GeoUltra"
+info    = "The boot splash, shown by GeoUltra info (bitmap, colours)"
+mode    = "40"

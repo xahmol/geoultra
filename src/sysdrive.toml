@@ -21,7 +21,8 @@ settings = "../build/settings"
 
 [[folder]]
 path = ""
-files = ["tools:geofolder.cvt", "gush:gush.cvt", "desktop:desktop.cvt", "settings:settings.cvt"]
+files = ["tools:geofolder.cvt", "gush:gush.cvt", "desktop:desktop.cvt", "settings:settings.cvt",
+         "tools:splash.cvt"]
 
 [[folder]]
 path = "bin"

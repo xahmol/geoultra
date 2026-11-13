@@ -629,9 +629,13 @@ accessories now first, with a place kept for them). New in Open
 dialogs: a double click opens (a folder entered, a file opened).
 
 Requests from the same session, to do:
-- The GeoUltra info box: the full version, a short credits list, and a
-  button that shows the splash screen.
-- gush: a close button (x) in its title bar.
+- Done 2026-11-13: the GeoUltra info box: the version as
+  vMAJOR.MINOR.PATCH-YYYYMMDD-HHMM (as UBoot64-v2; the numbers in the
+  Makefile, the kernal's info block holds them, $C0E2 and $C0F5-$C0FA),
+  no credits (the user: they belong in the README), "splash" shows
+  drive E's splash file; tests/desktop/d16.py.
+- Done 2026-11-13: gush's close button, an "x" at the right end of its
+  status line (tests/gush/g22.py).
 - File boxes (DBGETFILES), decided by the user 2026-11-13: drive letters
   A B C D in every file box (not only for MegaPatch's DBSETDRVICON flag),
   four small buttons in the bottom strip left of the scroll arrows, only

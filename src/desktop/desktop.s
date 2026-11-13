@@ -12,6 +12,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
+        .import About
         .import ListRead, ListDraw, ListPress, ListKey, Drive, Open, Back
         .import OvlInit, clipCount
         .import Copy, Cut, Paste, Delete, Rename, NewFolder, path
@@ -1069,14 +1070,6 @@ Marks:  sta r0L
         bcc @item
         jmp MenuNeutral         ; (r0: the menu)
 
-; Info (geos > GeoUltra info): a dialog naming the desktop.
-About:  jsr GotoFirstMenu
-        lda #<infoDlg
-        sta r0L
-        lda #>infoDlg
-        sta r0H
-        jmp Dialog
-
 ; RunDA (geos > an accessory; A = the item: 1 the first accessory): in
 ; GEOS's colours; the desktop drawn again when it ends.
 RunDA:  sec                     ; (item A: the accessory A - GEOS_FIXED)
@@ -1414,14 +1407,6 @@ diskMenu:
         .byte MENU_ACTION
         .word Refresh
 
-infoDlg:
-        .byte DEF_DB_POS | 1
-        .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
-        .word InfoLine1
-        .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
-        .word InfoLine2
-        .byte OK, DBI_X_2, DBI_Y_2
-        .byte 0
 
 GeosText:       .byte "geos", 0
 FileText:       .byte "file", 0
@@ -1465,8 +1450,6 @@ OneLineItem:    .byte "  one line", 0
 TbOffItem:      .byte "  off", 0          ; (its own: Marks writes into it)
 RefreshItem:    .byte "refresh", 0
 PanesItem:      .byte "two panes C=P", 0
-InfoLine1:      .byte BOLDON, "GeoUltra Desktop", PLAINTEXT, 0
-InfoLine2:      .byte "milestone 1 (in development)", 0
 driveLine:      .byte "A", 0
 
 dropReq:        .byte 0         ; listin.s: a drop (DROP_*), done by DropDo

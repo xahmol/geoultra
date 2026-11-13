@@ -13,10 +13,11 @@
         .include "desktop.inc"
 
         .import MenuNeutral, Recover, Dialog, FileEngine, entryInfo, entryName
-        .import cur, count, Fetch, IsDotDot
-        .export Ov_Popup, Ov_Info
+        .import cur, count, Fetch, IsDotDot, Back
+        .export Ov_Popup, Ov_Info, Ov_About
 Ov_Popup = Popup
 Ov_Info = Info
+Ov_About = About
 
 GetNextChar     = $C2A7         ; GEOS jump table
 ITEMS_N         = 11            ; (CTX_* in desktop.inc: their order)
@@ -26,6 +27,14 @@ BOX_H           = ITEMS_N * ITEM_H + 2
 TEXT_DX         = 6             ; an item's text: from the box's left edge
 TEXT_DY         = 10            ; its baseline below the item's top
 KEY_ESC         = 27
+guVersion       = $C0E2         ; GeoUltra's info block (kernal info.s):
+guBuild         = $C0F5         ; major, minor; patch, then the build's
+                                ; year (from 2000), month, day, hour,
+                                ; minute
+ANS_SPLASH      = 21            ; About: the splash button
+LINE_B          = 32            ; About: the version line's room
+ABOUT_Y         = 14            ; About: the first line's baseline
+ABOUT_DY        = 11
 NONE            = $FF
 LINE_LEN        = 40            ; an Info line, at most
 NAME_SHOWN      = 26            ; Info's name: its first characters (bold,
@@ -585,6 +594,197 @@ Decimal:
         bne @c
 @end:   rts
 
+; About (geos > GeoUltra info): the name, the version with the build's
+; time stamp (vMAJOR.MINOR.PATCH-YYYYMMDD-HHMM, from the kernal's info
+; block, as the Makefile set it), "in development" and the copyright;
+; OK and "splash" (the boot splash from drive E, ShowSplash). The user,
+; 2026-11-13.
+About:  jsr GotoFirstMenu
+        ldy #0
+        lda #'v'
+        jsr Put
+        lda guVersion
+        jsr PutNum8
+        lda #'.'
+        jsr Put
+        lda guVersion+1
+        jsr PutNum8
+        lda #'.'
+        jsr Put
+        lda guBuild             ; (the patch)
+        jsr PutNum8
+        lda #'-'
+        jsr Put
+        lda #'2'
+        jsr Put
+        lda #'0'
+        jsr Put
+        ldx #1                  ; year, month, day: two digits each
+@date:  stx tmpX2
+        lda guBuild,x
+        jsr Put2
+        ldx tmpX2
+        inx
+        cpx #4
+        bcc @date
+        lda #'-'
+        jsr Put
+@time:  stx tmpX2               ; hour, minute
+        lda guBuild,x
+        jsr Put2
+        ldx tmpX2
+        inx
+        cpx #6
+        bcc @time
+        lda #0
+        jsr Put
+        lda #<aboutDlg
+        sta r0L
+        lda #>aboutDlg
+        sta r0H
+        jsr Dialog
+        lda sysDBData
+        cmp #ANS_SPLASH
+        beq ShowSplash
+        rts
+
+; SplashBtn (DBUSRICON): the dialog ended with ANS_SPLASH.
+SplashBtn:
+        lda #ANS_SPLASH
+        sta sysDBData
+        jmp RstrFrmDialogue
+
+; ShowSplash: drive E's "splash" (8000 bytes of bitmap, 1000 of colours,
+; src/tools/splash.toml) straight onto the screen until a key or a
+; click, then the desktop drawn again. A file that cannot be read: the
+; desktop again at once.
+ShowSplash:
+        lda #<SplashPath
+        sta r0L
+        lda #>SplashPath
+        sta r0H
+        lda #FO_READ
+        sta r2L
+        lda #FE_OPEN
+        jsr FileEngine
+        sta handle              ; (A: the handle; txa would lose it)
+        txa
+        bne @back
+        lda #<SCREEN_BASE
+        ldx #>SCREEN_BASE
+        ldy #<8000
+        jsr ReadTo
+        bne @close
+        lda #<COLOR_MATRIX
+        ldx #>COLOR_MATRIX
+        ldy #<1000
+        jsr ReadTo
+@close: lda #FE_CLOSE           ; (its own error: nothing more to do)
+        ldy handle
+        jsr FileEngine
+        jsr Unpress             ; (the press on the button: not the end)
+@wait:  jsr GetNextChar
+        bne @back
+        lda pressFlag
+        and #MOUSE_BIT
+        beq @wait
+        jsr Unpress
+        lda mouseData
+        bmi @wait               ; (a release: on)
+@back:  jmp Back
+
+; ReadTo: FE_READ of the splash file into A/X, Y = the length's low byte
+; (8000 or 1000: the high byte from the low one). Z set when it went well.
+ReadTo: sta r1L
+        stx r1H
+        sty r2L
+        lda #>8000
+        cpy #<8000
+        beq :+
+        lda #>1000
+:       sta r2H
+        lda #FE_READ
+        ldy handle
+        jsr FileEngine
+        txa
+        rts
+
+; Unpress: the mouse bit of pressFlag cleared (safe against the IRQ).
+Unpress:
+        php
+        sei
+        lda pressFlag
+        and #$FF - MOUSE_BIT
+        sta pressFlag
+        plp
+        rts
+
+; Put: A into about at Y; Y on.
+Put:    sta about,y
+        iny
+        rts
+
+; PutStr: the zero-ended text at A/X into about at Y; Y on.
+PutStr: sta r0L
+        stx r0H
+        sty tmpY2
+        ldy #0
+@c:     lda (r0),y
+        beq @end
+        sty tmpX
+        ldy tmpY2
+        sta about,y
+        inc tmpY2
+        ldy tmpX
+        iny
+        bne @c
+@end:   ldy tmpY2
+        rts
+
+; Put2: A (0-99) with two digits; PutNum8: A; PutNum: A/X in decimal.
+Put2:   cmp #10
+        bcs PutNum8
+        pha
+        lda #'0'
+        jsr Put
+        pla
+PutNum8:
+        ldx #0
+PutNum: jsr Digits              ; (keeps Y)
+        ldx #0
+@c:     lda digits,x
+        beq @end
+        jsr Put
+        inx
+        bne @c
+@end:   rts
+
+aboutDlg:
+        .byte DEF_DB_POS | 1
+        .byte DBTXTSTR, TXT_LN_X, ABOUT_Y
+        .word NameText
+        .byte DBTXTSTR, TXT_LN_X, ABOUT_Y + ABOUT_DY
+        .word about
+        .byte DBTXTSTR, TXT_LN_X, ABOUT_Y + 2 * ABOUT_DY
+        .word DevText
+        .byte DBTXTSTR, TXT_LN_X, ABOUT_Y + 4 * ABOUT_DY
+        .word ByText
+        .byte OK, DBI_X_0, DBI_Y_2
+        .byte DBUSRICON, DBI_X_2, DBI_Y_2
+        .word splashRec
+        .byte 0
+splashRec:
+        .word SplashIcon
+        .byte 0, 0, 6, 16
+        .word SplashBtn
+
+NameText:       .byte BOLDON, "GeoUltra", PLAINTEXT, 0
+DevText:        .byte "in development", 0
+ByText:         .byte "(C) 2026 Xander Mol, idreamtin8bits", 0
+SplashPath:     .byte "/e/splash", 0
+
+        .include "splashicon.inc"
+
 ; Digits: digits = A/X in decimal, zero-ended, no leading zeros.
 ; Keeps Y.
 Digits: sta numL
@@ -724,6 +924,10 @@ numH:   .res 1
 lead:   .res 1
 digit:  .res 1
 digits: .res 6
+about:  .res LINE_B             ; About's version line
+tmpX2:  .res 1
+tmpY2:  .res 1
+handle: .res 1                  ; ShowSplash: the file
 info:   .res INFO_LEN
 line1:  .res NAME_SHOWN + 3
 line2:  .res LINE_LEN

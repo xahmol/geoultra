@@ -57,6 +57,7 @@ OvlFail:
         Stub SortList, 6        ; overlay 6: sort.s
         Stub Popup, 7           ; overlay 7: ctxmenu.s
         Stub Info, 7
+        Stub About, 7           ; (geos > GeoUltra info)
         Stub ListPress, 8       ; overlay 8: listin.s
         Stub ListKey, 8
         Stub ListEnd, 8

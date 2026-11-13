@@ -14,7 +14,12 @@ From top to bottom:
 - **The menu bar**: the menus geos (GeoUltra info, settings, gush and
   the desk accessories), file, view, go and disk on the left, the date and time
   on the right (unless the theme or the clock setting leaves them out).
-  Everything the toolbar does is in the menus too.
+  Everything the toolbar does is in the menus too. GeoUltra info shows
+  the version with the build's time stamp (v0.1.0-20261113-1310: version
+  0.1.0, built 13 November 2026 at 13:10); its
+  "splash" button shows the start picture again (a key or a click goes
+  back). Drive E's desk accessories (geoFolder) come first in the geos
+  menu, in every application's too, and always get a place.
 - **The toolbar** (view > toolbar): buttons for the things done most,
   in four groups (see "The toolbar").
 - **The sidebar** on the left: the drives, the Ultimate's roots, your
