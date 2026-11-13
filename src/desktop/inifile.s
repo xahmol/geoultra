@@ -30,6 +30,11 @@ Ov_PanesKeep = PanesKeep
 
         .segment "OV4"
 
+INI_OV4 = 1                     ; (ini.inc's variables in this overlay:
+                                ; they are used only while it runs)
+        .include "ini.inc"      ; (SETTINGS.INI's [desktop] keys: DeskText,
+                                ; KeyVal, SetLine; shared with Settings)
+
 ; LoadAll (side.s, SideLoad): the three lists from their files (empty
 ; when a file is not there or cannot be read), then the [desktop]
 ; wishes (DeskRead).
@@ -38,9 +43,7 @@ LoadAll:
         jsr Load
         ldx #L_REC
         jsr Load
-        ldx #L_DESK
-        jsr Load
-        jmp DeskRead
+        jmp DeskRead            ; ([desktop]: from the file's text)
 
 ; Load: list X from its file's section.
 Load:   jsr Setup
@@ -152,7 +155,7 @@ Save:   jsr Setup
 @path:  lda at
         ldx which
         cmp counts,x
-        bcs @close
+        bcs Finish
         jsr Slot
         lda r6L
         ldy r6H
@@ -160,6 +163,10 @@ Save:   jsr Setup
         jsr NewLine
         inc at
         bne @path
+; Finish (Save, WriteText): the new file closed; written well, it takes
+; the old one's place, else it is deleted (the old one kept). X = 0 or
+; the error.
+Finish:
 @close: lda #FE_CLOSE
         ldy handle
         jsr FileEngine
@@ -424,12 +431,12 @@ DeskRead:
         lda #0                  ; (sort=: by name unless named; copy=ask,
         sta sortMode            ; delete=ask)
         sta deskPrefs
-        ldx #L_DESK
-        jsr Setup
-        ldx #KEY_THEME
-        jsr FindKey             ; (A: its slot)
+        jsr DeskText
+        bcc :+
+        rts                     ; (no file: the defaults)
+:       ldx #KEY_THEME
+        jsr KeyVal             ; (A: its slot)
         bcs @view
-        jsr Value               ; r0 = the name after "theme="
         ldy #0
 @name:  lda (r0),y
         cmp #CR                 ; (the slot holds the line without its end;
@@ -444,57 +451,50 @@ DeskRead:
 @named: lda #0
         sta wantTheme,y
 @view:  ldx #KEY_VIEW
-        jsr FindKey
+        jsr KeyVal
         bcs @clock
-        jsr Value
         ldx #ViewFirst - First
         jsr Pick
         bcs @clock
         sta wantView
 @clock: ldx #KEY_CLOCK
-        jsr FindKey
+        jsr KeyVal
         bcs @bar
-        jsr Value
         ldx #ClockFirst - First
         jsr Pick
         bcs @bar
         sta clockMode
 @bar:   ldx #KEY_TOOLBAR
-        jsr FindKey
+        jsr KeyVal
         bcs @panes
-        jsr Value
         ldx #ToolbarFirst - First
         jsr Pick
         bcs @panes
         sta wantToolbar
 @panes: ldx #KEY_PANES
-        jsr FindKey
+        jsr KeyVal
         bcs @pane2
-        jsr Value
         ldx #PanesFirst - First
         jsr Pick
         bcs @pane2
         sta wantPanes
 @pane2: ldx #KEY_SORT           ; sort= (sort.s): name, date, size, type
-        jsr FindKey
+        jsr KeyVal
         bcs :+
-        jsr Value
         ldx #SortFirst - First
         jsr Pick
         bcs :+
         sta sortMode
 :       ldx #KEY_COPY           ; copy= (tree.s): ask, replace, skip, newer
-        jsr FindKey
+        jsr KeyVal
         bcs :+
-        jsr Value
         ldx #CopyFirst - First
         jsr Pick
         bcs :+
         sta deskPrefs           ; (bits 0-1)
 :       ldx #KEY_DEL            ; delete=now (actions.s): no question
-        jsr FindKey
+        jsr KeyVal
         bcs :+
-        jsr Value
         ldx #DelFirst - First
         jsr Pick
         bcs :+
@@ -504,9 +504,8 @@ DeskRead:
         ora #PREF_NOASK
         sta deskPrefs
 :       ldx #KEY_PANE2          ; the other pane's folder, into its state
-        jsr FindKey             ; in the REU (list.s's PaneInit gave it "/"
+        jsr KeyVal             ; in the REU (list.s's PaneInit gave it "/"
         bcs @end                ; before this; the user, 2026-11-12: two
-        jsr Value               ; panes keep their folders, as GeoDesk64's
         ldy #0                  ; two-window mode)
 @ch:    lda (r0),y
         cmp #' ' + 1            ; (its line's end)
@@ -564,12 +563,11 @@ Keep2:  lda panes
         cpy #PATH_LEN - 1
         bcc @len
 @end:   rts                     ; (too long)
-@got:   ldx #L_DESK             ; the same as the line there: nothing
-        jsr Setup
+@got:   jsr DeskText            ; the same as the line there: nothing
+        bcs @end
         ldx #KEY_PANE2
-        jsr FindKey
+        jsr KeyVal
         bcs @set
-        jsr Value
         ldy #$FF
 @cmp:   iny
         lda pbuf,y
@@ -581,11 +579,11 @@ Keep2:  lda panes
         cmp #' ' + 1
         bcc @end
 @set:   lda #<pbuf
-        sta r1L
+        sta valPtr
         lda #>pbuf
-        sta r1H
+        sta valPtr+1
         ldx #KEY_PANE2
-        jmp SetLine
+        jmp SetIn               ; (the text read just now)
 
 ; PaneRegs: r0-r3 for the other pane's path's first PATH_LEN bytes
 ; (list.s SwapPane's first part) and pbuf.
@@ -625,17 +623,6 @@ Pick:   ldy #0
 @none:  sec
         rts
 
-; Value: r0 = the value of slot A's line (after its key, keyLen
-; characters, FindKey).
-Value:  jsr Slot
-        lda r6L
-        clc
-        adc keyLen
-        sta r0L
-        lda r6H
-        adc #0
-        sta r0H
-        rts
 
 ; ThemeSave: "theme=" and the theme in use, then "view=" and its view
 ; (a theme brings its own); ViewSave: "view=" and viewMode; ClockSave:
@@ -685,102 +672,145 @@ Word:   sta at
         lda #>Words
         adc #0
         sta r1H
-; SetLine: key X (KEY_THEME, KEY_VIEW, KEY_CLOCK) and the value at r1 as
-; a [desktop] line: the one there replaced, else added (the last
-; replaced when the list is full); SETTINGS.INI written.
+; SetLine: key X (KEY_*) and the zero-ended value at r1 as SETTINGS.INI's
+; [desktop] line: the file read anew, the key's line replaced or added
+; (ini.inc IniSet; the other lines and sections as they are), written
+; back. (Until 2026-11-13 the desktop kept [desktop] as four lines of its
+; own and wrote them over the file: Settings' further lines, delete=,
+; copy=, panes= ..., were lost; the user's test.) X = 0 or the error.
 SetLine:
         stx key
-        ldx #L_DESK
-        jsr Setup
-        ldx key
-        ldy #0                  ; work = the key and the value
-@key:   lda Keys,x
-        beq @val0
-        sta work,y
-        inx
-        iny
-        bne @key
-@val0:  sty keyLen
-        tya
-        tax                     ; X: in work, Y: in the value
-        ldy #0
-@val:   lda (r1),y
-        sta work,x
-        beq @slot
-        iny
-        inx
-        cpx #PATH_LEN - 1
-        bcc @val
-        lda #0
-        sta work + PATH_LEN - 1
-@slot:  ldx key                 ; its slot: the old line's, else the next
-        jsr FindKey
-        bcc @store
-        lda counts + L_DESK
-        cmp #LIST_MAX
+        lda r1L
+        sta valPtr
+        lda r1H
+        sta valPtr+1
+        jsr DeskText
         bcc :+
-        lda #LIST_MAX - 1       ; (full: the last one replaced)
-        bne @store
-:       inc counts + L_DESK
-@store: jsr Slot
-        jsr Store
-        ldx #L_DESK
-        jmp Save
+        ldx #FE_ULTIMATE        ; (no home folder or no file to keep)
+        rts
+:       ldx key
+SetIn:  lda valPtr              ; (Keep2: the text read, X the key,
+        sta r2L                 ; valPtr the value)
+        lda valPtr+1
+        sta r2H
+        jsr KeyRegs
+        jsr IniSet
+        bcc WriteText
+        ldx #FE_ULTIMATE        ; (the text is full: not written)
+        rts
 
-; FindKey: C clear and A = the slot of the current list (Setup) whose
-; line starts with key X (Keys + X, zero-ended, any case), keyLen its
-; length; C set when none does.
-FindKey:
-        stx key
+; WriteText: the text (iniLen bytes) written as tmpPath, then in
+; iniPath's place (Finish, as Save). X = 0 or the error.
+WriteText:
+        lda #<tmpPath
+        sta r0L
+        lda #>tmpPath
+        sta r0H
+        lda #FO_WRITE
+        sta r2L
+        lda #FE_OPEN
+        jsr FileEngine
+        sta handle
+        txa
+        beq :+
+        rts
+:       sta failed
+        lda #<text
+        sta r1L
+        lda #>text
+        sta r1H
+        lda iniLen
+        sta r2L
+        lda iniLen+1
+        sta r2H
+        lda #FE_WRITE
+        ldy handle
+        jsr FileEngine
+        stx failed
+        jmp Finish
+
+; DeskText: SETTINGS.INI read whole into text for ini.inc (iniBase,
+; iniMax, iniLen, the zero after it); not there: an empty text. C set
+; when there is no home folder or it could not be read.
+DeskText:
+        ldx #L_DESK
+        jsr Setup               ; (which: the file's names, Files)
+        jsr Files
+        bcs @end
+        jsr ReadText
+        txa
+        bne @fail
+        lda #<text
+        sta iniBase
+        clc
+        adc textLen
+        sta r0L
+        lda #>text
+        sta iniBase+1
+        adc textLen+1
+        sta r0H
         lda #0
-        sta at
-@slot:  lda at
-        ldx which
-        cmp counts,x
-        bcs @none
-        jsr Slot
-        ldy #0
-        ldx key
-@ch:    lda Keys,x
-        beq @found
-        lda (r6),y
-        cmp #'A'
-        bcc :+
-        cmp #'Z' + 1
-        bcs :+
-        ora #$20
-:       cmp Keys,x
-        bne @next
-        inx
-        iny
-        bne @ch
-@found: sty keyLen
-        lda at
+        tay
+        sta (r0),y
+        lda textLen
+        sta iniLen
+        lda textLen+1
+        sta iniLen+1
+        lda #<TEXT_MAX
+        sta iniMax
+        lda #>TEXT_MAX
+        sta iniMax+1
+        lda #0                  ; (no line of a key passed over)
+        sta iniSkip
         clc
         rts
-@next:  inc at
-        bne @slot
-@none:  sec
+@fail:  sec
+@end:   rts
+
+; KeyVal: key X's value in the text (DeskText): C clear and r0 = its
+; first character (the line goes on to its CR), C set when not there.
+KeyVal: jsr KeyRegs
+        jsr IniFind
+        bcs @end
+        lda r2L
+        sta r0L
+        lda r2H
+        sta r0H
+@end:   rts
+
+; KeyRegs: r0 = "desktop", r1 = key X's name. Keeps X.
+KeyRegs:
+        lda #<SDesk
+        sta r0L
+        lda #>SDesk
+        sta r0H
+        lda KeyLo,x
+        sta r1L
+        lda KeyHi,x
+        sta r1H
         rts
 
-KEY_THEME = 0
-Keys:           .byte "theme=", 0
-KEY_VIEW = * - Keys
-                .byte "view=", 0
-KEY_CLOCK = * - Keys
-                .byte "clock=", 0
-KEY_TOOLBAR = * - Keys
-                .byte "toolbar=", 0
-KEY_PANES = * - Keys
-                .byte "panes=", 0
-KEY_PANE2 = * - Keys
-                .byte "pane2=", 0
-KEY_SORT = * - Keys
-                .byte "sort=", 0
-KEY_COPY = * - Keys
-                .byte "copy=", 0
-KEY_DEL = * - Keys
-                .byte "delete=", 0
+KEY_THEME       = 0             ; [desktop]'s keys (KeyLo, KeyHi)
+KEY_VIEW        = 1
+KEY_CLOCK       = 2
+KEY_TOOLBAR     = 3
+KEY_PANES       = 4
+KEY_PANE2       = 5
+KEY_SORT        = 6
+KEY_COPY        = 7
+KEY_DEL         = 8
+KeyLo:  .byte <KTheme, <KView, <KClock, <KToolbar, <KPanes, <KPane2, <KSort, <KCopy, <KDel
+KeyHi:  .byte >KTheme, >KView, >KClock, >KToolbar, >KPanes, >KPane2, >KSort, >KCopy, >KDel
+SDesk:          .byte "desktop", 0
+KTheme:         .byte "theme", 0
+KView:          .byte "view", 0
+KClock:         .byte "clock", 0
+KToolbar:       .byte "toolbar", 0
+KPanes:         .byte "panes", 0
+KPane2:         .byte "pane2", 0
+KSort:          .byte "sort", 0
+KCopy:          .byte "copy", 0
+KDel:           .byte "delete", 0
 First:                                  ; a value's first character
 ViewFirst:      .byte "lid", 0          ; list, icons, detailed
 ClockFirst:     .byte "21o", 0          ; 24, 12, off
@@ -811,8 +841,8 @@ failed:         .byte 0
 needNl:         .byte 0
 inSect:         .byte 0
 lineLen:        .byte 0
-key:            .byte 0         ; FindKey, SetLine: the key's offset
-keyLen:         .byte 0         ; and its length
+key:            .byte 0         ; SetLine: the key (KEY_*)
+valPtr:         .word 0         ; SetLine: the value
 textLen:        .word 0
 textEnd:        .word 0
 

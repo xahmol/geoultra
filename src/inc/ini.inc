@@ -17,12 +17,24 @@
 ; (SETTINGS.INI's slow=): iniSkip, set before a call, passes over that
 ; many of its lines (each call sets it back to 0); $FF makes IniSet add
 ; a new line even when the key is there. Exports IniFind, IniSet,
-; IniDel, iniLen, iniSkip. All three destroy A, X, Y, r0-r7.
+; IniDel, iniLen, iniSkip. All three destroy A, X, Y, r0-r7. The includer
+; sets iniSkip to 0 once before the first call (it is not initialised;
+; found 2026-11-13: Settings' first lookup on the U64 skipped its line).
 
         .export iniLen, iniSkip, iniBase, iniMax
 
-        .pushseg
+; Its variables' segment: BSS, or "OV4" when the includer sets INI_OV4
+; (the desktop: its overlay 4, as the core has no room for them).
+.macro IniSeg
+  .ifdef INI_OV4
+        .segment "OV4"
+  .else
         .segment "BSS"
+  .endif
+.endmacro
+
+        .pushseg
+        IniSeg
 iniLen:         .res 2          ; the text's length (the includer's)
 iniBase:        .res 2          ; the buffer (the includer's)
 iniMax:         .res 2          ; the text's room in it (the includer's)
@@ -633,7 +645,7 @@ INI_LINE_MAX    = 250           ; a new line (key, "=", value, CR LF)
 INI_SECT_MAX    = 40            ; a new section's line
 
         .pushseg
-        .segment "BSS"
+        IniSeg
 iniSect:        .res 1          ; IniFind: the section was found
 iniIns:         .res 2          ; IniFind: where a new line goes
 iniLine:        .res 2          ; IniFind: the key's line

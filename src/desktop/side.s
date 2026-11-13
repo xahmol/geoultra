@@ -462,8 +462,9 @@ SidePress:
 @end:   rts
 
 DefaultTheme:   .byte "GeoUltra", 0
-ListLo:         .byte <favs, <recents, <desks
-ListHi:         .byte >favs, >recents, >desks
+ListLo:         .byte <favs, <recents, <favs     ; ([desktop]: no list
+ListHi:         .byte >favs, >recents, >favs     ; of its own since 2026-11-13,
+                                                 ; inifile.s KeyVal, SetLine)
 SectLo:         .byte <FavSect, <RecSect, <DeskSect
 SectHi:         .byte >FavSect, >RecSect, >DeskSect
 ItemIcons:      .byte IC_FOLDER, IC_DOC
@@ -497,7 +498,6 @@ sortMode:       .res 1          ; sort= (sort.s Lead): 0 name, 1 date, 2
                                 ; size, 3 type
 favs:           .res LIST_MAX * (PATH_LEN + 1)
 recents:        .res LIST_MAX * (PATH_LEN + 1)
-desks:          .res LIST_MAX * (PATH_LEN + 1)
 work:           .res PATH_LEN + 1
 docName:        .res PATH_LEN   ; (entryName's size)
 text:           .res TEXT_MAX + 1   ; shared, one user at a time: the INI
