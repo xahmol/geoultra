@@ -58,9 +58,12 @@ CASES = [
     dict(name="FindFTypes printer drivers", routine="FindFTypes",
          r={"r6": BUF, "r7L": 9, "r7H": 10, "r10": 0}, mem={BUF: [0xEE] * 0xB0},
          compare=["X", "r7H", "mem:$4000-$40AF"]),
+    # the names differ on purpose: through the jump table drive E's desk
+    # accessory (geoFolder) comes first and keeps a place in a full list
+    # (the user, 2026-11-13; sysdrive.s AppFTypes, rootmerge.s EFirst)
     dict(name="FindFTypes desk accessories, at most 2", routine="FindFTypes",
          r={"r6": BUF, "r7L": 5, "r7H": 2, "r10": 0}, mem={BUF: [0xEE] * 0x40},
-         compare=["X", "r7H", "mem:$4000-$403F"]),
+         compare=["X", "r7H"]),
     dict(name="FindFTypes input drivers V1.1", routine="FindFTypes",
          r={"r6": BUF, "r7L": 10, "r7H": 5, "r10": NAME},
          mem={BUF: [0xEE] * 0x60, **name("Input Drvr  V1.1")},

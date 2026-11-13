@@ -13,6 +13,7 @@
 
         .export RootFTypes, RootFind
         .import OvlCall, FindFTypes, FindFile, folderT, folderS, sysName
+        .import ftStart, ftAll, ftLeft
 
 FONT            = 8
 OFF_FNAME       = 3
@@ -32,10 +33,19 @@ rootR6:         .word 0         ; r6, A, Y of the failed FindFile
 rootA:          .byte 0
 rootY:          .byte 0
 
+        .segment "KCODE"        ; (CODE is full)
+rootBusy:       .byte 0         ; a root search running: the searches'
+                                ; own ends (FindFTypes > SysFTypes,
+                                ; FindFile > SysFindFile) come back here
+                                ; and must not search again (found
+                                ; 2026-11-13: geoWrite and geoPaint
+                                ; started in a folder hung at Open)
+
         .segment "OVL17"
 
         jmp OvRootFTypes        ; entry 0
         jmp OvRootFind          ; entry 3
+        jmp EFirst              ; entry 6 (sysdrive.s, OvFTypes)
 
 ETypes:                         ; drive E (module 15); stubs here: the
         jsr OvlCall             ; return goes to the caller in this module
@@ -98,6 +108,8 @@ Back:   lda rootLink
 OvRootFTypes:
         txa
         bne @e                  ; (FindFTypes's error goes on in X)
+        lda rootBusy            ; the root's own FindFTypes ending: back
+        bne @in                 ; to the search below (X = 0)
         lda r7L
         cmp #DESK_ACC
         beq @type
@@ -109,6 +121,7 @@ OvRootFTypes:
         bcs @ok
         jsr ToRoot
         bcs @back
+        inc rootBusy
         clc                     ; FindFTypes moved r6 back by the name's
         lda r6L                 ; offset: forward again (as module 15)
         adc #OFF_FNAME
@@ -116,16 +129,22 @@ OvRootFTypes:
         bcc :+
         inc r6H
 :       jsr FindFTypes          ; (an error in the root is dropped: the
-@back:  jsr Back                ; folder's own list stands, drive E next)
+        dec rootBusy            ; folder's own list stands, drive E next)
+@back:  jsr Back
 @ok:    ldx #0
 @e:     jmp ETypes
+@in:    rts
 
 ; OvRootFind (FindFile failed with FILE_NOT_FOUND, sysName the name): in
 ; the root as a desk accessory or font (X = 0, dirEntryBuf, r1, r5 as
 ; FindFile leaves them), else drive E with A, Y and r6 as the failed
 ; FindFile left them.
 OvRootFind:
-        sta rootA
+        ldx rootBusy            ; the root's own FindFile failing: back to
+        beq :+                  ; the search below
+        ldx #FILE_NOT_FOUND
+        rts
+:       sta rootA
         sty rootY
         lda r6L
         sta rootR6
@@ -139,7 +158,9 @@ OvRootFind:
         sta r6L
         lda sysName+1
         sta r6H
+        inc rootBusy
         jsr FindFile
+        dec rootBusy
         jsr Back
         txa
         bne @e
@@ -159,3 +180,79 @@ OvRootFind:
         ldx #FILE_NOT_FOUND
         jmp EFind
 @found: rts
+
+; EFirst (module 15's OvFTypes, after drive E's search; r7H as it
+; left it): an application's desk accessories: the drive's (rows 0 to d-1)
+; and drive E's after them (d to t-1) turned round, E's first: the two
+; parts each reversed, then the whole (rows of 17 bytes from ftStart; d
+; = ftAll - ftLeft, t = ftAll - r7H). Destroys A, X, Y, r0-r2L.
+EFirst: lda ftAll
+        sec
+        sbc r7H
+        sta ftT
+        lda ftAll
+        sec
+        sbc ftLeft
+        sta ftD
+        lda #0                  ; the drive's
+        ldx ftD
+        jsr Reverse
+        lda ftD                 ; E's
+        ldx ftT
+        jsr Reverse
+        lda #0                  ; all
+        ldx ftT
+        ; (falls into Reverse)
+
+; Reverse: rows A to X-1 in reverse order.
+Reverse:
+        sta ftLo
+        stx ftHi
+@pair:  lda ftHi                 ; two rows or more left? (an empty part,
+        sec                     ; X = A, counted down below 0 once)
+        sbc ftLo
+        cmp #2
+        bcc @end
+        dec ftHi
+        lda ftHi
+        jsr RowAt
+        lda r0L
+        sta r1L
+        lda r0H
+        sta r1H
+        lda ftLo
+        jsr RowAt
+        ldy #16
+@swap:  lda (r0),y
+        tax
+        lda (r1),y
+        sta (r0),y
+        txa
+        sta (r1),y
+        dey
+        bpl @swap
+        inc ftLo
+        bne @pair               ; (always)
+@end:   rts
+
+; RowAt: r0 = ftStart + 17 * A. Destroys A, X.
+RowAt:  tax
+        lda ftStart
+        sta r0L
+        lda ftStart+1
+        sta r0H
+@add:   dex
+        bmi @end
+        lda r0L
+        clc
+        adc #17
+        sta r0L
+        bcc @add
+        inc r0H
+        bne @add
+@end:   rts
+
+ftD:    .byte 0
+ftT:    .byte 0
+ftLo:   .byte 0
+ftHi:   .byte 0

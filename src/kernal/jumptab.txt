@@ -107,7 +107,7 @@ StartAppl
 ExitTurbo = ($9004)
 PurgeTurbo = ($9006)
 DeleteFile
-FindFTypes
+FindFTypes = AppFTypes    # drive E's desk accessories first (sysdrive.s)
 RstrAppl
 ToBASIC
 FastDelFile

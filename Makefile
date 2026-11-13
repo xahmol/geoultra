@@ -219,7 +219,7 @@ $(KOBJ)/hibernate.o $(KOBJ)/hibresume.o: $(KSRCS) $(DRVSRCS)
 
 $(KOBJ)/%.o: src/kernal/%.s $(INCS) $(KOBJ)/.bypass
 	@mkdir -p $(KOBJ)
-	$(CA65) -I src/inc $(BUILDDATE) $(KDEFS) -D BUILD_ID=$(BUILD_ID) -o $@ $<
+	$(CA65) -g -I src/inc $(BUILDDATE) $(KDEFS) -D BUILD_ID=$(BUILD_ID) -o $@ $<
 
 # The mouse pointer's designs (own drawings, text art in the tool), for
 # module 86 (src/kernal/pointer.s).
@@ -399,9 +399,11 @@ test-folders: all
 	$(PYTHON) tests/drives/folders.py
 
 # Folders in geoWrite 2.0's Open dialog (tests/drives/filedialog.py, on a
-# copy of the same DNP).
+# copy of the same DNP), and MegaPatch 3's DBGETFILES flags in geoWrite
+# 2.1 from a folder (tests/drives/mpdialog.py, the private apps DNP).
 test-filedialog: all
 	$(PYTHON) tests/drives/filedialog.py
+	$(PYTHON) tests/drives/mpdialog.py
 
 # 1581 partitions as folders, against a D81 made and read back by the real
 # 1581 DOS (VICE true drive emulation; no private files).

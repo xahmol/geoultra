@@ -26,6 +26,7 @@
         .include "drvflags.inc"
 
         .export SysFTypes, SysFindFile, AppGate, RefusedMsg, turboWant, turboNow
+        .export AppFTypes, ftStart, ftAll, ftLeft
         .export sysName, sysActive, sysType, sysCurType, sysBase, sysFlags
         .export sysTracks, sysFolderT, sysFolderS, sysSlot, ownDesk, sysActive
         .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
@@ -58,6 +59,29 @@ SysFindFile:
         beq @e
         rts
 @e:     jmp RootFind            ; the root folder, then drive E
+
+        .segment "KEXT"                 ; (CODE is full)
+
+; AppFTypes (FindFTypes through the jump table, for applications and the
+; desktop): where the list starts and how many names fit noted for
+; OvFTypes, which puts drive E's desk accessories first (the user,
+; 2026-11-13: geoFolder fell off full menus). The kernal's own searches
+; call FindFTypes directly and are left as they are.
+AppFTypes:
+        lda r6L
+        sta ftStart
+        lda r6H
+        sta ftStart+1
+        lda r7H
+        sta ftCount
+        jmp FindFTypes
+ftStart:        .word 0
+ftCount:        .byte 0         ; 0: no application's list pending
+ftAll:          .byte 0         ; OvFTypes: names that fitted at the start
+ftLeft:         .byte 0         ; and those left before E's search
+                                ; (resident: Enter reloads module 15)
+
+        .segment "CODE"
 
 ; Resident: survive nested overlay calls (overlay.s).
 sysActive:      .byte 0         ; $80: the current slot shows drive E
@@ -102,8 +126,20 @@ OvFTypes:
         cmp #FONT
         bne @end
 @type:  lda r7H
-        beq @end
-        jsr Usable
+        bne @room
+        lda ftCount             ; an application's full list of desk
+        beq @end                ; accessories: its last place for E's
+        lda r7L                 ; one (geoFolder; the user, 2026-11-13)
+        cmp #DESK_ACC
+        bne @end
+        inc r7H
+        lda r6L
+        sec
+        sbc #17
+        sta r6L
+        bcs @room
+        dec r6H
+@room:  jsr Usable
         bcs @ok
         clc                     ; FindFTypes moved r6 back by the name's
         lda r6L                 ; offset: forward again for the second run
@@ -111,11 +147,28 @@ OvFTypes:
         sta r6L
         bcc @e
         inc r6H
-@e:     jsr Enter
+@e:     lda ftCount             ; an application's list? (taken here and
+        sta ftAll               ; cleared: E's own search ends in
+        lda #0                  ; OvFTypes too)
+        sta ftCount
+        lda r7H
+        sta ftLeft
+        jsr Enter
         jsr FindFTypes
         jsr Leave
+        lda r7L
+        cmp #DESK_ACC
+        bne @ok
+        lda ftAll
+        beq @ok
+        jsr EFirst
 @ok:    ldx #0
-@end:   rts
+@end:   ldy #0                  ; (no list pending after this search)
+        sty ftCount
+        rts
+
+EFirst: jsr OvlCall             ; (rootmerge.s, module 17: room)
+        .byte 17, 6
 
 ; OvFindFile (FindFile failed with FILE_NOT_FOUND): the name in drive E's
 ; directory; found there as a desk accessory or font, X = 0 with

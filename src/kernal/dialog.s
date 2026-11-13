@@ -111,17 +111,22 @@ DoDlgBox:
         jsr UseSystemFont
         ldy #0                  ; commands start after the position
         lda (DBoxDesc),y
-        bmi @default
+        asl a                   ; (C: bit 7, the default position)
         ldy #7
-        bne @next
-@default:
+        bcc @next
         ldy #1
 @next:  sty dbIndex
         lda (DBoxDesc),y
         beq @end
         cmp #LAST_CMD + 1
-        bcs @end
-        sta dbCmd
+        bcc :+
+        and #$3F                ; DBGETFILES with MegaPatch 3's flags (bit
+        cmp #DBGETFILES         ; 6 a drive icon, bit 7 a partition icon;
+        bne @end                ; its geoWrite and geoPaint use them; the
+:       sta dbCmd               ; user's test 2026-11-13): the plain list,
+                                ; the flags not drawn. Own code; the bits
+                                ; from MegaPatch's symbol table (area6510,
+                                ; SymbTab_1)
         inc dbIndex
         jsr LoadParams
         ldx dbCmd
@@ -131,7 +136,7 @@ DoDlgBox:
         sta @call+2
 @call:  jsr $FFFF
         ldy dbIndex
-        jmp @next
+        bne @next               ; (always: past the position byte)
 @end:   lda dbIconTab           ; the dialog's icons
         beq @run
         lda #<dbIconTab
@@ -329,6 +334,7 @@ IconAt: ldx dbIconTab
 DbSysIconPress:
         ldx r0L
         lda dbIconCmd,x
+DbCommand:                      ; (GfPress: a double click, A = OPEN)
         cmp #OPEN               ; OPEN on a folder row: into the folder,
         bne @close              ; the dialog stays
         jsr GfOpen
@@ -943,7 +949,10 @@ gfCls:          .word 0
 
         .segment "KEXT"                 ; space: see ARCHITECTURE.md
 
-; GfPress (otherPressVec): a press on a row selects its file.
+; GfPress (otherPressVec): a press on a row selects its file (below the
+; last row: nothing); a second press on the same row in time is OPEN (a
+; folder entered, a file opened; as GEOS 2.0's file box, the user's
+; question 2026-11-13).
 GfPress:
         lda mouseData
         bmi @end
@@ -954,7 +963,6 @@ GfPress:
         sta r2H
         jsr IsMseInRegion
         beq @end
-        jsr GfInvert
         sec
         lda mouseYPos
         sbc gfTop
@@ -967,71 +975,29 @@ GfPress:
         clc
         adc gfFirst
         cmp gfFound
-        bcc @sel
-        ldx gfFound
-        dex
-        txa
-@sel:   sta gfSel
+        bcs @end
+        ldx dblClickCount       ; the same row again in time: OPEN
+        beq @sel
+        cmp gfSel
+        beq @open
+@sel:   pha
         jsr GfInvert
+        pla
+        sta gfSel
+        jsr GfInvert
+        lda #CLICK_COUNT
+        sta dblClickCount
         jmp GfCopy
+@open:  lda #0
+        sta dblClickCount
+        lda #OPEN
+        jmp DbCommand
 @end:   rts
 
-; GfArrow (icon): the left half scrolls up, the right half down; the
-; selection stays in view.
+; GfArrow (icon): the arrows; in module 11 (KEXT is full).
 GfArrow:
-        jsr GfInvert
-        jsr GfBox
-        lda r3H
-        lsr
-        lda r3L
-        ror
-        lsr
-        lsr
-        clc
-        adc #7                  ; arrow x card
-        sta r0L
-        lda #0
-        asl r0L
-        rol
-        asl r0L
-        rol
-        asl r0L
-        rol
-        sta r0H
-        clc
-        lda r0L
-        adc #12                 ; the middle of the icon
-        sta r0L
-        bcc @cmp
-        inc r0H
-@cmp:   ldx gfFirst
-        lda mouseXPos+1
-        cmp r0H
-        bne @half
-        lda mouseXPos
-        cmp r0L
-@half:  bcs @down
-        dex
-        bmi @keep
-        bpl @set
-@down:  inx
-        lda gfFound
-        sec
-        sbc gfFirst
-        cmp #GF_ROWS + 1
-        bcc @keep
-@set:   stx gfFirst
-@keep:  lda gfFirst
-        cmp gfSel
-        bcc @low
-        sta gfSel
-@low:   clc
-        adc #GF_ROWS - 1
-        cmp gfSel
-        bcs @copy
-        sta gfSel
-@copy:  jsr GfCopy
-        jmp GfDraw
+        jsr OvlCall
+        .byte 11, 12
 
         .segment "CODE"
 
@@ -1179,6 +1145,64 @@ InitGEOEnv:
         jmp OvRestoreState      ; entry 3
         jmp OvDrawDlgBox        ; entry 6
         jmp OvRestoreBox        ; entry 9
+        jmp OvGfArrow           ; entry 12
+
+; OvGfArrow (GfArrow, the icon): the left half scrolls up, the right half down; the
+; selection stays in view.
+OvGfArrow:
+        jsr GfInvert
+        jsr GfBox
+        lda r3H
+        lsr
+        lda r3L
+        ror
+        lsr
+        lsr
+        clc
+        adc #7                  ; arrow x card
+        sta r0L
+        lda #0
+        asl r0L
+        rol
+        asl r0L
+        rol
+        asl r0L
+        rol
+        sta r0H
+        clc
+        lda r0L
+        adc #12                 ; the middle of the icon
+        sta r0L
+        bcc @cmp
+        inc r0H
+@cmp:   ldx gfFirst
+        lda mouseXPos+1
+        cmp r0H
+        bne @half
+        lda mouseXPos
+        cmp r0L
+@half:  bcs @down
+        dex
+        bmi @keep
+        bpl @set
+@down:  inx
+        lda gfFound
+        sec
+        sbc gfFirst
+        cmp #GF_ROWS + 1
+        bcc @keep
+@set:   stx gfFirst
+@keep:  lda gfFirst
+        cmp gfSel
+        bcc @low
+        sta gfSel
+@low:   clc
+        adc #GF_ROWS - 1
+        cmp gfSel
+        bcs @copy
+        sta gfSel
+@copy:  jsr GfCopy
+        jmp GfDraw
 
 ; The box on the foreground screen: shadow (one card right and down) in
 ; the pattern of the position byte, white area, frame.
