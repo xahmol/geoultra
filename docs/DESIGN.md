@@ -610,7 +610,16 @@ Requests from the same session, to do:
   drive E's splash file; tests/desktop/d16.py.
 - Done 2026-11-13: gush's close button, an "x" at the right end of its
   status line (tests/gush/g22.py).
-- File boxes (DBGETFILES), decided by the user 2026-11-13: drive letters
+- Changed 2026-11-13 after the user's test (kernal module 87,
+  drvlist.s; tests/drives/filedialog.py, mpdialog.py): the letters only
+  in boxes that ask for MegaPatch 3's drive button (DBSETDRVICON, bit 6),
+  and a click ends the dialog with MegaPatch's answer $88-$8B (the
+  drive's number with bit 7; its -_G3_NewDlgBox read as behaviour
+  reference): the application switches its own document drive. GEOS
+  2.0's applications keep a document drive of their own and set it
+  again after the box (geoWrite 2.1's openDocument), so a switch made
+  inside the box was lost (error 1:05 opening a file from A). Originally
+  (superseded): File boxes (DBGETFILES), decided by the user 2026-11-13: drive letters
   A B C D in every file box (not only for MegaPatch's DBSETDRVICON flag),
   four small buttons in the bottom strip left of the scroll arrows, only
   drives with an image, the current one inverted; a click switches the
@@ -638,6 +647,18 @@ Requests from the same session, to do:
   which may predate the change).
 - copy=newer with dated GEOS documents: tested only with plain files
   (no date) so far; a test with two dated documents (VICE and U64).
+- Disk images on the Ultimate's file system (decided by the user
+  2026-11-13): (1) going into an image (D64, D71, D81, DNP) like a
+  folder: the file engine loads it into free REU and serves it through
+  a borrowed drive slot, as drive E (path /usb0/x/disk.d81/...), changes
+  written back to the image when it is left; not for a mounted image;
+  a large DNP only when the REU has room. (2) A double click on an image
+  goes into it; mounting stays in the context menu, the toolbar and the
+  mount dialog (until (1) exists a double click keeps mounting). (3)
+  Disk image files (.d64 .d71 .d81 .dnp .g64) are not copied or moved
+  onto GEOS drives A-D ("Disk images stay on the Ultimate's file
+  system"); between Ultimate folders they may (not while mounted).
+  Order: (3) now; (1) and (2) after the video's items.
 - GeoUltra Settings in the desktop's theme (the user, 2026-11-13): its
   colours from the theme in use (desk, menu bar, frame lines, the side
   list's selection), and more chrome: frame lines round the whole
@@ -645,7 +666,10 @@ Requests from the same session, to do:
   (as GEOS windows have) carrying "GeoUltra Settings". The Theme page's
   "use" then repaints Settings itself in the theme at once (the user's
   test 2026-11-13: "use" changing nothing on the screen felt wrong).
-- Two panes, a drive per pane (decided by the user 2026-11-13): drive
+- Partly done 2026-11-13 (the letters; listin.s, tests/desktop/d17.py;
+  open: the list under the path text, the U button): Two panes, a drive per pane (decided by the user 2026-11-13; the
+  Ultimate's roots by a "U" button after E, the user the same day: a
+  list under it of the roots that are there, sd, usb0, usb1, usb2): drive
   letters A B C D E at the right end of each pane's path line (only
   drives with an image; the pane's own drive inverted), a click
   switches that pane's drive; a click on the path text opens a list

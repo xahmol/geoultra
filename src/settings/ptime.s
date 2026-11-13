@@ -13,7 +13,7 @@
 
         .import ChoiceDraw, ChoicePress, ButtonDraw, OnButton
         .import IniFind, IniSet, IniDel, dirty, NoRoom, FileEngine, Write
-        .import DrawPage
+        .import DrawPage, Ask2
         .export Ov_TimeDraw, Ov_TimePress
 
         .segment "ZEROPAGE"
@@ -215,8 +215,9 @@ EditServer:
         lda #>buf
         sta r2H
         jsr IniSet
-        bcc @done
+        bcc :+
         jmp NoRoom
+:       jsr AdjClear            ; (a server: its time counts, no adjust=)
 @done:  lda #1
         sta dirty
         jmp ServerDraw
@@ -295,9 +296,10 @@ ServerMenu:
         lda ItemHi,x
         sta r2H
         jsr IniSet
-        bcc @dirty
+        bcc :+
         jsr DrawPage
         jmp NoRoom
+:       jsr AdjClear            ; (a server: its time counts, no adjust=)
 @dirty: lda #1
         sta dirty
 @draw:  jmp DrawPage
@@ -441,7 +443,8 @@ NowNtp: lda #<Now               ; the button inverted while it asks (the
         jsr @back
         lda ntpErr
         bne @fail
-        jsr AdjClear            ; (the server's time counts: no adjust=)
+        jsr AdjClear            ; (the server's time counts: no adjust=,
+        jsr Write               ; written at once)
         jmp DateDraw
 @fail:
         lda #<NtpFail
@@ -733,7 +736,10 @@ DateText:
 
 ; AdjAdd: [time] adjust= (signed minutes) plus delta, written back; 0
 ; takes the line out. (Kept within 16 bits: about 22 days either way.)
-AdjAdd: jsr AdjKey
+AdjAdd: jsr NtpKey              ; a server chosen: its time (with the
+        jsr IniFind             ; zone) counts at the next start, no
+        bcc @end                ; adjust= (the user, 2026-11-13)
+        jsr AdjKey
         jsr ParseNum            ; (none: 0)
         lda neg
         beq :+
@@ -782,6 +788,29 @@ AdjAdd: jsr AdjKey
         jmp NoRoom
 @dirty: lda #1
         sta dirty
+@end:   rts
+
+; NtpOff (EditDate): with a server chosen, asked "Use this time? The time
+; server is switched off."; Yes: ntp= out (the hand time then holds after
+; a cold start through adjust=; the user, 2026-11-13), C clear; No: C set.
+; No server: C clear.
+NtpOff: jsr NtpKey
+        jsr IniFind
+        bcs @free
+        lda #<OffDlg
+        ldx #>OffDlg
+        jsr Ask2                ; (settings.s: plain colours, r5 kept)
+        cmp #YES
+        beq :+
+        jsr DrawPage            ; (No: the page as it was)
+        sec
+        rts
+:       jsr NtpKey
+        jsr IniDel
+        lda #1
+        sta dirty
+        jsr DrawPage
+@free:  clc
         rts
 
 ; DaysOld: oldDays = GEOS's date as days since 2000-01-01, oldMin = its
@@ -1071,7 +1100,10 @@ EditDate:
         bne @bad
         cpy #80
         bcs @bad
-@set:   php
+@set:   jsr NtpOff              ; (a server on: switched off first, asked)
+        bcc :+
+        rts
+:       php
         sei
         jsr DaysOld             ; (the time before: for adjust=)
         ldx #FIELDS - 2         ; year (its last two digits) .. minutes
@@ -1335,6 +1367,16 @@ DateAsk:        .byte BOLDON, "Date and time:", PLAINTEXT, 0
 DateHint:       .byte "as YYYY-MM-DD HH:MM", 0
 ServerHint:     .byte "for example pool.ntp.org", 0
 NtpText:        .byte BOLDON, "No time from the server.", PLAINTEXT, 0
+OffDlg:         .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word OffText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word OffText2
+                .byte YES, 1, DBI_Y_2
+                .byte NO, DBI_X_2, DBI_Y_2
+                .byte 0
+OffText:        .byte BOLDON, "Use this time?", PLAINTEXT, 0
+OffText2:       .byte "The time server is switched off.", 0
 DateBad:        .byte BOLDON, "Not a date.", PLAINTEXT, 0
 
 ; Scratch (overlay data: fetched anew with the overlay, when the page is

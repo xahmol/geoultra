@@ -166,6 +166,10 @@ def main():
         g.keys([KEY_DELETE] * 20, settle=0.1)
         g.keys("2027-01-02 03:04\r", settle=0.3)
         settle(3)
+        g.png("settings-s3b-off")
+        press(64 + 8 + 24, 32 + 72 + 8, t=4)                # "Use this time?": Yes
+        check("a server on: Yes switches it off (ntp= out, adjust= kept)",
+              (b"ntp=" in ini(), b"adjust=" in ini()), (False, True))
         check("the date typed: GEOS's clock 27-01-02 03:04",
               bytes(v.mem_get(0x8516, 0x851A)), bytes([27, 1, 2, 3, 4]))
         g.png("settings-s3b-date")

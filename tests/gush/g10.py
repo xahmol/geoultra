@@ -25,7 +25,8 @@ def main():
         g.run("turbo 16")
         check("turbo 16", g.lines()[-2], "gush: turbo: wrong words (see help)")
         g.run("date 2026-11-05 14:30:15")
-        check("date set (GEOS; the Ultimate's clock not there)", g.lines()[-2], "gush: date: no such drive")
+        check("date set: no complaint (GEOS's and the CIA's clock only, since 2026-11-13)",
+              g.lines()[-2].startswith("gush:"), False)
         g.run("date")
         check("date shown", g.lines()[-2][:16], "2026-11-05 14:30")
         g.run("ntp", settle=3)
