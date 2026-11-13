@@ -12,6 +12,7 @@
 
         .import ChoiceDraw, ChoicePress, FileEngine, sel, ButtonDraw, OnButton
         .import IniFind, IniSet, dirty, NoRoom
+        .import ColourNames     ; (tdef.s: the theme files' names)
         .export Ov_PtrDraw, Ov_PtrPress
 
         .segment "OV2"
@@ -298,11 +299,7 @@ Minus:  .word MINUS_X
 Plus:   .word PLUS_X
         .byte COL_Y - 9, 14
         .word TPlus
-ColourNames:    .byte "black", 0, "white", 0, "red", 0, "cyan", 0, "purple", 0
-                .byte "green", 0, "blue", 0, "yellow", 0, "orange", 0, "brown", 0
-                .byte "light red", 0, "dark grey", 0, "grey", 0
-                .byte "light green", 0, "light blue", 0, "light grey", 0
-                                ; (the names theme files use, themefile.s)
+
 
         .include "pointers.inc"
 

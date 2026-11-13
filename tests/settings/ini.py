@@ -41,6 +41,10 @@ def main():
         v.mem_set(BASE, blob)
         len_at = blob[9] | blob[10] << 8
         skip_at = blob[11] | blob[12] << 8
+        base_at = blob[13] | blob[14] << 8
+        max_at = blob[15] | blob[16] << 8
+        v.mem_set(base_at, bytes([BUF & 0xFF, BUF >> 8]))   # (ini.inc's buffer)
+        v.mem_set(max_at, bytes([INI_MAX & 0xFF, INI_MAX >> 8]))
 
         def text(t):
             v.mem_set(BUF, t + b"\0")

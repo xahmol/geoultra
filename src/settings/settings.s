@@ -11,7 +11,7 @@
 
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
         .import TimeDraw, TimePress
-        .export FileEngine, dirty, NoRoom, Write
+        .export FileEngine, dirty, NoRoom, Write, UseSettings
 
         .segment "ZEROPAGE"
 
@@ -20,10 +20,10 @@ pageVec:        .res 2          ; DrawPage, Press: the page's routine
 
         .segment "CODE"
 
-INI_BUF = iniText               ; (ini.inc, inifile.inc: included at the
-                                ; end, Start must stay at $0400)
+; (ini.inc and inifile.inc are included at the end: Start stays at
+; $0400, where GEOS starts the application.)
 
-; Start: (the entry: GEOS starts the application at $0400) SETTINGS.INI read, the screen drawn on the Desktop page, the
+; Start: SETTINGS.INI read, the screen drawn on the Desktop page, the
 ; buttons and the mouse and keys taken; back to MainLoop.
 Start:  jsr OvlInit             ; (ovl.s: the pages into the REU, while
                                 ; dirEntryBuf still holds our entry)
@@ -58,7 +58,8 @@ FileEngine:
 ; Load: SETTINGS.INI in the home folder into the INI text; noFile set
 ; when there is none to write (no Ultimate, or too large or unreadable:
 ; then it is left alone).
-Load:   lda #0
+Load:   jsr UseSettings
+        lda #0
         sta dirty
         sta noFile
         lda #<IniName
@@ -78,8 +79,21 @@ Load:   lda #0
         lda #0                  ; (an empty text: the defaults)
         sta iniLen
         sta iniLen+1
-        sta INI_BUF
+        jmp IniEmpty
 @end:   rts
+
+; UseSettings: ini.inc on SETTINGS.INI's text (iniText; the Theme page
+; uses another one beside it and comes back to this).
+UseSettings:
+        lda #<iniText
+        sta iniBase
+        lda #>iniText
+        sta iniBase+1
+        lda #<INI_MAX
+        sta iniMax
+        lda #>INI_MAX
+        sta iniMax+1
+        rts
 
 ; --- drawing
 

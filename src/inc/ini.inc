@@ -6,22 +6,26 @@
 ; and key names match in any case (ASCII); "key=value" without spaces
 ; around "=". Other lines, comments and blank lines are kept as they are.
 ;
-; The includer defines INI_BUF (the buffer's address) and INI_MAX (the
-; text's room: the buffer is INI_MAX + 1 bytes, the text always followed
-; by a zero, which the scan relies on), includes geos.inc first and puts
-; this include in a code segment; iniLen (the text's length) is the
-; includer's to set after reading the file (with the zero after it) and
-; to use when writing it. A key may stand in its section more than once
+; The includer sets iniBase (the buffer's address) and iniMax (the
+; text's room: the buffer is iniMax + 1 bytes, the text always followed
+; by a zero, which the scan relies on) before the first call, and
+; iniLen (the text's length) after reading a file (with the zero after
+; it), and uses iniLen when writing it; a program with more than one
+; text sets the three for the one at hand (2026-11-13: the theme editor
+; beside SETTINGS.INI). It includes geos.inc first and puts this
+; include in a code segment. A key may stand in its section more than once
 ; (SETTINGS.INI's slow=): iniSkip, set before a call, passes over that
 ; many of its lines (each call sets it back to 0); $FF makes IniSet add
 ; a new line even when the key is there. Exports IniFind, IniSet,
 ; IniDel, iniLen, iniSkip. All three destroy A, X, Y, r0-r7.
 
-        .export iniLen, iniSkip
+        .export iniLen, iniSkip, iniBase, iniMax
 
         .pushseg
         .segment "BSS"
 iniLen:         .res 2          ; the text's length (the includer's)
+iniBase:        .res 2          ; the buffer (the includer's)
+iniMax:         .res 2          ; the text's room in it (the includer's)
 iniSkip:        .res 1          ; the key's lines to pass over (IniFind)
         .popseg
 
@@ -40,16 +44,16 @@ IniFind:
         lda #0
         sta iniSect
         sta inSect
-        lda #<INI_BUF           ; iniIns: the text's end until a section
+        lda iniBase           ; iniIns: the text's end until a section
         clc                     ; is found
         adc iniLen
         sta iniIns
-        lda #>INI_BUF
+        lda iniBase+1
         adc iniLen+1
         sta iniIns+1
-        lda #<INI_BUF           ; r5: the line's start
+        lda iniBase           ; r5: the line's start
         sta r5L
-        lda #>INI_BUF
+        lda iniBase+1
         sta r5H
 @line:  jsr AtEnd
         bcc :+
@@ -226,14 +230,14 @@ Params: lda r0L
 ; AtEnd: C set when r5 is at the text's end.
 AtEnd:  lda r5L
         sec
-        sbc #<INI_BUF
+        sbc iniBase
         tax
         lda r5H
-        sbc #>INI_BUF
+        sbc iniBase+1
         cmp iniLen+1
         bne @cmp
         cpx iniLen
-@cmp:   rts                     ; (C set: r5 - INI_BUF >= iniLen)
+@cmp:   rts                     ; (C set: r5 - iniBase >= iniLen)
 
 ; NextLine: r5 = the next line's start (past one CR, LF or CR LF), or
 ; the text's end.
@@ -322,10 +326,10 @@ IsKey:  lda keyP
         sta r7H
         lda r7L                 ; (the text's end?)
         sec
-        sbc #<INI_BUF
+        sbc iniBase
         sta r4L
         lda r7H
-        sbc #>INI_BUF
+        sbc iniBase+1
         cmp iniLen+1
         bne :+
         lda r4L
@@ -395,18 +399,18 @@ ValLen: ldy #0
 @end:   tya
         rts
 
-; Room: C set when n more bytes (a signed word) do not fit in INI_MAX.
+; Room: C set when n more bytes (a signed word) do not fit in iniMax.
 Room:   lda iniLen
         clc
         adc n
         tax
         lda iniLen+1
         adc n+1
-        cmp #>INI_MAX
+        cmp iniMax+1
         bne :+
-        cpx #<INI_MAX
+        cpx iniMax
 :       beq @fits               ; (equal: fits)
-        rts                     ; (C: more than INI_MAX)
+        rts                     ; (C: more than iniMax)
 @fits:  clc
         rts
 
@@ -501,11 +505,11 @@ Put:    sta count
         rts
 
 ; Tail: r2 = the bytes from r0 to the text's end and its zero.
-Tail:   lda #<INI_BUF
+Tail:   lda iniBase
         sec                     ; (+ 1: the zero)
         adc iniLen
         sta r2L
-        lda #>INI_BUF
+        lda iniBase+1
         adc iniLen+1
         sta r2H
         lda r2L
@@ -527,11 +531,11 @@ Move:   lda r2L
 ; EndText: at = the text's end; a CR LF added first when the last line
 ; has no end (or nothing when the text is empty).
 EndText:
-        lda #<INI_BUF
+        lda iniBase
         clc
         adc iniLen
         sta at
-        lda #>INI_BUF
+        lda iniBase+1
         adc iniLen+1
         sta at+1
 ; LineEnd: at the text's end after a line without its end: CR LF put
@@ -539,10 +543,10 @@ EndText:
 LineEnd:
         lda at                  ; at the text's end?
         sec
-        sbc #<INI_BUF
+        sbc iniBase
         tax
         lda at+1
-        sbc #>INI_BUF
+        sbc iniBase+1
         cmp iniLen+1
         bne @end
         cpx iniLen

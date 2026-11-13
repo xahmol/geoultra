@@ -5,12 +5,12 @@
 ; code, own design (the same steps as the desktop's inifile.s and gush's
 ; turbo -s, which move onto this later).
 ;
-; The includer includes engine.inc and ini.inc first (INI_BUF, INI_MAX,
+; The includer includes engine.inc and ini.inc first (iniBase, iniMax,
 ; iniLen) and provides FileEngine (A = the function, X = the error
 ; after it). Exports IniPaths, IniLoad, IniSave. All destroy A, X, Y,
 ; r0-r2.
 
-        .export IniPaths, IniLoad, IniSave
+        .export IniPaths, IniLoad, IniSave, IniEmpty
 
 INI_PATH_MAX    = 48            ; the home folder (FE_HOME: up to 32) and
                                 ; a name
@@ -74,14 +74,14 @@ IniPaths:
 @end:   clc
         rts
 
-; IniLoad (after IniPaths): the file into INI_BUF, iniLen its length,
+; IniLoad (after IniPaths): the file into iniBase, iniLen its length,
 ; the zero after it; a file not there: an empty text. X = 0 or the
-; error (FE_ULTIMATE: larger than INI_MAX, not to be rewritten).
+; error (FE_ULTIMATE: larger than iniMax, not to be rewritten).
 IniLoad:
         lda #0
         sta iniLen
         sta iniLen+1
-        sta INI_BUF
+        jsr IniEmpty
         lda #<iniPath
         sta r0L
         lda #>iniPath
@@ -95,13 +95,16 @@ IniLoad:
         beq @none
         txa
         bne @end
-        lda #<INI_BUF
+        lda iniBase
         sta r1L
-        lda #>INI_BUF
+        lda iniBase+1
         sta r1H
-        lda #<(INI_MAX + 1)     ; (one more than fits: too large is seen)
+        lda iniMax              ; (one more than fits: too large is seen)
+        clc
+        adc #1
         sta r2L
-        lda #>(INI_MAX + 1)
+        lda iniMax+1
+        adc #0
         sta r2H
         lda #FE_READ
         ldy iniHandle
@@ -118,22 +121,21 @@ IniLoad:
         pla
         tax
         bne @fail
-        lda iniLen              ; larger than INI_MAX?
-        cmp #<(INI_MAX + 1)
-        lda iniLen+1
-        sbc #>(INI_MAX + 1)
-        bcc @zero
+        lda iniMax              ; larger than iniMax?
+        cmp iniLen
+        lda iniMax+1
+        sbc iniLen+1
+        bcs @zero
         ldx #FE_ULTIMATE
 @fail:  lda #0                  ; (an error: an empty text, not written)
         sta iniLen
         sta iniLen+1
-        sta INI_BUF
-        rts
-@zero:  lda #<INI_BUF           ; the zero after the text
+        jmp IniEmpty
+@zero:  lda iniBase             ; the zero after the text
         clc
         adc iniLen
         sta r0L
-        lda #>INI_BUF
+        lda iniBase+1
         adc iniLen+1
         sta r0H
         lda #0
@@ -157,9 +159,9 @@ IniSave:
         sta iniHandle
         txa
         bne @end
-        lda #<INI_BUF
+        lda iniBase
         sta r1L
-        lda #>INI_BUF
+        lda iniBase+1
         sta r1H
         lda iniLen
         sta r2L
@@ -200,6 +202,17 @@ IniSave:
         sta r1H
         lda #FE_RENAME
         jmp FileEngine
+
+; IniEmpty: the buffer an empty text (its zero first). Keeps X.
+IniEmpty:
+        lda iniBase
+        sta r0L
+        lda iniBase+1
+        sta r0H
+        lda #0
+        tay
+        sta (r0),y
+        rts
 
         .pushseg
         .segment "BSS"
