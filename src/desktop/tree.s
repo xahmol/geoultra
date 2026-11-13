@@ -219,7 +219,11 @@ OneFile:
 ; the Ultimate came without ".cvt"): name.cvt on the Ultimate, the name
 ; without it back on a GEOS drive, .prg/.seq/.usr for CBM files.
 OneCopy:
-        ldy #$FF                ; tDst cut at its last "/" (its folder)
+        jsr ImageToGeos         ; a disk image onto a GEOS drive: refused
+        bcc :+                  ; (the user, 2026-11-13)
+        ldx #ERR_IMAGE
+        jmp Fail
+:       ldy #$FF                ; tDst cut at its last "/" (its folder)
 @end:   iny
         lda tDst,y
         bne @end
@@ -237,6 +241,56 @@ OneCopy:
         sta tDst,y
         plp
         rts
+
+; ImageToGeos: C set when tSrc is a disk image file (.d64 .d71 .d81
+; .dnp .g64, any case) and tDst is on a GEOS drive A-D ("/a" to "/d"):
+; disk images stay on the Ultimate's file system (DESIGN.md).
+ImageToGeos:
+        lda tDst + 1
+        ora #$20
+        cmp #'a'
+        bcc @no
+        cmp #'d' + 1
+        bcs @no
+        lda tDst + 2
+        beq :+
+        cmp #'/'
+        bne @no
+:       ldy #$FF                ; tSrc's end
+@end:   iny
+        lda tSrc,y
+        bne @end
+        cpy #5
+        bcc @no
+        lda tSrc - 4,y          ; ".xyz"
+        cmp #'.'
+        bne @no
+        ldx #0
+@ext:   stx extNo
+        lda tSrc - 3,y
+        ora #$20
+        cmp ImgExt,x
+        bne @next
+        lda tSrc - 2,y
+        ora #$20
+        cmp ImgExt + 1,x
+        bne @next
+        lda tSrc - 1,y
+        ora #$20
+        cmp ImgExt + 2,x
+        bne @next
+        sec
+        rts
+@next:  ldx extNo
+        inx
+        inx
+        inx
+        cpx #IMG_EXTS * 3
+        bcc @ext
+@no:    clc
+        rts
+IMG_EXTS = 5
+ImgExt: .byte "d64", "d71", "d81", "dnp", "g64"
 
 ; CopyFile: OneCopy's copy (tDst holding the target's folder).
 CopyFile:
@@ -539,6 +593,7 @@ EverythingText: .byte BOLDON, "Delete everything in it?", PLAINTEXT, 0
 ; The walk's state and paths (overlay data: kept while the walk runs,
 ; nothing else fetches an overlay meanwhile).
 op:             .byte 0
+extNo:          .byte 0         ; ImageToGeos: the extension tried
 mode:           .byte 0         ; 0 copy, 1 move
 errX:           .byte 0         ; WalkFail: the error meanwhile
 cutAt:          .byte 0         ; OneCopy: where tDst's last "/" was

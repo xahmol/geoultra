@@ -93,15 +93,16 @@ errLine:
         .byte OK, DBI_X_2, DBI_Y_2
         .byte 0
 ErrCodes:       .byte INSUFF_SPACE, FULL_DIRECTORY, WR_PR_ON, FILE_EXISTS, DIR_NOT_EMPTY
-                .byte FILE_NOT_FOUND
+                .byte FILE_NOT_FOUND, ERR_IMAGE
 ERRS = * - ErrCodes
-ErrLo:          .byte <ENoRoom, <EDirFull, <ELocked, <EExists, <ENotEmpty, <ENotFound
-ErrHi:          .byte >ENoRoom, >EDirFull, >ELocked, >EExists, >ENotEmpty, >ENotFound
+ErrLo:          .byte <ENoRoom, <EDirFull, <ELocked, <EExists, <ENotEmpty, <ENotFound, <EImage
+ErrHi:          .byte >ENoRoom, >EDirFull, >ELocked, >EExists, >ENotEmpty, >ENotFound, >EImage
 ENoRoom:        .byte "Not enough room on the drive.", 0
 EDirFull:       .byte "The directory is full.", 0
 ELocked:        .byte "The drive cannot be written to.", 0
 EExists:        .byte "A file of that name is there.", 0
 ENotEmpty:      .byte "The folder is not empty.", 0
 ENotFound:      .byte "Not found.", 0
+EImage:         .byte "Disk images stay on the Ultimate", 0
 errText:        .byte "failed: error $"
 errCode:        .byte "00", 0
