@@ -6,6 +6,7 @@
 
         .import ExtTable
         .export Trap, sysFlgCopy, BootGEOS, basicBuf, guMouse2, ptrColour
+        .export progColours
 
         .segment "INFO"
         .org $C000                      ; fixed addresses in this block
@@ -43,6 +44,9 @@ trapAddress:    .word 0                 ; $C0F1: entry hit by Trap
 ptrColour:      .byte 6                 ; $C0F3: the pointer's colour (blue;
                                         ; pointer.s sets it, load.s's module 0
                                         ; gives it at each program's start)
+progColours:    .byte $BF               ; $C0F4: programs' colours (ink << 4 |
+                                        ; paper; FirstInit gives them; the
+                                        ; desktop's theme, programs=, sets it)
         .reloc
 
         .segment "CODE"

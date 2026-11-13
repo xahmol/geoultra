@@ -17,7 +17,7 @@
         .include "kcalls.inc"
 
         .export GetFile, LdFile, LdApplic, LdDeskAcc, RstrAppl, StartAppl
-        .import ptrColour
+        .import ptrColour, progColours
         .export EnterDeskTop, FirstInit, Panic, Sleep, CRC
         .export SleepTick, WakeSleepers, InitMachine, ExtraColours, SaveJumpTab
 
@@ -557,8 +557,9 @@ OvFirstInit:
         sta EnterDeskTopVec+1
         lda #>EnterDeskTop
         sta EnterDeskTopVec+2
-        lda #$BF                ; dark grey on light grey
-        sta screencolors
+        lda progColours         ; the programs' colours (info.s: dark grey
+        sta screencolors        ; on light grey unless the desktop's theme
+                                ; says programs=)
         ldx #0
 @col:   sta COLOR_MATRIX,x
         sta COLOR_MATRIX+$100,x

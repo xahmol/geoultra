@@ -6,7 +6,7 @@
 ; design (moved here from themefile.s, 2026-11-13). The includer puts it
 ; in a data segment.
 
-LINES_N         = 14            ; the file's lines after name=
+LINES_N         = 15            ; the file's lines after name=
 KIND_PALETTE    = LINES_N       ; (KeyLo/KeyHi: the palette's key after them)
 CK_NONE         = 0             ; a line's colours: none,
 CK_PAIR         = 1             ; ink on paper,
@@ -27,15 +27,17 @@ K_CURSOR:       .byte "cursor", 0
 K_SCROLLBAR:    .byte "scrollbar", 0
 K_STATUS:       .byte "status", 0
 K_TOOLBAR:      .byte "toolbar", 0
+K_PROGRAMS:     .byte "programs", 0      ; (programs' colours: 2026-11-13)
 KeyLo:  .byte <K_BORDER, <K_DESK, <K_MENUBAR, <K_SIDEBAR, <K_HEADINGS
         .byte <K_TITLEBAR, <K_ROWS, <K_COLUMNS, <K_ICONS, <K_SELECTION
-        .byte <K_CURSOR, <K_SCROLLBAR, <K_STATUS, <K_TOOLBAR, <PalKey
+        .byte <K_CURSOR, <K_SCROLLBAR, <K_STATUS, <K_TOOLBAR, <K_PROGRAMS, <PalKey
 KeyHi:  .byte >K_BORDER, >K_DESK, >K_MENUBAR, >K_SIDEBAR, >K_HEADINGS
         .byte >K_TITLEBAR, >K_ROWS, >K_COLUMNS, >K_ICONS, >K_SELECTION
-        .byte >K_CURSOR, >K_SCROLLBAR, >K_STATUS, >K_TOOLBAR, >PalKey
+        .byte >K_CURSOR, >K_SCROLLBAR, >K_STATUS, >K_TOOLBAR, >K_PROGRAMS, >PalKey
 LColKind:
         .byte CK_PAPER, CK_PAIR, CK_PAIR, CK_PAIR, CK_PAIR, CK_PAIR
         .byte CK_NONE, CK_NONE, CK_INK, CK_PAIR, CK_INK, CK_NONE, CK_PAIR, CK_PAIR
+        .byte CK_PAIR           ; programs
         .assert * - LColKind = LINES_N, error, "LColKind: a kind per line"
 W_NONE:         .byte 0
 W_MENUBAR:      .byte "plain", 0, "clock", 0, 0
@@ -50,10 +52,10 @@ W_CURSOR:       .byte "dotted", 0, "mark", 0, "underline", 0, 0
 W_SCROLLBAR:    .byte "arrows", 0, "thin", 0, 0
 WordsLo:        .byte <W_NONE, <W_NONE, <W_MENUBAR, <W_SIDEBAR, <W_HEADINGS
                 .byte <W_TITLEBAR, <W_ROWS, <W_COLUMNS, <W_ONOFF, <W_SELECTION
-                .byte <W_CURSOR, <W_SCROLLBAR, <W_ONOFF, <W_NONE
+                .byte <W_CURSOR, <W_SCROLLBAR, <W_ONOFF, <W_NONE, <W_NONE
 WordsHi:        .byte >W_NONE, >W_NONE, >W_MENUBAR, >W_SIDEBAR, >W_HEADINGS
                 .byte >W_TITLEBAR, >W_ROWS, >W_COLUMNS, >W_ONOFF, >W_SELECTION
-                .byte >W_CURSOR, >W_SCROLLBAR, >W_ONOFF, >W_NONE
+                .byte >W_CURSOR, >W_SCROLLBAR, >W_ONOFF, >W_NONE, >W_NONE
         .assert * - WordsHi = LINES_N, error, "WordsLo: a list per line"
 ColourNames:    .byte "black", 0, "white", 0, "red", 0, "cyan", 0, "purple", 0
                 .byte "green", 0, "blue", 0, "yellow", 0, "orange", 0, "brown", 0

@@ -19,7 +19,7 @@
         .import IniFind, IniSet, iniLen, NoRoom, dirty, Write
         .import UseSettings, UseTheme, themeDirty, themeLoaded, themeNo
         .import themeCount, themePart, themeNames, themePath, themeTmp
-        .import IniPaths, IniLoad, IniEmpty, noFile
+        .import IniPaths, IniLoad, IniEmpty, noFile, PageColours
         .import KeyLo, KeyHi, LColKind, WordsLo, WordsHi, ColourNames
         .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
         .import PalKey, IniDel
@@ -440,19 +440,15 @@ NewTheme:
         lda themeDirty
         beq @go
         lda #<SaveDlg
-        sta r0L
-        lda #>SaveDlg
-        sta r0H
-        jsr DoDlgBox
-        lda r0L
+        jsr Ask2
         cmp #YES
         bne @go
         jsr Write               ; (settings.s: both texts)
-        bcs @end
+        bcs @back
 @go:    lda new
         sta themeNo
         jsr LoadTheme
-        jsr NameDraw
+@back:  jsr NameDraw
         jmp PartDraw
 @end:   rts
 
@@ -462,6 +458,11 @@ PartDown:
         bne :+
         ldx #PARTS
 :       dex
+        stx themePart
+        jmp PartDraw
+; PalPart: straight to the palette part.
+PalPart:
+        ldx #PALETTE
         stx themePart
         jmp PartDraw
 PartUp: ldx themePart
@@ -515,11 +516,7 @@ Copy:   lda themeCount
         lda #>name
         sta r5H
         lda #<NameDlg
-        sta r0L
-        lda #>NameDlg
-        sta r0H
-        jsr DoDlgBox
-        lda r0L
+        jsr Ask2
         cmp #CANCEL
         beq @end
         lda name
@@ -543,8 +540,31 @@ Copy:   lda themeCount
         jmp NoRoom
 :       lda #1
         sta themeDirty
-        jmp NameDraw
-@end:   rts
+@end:   jsr NameDraw
+        jmp PartDraw
+
+; Ask2: the dialog at A/>Dlg (low byte A, high byte the dialogs' page)
+; over the page with the screen's colours (a dialog draws no colours:
+; the swatches' and the preview's would show through; the user's test
+; 2026-11-13); A = its answer. The caller draws the part again.
+Ask2:   pha
+        lda r5L                 ; (r5: NameDlg's input; PageColours
+        pha                     ; destroys it)
+        lda r5H
+        pha
+        jsr PageColours
+        pla
+        sta r5H
+        pla
+        sta r5L
+        pla
+        sta r0L
+        lda #>SaveDlg
+        sta r0H
+        jsr DoDlgBox
+        lda r0L
+        rts
+        .assert >SaveDlg = >NameDlg, error, "Ask2: one page for both dialogs"
 
 ; --- the part: its style, its colours
 
@@ -1622,6 +1642,18 @@ Preview:
         lda #>(PREV_CARD * 8 + 20 * 8 - 1)
         sta r4H
         jsr Rectangle
+        dec r2L                 ; a frame just outside it (the user, 2026-
+        inc r2H                 ; 11-13: the preview stands out)
+        lda #<(PREV_CARD * 8 - 1)
+        sta r3L
+        lda #>(PREV_CARD * 8 - 1)
+        sta r3H
+        lda #<(PREV_CARD * 8 + 20 * 8)
+        sta r4L
+        lda #>(PREV_CARD * 8 + 20 * 8)
+        sta r4H
+        lda #$FF
+        jsr FrameRectangle
         lda line                ; (ReadLine below changes it)
         pha
         lda style
@@ -1748,7 +1780,7 @@ CTRL_RESET_PALETTE = $54
 DEF_INK         = 11            ; a missing line: dark grey on light grey
 DEF_PAPER       = 15
 LABELS          = 2             ; (Theme, Part; the rest: Labels)
-BUTTONS         = 6
+BUTTONS         = 7
 AREAS           = 9
 PREV_WORDS      = 6
 
@@ -1758,10 +1790,10 @@ LabelY:         .byte THEME_Y, PART_Y
 LowLo:          .byte <LStyle, <LInk, <LPaper, <LRgb, 0, <LColour
 LowHi:          .byte >LStyle, >LInk, >LPaper, >LRgb, 0, >LColour
 LowY:           .byte STYLE_Y, INK_ROW * 8 + 7, PAPER_ROW * 8 + 7
-BtnLo:          .byte <BThemeDn, <BThemeUp, <BUse, <BCopy, <BPartDn, <BPartUp
-BtnHi:          .byte >BThemeDn, >BThemeUp, >BUse, >BCopy, >BPartDn, >BPartUp
-ActLo:          .byte <ThemeDown, <ThemeUp, <UseIt, <Copy, <PartDown, <PartUp
-ActHi:          .byte >ThemeDown, >ThemeUp, >UseIt, >Copy, >PartDown, >PartUp
+BtnLo:          .byte <BThemeDn, <BThemeUp, <BUse, <BCopy, <BPartDn, <BPartUp, <BPal
+BtnHi:          .byte >BThemeDn, >BThemeUp, >BUse, >BCopy, >BPartDn, >BPartUp, >BPal
+ActLo:          .byte <ThemeDown, <ThemeUp, <UseIt, <Copy, <PartDown, <PartUp, <PalPart
+ActHi:          .byte >ThemeDown, >ThemeUp, >UseIt, >Copy, >PartDown, >PartUp, >PalPart
 
 BThemeDn:       .word MINUS_X
                 .byte THEME_Y - 9, 14
@@ -1781,6 +1813,10 @@ BPartDn:        .word MINUS_X
 BPartUp:        .word PLUS_X
                 .byte PART_Y - 9, 14
                 .word TPlus
+BPal:           .word USE_X             ; (the user, 2026-11-13: the palette
+                .byte PART_Y - 9, 64    ; was hard to find)
+                .word TPalette
+TPalette:       .byte "palette", 0
 
 ; The preview's areas: the line whose colours they take (themedef.inc's
 ; order: 0 border, 1 desk, 2 menubar, 3 sidebar, 4 headings, 9

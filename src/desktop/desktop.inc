@@ -122,7 +122,7 @@ ST_OFF          = 1             ; icons, status: 0 on
 
 ; The view (theme.s viewMode) and the clock (clockMode)
 THM_STYLES      = 11            ; a theme record: style bytes, then colour
-THM_LEN         = 22            ; bytes (theme.s's record, themefile.s's)
+THM_LEN         = 23            ; bytes (theme.s's record, themefile.s's)
 BIG_BANK        = 6             ; the icon view's generic icons in the REU
 BIG_PAGE        = $FE           ; (tooldraw.s puts them, iconview.s reads;
                                 ; after the icon cache, iconview.s)

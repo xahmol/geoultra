@@ -112,6 +112,17 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   next additions to this page need a second overlay. Tests: s4.py
   (VICE, 11 checks), s4u64.py (the change seen live with GET_PALETTE,
   palette= written and taken out; files restored).
+  **S4.5 done (2026-11-13), programs=:** the theme line for the screen
+  programs get (GEOS's screencolors): the desktop gives it to the
+  kernal's progColours (info.s, $C0F4) when it takes a theme, and
+  FirstInit gives it every program (default dark grey on light grey,
+  as before). The Theme page lists it as a part after the lines'
+  colours. Tests: s4.py (the part's index), s45u64.py (on the U64: a
+  test theme with programs=white on blue, the kernal's byte and GEOS's
+  screencolors after a boot; files restored). The same day, from the
+  user's hand test: the Theme page's dialogs are drawn over the page's
+  plain colours (the swatches no longer show through), the preview has
+  a frame, and a "palette" button on the Part row goes to the palette.
 - Pages:
   - *Theme:* the theme editor: each line of a theme file; colours from
     16 swatches (in the theme's palette) for ink and paper, plus the RGB

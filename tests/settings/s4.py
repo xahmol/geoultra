@@ -69,6 +69,10 @@ def main():
         pf = v.mem_get(0x39, 0x39)[0]
         v.mem_set(0x39, bytes([pf | 0x20]))
         v.resume()
+        time.sleep(0.5)                             # (released, as a real
+        v.ping()                                    # click: Drag waits
+        v.mem_set(0x8505, b"\x80")                # for it)
+        v.resume()
         settle(t)
 
     def ini():
@@ -151,7 +155,7 @@ def main():
                    "984E20 5B3800 D1676D 4A4A4A 7B7B7B 9FEF93 6D6AEF B2B2B2").split()
         for _ in range(3):                                  # menubar -> palette
             press(156, PART_Y - 3, t=3)
-        check("the palette part", sbyte("themePart"), 14)
+        check("the palette part (after programs, 14)", sbyte("themePart"), 15)
         press(SWATCH_X + 6 * 8 + 3, PAPER_Y, t=3)          # blue
         press(118 + 40 + 7, STYLE_Y - 3, t=3)              # R +
         want = default[:]

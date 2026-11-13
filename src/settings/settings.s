@@ -13,7 +13,7 @@
         .import TimeDraw, TimePress, ThemeDraw, ThemePress
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
         .export themeLoaded, themeNo, themeCount, themePart, themeNames
-        .export themePath, themeTmp, noFile
+        .export themePath, themeTmp, noFile, PageColours, DrawPage
         .export IniPaths, IniLoad, IniEmpty, IniSet, IniFind, iniLen
 
         .segment "ZEROPAGE"

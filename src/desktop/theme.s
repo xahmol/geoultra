@@ -17,6 +17,7 @@
         .export ThemeName, themeNo, tCols
         .export tMenu, tSide, tHead, tTitle, tRows, tCols, tIcons, tSel, tCur, tScroll, tStatus
         .export cDesk, cMenu, cSide, cHead, cTitle, cSel, cStatus, cHeadP, cToolbar
+        .export cProgs
         .export cIconP, cSideIconP, cAccentP, cSideAccentP
         .export sideW, listL, ejectCard, pathY, listTop, rowH, rows, bottom
         .export trackTop, trackBot, trackH, iconCard, nameX, sideTx, stY0, stY1
@@ -648,6 +649,8 @@ cSel:           .byte $14
 cAccent:        .byte 6
 cStatus:        .byte $1C
 cToolbar:       .byte $BF         ; (the toolbar's row: ink << 4 | paper)
+cProgs:         .byte $BF         ; programs' colours (themefile.s: to the
+                                  ; kernal's progColours and screencolors)
 
 ; Derived (Derive)
 themeNo:        .byte 0

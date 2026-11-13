@@ -28,7 +28,7 @@
         .include "desktop.inc"
 
         .import FileEngine, ThemeName, Derive, tMenu, themeNo
-        .import tCols, viewMode
+        .import tCols, viewMode, cProgs
         .import text            ; (side.s's INI text: never in use at the same time)
         .export Ov_ThemeFiles, Ov_ThemeUse, Ov_PalReset   ; (overlay 1: ovl.s)
         .export themeNames, themeCount, curName, hasPal
@@ -43,6 +43,7 @@ FILE_MAX        = 1024          ; a theme file's bytes, at most (Write's
                                 ; longest, all words long and a palette: ~900)
 NO_STYLE        = $FF
 FE_UCI          = 30            ; (FILE_ENGINE.md: a raw Ultimate command)
+PROG_COLOURS    = $C0F4         ; the kernal's programs' colours (info.s)
 UCI_CONTROL     = 4             ; the control target,
 SET_PALETTE     = $52           ; its palette commands (ultimate-uci-oscar64
 RESET_PALETTE   = $54           ; manual: firmware 3.15a on the U64)
@@ -266,7 +267,10 @@ ThemeUse:
         lda hasPal              ; its palette to the Ultimate 64
         beq :+
         jsr PalSend
-:       lda #VIEW_LIST
+:       lda cProgs              ; its programs' colours (programs=): GEOS's
+        sta screencolors        ; screen colours now, and the kernal's for
+        sta PROG_COLOURS        ; FirstInit (info.s)
+        lda #VIEW_LIST
         ldx tCols
         beq :+
         lda #VIEW_DETAILED
@@ -1039,22 +1043,22 @@ ThemePal:
 Themes:
         ; GeoUltra (the default)
         .byte 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0
-        .byte 15, $BF, $BF, $BF, $1E, $BF, 6, $14, 6, $1C, $BF
+        .byte 15, $BF, $BF, $BF, $1E, $BF, 6, $14, 6, $1C, $BF, $BF
         ; GEOS classic
         .byte 0, 0, 2, 0, 9, 0, 1, 0, 0, 0, 1
-        .byte 1, $61, $61, $61, $61, $61, 6, $16, 6, $63, $61
+        .byte 1, $61, $61, $61, $61, $61, 6, $16, 6, $63, $61, $BF
         ; Flat
         .byte 1, 0, 1, 1, 8, 0, 0, 1, 1, 1, 0
-        .byte 15, $BF, $0F, $BF, $16, $1B, 11, $1E, 8, $1B, $0F
+        .byte 15, $BF, $0F, $BF, $16, $1B, 11, $1E, 8, $1B, $0F, $BF
         ; Detailed
         .byte 1, 1, 0, 1, 9, 1, 0, 0, 2, 0, 0
-        .byte 15, $0F, $0F, $BF, $1B, $1B, 11, $16, 6, $1C, $0F
+        .byte 15, $0F, $0F, $BF, $1B, $1B, 11, $16, 6, $1C, $0F, $BF
         ; Night
         .byte 1, 0, 1, 2, 8, 0, 0, 1, 1, 1, 0
-        .byte 0, $FB, $10, $F0, $03, $3B, 3, $07, 7, $30, $10
+        .byte 0, $FB, $10, $F0, $03, $3B, 3, $07, 7, $30, $10, $BF
         ; Mono
         .byte 0, 0, 3, 2, 9, 0, 1, 2, 2, 1, 1
-        .byte 1, $01, $01, $01, $01, $01, 0, $01, 0, $01, $01
+        .byte 1, $01, $01, $01, $01, $01, 0, $01, 0, $01, $01, $BF
 
 ; The built-in themes' palettes (user, 2026-11-11: GeoUltra keeps the
 ; C64's own, the others tuned freely in RGB): 16 RRGGBB triplets in
@@ -1095,8 +1099,10 @@ Pal5:   ; Mono
 ; style byte (NO_STYLE: none) with its words, the kind of colours and
 ; the record's colour byte (theme.s, Themes' order).
 LStyle: .byte NO_STYLE, NO_STYLE, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, NO_STYLE
+        .byte NO_STYLE          ; programs
 LColour:                        ; (offsets from tMenu: 11 the border ...)
         .byte 11, 12, 13, 14, 15, 16, 0, 0, 17, 18, 19, 0, 20, 21
+        .byte 22                ; programs (cProgs)
 RowsVal:        .byte 9, 8
         .include "themedef.inc"  ; (the format's tables, shared with GeoUltra
                                 ; Settings' theme editor)
