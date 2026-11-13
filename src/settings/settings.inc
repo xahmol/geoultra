@@ -53,4 +53,4 @@ PAGE_POINTER    = 6
 INI_MAX         = 3072
 THEME_MAX       = 1024          ; a theme file (the desktop's FILE_MAX)
 THEME_NAME      = 16            ; a theme's name and its zero
-THEMES_MAX      = 8             ; theme files listed (as the desktop's menu)
+THEMES_MAX      = 10            ; theme files listed (as the desktop's menu)

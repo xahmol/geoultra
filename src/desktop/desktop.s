@@ -53,7 +53,9 @@ GO_TEXT         = 8             ; each one's text: 8 bytes
 DA_NAME_LEN     = 17            ; a GEOS name and its zero
 THEME_ITEM      = 16            ; a view menu theme item: "* " and a name
 THEME_NAME      = 15            ; a theme's name (themefile.s NAME_MAX)
-THEMES_MAX      = 8             ; theme files the menu lists
+THEMES_MAX      = 10            ; theme files the menu lists (themefile.s and
+                                ; Settings' settings.inc the same; the user,
+                                ; 2026-11-13)
 MENU_ITEMS      = 7             ; a menu table's first item (after its frame)
 
         .segment "CODE"

@@ -103,7 +103,11 @@ def main():
         press(20, SIDE_TOP + PAGE_THEME * SIDE_ROW + 7, t=8)
         count = u.read(s["themeCount"], 1)[0]
         names = [bytes(u.read(s["themeNames"] + 16 * i, 16)).split(b"\0")[0].decode() for i in range(count)]
-        check("the Theme page lists the THEMES folder (7 themes)", (count, "Custom" in names), (7, True))
+        f = ftp()
+        files = [n for n in f.nlst("/USB0/GEOULTRA/THEMES") if n.lower().endswith(".ini")]
+        f.quit()
+        check("the Theme page lists the THEMES folder (its .ini files, up to 10)",
+              (count, "Custom" in names), (min(len(files), 10), True))
         for _ in range(count):
             if bytes(u.read(s["themeNames"] + 16 * u.read(s["themeNo"], 1)[0], 16)).split(b"\0")[0] == b"Custom":
                 break

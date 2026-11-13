@@ -24,7 +24,7 @@
         .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
         .import PalKey, IniDel
         .export Ov_ThemeDraw, Ov_ThemePress, row, SWATCH_X
-        .import BarOn, BarOff
+        .import BarOn, BarOff, ThemesFull, Ask2
 
         .segment "ZEROPAGE"
 
@@ -441,6 +441,7 @@ NewTheme:
         lda themeDirty
         beq @go
         lda #<SaveDlg
+        ldx #>SaveDlg
         jsr Ask2
         cmp #YES
         bne @go
@@ -505,7 +506,7 @@ UseIt:  jsr UseSettings
 ; written as THEMES/<name>.ini at Save or OK.
 Copy:   lda themeCount
         cmp #THEMES_MAX
-        bcs @end
+        bcs @full
         lda #0
         sta name
         lda #<CopyAsk
@@ -517,6 +518,7 @@ Copy:   lda themeCount
         lda #>name
         sta r5H
         lda #<NameDlg
+        ldx #>NameDlg
         jsr Ask2
         cmp #CANCEL
         beq @end
@@ -543,29 +545,8 @@ Copy:   lda themeCount
         sta themeDirty
 @end:   jsr NameDraw
         jmp PartDraw
+@full:  jmp ThemesFull            ; (settings.s: said; the user's test)
 
-; Ask2: the dialog at A/>Dlg (low byte A, high byte the dialogs' page)
-; over the page with the screen's colours (a dialog draws no colours:
-; the swatches' and the preview's would show through; the user's test
-; 2026-11-13); A = its answer. The caller draws the part again.
-Ask2:   pha
-        lda r5L                 ; (r5: NameDlg's input; PageColours
-        pha                     ; destroys it)
-        lda r5H
-        pha
-        jsr PageColours
-        pla
-        sta r5H
-        pla
-        sta r5L
-        pla
-        sta r0L
-        lda #>SaveDlg
-        sta r0H
-        jsr DoDlgBox
-        lda r0L
-        rts
-        .assert >SaveDlg = >NameDlg, error, "Ask2: one page for both dialogs"
 
 ; --- the part: its style, its colours
 

@@ -38,7 +38,7 @@ Ov_PalReset = PalReset
 
 FO_READ_        = FO_READ
 NAME_MAX        = 15            ; a theme's name (and its zero)
-THEMES_MAX      = 8             ; files the view menu lists
+THEMES_MAX      = 10            ; files the view menu lists (desktop.s's)
 FILE_MAX        = 1024          ; a theme file's bytes, at most (Write's
                                 ; longest, all words long and a palette: ~900)
 NO_STYLE        = $FF

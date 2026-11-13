@@ -13,7 +13,7 @@
         .import TimeDraw, TimePress, ThemeDraw, ThemePress
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
         .export themeLoaded, themeNo, themeCount, themePart, themeNames
-        .export themePath, themeTmp, noFile, PageColours, DrawPage, BarOn, BarOff
+        .export themePath, themeTmp, noFile, PageColours, DrawPage, BarOn, BarOff, ThemesFull, Ask2
         .import row
         .importzp SWATCH_X        ; (152: exported as zero page)
         .export IniPaths, IniLoad, IniEmpty, IniSet, IniFind, iniLen
@@ -64,6 +64,10 @@ FileEngine:
 ; when there is none to write (no Ultimate, or too large or unreadable:
 ; then it is left alone).
 Load:   lda #0
+        sta iniSkip             ; (ini.inc resets it after each call, but
+                                ; the first one found BSS's leftovers: on
+                                ; the U64 the first row read was wrong,
+                                ; 2026-11-13)
         sta curText
         sta themeDirty
         sta themeLoaded
@@ -417,6 +421,36 @@ Write:  lda noFile              ; (no Ultimate: nothing to write)
         sec
         rts
 
+; Ask2 (the Theme page's questions, ptheme.s): the dialog at A/X over the
+; page's plain colours, r5 (NameDlg's input) kept; A = its answer. The
+; caller draws its part again (moved here from the page: its overlay is
+; full).
+Ask2:   pha
+        txa
+        pha
+        lda r5L
+        pha
+        lda r5H
+        pha
+        jsr PageColours
+        pla
+        sta r5H
+        pla
+        sta r5L
+        pla
+        sta r0H
+        pla
+        sta r0L
+        jsr DoDlgBox
+        lda r0L
+        rts
+
+; ThemesFull (the Theme page's copy): no room for another theme file.
+ThemesFull:
+        lda #<FullDlg
+        ldx #>FullDlg
+        jmp Plain
+
 ; NoRoom (choice.s): the INI text is full; the change is not made.
 NoRoom: lda #<RoomDlg
         ldx #>RoomDlg
@@ -558,6 +592,16 @@ RoomDlg:        .byte DEF_DB_POS | 1
                 .byte OK, 1, DBI_Y_2
                 .byte 0
 RoomText:       .byte BOLDON, "SETTINGS.INI is full.", PLAINTEXT, 0
+FullDlg:        .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word FullText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word FullText2
+                .byte OK, 1, DBI_Y_2
+                .byte 0
+FullText:       .byte BOLDON, "Room for 10 themes.", PLAINTEXT, 0
+FullText2:      .byte "Delete one first.", 0
+        .assert THEMES_MAX = 10, error, "FullText: the number"
 
         .include "okicon.inc"
         .include "cancelicon.inc"
