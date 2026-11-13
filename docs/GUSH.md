@@ -242,8 +242,9 @@ GeoUltra's own desktop.
   U64 or Elite I and 64 MHz on an Elite II or C64 Ultimate, which the
   register does not tell; `-s` writes `turbo=N` into SETTINGS.INI's
   `[system]`, every other line kept, through SETTINGS.TMP), `date
-  [YYYY-MM-DD HH:MM[:SS]]` (GEOS's clock, the CIA's time of day and the
-  Ultimate's clock; years 1980-2079). Tests g10.py (VICE) and gu64.py.
+  [YYYY-MM-DD HH:MM[:SS]]` (GEOS's clock and the CIA's time of day; the
+  Ultimate's own clock is no longer written since 2026-11-13, its SNTP
+  keeps it; years 1980-2079). Tests g10.py (VICE) and gu64.py.
   `reboot`: every drive written back, the hibernated session dropped,
   the C64 restarted through the Ultimate (GeoUltra boots afresh).
   `reboot -u` (the Ultimate itself, decision 4) is not there: the
@@ -299,7 +300,7 @@ Step 2 is built on file engine step E4 (docs/FILE_ENGINE.md).
    dialogue.
 4. **System commands:** `free` (REU use), `turbo` (show and set the
    U64's speed; for the session, `turbo -s N` also saves it in
-   `SETTINGS.INI`), `date` (show, and set the Ultimate's clock),
+   `SETTINGS.INI`), `date` (show, and set GEOS's clock),
    `reboot` (GeoUltra, after the write-back; `reboot -u` resets the
    Ultimate: not possible, see "State of the work").
 6. **NTP (user, 2026-11-05, replacing "no `ntp` for now"):** the U64

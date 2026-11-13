@@ -20,6 +20,7 @@
 
         .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
         .export hibState, RtcClockOvl, hibLimit, RtcCheck
+        .import guClockFresh    ; (info.s, $C0FB)
         .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck, turboNow
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
@@ -338,6 +339,8 @@ RtcClock:
         bne @none
 @set:   lda #0
         sta rtcRetry
+        lda #1                  ; (the desktop adds [time] adjust=)
+        sta guClockFresh
         ldx #5                  ; yy mm dd hh mm ss -> year .. seconds
 @field: ldy rtcAt,x
         lda rtcText,y

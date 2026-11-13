@@ -156,7 +156,7 @@ CR or LF.
 | `mkimg [-t tracks] type path [name]` | a new empty `d64`, `d71`, `d81` or `dnp` image on the Ultimate |
 | `free` | the REU's use |
 | `turbo [-s] [step]` | the U64's speed (0-15); `-s` saves it in `SETTINGS.INI` |
-| `date [YYYY-MM-DD HH:MM[:SS]]` | show or set the clock (GEOS's and the Ultimate's) |
+| `date [YYYY-MM-DD HH:MM[:SS]]` | show or set GEOS's clock (the Ultimate keeps its own, from the network) |
 | `ntp [server]` | set the clock from a time server (`SETTINGS.INI` `[time] ntp=` and `offset=` seconds from UTC) |
 | `reboot` | write the drives back and restart GeoUltra |
 | `ifconfig` | the Ultimate's network address, netmask, gateway and MAC address |

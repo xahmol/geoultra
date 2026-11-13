@@ -9,11 +9,12 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
+        .import guClockFresh    ; (info.s, $C0FB)
         .import OvlCall, SysRAMOp, turboWant, turboNow
         .import WriteBackNow, hibState, drvFlags
         .include "drvflags.inc"
 
-U_SET_TIME      = $27
+U_SET_TIME      = $27           ; (no longer sent: OvSetTime)
 U_TARGET_CTRL   = 4             ; the control target: REBOOT (the C64,
 CTRL_REBOOT     = $06           ; cartridge and all)
                                 ; (geos.inc: year, then month, day, hour,
@@ -98,9 +99,12 @@ OvHome: lda argR1
 
 ; FE_SETTIME (after the caller set GEOS's date and time): the CIA's
 ; time-of-day clock, which GEOS's time follows, set from it (module 10's
-; TodSet), then the Ultimate's clock (year 80-99: 19xx, else 20xx). X =
-; 0, or FE_ULTIMATE ("98": setting the clock is off in the Ultimate's
-; menu, UltiDOS: Allow SetDate).
+; TodSet). X = 0. The Ultimate's own clock is no longer written (the
+; user, 2026-11-13): its firmware keeps it right with SNTP in its own
+; zone, and its SET_TIME (DOS $27) stored an hour less than it was given
+; (measured on the U64, 3.15a, zones Western Europe and UK), so every
+; write set it back an hour. The cold start takes the Ultimate's time as
+; local time (module 10, RtcClock).
 OvSetTime:
         php
         sei
@@ -112,23 +116,9 @@ OvSetTime:
         pla
         sta CPU_PORT
         plp
-        lda #U_SET_TIME
-        jsr UBegin
-        lda year
-        cmp #80
-        bcs :+
-        adc #100                ; (C clear)
-:       jsr UPut                ; year - 1900
-        ldx #1
-@field: lda year,x
-        stx feM
-        jsr UPut
-        ldx feM
-        inx
-        cpx #6
-        bne @field
-        jsr UNoData
-        jmp UExec
+        ldx #0                  ; (set now: no adjust= to add any more)
+        stx guClockFresh
+        rts
 
 ; FE_REBOOT: every drive written back, the hibernated session dropped
 ; (HIBERNAT.BIN in the home folder deleted: the boot would resume it),

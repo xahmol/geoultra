@@ -6,7 +6,7 @@
 
         .import ExtTable
         .export Trap, sysFlgCopy, BootGEOS, basicBuf, guMouse2, ptrColour
-        .export progColours
+        .export progColours, guClockFresh
 
         .segment "INFO"
         .org $C000                      ; fixed addresses in this block
@@ -52,6 +52,12 @@ guBuild:        .byte VERSION_PATCH     ; $C0F5: the patch number, then the
                 .byte BUILD_YEAR, BUILD_MONTH, BUILD_DAY, BUILD_HOUR, BUILD_MINUTE
                                         ; build's time stamp (the year from
                                         ; 2000; the Makefile): GeoUltra info
+guClockFresh:   .byte 0                 ; $C0FB: 1 when the cold start took
+                                        ; the time from the Ultimate's clock
+                                        ; (hibernate.s RtcClock) and nothing
+                                        ; set it since (FE_SETTIME clears it):
+                                        ; the desktop then adds SETTINGS.INI's
+                                        ; [time] adjust= (the user, 2026-11-13)
         .reloc
 
         .segment "CODE"
