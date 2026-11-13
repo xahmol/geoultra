@@ -68,8 +68,16 @@ class Take:
         """A scene or step boundary: logged; in a dry run, a screenshot."""
         self.ev("mark", name=name)
         if self.mode == "dry":
-            with self.u.video_stream(STREAM_PORT) as st:
-                frame = st.frames(1)[0]
+            for attempt in range(2):            # (the REST interface stalls
+                try:                            # at times: once more, then on
+                    with self.u.video_stream(STREAM_PORT) as st:    # without it)
+                        frame = st.frames(1)[0]
+                    break
+                except Exception as e:
+                    print("screenshot failed:", e)
+                    time.sleep(5)
+            else:
+                return
             path = os.path.join(self.out, "%02d-%s.png" % (len(self.shots), name))
             png.write(path, frame, PALETTE)
             self.shots.append((name, path))
