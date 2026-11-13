@@ -24,7 +24,6 @@
         .import PanesSave
         .import Copy, Cut, Paste
 
-PANE_W          = 160           ; a pane: x 0-159 or 160-319
 
         .segment "CODE"
 

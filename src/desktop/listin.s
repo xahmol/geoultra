@@ -18,7 +18,8 @@
         .import panes, active, PaneAt, dropReq, Fetch, entryInfo, IconFor, Icons
         .import dropPath, entryName, path, sideW, sideCount, sideTops, sideLetters, Setup, Slot
         .import RowY, RowBox, ry, row, viewMode
-        .export Ov_ListPress, Ov_ListKey, Ov_ListEnd, Ov_SelAll
+        .export Ov_ListPress, Ov_ListKey, Ov_ListEnd, Ov_SelAll, Ov_PaneLetters
+        .import lettersDue, paneR, Drive, FileEngine, rootsSeen
 Ov_ListEnd = ListEnd
 Ov_SelAll = SelAll
 DrawSprite      = $C1C6         ; GEOS jump table
@@ -95,6 +96,535 @@ PathPress:
         rts
 
 
+; --- Two panes: the drive letters on the path lines (the user's decisions
+; 2026-11-13). At the right end of each pane's path line, packed: the
+; drives with an image (A-D), E, and U when the Ultimate has roots (sd,
+; usb0 ... : a list, RootMenu); only those, so the path keeps the rest of
+; the line. The pane's own drive inverted (U for an Ultimate folder); a
+; click on a letter opens its root in the active pane (core's Drive).
+; Drawn from ClockTick (lettersDue, set by list.s PaneMark), as ListDraw
+; also runs inside other overlays.
+
+LETTERS         = 6             ; A-E and U at most
+LET_U           = 5
+DRIVE_LETTERS   = 5
+LET_PITCH       = 9
+
+; Ov_PaneLetters: both panes' letters drawn.
+Ov_PaneLetters:
+        lda #0
+        sta lettersDue
+        lda panes
+        beq @end
+        jsr BuildSet
+        lda #0
+        jsr PaneRow
+        lda #1
+        jsr PaneRow
+@end:   rts
+
+; BuildSet: lset = the letters to show (0-3 the drives with an image, 4
+; E, 5 U when the Ultimate has roots: rootsSeen, counted once), ln their
+; number.
+BuildSet:
+        ldy #0
+        ldx #0
+@drv:   lda driveType,x
+        beq :+
+        txa
+        sta lset,y
+        iny
+:       inx
+        cpx #4
+        bcc @drv
+        lda #4                  ; E
+        sta lset,y
+        iny
+        sty ln
+        lda rootsSeen           ; (0: not counted yet; 1: none; 2: some)
+        bne :+
+        jsr ReadRoots
+        ldx #1
+        lda rootN
+        beq @seen
+        inx
+@seen:  stx rootsSeen
+:       lda rootsSeen
+        cmp #2
+        bne @end
+        ldy ln
+        lda #LET_U
+        sta lset,y
+        inc ln
+@end:   rts
+
+; PaneRow: pane A's letters: the area cleared, the letters, its drive's
+; inverted, the whole inverted again when it is the active pane (its
+; path line is: list.s PaneMark).
+PaneRow:
+        sta lpane
+        jsr PaneDrive           ; lcur = its drive letter's index or $FF
+        jsr AreaRegs
+        lda #0
+        jsr SetPattern
+        jsr Rectangle
+        lda #0
+        sta li
+@one:   jsr LetX                ; r11 = slot li's x
+        lda pathY
+        sta r1H
+        ldx li
+        lda lset,x
+        clc
+        adc #'A'
+        cmp #'A' + LET_U
+        bne :+
+        lda #'U'
+:       jsr PutChar
+        ldx li
+        lda lset,x
+        cmp lcur
+        bne @next
+        jsr LetX                ; its box inverted
+        jsr LetBox
+        jsr InvertRectangle
+@next:  inc li
+        lda li
+        cmp ln
+        bcc @one
+        lda lpane
+        cmp active
+        bne @end
+        jsr AreaRegs
+        jmp InvertRectangle
+@end:   rts
+
+; PaneDrive: lcur = pane lpane's drive (0 A .. 4 E, 5 U for an Ultimate
+; folder) from its path, $FF for "/".
+PaneDrive:
+        lda lpane
+        cmp active
+        bne @other
+        lda path + 1
+        ldx path + 2
+        jmp @which
+@other: lda #<lbuf              ; the other pane's path: its first bytes
+        sta r0L                 ; from the REU (list.s SwapPane's state)
+        lda #>lbuf
+        sta r0H
+        lda #0
+        sta r1L
+        sta r2H
+        lda #PANE_PAGE
+        sta r1H
+        lda #3
+        sta r2L
+        lda #PANE_BANK
+        sta r3L
+        jsr FetchRAM
+        lda lbuf + 1
+        ldx lbuf + 2
+@which: cmp #0                  ; "/": none
+        beq @none
+        cpx #0                  ; one letter only (then the end or "/"):
+        beq :+                  ; a drive; a longer first part: the
+        cpx #'/'                ; Ultimate's (usb0, sd ...): U
+        bne @ult
+:       sec
+        sbc #'a'
+        cmp #DRIVE_LETTERS
+        bcs @ult
+        sta lcur
+        rts
+@ult:   lda #LET_U
+        sta lcur
+        rts
+@none:  lda #$FF
+        sta lcur
+        rts
+
+; AreaRegs: r2-r4 = pane lpane's letters' area (ln of them).
+AreaRegs:
+        lda pathY
+        sec
+        sbc #7
+        sta r2L
+        clc
+        adc #8
+        sta r2H
+        jsr PaneEnd             ; r4 = its right end
+        lda #0
+        ldx ln
+@w:     dex
+        bmi :+
+        clc
+        adc #LET_PITCH
+        bne @w
+:       sta rtmp
+        lda r4L
+        sec
+        sbc rtmp
+        sta r3L
+        lda r4H
+        sbc #0
+        sta r3H
+        rts
+
+; PaneEnd: r4 = pane lpane's path line's right end (a pixel inside the
+; frame).
+PaneEnd:
+        ldx lpane
+        lda EndLo,x
+        sta r4L
+        lda EndHi,x
+        sta r4H
+        rts
+EndLo:  .byte <(PANE_W - 2), <(2 * PANE_W - 2)
+EndHi:  .byte >(PANE_W - 2), >(2 * PANE_W - 2)
+
+; LetX: r11 = slot li's glyph x (pane lpane): end - (ln - li) * pitch + 2.
+LetX:   jsr PaneEnd
+        lda ln
+        sec
+        sbc li
+        tax
+        lda r4L
+@sub:   sec
+        sbc #LET_PITCH
+        bcs :+
+        dec r4H
+:       dex
+        bne @sub
+        clc
+        adc #2
+        sta r11L
+        lda r4H
+        adc #0
+        sta r11H
+        rts
+
+; LetBox: r2-r4 = slot li's box (r11 its glyph's x, LetX).
+LetBox: lda pathY
+        sec
+        sbc #7
+        sta r2L
+        clc
+        adc #8
+        sta r2H
+        lda r11L
+        sec
+        sbc #2
+        sta r3L
+        lda r11H
+        sbc #0
+        sta r3H
+        lda r3L
+        clc
+        adc #LET_PITCH - 2
+        sta r4L
+        lda r3H
+        adc #0
+        sta r4H
+        rts
+
+; LetterUnder (ListPress, a press on the path line): with two panes and
+; the pointer on a letter, C clear and A = its code ('a'-'e' for Drive,
+; 'U' for RootMenu); else C set.
+LetterUnder:
+        lda panes
+        beq @no
+        jsr BuildSet
+        lda active
+        sta lpane
+        lda #0
+        sta li
+@try:   lda li
+        cmp ln
+        bcs @no
+        jsr LetX
+        jsr LetBox
+        jsr IsMseInRegion
+        bne @hit
+        inc li
+        bne @try
+@no:    sec
+        rts
+@hit:   ldx li
+        lda lset,x
+        cmp #LET_U
+        bne :+
+        lda #'U'                ; (RootMenu)
+        clc
+        rts
+:       clc
+        adc #'a'
+        clc
+        rts
+
+; ReadRoots: rootN = the Ultimate's roots (the root listing's Ultimate
+; folders, ROOTS_MAX at most), their names in roots.
+ReadRoots:
+        lda #0
+        sta rootN
+        lda #<SlashText
+        sta r0L
+        lda #>SlashText
+        sta r0H
+        lda #FE_OPENDIR
+        jsr FileEngine
+        sta rhandle
+        txa
+        bne @end
+@entry: lda rootN
+        cmp #ROOTS_MAX
+        bcs @close
+        lda #<rinfo
+        sta r1L
+        lda #>rinfo
+        sta r1H
+        lda rootN               ; its name into roots + n * ROOT_LEN
+        asl a
+        asl a
+        asl a
+        clc
+        adc #<roots
+        sta r2L
+        lda #>roots
+        adc #0
+        sta r2H
+        lda #0
+        sta r3L
+        sta r3H
+        ldy rhandle
+        lda #FE_READDIR
+        jsr FileEngine
+        txa
+        bne @close
+        lda rinfo               ; (FI_KIND)
+        cmp #K_UDIR
+        bne @entry
+        lda rootN               ; (a name kept within its 8 bytes)
+        asl a
+        asl a
+        asl a
+        tax
+        lda #0
+        sta roots + ROOT_LEN - 1,x
+        inc rootN
+        bne @entry
+@close: ldy rhandle
+        lda #FE_CLOSE
+        jsr FileEngine
+@end:   rts
+
+; RootMenu (U on the active pane's path line): the Ultimate's roots that
+; are there (the root listing's Ultimate folders, as the sidebar's
+; Ultimate lines: sd, usb0, usb1, usb2 ...) in a list under the button,
+; the item under the pointer inverted; a click opens that root in the
+; pane, a click elsewhere or RUN/STOP closes it (the pane drawn again).
+; Its own loop, as the context menu's. C clear.
+ROOTS_MAX       = 4
+ROOT_LEN        = 8             ; a root's name and its zero
+ROOT_H          = 12
+ROOT_W          = 44
+RootMenu:
+        jsr ReadRoots
+@drawn: lda rootN
+        bne :+
+        clc                     ; (none: nothing to show)
+        rts
+:       jsr MenuBox             ; the list: cleared, framed, its names
+        lda #0
+        jsr SetPattern
+        jsr Rectangle
+        jsr MenuBox
+        lda #$FF
+        jsr FrameRectangle
+        lda #0
+        sta li
+@name:  lda li
+        jsr ItemTop
+        clc
+        adc #9
+        sta r1H
+        lda r3L
+        clc
+        adc #4
+        sta r11L
+        lda r3H
+        adc #0
+        sta r11H
+        lda li
+        asl a
+        asl a
+        asl a
+        clc
+        adc #<roots
+        sta r0L
+        lda #>roots
+        adc #0
+        sta r0H
+        jsr PutString
+        jsr MenuBox             ; (r3 again for the next)
+        inc li
+        lda li
+        cmp rootN
+        bcc @name
+        lda #$FF
+        sta rhover
+        jsr Unpress
+@loop:  jsr RootUnder
+        cmp rhover
+        beq @input
+        pha
+        lda rhover
+        jsr RootInv
+        pla
+        sta rhover
+        jsr RootInv
+@input: jsr GetNextChar
+        cmp #KEY_STOP
+        beq @shut
+        lda pressFlag
+        and #MOUSE_BIT
+        beq @loop
+        jsr Unpress
+        lda mouseData
+        bmi @loop               ; (a release: on)
+        jsr RootUnder
+        cmp #$FF
+        beq @shut
+        asl a                   ; "/" and its name: the path to open
+        asl a
+        asl a
+        tax
+        ldy #1
+@cp:    lda roots,x
+        sta rpath,y
+        beq @go
+        inx
+        iny
+        cpy #ROOT_LEN + 1
+        bcc @cp
+        lda #0
+        sta rpath,y
+@go:    lda #'/'
+        sta rpath
+        lda #<rpath
+        ldx #>rpath
+        jsr Into                ; (open.s: read and drawn)
+        clc
+        rts
+@shut:  jsr ListDraw            ; (the pane again: the list away)
+        clc
+        rts
+
+; MenuBox: r2-r4 = the roots' list under the U button (right-aligned to
+; the pane's end).
+MenuBox:
+        lda pathY
+        clc
+        adc #2
+        sta r2L
+        lda rootN
+        jsr ItemTop             ; (rows from r2L + 1)
+        clc
+        adc #ROOT_H
+        sta r2H
+        lda active
+        sta lpane
+        jsr PaneEnd             ; r4 = the pane's end
+        lda r4L
+        sec
+        sbc #ROOT_W - 1
+        sta r3L
+        lda r4H
+        sbc #0
+        sta r3H
+        rts
+
+; ItemTop: A = the top line of the roots' item A (r2L the box's top).
+ItemTop:
+        sta rtmp
+        asl a                   ; * 12
+        clc
+        adc rtmp
+        asl a
+        asl a
+        sec                     ; + r2L + 1
+        adc r2L
+        rts
+
+; RootUnder: A = the item under the pointer, $FF outside the list.
+RootUnder:
+        jsr MenuBox
+        jsr IsMseInRegion
+        beq @none
+        lda mouseYPos
+        sec
+        sbc r2L
+        sbc #1
+        bcc @none
+        ldx #$FF
+@div:   inx
+        sec
+        sbc #ROOT_H
+        bcs @div
+        cpx rootN
+        bcs @none
+        txa
+        rts
+@none:  lda #$FF
+        rts
+
+; RootInv: item A inverted ($FF: nothing).
+RootInv:
+        cmp #$FF
+        beq @end
+        pha
+        jsr MenuBox
+        pla
+        jsr ItemTop
+        sta r2L
+        clc
+        adc #ROOT_H - 1
+        sta r2H
+        inc r3L                 ; (inside the frame)
+        bne :+
+        inc r3H
+:       lda r4L
+        bne :+
+        dec r4H
+:       dec r4L
+        jsr InvertRectangle
+@end:   rts
+
+; Unpress: the mouse bit of pressFlag cleared (safe against the IRQ).
+Unpress:
+        php
+        sei
+        lda pressFlag
+        and #$FF - MOUSE_BIT
+        sta pressFlag
+        plp
+        rts
+
+SlashText:      .byte "/", 0
+rootN:  .byte 0
+rhandle:.byte 0
+rhover: .byte 0
+rtmp:   .byte 0
+rinfo:  .res INFO_LEN
+roots:  .res ROOTS_MAX * ROOT_LEN
+rpath:  .res ROOT_LEN + 2
+
+lset:   .res LETTERS                ; BuildSet: the letters shown
+ln:     .byte 0                 ; and their number
+lpane:  .byte 0                 ; the pane at hand
+li:     .byte 0                 ; the letter at hand
+lcur:   .byte 0                 ; the pane's drive (0-4, $FF: none)
+lbuf:   .res 3                  ; the other pane's path's start
+
 ; ListPress (a mouse press right of the sidebar; desktop.s). C clear
 ; when it was the list's: the path line, a row, the scroll strip (its
 ; arrows a line, above or below the thumb a page).
@@ -114,7 +644,13 @@ ListPress:
         sbc #8
         cmp mouseYPos
         bcs @title
-        jmp PathPress
+        jsr LetterUnder         ; (two panes: a drive letter there?)
+        bcs :+
+        cmp #'U'
+        bne @drive
+        jmp RootMenu            ; (the Ultimate's roots: a list)
+@drive: jmp Drive               ; (open.s: its root; C clear after it)
+:       jmp PathPress
 @title: clc
         rts
 @below: lda bottom              ; (below it: the status line, not ours)

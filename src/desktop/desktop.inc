@@ -25,6 +25,9 @@ SetDevice       = $C2B0
 RstrFrmDialogue = $C2BF
 StashRAM        = $C2C8
 FetchRAM        = $C2CB
+PutChar         = $C145
+IsMseInRegion   = $C2B3
+GetNextChar     = $C2A7
 SwapRAM         = $C2CE
 
 ; The file engine (docs/FILE_ENGINE.md): functions, flags, info block, kinds
@@ -137,6 +140,8 @@ CTX_N           = 11            ; the context menu's items (ctxmenu.s):
                                 ; open, copy, cut, paste, rename, delete,
                                 ; info, favourite, new folder, copy and move
                                 ; to the other pane (list.s CtxDo)
+PANE_W          = 160           ; a pane: x 0-159 or 160-319 (panes.s,
+                                ; listin.s's letters)
 PANE_BANK       = 5             ; the other pane's state (list.s SwapPane):
 PANE_PAGE       = $FC           ; after the clipboard (actions.s), 4 pages
 PREF_COPY       = $03           ; deskPrefs (side.s; SETTINGS.INI [desktop],

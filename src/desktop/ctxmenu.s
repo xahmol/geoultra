@@ -19,7 +19,6 @@ Ov_Popup = Popup
 Ov_Info = Info
 Ov_About = About
 
-GetNextChar     = $C2A7         ; GEOS jump table
 ITEMS_N         = 11            ; (CTX_* in desktop.inc: their order)
 ITEM_H          = 14            ; as GEOS's menus
 BOX_W           = 92

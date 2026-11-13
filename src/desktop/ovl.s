@@ -59,6 +59,7 @@ OvlFail:
         Stub Info, 7
         Stub About, 7           ; (geos > GeoUltra info)
         Stub ListPress, 8       ; overlay 8: listin.s
+        Stub PaneLetters, 8     ; (two panes: the drive letters)
         Stub ListKey, 8
         Stub ListEnd, 8
         Stub SelAll, 8

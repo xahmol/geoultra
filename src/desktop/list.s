@@ -25,6 +25,7 @@
         .export RowY, RowBox, ry
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot, row, RowEntry, path
+        .import lettersDue
         .import IconsForget, DrawCell, CellAt, step, tbMode, stripL, listR, paneR
         .import panes, paneDim
 PANE_DIV        = 159           ; two panes: the line between them
@@ -331,6 +332,7 @@ Across: sta r11L
 PaneMark:
         lda panes
         beq @end
+        sta lettersDue          ; (ClockTick: the drive letters, overlay 8)
         lda paneDim
         bne @end
         lda pathY               ; its rows: the text's (9) and one more

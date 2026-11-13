@@ -24,6 +24,8 @@
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList
         .export Neutral, Dialog, MenuNeutral, Recover, ClockTick
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
+        .export lettersDue, rootsSeen
+        .import PaneLetters
         .export lastMin, clockX, MonLo, MonHi, stripL, listR, paneR
         .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
         .export tbMode, topY, titleEnd
@@ -565,6 +567,9 @@ ClockTick:
         sta guMouse2
         plp
         jmp RightPress
+:       lda lettersDue          ; two panes drawn: their drive letters
+        beq :+                  ; (here, as ListDraw also runs inside
+        jmp PaneLetters         ; overlays; listin.s, overlay 8)
 :       lda minutes
         cmp lastMin
         beq :+
@@ -690,6 +695,9 @@ topY:           .byte 32        ; the content's top (under the toolbar)
 titleEnd:       .byte 40        ; the title bar's end (topY + 8)
 stripL:         .word STRIP_LEFT ; the list's scroll strip (its left edge),
 listR:          .word STRIP_LEFT - 3 ; the list's right edge,
+lettersDue:     .byte 0         ; list.s PaneMark: the letters to draw
+rootsSeen:      .byte 0         ; listin.s: the Ultimate's roots (0 not yet
+                                ; counted, 1 none, 2 some)
 paneR:          .word SCREEN_RIGHT ; the list area's (with the strip) right
                                 ; edge: the whole list now; a pane's with
                                 ; two panes (DESKTOP.md, P4)

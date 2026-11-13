@@ -55,7 +55,10 @@ refresh) shows two folders side by side, the sidebar hidden. Each pane
 has its own folder, list, selection, scroll strip and half of the status
 line (its entries, or the number selected, and its drive's free space);
 the active pane's path line is inverted, and the menus, keys and toolbar act on it. A
-click in a pane, or C=SPACE, makes it the active one. The panes show the
+click in a pane, or C=SPACE, makes it the active one. Each path line
+ends in the drive letters A B C D E (the drives with an image, and E),
+the pane's own drive marked; a click on one opens that drive in the
+active pane (in the other pane: a first click makes it active). The panes show the
 list or the icon view (the detailed view's columns do not fit). The
 same keys and menu switch back to one list, with the view from before.
 Copying between the panes: "copy to other" (C=T) and "move to other"
