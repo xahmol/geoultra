@@ -3,7 +3,9 @@
 overlay 8; the user's decision 2026-11-13). With two panes on, each
 path line ends in the letters of the drives with an image and E, drawn
 from ClockTick (lettersDue); a click on B in the active pane opens /b
-there, the other pane keeps its folder. Screens:
+there, the other pane keeps its folder; a click on the path text opens
+the places' list (drives, roots, favourites), its "drive A" opens /a.
+Screens:
 build/harness/gush/desktop-d17*.png.
 Usage: tests/desktop/d17.py
 """
@@ -105,6 +107,10 @@ def main():
         press(158 - 2 * 9 + 3, byte("pathY") - 3, s=6)      # B in the left pane (A B E packed)
         g.png("desktop-d17-b")
         check("B: the left pane at /b, still the active one", (byte("active"), here()), (0, "/b"))
+        press(40, byte("pathY") - 3, s=4)                    # the path text: the places' list
+        g.png("desktop-d17-places")
+        press(40, byte("pathY") + 3 + 0 * 12 + 6, s=6)       # its first item: drive A
+        check("the places' list: drive A opened in the pane", here(), "/a")
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

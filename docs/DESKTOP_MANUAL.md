@@ -58,7 +58,10 @@ the active pane's path line is inverted, and the menus, keys and toolbar act on 
 click in a pane, or C=SPACE, makes it the active one. Each path line
 ends in the drive letters A B C D E (the drives with an image, and E),
 the pane's own drive marked; a click on one opens that drive in the
-active pane (in the other pane: a first click makes it active). The panes show the
+active pane (in the other pane: a first click makes it active); U
+lists the Ultimate's roots (sd, usb0 ...). A click on the path text
+opens a list of all places: the drives, the Ultimate's roots and your
+favourites (with one list, a click on the path goes to that part of it). The panes show the
 list or the icon view (the detailed view's columns do not fit). The
 same keys and menu switch back to one list, with the view from before.
 Copying between the panes: "copy to other" (C=T) and "move to other"

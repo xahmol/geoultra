@@ -14,12 +14,13 @@
         .import EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, cur
         .import ListDraw, count, ThumbRows, top, path, Follow, Up, Into, step
         .import rows, listL, listTop, pathY, bottom, topY, stY0, stY1, tScroll
-        .import openReq, text, TextWidth, rowH, IsSelected, stripL, sel
+        .import openReq, text, rowH, IsSelected, stripL, sel
         .import panes, active, PaneAt, dropReq, Fetch, entryInfo, IconFor, Icons
         .import dropPath, entryName, path, sideW, sideCount, sideTops, sideLetters, Setup, Slot
+        .import counts
         .import RowY, RowBox, ry, row, viewMode
         .export Ov_ListPress, Ov_ListKey, Ov_ListEnd, Ov_SelAll, Ov_PaneLetters
-        .import lettersDue, paneR, Drive, FileEngine, rootsSeen
+        .import lettersDue, Drive, FileEngine, rootsSeen
 Ov_ListEnd = ListEnd
 Ov_SelAll = SelAll
 DrawSprite      = $C1C6         ; GEOS jump table
@@ -418,22 +419,250 @@ ReadRoots:
 @end:   rts
 
 ; RootMenu (U on the active pane's path line): the Ultimate's roots that
-; are there (the root listing's Ultimate folders, as the sidebar's
-; Ultimate lines: sd, usb0, usb1, usb2 ...) in a list under the button,
-; the item under the pointer inverted; a click opens that root in the
-; pane, a click elsewhere or RUN/STOP closes it (the pane drawn again).
-; Its own loop, as the context menu's. C clear.
+; are there (sd, usb0, usb1, usb2 ...) in a list under the button; a click
+; opens one in the pane (MenuRun). PlaceMenu (a click on the path text,
+; two panes; the user, 2026-11-13): drives, roots and favourites in a list
+; under it, as the sidebar holds them. C clear.
 ROOTS_MAX       = 4
 ROOT_LEN        = 8             ; a root's name and its zero
+ITEMS_MAX       = 12
+ITEM_LEN        = 16            ; an item's text and its zero
 ROOT_H          = 12
 ROOT_W          = 44
+PLACE_W         = 100
+M_DRIVE         = 0             ; an item's kind (mkind): its code, a root,
+M_ROOT          = 1             ; a favourite (mdata: the letter or index)
+M_FAV           = 2
+
 RootMenu:
         jsr ReadRoots
-@drawn: lda rootN
+        lda #0
+        sta mcount
+        jsr AddRoots
+        lda active              ; right-aligned under U
+        sta lpane
+        jsr PaneEnd
+        lda r4L
+        sec
+        sbc #ROOT_W - 1
+        sta mx0
+        lda r4H
+        sbc #0
+        sta mx0 + 1
+        lda #ROOT_W
+        sta mw
+        jmp MenuGo
+
+PlaceMenu:
+        lda #0
+        sta mcount
+        jsr BuildSet            ; the drives shown as letters (not U)
+        ldx #0
+@drv:   stx li
+        lda lset,x
+        cmp #LET_U
+        beq @ndrv
+        pha
+        jsr NewItem             ; "drive A"
+        pla
+        sta mdata,y
+        clc
+        adc #'A'
+        pha
+        lda #M_DRIVE
+        sta mkind,y
+        ldx #0
+@dt:    lda DriveText,x
+        beq :+
+        jsr PutItem
+        inx
+        bne @dt
+:       pla
+        jsr PutItem
+        lda #0
+        jsr PutItem
+@ndrv:  ldx li
+        inx
+        cpx ln
+        bcc @drv
+        lda rootsSeen           ; the roots (when there are)
+        cmp #2
         bne :+
-        clc                     ; (none: nothing to show)
+        jsr ReadRoots
+        jsr AddRoots
+:       ldx #L_FAV              ; the favourites (the path's end)
+        jsr Setup
+        lda #0
+        sta li
+@fav:   lda li
+        cmp counts + L_FAV
+        bcs @show
+        jsr Slot                ; r6 = its path
+        jsr NewItem
+        bcs @show
+        lda li
+        sta mdata,y
+        lda #M_FAV
+        sta mkind,y
+        ldy #$FF                ; its last 15 characters
+@len:   iny
+        lda (r6),y
+        bne @len
+        tya
+        sec
+        sbc #ITEM_LEN - 1
+        bcs :+
+        lda #0
+:       tay
+@fc:    lda (r6),y
+        jsr PutItemY
+        beq :+
+        iny
+        bne @fc
+:       inc li
+        bne @fav
+@show:  lda listL               ; left-aligned under the path
+        sta mx0
+        lda #0
+        sta mx0 + 1
+        lda #PLACE_W
+        sta mw
+        ; (falls into MenuGo)
+
+; MenuGo: the list run (MenuRun), the item picked opened in the pane.
+MenuGo: lda mcount
+        bne :+
+        clc
         rts
-:       jsr MenuBox             ; the list: cleared, framed, its names
+:       jsr MenuRun
+        cmp #$FF
+        bne :+
+        jsr ListDraw            ; (none: the list away)
+        clc
+        rts
+:       tax
+        lda mkind,x
+        cmp #M_DRIVE
+        bne @root
+        lda mdata,x
+        clc
+        adc #'a'
+        jsr Drive
+        clc
+        rts
+@root:  cmp #M_ROOT
+        bne @fav
+        txa                     ; "/" and the root's name
+        jsr ItemAt
+        ldy #0
+@cp:    lda (r0),y
+        sta rpath + 1,y
+        beq @go
+        iny
+        cpy #ROOT_LEN
+        bcc @cp
+        lda #0
+        sta rpath + 1,y
+@go:    lda #'/'
+        sta rpath
+        lda #<rpath
+        ldx #>rpath
+        jsr Into
+        clc
+        rts
+@fav:   lda mdata,x             ; a favourite: its whole path
+        pha
+        ldx #L_FAV
+        jsr Setup
+        pla
+        jsr Slot
+        lda r6L
+        ldx r6H
+        jsr Into
+        clc
+        rts
+
+; AddRoots: the roots read (ReadRoots) as items.
+AddRoots:
+        lda #0
+        sta li
+@one:   lda li
+        cmp rootN
+        bcs @end
+        jsr NewItem
+        bcs @end
+        lda #M_ROOT
+        sta mkind,y
+        lda li                  ; its name from roots + li * ROOT_LEN
+        asl a
+        asl a
+        asl a
+        tax
+@ch:    lda roots,x
+        jsr PutItem
+        beq :+
+        inx
+        bne @ch
+:       inc li
+        bne @one
+@end:   rts
+
+; NewItem: Y = a new item's number (mcount on), its text empty, mput at
+; its start; C set when the list is full.
+NewItem:
+        ldy mcount
+        cpy #ITEMS_MAX
+        bcs @end
+        inc mcount
+        tya
+        asl a
+        asl a
+        asl a
+        asl a
+        sta mput
+        lda #0
+        ldx mput
+        sta mtext,x
+        clc
+@end:   rts
+
+; PutItem: A into the item's text (mput on; the last place kept for its
+; zero). Z set when A was 0. Keeps X, Y. PutItemY: the same.
+PutItemY:
+PutItem:
+        stx mx
+        ldx mput
+        sta mtext,x
+        pha
+        txa
+        and #ITEM_LEN - 1
+        cmp #ITEM_LEN - 2
+        bcs :+
+        inc mput
+:       pla
+        ldx mx
+        cmp #0
+        rts
+
+; ItemAt: r0 = item A's text.
+ItemAt: asl a
+        asl a
+        asl a
+        asl a
+        clc
+        adc #<mtext
+        sta r0L
+        lda #>mtext
+        adc #0
+        sta r0H
+        rts
+
+; MenuRun: the items (mcount, mtext) in a box at mx0 (mw wide) under the
+; path line, the item under the pointer inverted; A = the item clicked,
+; $FF for a click elsewhere or RUN/STOP. Its own loop, as the context
+; menu's.
+MenuRun:
+        jsr MenuBox             ; cleared, framed, the texts
         lda #0
         jsr SetPattern
         jsr Rectangle
@@ -442,7 +671,8 @@ RootMenu:
         jsr FrameRectangle
         lda #0
         sta li
-@name:  lda li
+@name:  jsr MenuBox
+        lda li
         jsr ItemTop
         clc
         adc #9
@@ -455,20 +685,11 @@ RootMenu:
         adc #0
         sta r11H
         lda li
-        asl a
-        asl a
-        asl a
-        clc
-        adc #<roots
-        sta r0L
-        lda #>roots
-        adc #0
-        sta r0H
+        jsr ItemAt
         jsr PutString
-        jsr MenuBox             ; (r3 again for the next)
         inc li
         lda li
-        cmp rootN
+        cmp mcount
         bcc @name
         lda #$FF
         sta rhover
@@ -484,66 +705,44 @@ RootMenu:
         jsr RootInv
 @input: jsr GetNextChar
         cmp #KEY_STOP
-        beq @shut
+        beq @none
         lda pressFlag
         and #MOUSE_BIT
         beq @loop
         jsr Unpress
         lda mouseData
         bmi @loop               ; (a release: on)
-        jsr RootUnder
-        cmp #$FF
-        beq @shut
-        asl a                   ; "/" and its name: the path to open
-        asl a
-        asl a
-        tax
-        ldy #1
-@cp:    lda roots,x
-        sta rpath,y
-        beq @go
-        inx
-        iny
-        cpy #ROOT_LEN + 1
-        bcc @cp
-        lda #0
-        sta rpath,y
-@go:    lda #'/'
-        sta rpath
-        lda #<rpath
-        ldx #>rpath
-        jsr Into                ; (open.s: read and drawn)
-        clc
-        rts
-@shut:  jsr ListDraw            ; (the pane again: the list away)
-        clc
+        jmp RootUnder           ; (the item, $FF outside)
+@none:  lda #$FF
         rts
 
-; MenuBox: r2-r4 = the roots' list under the U button (right-aligned to
-; the pane's end).
+; MenuBox: r2-r4 = the list's box (mx0, mw; under the path line).
 MenuBox:
         lda pathY
         clc
         adc #2
         sta r2L
-        lda rootN
+        lda mcount
         jsr ItemTop             ; (rows from r2L + 1)
         clc
         adc #ROOT_H
         sta r2H
-        lda active
-        sta lpane
-        jsr PaneEnd             ; r4 = the pane's end
-        lda r4L
-        sec
-        sbc #ROOT_W - 1
+        lda mx0
         sta r3L
-        lda r4H
-        sbc #0
+        clc
+        adc mw
+        sta r4L
+        lda mx0 + 1
         sta r3H
+        adc #0
+        sta r4H
+        lda r4L                 ; (r4 = x0 + w - 1)
+        bne :+
+        dec r4H
+:       dec r4L
         rts
 
-; ItemTop: A = the top line of the roots' item A (r2L the box's top).
+; ItemTop: A = the top line of item A (r2L the box's top).
 ItemTop:
         sta rtmp
         asl a                   ; * 12
@@ -570,7 +769,7 @@ RootUnder:
         sec
         sbc #ROOT_H
         bcs @div
-        cpx rootN
+        cpx mcount
         bcs @none
         txa
         rts
@@ -609,6 +808,15 @@ Unpress:
         plp
         rts
 
+DriveText:      .byte "drive ", 0
+mcount: .byte 0                 ; the list's items
+mput:   .byte 0                 ; NewItem, PutItem: the place in mtext
+mx:     .byte 0
+mx0:    .word 0                 ; the list's left edge and width
+mw:     .byte 0
+mkind:  .res ITEMS_MAX
+mdata:  .res ITEMS_MAX
+mtext:  .res ITEMS_MAX * ITEM_LEN
 SlashText:      .byte "/", 0
 rootN:  .byte 0
 rhandle:.byte 0
@@ -650,6 +858,9 @@ ListPress:
         bne @drive
         jmp RootMenu            ; (the Ultimate's roots: a list)
 @drive: jmp Drive               ; (open.s: its root; C clear after it)
+:       lda panes               ; two panes: the path text opens the
+        beq :+                  ; places' list; one list: its parts
+        jmp PlaceMenu
 :       jmp PathPress
 @title: clc
         rts
