@@ -372,8 +372,13 @@ APPS_DNP := $(if $(wildcard private/apps.toml),private/geoultra-apps.dnp)
 private/geoultra-apps.dnp: private/apps.toml tools/mkappsdnp.py
 	$(PYTHON) tools/mkappsdnp.py private/apps.toml
 
-deploy: check-deploy build/geoultra64.crt $(APPS_DNP)
+deploy: check-deploy build/geoultra64.crt
 	curl -s --ftp-create-dirs -T build/geoultra64.crt ftp://$(ULTIP1)$(DEPLOYDIR)
+
+# The private applications image to the test folder, only on request: it
+# is drive C there, and a new copy replaces what was written to it (the
+# user's test files) at the next boot (2026-11-13: deploy did it each time).
+deploy-apps: check-deploy $(APPS_DNP)
 	$(if $(APPS_DNP),curl -s -T $(APPS_DNP) ftp://$(ULTIP1)/USB0/GEOULTRA/test/geoultra-apps.dnp)
 
 check-deploy:
@@ -532,6 +537,7 @@ test-desktop: all
 
 test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt
+	$(PYTHON) tests/desktop/d16u64.py build/geoultra64.crt
 
 # Writing to a 1571 drive, on a D71 the test formats itself.
 test-d71: all

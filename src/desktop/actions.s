@@ -35,7 +35,6 @@ Ov_Ask = Ask
         .import Error, Append   ; (errors.s, in the core)
         .export full            ; (mount.s: an image's path)
 
-FILE_EXISTS     = $40           ; (the engine's errors)
 FE_CANCELLED    = $47
 
 CLIP_BANK       = 5             ; (1-4: the entry table, list.s)

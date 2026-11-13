@@ -6,6 +6,8 @@
         .include "geos.inc"
         .include "desktop.inc"
 
+FULL_DIRECTORY  = 4             ; (GEOS: no free directory entry)
+
         .import entryName, Dialog, text
         .export Error, Append
 
@@ -35,9 +37,26 @@ Append: lda full-1,y
         sta full,y
 @end:   rts
 
-; Error: X = the engine's error, shown (entryName on the first line).
+; Error: X = the engine's error, shown (entryName on the first line):
+; the common ones in words, the rest by number (the user's test
+; 2026-11-13: "failed: error $03" for a full drive said too little).
 Error:  txa
-        jsr Hex
+        ldx #ERRS - 1
+@find:  cmp ErrCodes,x
+        beq @word
+        dex
+        bpl @find
+        jsr Hex                 ; (A: the code still)
+        lda #<errText
+        ldx #>errText
+        bne @set                ; (always)
+@word:  lda ErrLo,x
+        pha
+        lda ErrHi,x
+        tax
+        pla
+@set:   sta errLine
+        stx errLine+1
         lda #<errDlg
         sta r0L
         lda #>errDlg
@@ -69,8 +88,20 @@ errDlg: .byte DEF_DB_POS | 1
         .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
         .word entryName
         .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+errLine:
         .word errText
         .byte OK, DBI_X_2, DBI_Y_2
         .byte 0
+ErrCodes:       .byte INSUFF_SPACE, FULL_DIRECTORY, WR_PR_ON, FILE_EXISTS, DIR_NOT_EMPTY
+                .byte FILE_NOT_FOUND
+ERRS = * - ErrCodes
+ErrLo:          .byte <ENoRoom, <EDirFull, <ELocked, <EExists, <ENotEmpty, <ENotFound
+ErrHi:          .byte >ENoRoom, >EDirFull, >ELocked, >EExists, >ENotEmpty, >ENotFound
+ENoRoom:        .byte "Not enough room on the drive.", 0
+EDirFull:       .byte "The directory is full.", 0
+ELocked:        .byte "The drive cannot be written to.", 0
+EExists:        .byte "A file of that name is there.", 0
+ENotEmpty:      .byte "The folder is not empty.", 0
+ENotFound:      .byte "Not found.", 0
 errText:        .byte "failed: error $"
 errCode:        .byte "00", 0

@@ -624,13 +624,18 @@ Requests from the same session, to do:
   the path line that turns it round, and in the detailed view a click
   on a column's heading (name, size, date) sorts by it (a second click
   reverses).
-- Settings and the desktop writing SETTINGS.INI (the user's test
-  2026-11-13): delete=, copy= and panes= set in Settings were gone from
-  the file afterwards, and "delete at once" still asked. Suspected: the
-  desktop writes its own older copy of the text over Settings' changes
-  (PanesKeep, ThemeSave, sort and view); to reproduce on the U64 with a
-  script, then fix (the desktop reads the file again before each write,
-  or changes only its own line on disk).
+- Done 2026-11-13: Settings' [desktop] lines lost (delete=, copy=,
+  panes= ...; "delete at once" still asked). Cause: the desktop kept
+  [desktop] as a list of four lines of its own (LIST_MAX), read no more
+  and wrote only those four back at its next save. Now it reads and
+  writes its keys with the shared ini.inc (inifile.s DeskText, KeyVal,
+  SetLine: the file read anew, one key changed, written back); ini.inc's
+  variables can live in the includer's overlay (INI_OV4). Measured on
+  the U64 before and after (tests/desktop/d16u64.py). The empty
+  [system] in the user's file: most likely the defaults chosen again in
+  Settings (a default takes its key out); the pointer after a reboot
+  (10.4) to retest (a plain reboot resumes the hibernated session,
+  which may predate the change).
 - copy=newer with dated GEOS documents: tested only with plain files
   (no date) so far; a test with two dated documents (VICE and U64).
 - GeoUltra Settings in the desktop's theme (the user, 2026-11-13): its
@@ -654,22 +659,23 @@ Requests from the same session, to do:
 - Done 2026-11-13: the Time page's NTP server from a list
   (time.google.com, time.windows.com, pool.ntp.org, as UBoot-v2) or
   custom (tests/settings/s3b.py).
-- The Time page (the user's test 2026-11-13): a change of zone or summer
-  time shifts GEOS's clock at once (now only at the next "now" or cold
-  start); "now" inverted while it asks, the date line redrawn after, a
-  failure said; a time set by hand came back an hour early after a
-  reboot (offset was 6300 then; to measure on the U64: the Ultimate's
-  clock round trip, a resumed session, summer time).
-- Themes: up to 10 (the user, 2026-11-13; the desktop's menu and
-  Settings), a message when the list is full (Copy did nothing), and
-  delete on the Theme page for one's own themes (a second overlay for
-  the page: overlay 5 has 6 bytes left).
-- The desktop's error dialog in words for the common errors (not enough
-  room, directory full, write protected, file exists), the number for
-  the rest (a drop on a full 1541 image said "failed: error $03").
-- `make deploy` uploads the apps DNP to the test folder, which is drive
-  C while mounted: only on request (a running session writes its REU
-  copy back over it, so nothing was lost).
+- Done 2026-11-13 (the Time page, the user's test): a zone step shifts
+  GEOS's clock by 15 minutes at once, summer time switched on or off by
+  an hour when the date is in the EU's summer time (over midnight into
+  the next day or the one before; the user chose the shift over asking
+  the server); "now" stays inverted while it asks, the date line drawn
+  again after, a failure said. Open: a time set by hand came back an
+  hour early after a reboot (offset was 6300 then; to measure on the
+  U64: the Ultimate's clock round trip, a resumed session).
+- Done 2026-11-13: up to 10 themes (the desktop's menu and Settings;
+  the user), Copy with a full list says "Room for 10 themes. Delete one
+  first." Open: delete on the Theme page for one's own themes (a second
+  overlay for the page: overlay 5 is full).
+- Done 2026-11-13: the desktop's error dialog in words for the common
+  errors (not enough room, directory full, cannot be written to, a file
+  of that name, folder not empty, not found), the number for the rest.
+- Done 2026-11-13: `make deploy` uploads only the cartridge; the apps
+  DNP (drive C in the test folder) goes up with `make deploy-apps`.
 - Closing an application on a large image (the 8 MB apps DNP) takes
   seconds: the whole image is written back. A message while it runs
   ("Writing drive C back"), and only the changed tracks: the Command

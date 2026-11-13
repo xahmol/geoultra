@@ -61,6 +61,10 @@ K_UDIR          = 6
 K_UFILE         = 5
 FC_OVERWRITE    = $01
 FE_ULTIMATE     = $4F           ; (an error: the Ultimate refused)
+INSUFF_SPACE    = 3             ; the engine's errors errors.s words
+WR_PR_ON        = $26           ; (src/inc/engine.inc)
+FILE_EXISTS     = $40
+DIR_NOT_EMPTY   = $41
 
 ; Layout (docs/DESKTOP.md, "Screen"), the entry name, dialogs, modifiers
 BASELINE        = 7             ; a row's baseline below its top
