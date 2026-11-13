@@ -22,6 +22,7 @@
         .import IniPaths, IniLoad, IniEmpty, noFile
         .import KeyLo, KeyHi, LColKind, WordsLo, WordsHi, ColourNames
         .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
+        .import PalKey, IniDel
         .export Ov_ThemeDraw, Ov_ThemePress
 
         .segment "ZEROPAGE"
@@ -92,7 +93,11 @@ Ov_ThemePress:
         inx
         cpx #BUTTONS
         bcc @btn
-        jsr StylePress
+        lda themePart
+        cmp #PALETTE
+        bne :+
+        jmp PalPress
+:       jsr StylePress
         bcc @end
         jmp SwatchPress
 @end:   rts
@@ -455,13 +460,13 @@ NewTheme:
 PartDown:
         ldx themePart
         bne :+
-        ldx #LINES_N
+        ldx #PARTS
 :       dex
         stx themePart
         jmp PartDraw
 PartUp: ldx themePart
         inx
-        cpx #LINES_N
+        cpx #PARTS
         bcc :+
         ldx #0
 :       stx themePart
@@ -561,10 +566,61 @@ PartDraw:
         lda #PART_Y
         sta r1H
         jsr PutString
-        jsr ReadPart
+        jsr Labels
+        lda themePart
+        cmp #PALETTE
+        bne :+
+        jsr PalDraw
+        jmp Preview
+:       jsr ReadPart
         jsr StyleDraw
         jsr SwatchesDraw
         jmp Preview
+
+; Labels: the three lower rows' labels for the part (the palette's: RGB,
+; none, Colour; the others': Style, Ink, Paper).
+Labels: ldx #2
+@l:     stx at
+        lda LowY,x              ; its place cleared
+        sec
+        sbc #9
+        sta r2L
+        clc
+        adc #11
+        sta r2H
+        lda #LABEL_X
+        sta r3L
+        lda #STYLE_X - 2
+        sta r4L
+        lda #0
+        sta r3H
+        sta r4H
+        jsr SetPattern
+        jsr Rectangle
+        ldx at
+        ldy themePart
+        cpy #PALETTE
+        bne :+
+        inx
+        inx
+        inx
+:       lda LowLo,x
+        sta r0L
+        lda LowHi,x
+        sta r0H
+        beq @next               ; (none)
+        lda #LABEL_X
+        sta r11L
+        lda #0
+        sta r11H
+        ldx at
+        lda LowY,x
+        sta r1H
+        jsr PutString
+@next:  ldx at
+        dex
+        bpl @l
+        rts
 
 ; ReadPart: style, ink, paper of the part from its line (missing: the
 ; first style, dark grey on light grey).
@@ -1166,6 +1222,384 @@ SwatchPress:
         jsr SwatchesDraw
         jmp Preview
 
+; --- the palette (an Ultimate 64's 16 colours as RGB: S4.4, the
+; user's choice of 2026-11-13)
+
+; PalDraw: the palette read (ReadPal), the colour to change chosen in
+; the paper row, its R, G, B with - and + in the style row, "default".
+PalDraw:
+        jsr ReadPal
+        lda #STYLE_Y
+        ldx #STYLE_X - 2
+        jsr ClearRow
+        lda #INK_ROW
+        jsr RowClear
+        ldx #0                  ; R, G, B and their buttons
+@lab:   stx at
+        lda RgbLo,x
+        sta r0L
+        lda RgbHi,x
+        sta r0H
+        lda RgbX,x
+        sta r11L
+        lda #0
+        sta r11H
+        lda #STYLE_Y
+        sta r1H
+        jsr PutString
+        ldx at
+        inx
+        cpx #3
+        bcc @lab
+        ldx #0
+@btn:   stx at
+        lda PalBtnLo,x
+        pha
+        lda PalBtnHi,x
+        tax
+        pla
+        jsr ButtonDraw
+        ldx at
+        inx
+        cpx #PAL_BUTTONS
+        bcc @btn
+        jsr ValuesDraw
+; PalColours: the paper row as the palette's colours, the chosen framed
+; (cleared first: an old frame goes).
+PalColours:
+        lda #PAPER_ROW
+        jsr RowClear
+        lda #PAPER_ROW
+        ldx palSel
+        jmp Swatches
+
+; ValuesDraw: the chosen colour's R, G, B in hex between their buttons.
+ValuesDraw:
+        ldx #0
+@v:     stx at
+        lda #0                  ; its place cleared
+        jsr SetPattern
+        lda #STYLE_Y - 9
+        sta r2L
+        lda #STYLE_Y + 2
+        sta r2H
+        lda ValX,x
+        sta r3L
+        lda ValX + 3,x
+        sta r3H
+        lda r3L
+        clc
+        adc #13
+        sta r4L
+        lda r3H
+        adc #0
+        sta r4H
+        jsr Rectangle
+        lda palSel              ; its byte: pal[palSel * 3 + x]
+        asl a
+        adc palSel
+        adc at
+        tax
+        lda pal,x
+        jsr HexText             ; (hexText)
+        lda #<hexText
+        sta r0L
+        lda #>hexText
+        sta r0H
+        ldx at
+        lda ValX,x
+        sta r11L
+        lda ValX + 3,x
+        sta r11H
+        lda #STYLE_Y
+        sta r1H
+        jsr PutString
+        ldx at
+        inx
+        cpx #3
+        bcc @v
+        rts
+
+; HexText: A as two hex digits in hexText.
+HexText:
+        pha
+        lsr a
+        lsr a
+        lsr a
+        lsr a
+        jsr @dig
+        sta hexText
+        pla
+        and #$0F
+        jsr @dig
+        sta hexText + 1
+        lda #0
+        sta hexText + 2
+        rts
+@dig:   cmp #10
+        bcc :+
+        adc #'A' - 10 - 1
+        rts
+:       adc #'0'
+        rts
+
+; PalPress: a click on the palette part: a colour chosen (the paper
+; row), an R, G or B step (- and +), or "default".
+PalPress:
+        ldx #0
+@btn:   stx at
+        lda PalBtnLo,x
+        pha
+        lda PalBtnHi,x
+        tax
+        pla
+        jsr OnButton
+        bcs @next
+        ldx at
+        cpx #PAL_BUTTONS - 1
+        bne :+
+        jmp PalDefault
+:       txa                     ; buttons: R- R+ G- G+ B- B+
+        lsr a
+        sta comp                ; its component
+        lda palSel
+        asl a
+        adc palSel
+        adc comp
+        tax
+        lda at
+        and #1
+        bne @up
+        lda pal,x
+        sec
+        sbc #PAL_STEP
+        bcs @set
+        lda #0
+        beq @set
+@up:    lda pal,x
+        clc
+        adc #PAL_STEP
+        bcc @set
+        lda #$FF
+@set:   sta pal,x
+        jsr PalSend             ; (the colour at once)
+        jsr WritePal
+        jmp ValuesDraw
+@next:  ldx at
+        inx
+        cpx #PAL_BUTTONS
+        bcc @btn
+        lda mouseXPos           ; a swatch of the paper row: the colour
+        sec                     ; to change
+        sbc #<SWATCH_X
+        tax
+        lda mouseXPos+1
+        sbc #>SWATCH_X
+        bne @end
+        txa
+        lsr a
+        lsr a
+        lsr a
+        cmp #SWATCHES
+        bcs @end
+        tax
+        lda mouseYPos
+        lsr a
+        lsr a
+        lsr a
+        cmp #PAPER_ROW
+        bne @end
+        stx palSel
+        jsr ValuesDraw
+        jmp PalColours
+@end:   rts
+
+; ReadPal: pal = the theme's palette= (16 RRGGBB, spaces between); none
+; or not 16: the Ultimate's palette now (GET_PALETTE); none there (no
+; Ultimate 64): its default (DefaultPal).
+ReadPal:
+        lda #<STheme
+        sta r0L
+        lda #>STheme
+        sta r0H
+        lda #<PalKey
+        sta r1L
+        lda #>PalKey
+        sta r1H
+        jsr IniFind             ; (r2 its value, A its length)
+        bcs @ask
+        sta len
+        ldy #0
+        ldx #0
+@byte:  jsr SkipSp
+        jsr Nibble
+        bcs @ask
+        asl a
+        asl a
+        asl a
+        asl a
+        sta tmp
+        jsr Nibble
+        bcs @ask
+        ora tmp
+        sta pal,x
+        inx
+        cpx #PAL_LEN
+        bcc @byte
+        rts
+@ask:   lda #CTRL_GET_PALETTE   ; the Ultimate's palette now
+        sta uciCmd + 1
+        lda #2
+        jsr Uci
+        txa
+        beq @end
+        ldx #PAL_LEN - 1        ; (no Ultimate 64: its default)
+@def:   lda DefaultPal,x
+        sta pal,x
+        dex
+        bpl @def
+@end:   rts
+
+; SkipSp: Y past spaces in the value at r2 (len its length).
+SkipSp: cpy len
+        bcs @end
+        lda (r2),y
+        cmp #' '
+        bne @end
+        iny
+        bne SkipSp
+@end:   rts
+
+; Nibble: A = the hex digit at r2 + Y (Y on); C set when none.
+Nibble: cpy len
+        bcs @no
+        lda (r2),y
+        iny
+        cmp #'0'
+        bcc @no
+        cmp #'9' + 1
+        bcc @dig
+        ora #$20
+        cmp #'a'
+        bcc @no
+        cmp #'f' + 1
+        bcs @no
+        sbc #'a' - 10 - 1       ; (C clear: one less)
+        clc
+        rts
+@dig:   sbc #'0' - 1            ; (C clear)
+        clc
+        rts
+@no:    sec
+        rts
+
+; WritePal: palette= the 16 colours as RRGGBB, a space between, in the
+; theme's text; themeDirty.
+WritePal:
+        ldx #0
+        ldy #0
+@c:     cpx #0                  ; (a space before each but the first)
+        beq :+
+        lda #' '
+        sta pbuf,y
+        iny
+:       lda #3
+        sta comp
+@b:     lda pal,x
+        sty tmp
+        jsr HexText
+        ldy tmp
+        lda hexText
+        sta pbuf,y
+        lda hexText + 1
+        sta pbuf + 1,y
+        iny
+        iny
+        inx
+        dec comp
+        bne @b
+        cpx #PAL_LEN
+        bcc @c
+        lda #0
+        sta pbuf,y
+        lda #<STheme
+        sta r0L
+        lda #>STheme
+        sta r0H
+        lda #<PalKey
+        sta r1L
+        lda #>PalKey
+        sta r1H
+        lda #<pbuf
+        sta r2L
+        lda #>pbuf
+        sta r2H
+        jsr IniSet
+        bcc :+
+        jmp NoRoom
+:       lda #1
+        sta themeDirty
+        rts
+
+; PalSend: the chosen colour to the Ultimate at once (SET_PALETTE_COLOR:
+; its index, R, G, B; nothing without an Ultimate 64).
+PalSend:
+        lda #CTRL_SET_COLOUR
+        sta uciCmd + 1
+        lda palSel
+        sta uciCmd + 2
+        asl a
+        adc palSel
+        tax
+        ldy #0
+@c:     lda pal,x
+        sta uciCmd + 3,y
+        inx
+        iny
+        cpy #3
+        bcc @c
+        lda #6
+; Uci: uciCmd (the control target, its command, A bytes in all) to the
+; Ultimate (FE_UCI); a reply into pal (GET_PALETTE's 48 bytes). X = 0 or
+; the error.
+Uci:    sta r1L
+        lda #CTRL_TARGET
+        sta uciCmd
+        lda #<uciCmd
+        sta r0L
+        lda #>uciCmd
+        sta r0H
+        lda #<pal
+        sta r2L
+        lda #>pal
+        sta r2H
+        lda #PAL_LEN
+        sta r3L
+        lda #0
+        sta r3H
+        lda #FE_UCI
+        jmp FileEngine
+
+; PalDefault: the theme without its own palette (palette= out): the
+; Ultimate's own back (RESET_PALETTE), shown.
+PalDefault:
+        lda #<STheme
+        sta r0L
+        lda #>STheme
+        sta r0H
+        lda #<PalKey
+        sta r1L
+        lda #>PalKey
+        sta r1H
+        jsr IniDel
+        lda #1
+        sta themeDirty
+        lda #CTRL_RESET_PALETTE
+        sta uciCmd + 1
+        lda #2
+        jsr Uci
+        jmp PalDraw
+
 ; --- the preview: a mini desktop in the theme's colours
 
 ; Preview: card rows PREV_ROW to PREV_ROW + 5, cards PREV_CARD to
@@ -1301,16 +1735,29 @@ BOX_TEXT        = 11
 STYLE_GAP       = 8             ; between a word and the next box
 STYLES_MAX      = 4
 VAL_MAX         = 60            ; a line's value, at most
+PALETTE         = LINES_N       ; the part after the lines: the palette
+PARTS           = LINES_N + 1
+PAL_LEN         = 48            ; 16 RGB triplets
+PAL_STEP        = 4             ; an R, G or B step
+PAL_BUTTONS     = 7             ; R- R+ G- G+ B- B+ default
+RGB_W           = 56            ; an R, G or B group: letter, -, value, +
+CTRL_TARGET     = 4             ; the Ultimate's control target (ultimate-
+CTRL_GET_PALETTE = $51          ; uci-oscar64 manual, firmware 3.15a on the
+CTRL_SET_COLOUR = $53           ; Ultimate 64)
+CTRL_RESET_PALETTE = $54
 DEF_INK         = 11            ; a missing line: dark grey on light grey
 DEF_PAPER       = 15
-LABELS          = 5
+LABELS          = 2             ; (Theme, Part; the rest: Labels)
 BUTTONS         = 6
 AREAS           = 9
 PREV_WORDS      = 6
 
-LabelLo:        .byte <LTheme, <LPart, <LStyle, <LInk, <LPaper
-LabelHi:        .byte >LTheme, >LPart, >LStyle, >LInk, >LPaper
-LabelY:         .byte THEME_Y, PART_Y, STYLE_Y, INK_ROW * 8 + 7, PAPER_ROW * 8 + 7
+LabelLo:        .byte <LTheme, <LPart
+LabelHi:        .byte >LTheme, >LPart
+LabelY:         .byte THEME_Y, PART_Y
+LowLo:          .byte <LStyle, <LInk, <LPaper, <LRgb, 0, <LColour
+LowHi:          .byte >LStyle, >LInk, >LPaper, >LRgb, 0, >LColour
+LowY:           .byte STYLE_Y, INK_ROW * 8 + 7, PAPER_ROW * 8 + 7
 BtnLo:          .byte <BThemeDn, <BThemeUp, <BUse, <BCopy, <BPartDn, <BPartUp
 BtnHi:          .byte >BThemeDn, >BThemeUp, >BUse, >BCopy, >BPartDn, >BPartUp
 ActLo:          .byte <ThemeDown, <ThemeUp, <UseIt, <Copy, <PartDown, <PartUp
@@ -1350,6 +1797,50 @@ PrevX:          .byte (PREV_CARD + 1) * 8 + 2, (PREV_CARD + 1) * 8 + 2, (PREV_CA
                 .byte (PREV_CARD + 7) * 8 + 2, (PREV_CARD + 6) * 8 + 2, (PREV_CARD + 1) * 8 + 2
 PrevY:          .byte 15 * 8 + 7, 17 * 8 + 7, 17 * 8 + 7, 18 * 8 + 7, 19 * 8 + 7, 20 * 8 + 7
 
+; The palette part's row: R, G, B at RgbX, their values at ValX (low,
+; high bytes), - and + around them, "default" after.
+RgbLo:          .byte <TR, <TG, <TB
+RgbHi:          .byte >TR, >TG, >TB
+RgbX:           .byte STYLE_X, STYLE_X + RGB_W, <(STYLE_X + 2 * RGB_W)
+ValX:           .byte <(STYLE_X + 24), <(STYLE_X + RGB_W + 24), <(STYLE_X + 2 * RGB_W + 24)
+                .byte >(STYLE_X + 24), >(STYLE_X + RGB_W + 24), >(STYLE_X + 2 * RGB_W + 24)
+PalBtnLo:       .byte <BRm, <BRp, <BGm, <BGp, <BBm, <BBp, <BDef
+PalBtnHi:       .byte >BRm, >BRp, >BGm, >BGp, >BBm, >BBp, >BDef
+BRm:    .word STYLE_X + 0 * RGB_W + 8
+        .byte STYLE_Y - 9, 14
+        .word TMinus
+BRp:    .word STYLE_X + 0 * RGB_W + 38
+        .byte STYLE_Y - 9, 14
+        .word TPlus
+BGm:    .word STYLE_X + 1 * RGB_W + 8
+        .byte STYLE_Y - 9, 14
+        .word TMinus
+BGp:    .word STYLE_X + 1 * RGB_W + 38
+        .byte STYLE_Y - 9, 14
+        .word TPlus
+BBm:    .word STYLE_X + 2 * RGB_W + 8
+        .byte STYLE_Y - 9, 14
+        .word TMinus
+BBp:    .word STYLE_X + 2 * RGB_W + 38
+        .byte STYLE_Y - 9, 14
+        .word TPlus
+BDef:   .word STYLE_X + 3 * RGB_W + 4
+        .byte STYLE_Y - 9, 28
+        .word TDefault
+TR:             .byte "R", 0
+TG:             .byte "G", 0
+TB:             .byte "B", 0
+TDefault:       .byte "none", 0
+
+; The Ultimate 64's default palette (read with GET_PALETTE from a
+; U64-II, firmware 3.15a, 2026-11-13): for a theme without its own
+; where the Ultimate cannot be asked (VICE).
+DefaultPal:
+        .byte $00, $00, $00, $F7, $F7, $F7, $8D, $2F, $34, $6A, $D4, $CD
+        .byte $98, $35, $A4, $4C, $B4, $42, $2C, $29, $B1, $EF, $EF, $5D
+        .byte $98, $4E, $20, $5B, $38, $00, $D1, $67, $6D, $4A, $4A, $4A
+        .byte $7B, $7B, $7B, $9F, $EF, $93, $6D, $6A, $EF, $B2, $B2, $B2
+
 ; Black or white on each colour (1 white on the dark ones).
 Contrast:       .byte 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0
 
@@ -1382,6 +1873,8 @@ LPart:          .byte "Part", 0
 LStyle:         .byte "Style", 0
 LInk:           .byte "Ink", 0
 LPaper:         .byte "Paper", 0
+LRgb:           .byte "RGB", 0
+LColour:        .byte "Colour", 0
 TMinus:         .byte "-", 0
 TPlus:          .byte "+", 0
 TUse:           .byte "use", 0
@@ -1415,9 +1908,18 @@ styleXLo:       .res STYLES_MAX ; and their x
 styleXHi:       .res STYLES_MAX
 posL:           .byte 0
 posH:           .byte 0
+palSel:         .byte 6         ; the palette's colour being changed
+comp:           .byte 0         ; R, G or B
+len:            .byte 0
+hexText:        .res 3
+uciCmd:         .res 6          ; the control target's command, its bytes
+pal:            .res PAL_LEN    ; the palette (16 RGB)
 colour:         .byte 0
 handle:         .byte 0
 info:           .res 16
 name:           .res 64         ; a file's name (FE_READDIR), a theme's
 val:            .res VAL_MAX + 1 ; a line's value
+pbuf = name                     ; palette='s value (111 and its zero: over
+        .assert VAL_MAX + 1 + 64 >= 112, error, "pbuf: name and val"
+                                ; name and val, not in use meanwhile)
 buf:            .res 48         ; the THEMES folder's path

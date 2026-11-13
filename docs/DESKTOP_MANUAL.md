@@ -269,8 +269,14 @@ date and time by hand (set..., typed as YYYY-MM-DD HH:MM). The server
 also sets the clock at every start. **Pointer** chooses the mouse
 pointer, a classic arrow, a large arrow, a hand or a crosshair, and its
 colour (- and +, any of the 16); both change at once and stay at every
-start. The pages Theme, Drives and REU follow; their plan is in
-docs/SETTINGS.md.
+start. **Theme** edits the theme files: choose a theme with - and +
+("use" makes it the desktop's, "copy" starts a new one from it), a part
+of the screen with - and +, its style and its ink and paper from the
+16 colours; the preview below shows the result. The part "palette"
+(Ultimate 64) changes the 16 colours themselves: pick one, then its
+red, green and blue with - and +; you see it at once; "none" goes back
+to the Ultimate's own palette. Save or OK writes the theme file. The
+pages Drives and REU follow; their plan is in docs/SETTINGS.md.
 
 ## Limits
 

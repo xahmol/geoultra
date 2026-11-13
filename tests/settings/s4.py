@@ -6,7 +6,8 @@ border's paper, the desk's ink and paper, the menu bar's style set by
 clicks, each line checked in the theme's text in the file's words; the
 preview's colour cells; "use" (SETTINGS.INI theme=); "copy" to a new
 name (name= in its text, two themes listed); going back to the first
-theme asks to save the changes (No: dropped).
+theme asks to save the changes (No: dropped); the palette part (S4.4):
+a colour chosen, its red a step up (palette= with all 16), none.
 Screens: build/harness/gush/settings-s4*.png.
 Usage: tests/settings/s4.py
 """
@@ -144,6 +145,22 @@ def main():
         press(*NO_XY, t=4)                                  # No: dropped
         check("back to GeoUltra, the changes dropped (no file: empty)",
               (sbyte("themeNo"), theme_text(), sbyte("themeDirty")), (0, b"", 0))
+        # S4.4: the palette part (after the lines; from the first part,
+        # [-] wraps to it). VICE: no Ultimate 64, the default palette.
+        default = ("000000 F7F7F7 8D2F34 6AD4CD 9835A4 4CB442 2C29B1 EFEF5D "
+                   "984E20 5B3800 D1676D 4A4A4A 7B7B7B 9FEF93 6D6AEF B2B2B2").split()
+        for _ in range(3):                                  # menubar -> palette
+            press(156, PART_Y - 3, t=3)
+        check("the palette part", sbyte("themePart"), 14)
+        press(SWATCH_X + 6 * 8 + 3, PAPER_Y, t=3)          # blue
+        press(118 + 40 + 7, STYLE_Y - 3, t=3)              # R +
+        want = default[:]
+        want[6] = "3029B1"
+        check("blue's red one step up: palette= the 16, blue 3029B1", theme_text(),
+              ("[theme]\r\npalette=" + " ".join(want) + "\r\n").encode())
+        g.png("settings-s4-palette")
+        press(118 + 168 + 16, STYLE_Y - 3, t=3)            # none
+        check("none: palette= taken out", theme_text(), b"[theme]\r\n")
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

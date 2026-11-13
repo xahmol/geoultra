@@ -575,6 +575,10 @@ To do (2026-11-12), on the U64 with the cartridge from `/SD/idi8b/geoultra/`
   view, toolbar, clock and panes; "Start with GEOS 2.0's" and a reboot
   starts GEOS 2.0's deskTop (set it back afterwards); Cancel after a
   change asks first.
+- The palette (2026-11-13): settings, Theme page, part palette on a
+  copy of Night: a colour's red, green and blue changed (the screen
+  follows at once), Save, then the desktop with that theme; "none"
+  back to the Ultimate's palette.
 - The theme editor (2026-11-13): settings, Theme page: a copy of
   GeoUltra named "Mine", its desk and menu bar recoloured (the preview
   follows), Save, "use", OK: the desktop in it; view > theme lists it.

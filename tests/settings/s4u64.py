@@ -5,7 +5,10 @@ THEMES/Custom.ini are kept first and put back byte for byte at the
 end. Settings on its Theme page lists the THEMES folder's files; [+]
 until Custom; the border's paper set to red; Save writes
 THEMES/Custom.ini through Custom.tmp: its border line red, every other
-line as before.
+line as before. Then the palette (S4.4): from the Ultimate's own (Custom
+has none), blue's red a step up, seen at once with GET_PALETTE; Save
+writes palette=; none gives the Ultimate's palette back and Save takes
+the line out.
 Usage: tests/settings/s4u64.py [build/geoultra64.crt]
 """
 import ftplib
@@ -25,6 +28,7 @@ PAGE_THEME, SIDE_TOP, SIDE_ROW = 0, 20, 14
 THEME_UP = (242, 36 - 3)
 SWATCH_X, PAPER_Y = 152, 99
 SAVE_XY = (33 * 8 + 24, 188)
+CMD, REPLY = 0x7F40, 0x7F50               # (GEOS: free above the background screen)
 
 
 def labels(path):
@@ -109,6 +113,31 @@ def main():
         after = fetch(CUSTOM)
         want = b"\n".join(b"border=red\r" if l.startswith(b"border=") else l for l in custom.split(b"\n"))
         check("Save: THEMES/Custom.ini with border=red, every other line as it was", after, want)
+        # S4.4: the palette, live on the U64. Custom has no palette=: the
+        # editor starts from the Ultimate's palette now (its default).
+        def u64_palette():
+            u.write(CMD, bytes([0x04, 0x51]))
+            u.fe(30, r0=CMD, r1=2, r2=REPLY, r3=48)
+            u.write(s["curOvl"], b"\xff")                  # (u.fe's code went to
+            return bytes(u.read(REPLY, 48)).hex().upper()   # $5000: the page's
+                                                            # overlay fetched anew)
+        before = u64_palette()
+        press(156, 54 - 3, t=4)                             # part [-]: the palette
+        press(SWATCH_X + 6 * 8 + 3, PAPER_Y, t=3)          # blue
+        press(118 + 38 + 7, 72 - 3, t=4)                   # R +
+        now = u64_palette()
+        blue = int(before[36:38], 16)
+        check("R +: blue's red a step up on the Ultimate at once",
+              now, before[:36] + "%02X" % min(255, blue + 4) + before[38:])
+        press(*SAVE_XY, t=8)
+        pal = [l for l in fetch(CUSTOM).split(b"\r\n") if l.startswith(b"palette=")]
+        want = " ".join(now[i:i + 6] for i in range(0, 96, 6)).encode()
+        check("Save: Custom.ini's palette= the 16 colours", pal, [b"palette=" + want])
+        press(118 + 3 * 56 + 4 + 14, 72 - 3, t=4)        # none
+        check("none: the Ultimate's own palette back", u64_palette(), before)
+        press(*SAVE_XY, t=8)
+        check("Save: palette= gone again",
+              [l for l in fetch(CUSTOM).split(b"\r\n") if l.startswith(b"palette=")], [])
     finally:
         store(custom, CUSTOM)
         store(keep)

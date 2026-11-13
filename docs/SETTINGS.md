@@ -101,6 +101,17 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   already deleted; it now passes the name's last part (SETTINGS.INI
   was not affected). Tests: s4.py (8 checks in VICE), s4u64.py
   (Custom.ini on the U64: only its border line changed; restored).
+  **S4.4 done (2026-11-13), the palette:** the part after the lines;
+  the paper row picks the colour to change, the style row holds R, G,
+  B with - and + (steps of 4) and "none" (palette= out, the
+  Ultimate's own palette back). A theme without palette= starts from
+  the Ultimate's palette now (GET_PALETTE), in VICE from the U64's
+  default (DefaultPal, read from a U64-II). Each step goes to the
+  Ultimate at once (SET_PALETTE_COLOR) and rewrites palette= (16
+  RRGGBB, as the desktop reads it). The overlay has 76 bytes left: the
+  next additions to this page need a second overlay. Tests: s4.py
+  (VICE, 11 checks), s4u64.py (the change seen live with GET_PALETTE,
+  palette= written and taken out; files restored).
 - Pages:
   - *Theme:* the theme editor: each line of a theme file; colours from
     16 swatches (in the theme's palette) for ink and paper, plus the RGB
