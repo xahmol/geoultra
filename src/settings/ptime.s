@@ -76,10 +76,24 @@ Ov_TimeDraw:
 
 ; Ov_TimePress: a click: the summer row, the server's box, the buttons.
 Ov_TimePress:
+        jsr SummerNow           ; (summer time before the click)
+        sta wasSum
         lda #<Rows
         ldx #>Rows
         jsr ChoicePress
-        jsr OnServer
+        jsr SummerNow           ; switched on or off: the clock an hour
+        cmp wasSum              ; on or back when the date is in the EU's
+        beq :+                  ; summer time (the user, 2026-11-13)
+        jsr InSummer
+        bcc :+
+        lda #<60
+        ldx #>60
+        ldy wasSum
+        beq @shift
+        lda #<-60
+        ldx #>-60
+@shift: jsr Shift
+:       jsr OnServer
         bcs :+
         jmp ServerMenu
 :       lda #<Minus
@@ -90,6 +104,9 @@ Ov_TimePress:
         cmp #ZONE_MIN
         beq @end
         dec zone
+        lda #<-15               ; (the clock with it: the user, 2026-11-13)
+        ldx #>-15
+        jsr Shift
         jmp NewZone
 :       lda #<Plus
         ldx #>Plus
@@ -99,6 +116,9 @@ Ov_TimePress:
         cmp #ZONE_MAX
         beq @end
         inc zone
+        lda #<15
+        ldx #>15
+        jsr Shift
         jmp NewZone
 :       lda #<Now
         ldx #>Now
@@ -406,14 +426,20 @@ ServerBox:
 ; NowNtp: the settings written (the kernal reads the server, the zone
 ; and summer time from the file), then the clocks from the server; the
 ; date drawn again, or the failure said.
-NowNtp: jsr Write
-        bcs @end
+NowNtp: lda #<Now               ; the button inverted while it asks (the
+        ldx #>Now               ; user's test 2026-11-13: no feedback;
+        jsr OnButton            ; OnButton leaves its box in r2-r4)
+        jsr InvertRectangle
+        jsr Write
+        bcs @back
         lda #0
         sta r0L
         sta r0H
         lda #FE_NTP
         jsr FileEngine
-        txa
+        stx ntpErr
+        jsr @back
+        lda ntpErr
         beq :+
         lda #<NtpFail
         sta r0L
@@ -421,7 +447,9 @@ NowNtp: jsr Write
         sta r0H
         jsr DoDlgBox
 :       jmp DateDraw
-@end:   rts
+@back:  lda #<Now               ; (the button as it was)
+        ldx #>Now
+        jmp ButtonDraw
 
 ; --- the zone
 
@@ -685,6 +713,200 @@ DateText:
         sta buf,x
         rts
 
+; --- the clock shifted with the zone and summer time
+
+; Shift: GEOS's clock moved by A/X minutes (signed), over midnight into
+; the next or the day before (months, leap years: 2000-2099), then the
+; Ultimate's and the CIA's from it (FE_SETTIME) and the date line drawn.
+Shift:  sta delta
+        stx delta+1
+        php
+        sei
+        lda hour                ; t = hour * 60 + minutes + delta
+        sta tL
+        lda #0
+        sta tH
+        ldx #5                  ; hour * 60 = hour * 64 - hour * 4
+@x64:   asl tL
+        rol tH
+        dex
+        bpl @x64
+        lda hour
+        asl a
+        asl a
+        sta tmp
+        lda tL
+        sec
+        sbc tmp
+        sta tL
+        lda tH
+        sbc #0
+        sta tH
+        lda tL
+        clc
+        adc minutes
+        sta tL
+        lda tH
+        adc #0
+        sta tH
+        lda tL
+        clc
+        adc delta
+        sta tL
+        lda tH
+        adc delta+1
+        sta tH
+@neg:   lda tH                  ; below 0: the day before
+        bpl @over
+        lda tL
+        clc
+        adc #<1440
+        sta tL
+        lda tH
+        adc #>1440
+        sta tH
+        jsr DayDown
+        jmp @neg
+@over:  lda tL                  ; 1440 or more: the next day
+        cmp #<1440
+        lda tH
+        sbc #>1440
+        bcc @split
+        sta tH
+        lda tL
+        sec
+        sbc #<1440
+        sta tL
+        jsr DayUp
+        jmp @over
+@split: ldx #$FF                ; hour = t / 60, minutes = t mod 60
+@div:   inx
+        lda tL
+        sec
+        sbc #60
+        sta tL
+        lda tH
+        sbc #0
+        sta tH
+        bcs @div
+        lda tL
+        adc #60
+        sta minutes
+        stx hour
+        plp
+        lda #FE_SETTIME
+        jsr FileEngine          ; (the Ultimate refusing: GEOS's clock set)
+        jmp DateDraw
+
+; DayUp, DayDown: the date a day on or back.
+DayUp:  inc day
+        jsr MonthDays
+        cmp day
+        bcs @end
+        lda #1
+        sta day
+        inc month
+        lda month
+        cmp #13
+        bcc @end
+        lda #1
+        sta month
+        inc year
+@end:   rts
+DayDown:
+        dec day
+        bne @end
+        dec month
+        bne :+
+        lda #12
+        sta month
+        dec year
+:       jsr MonthDays
+        sta day
+@end:   rts
+
+; MonthDays: A = the days of month (in year: February 29 when the year
+; divides by 4, right for 2000-2099).
+MonthDays:
+        ldx month
+        lda Days - 1,x
+        cpx #2
+        bne @end
+        lda year
+        and #3
+        bne :+
+        lda #29
+        rts
+:       lda #28
+@end:   rts
+
+; SummerNow: A = 1 with summer=eu in the text, else 0.
+SummerNow:
+        jsr SumKey
+        jsr IniFind
+        lda #0
+        bcs @end
+        ldy #0
+        lda (r2),y
+        ora #$20
+        cmp #'e'
+        lda #0
+        bne @end
+        lda #1
+@end:   rts
+
+; InSummer: C set when GEOS's date is in the EU's summer time (April to
+; September; in March from its last Sunday on, in October before its
+; last Sunday; by the date, the hour of the change not looked at).
+InSummer:
+        lda month
+        cmp #4
+        bcc @march
+        cmp #10
+        bcc @yes
+        bne @no
+        ldx #6                  ; October: before its last Sunday
+        jsr LastSun
+        cmp day
+        beq @no
+        bcs @yes
+@no:    clc
+        rts
+@march: cmp #3
+        bne @no
+        ldx #2                  ; March: from its last Sunday on
+        jsr LastSun
+        cmp day
+        beq @yes
+        bcs @no
+@yes:   sec
+        rts
+
+; LastSun: A = the last Sunday's day of a 31-day month whose day-of-week
+; constant (Sakamoto's) is X: the 31st's weekday (yy + yy / 4 + X + 31)
+; mod 7 (0 Sunday; for 2000-2099 the century terms cancel), 31 minus it.
+; Day-of-week rule: Tomohiko Sakamoto's (public domain), reduced here.
+LastSun:
+        stx tmp
+        lda year
+        lsr a
+        lsr a
+        clc
+        adc year
+        adc tmp
+        adc #31
+@mod:   cmp #7
+        bcc @got
+        sbc #7
+        bcs @mod
+@got:   sta tmp
+        lda #31
+        sec
+        sbc tmp
+        rts
+
+Days:   .byte 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+
 ; EditDate: the date and time typed as "YYYY-MM-DD HH:MM" (shown as it
 ; is now); a valid one into GEOS's clock (seconds 0) and the Ultimate's
 ; and the CIA's (FE_SETTIME); else said.
@@ -851,6 +1073,9 @@ Decimal:
         rts
 
 ; NtpKey, OffKey: r0 = "time", r1 = "ntp" or "offset".
+SumKey: lda #<KSummer
+        ldx #>KSummer
+        bne Keys
 NtpKey: lda #<KNtp
         ldx #>KNtp
         bne Keys
@@ -996,6 +1221,11 @@ DateBad:        .byte BOLDON, "Not a date.", PLAINTEXT, 0
 zone:           .byte 0         ; quarter hours from UTC (signed)
 at:             .byte 0
 hover:          .byte 0             ; ServerMenu: the item inverted
+wasSum:         .byte 0             ; Ov_TimePress: summer time before
+ntpErr:         .byte 0             ; NowNtp: FE_NTP's error
+delta:          .word 0             ; Shift: the minutes, the time of day
+tL:             .byte 0
+tH:             .byte 0
 rowT:           .byte 0
 neg:            .byte 0
 len:            .byte 0

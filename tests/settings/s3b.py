@@ -114,12 +114,16 @@ def main():
         check("the Time page", sbyte("page"), PAGE_TIME)
         check("defaults: summer time off, an empty text", (sbyte("sel", 0), ini()), (1, b""))
         g.png("settings-s3b")
+        v.mem_set(0x8516, bytes([26, 12, 31, 23, 30]))      # 2026-12-31 23:30: a year's end
         for _ in range(4):
             press(*PLUS_XY, t=2)
         check("the zone 4 quarters up: offset=3600", ini(), b"[time]\r\noffset=3600\r\n")
+        check("the clock with it: an hour on, into the next year (2027-01-01; VICE's warp moves "
+              "the minutes on meanwhile)", list(v.mem_get(0x8516, 0x8518)), [27, 1, 1])
         for _ in range(5):
             press(*MINUS_XY, t=2)
         check("5 down: below UTC, offset=-900", ini(), b"[time]\r\noffset=-900\r\n")
+        check("5 quarters back: into 2026-12-31 again", list(v.mem_get(0x8516, 0x8518)), [26, 12, 31])
         g.png("settings-s3b-zone")
         press(150 + 3, SUMMER_Y - 3)
         check("summer time EU: summer=eu", ini(), b"[time]\r\noffset=-900\r\nsummer=eu\r\n")
