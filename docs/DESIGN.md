@@ -252,7 +252,19 @@ UCI).
   and before phase 4 (the Ultimate II+). With release notes, the
   Facebook post and blog text, and a first-look video made the
   established way (VIC-stream capture driven by a scene script, Piper
-  "Alba" voice-over, title and closing cards).
+  "Alba" voice-over, title and closing cards). The video's driver
+  (agreed with the user 2026-11-13): an autopilot loaded into the C64
+  before the take, which moves the pointer smoothly along the scene
+  list (eased paths, not jumps), presses and releases the button
+  (clicks, double clicks, drags) and types, from inside GEOS (an
+  interrupt-level routine through GEOS's own mouse and key variables),
+  so that the recording needs one start command and no memory reads
+  that disturb the picture (at most a done flag once a second).
+  Scenes: the boot and splash, the desktop (list and icon view, themes,
+  two panes, drag and drop), the mount dialogue, geoWrite and geoPaint
+  from folders, gush, GeoUltra Settings (themes, palette, pointer,
+  time). Filmed when the hand tests, the file box drive letters and
+  the Settings Drives and REU pages are done.
 - **User manuals** (when design and functions are stable): system (boot,
   drives and images, MOUNTS.INI, hibernation, turbo, the REU), desktop
   (docs/DESKTOP_MANUAL.md), gush (docs/GUSH_MANUAL.md), settings,
@@ -530,72 +542,21 @@ Log:
 
 ## For the user, at the computer
 
-To do (updated 2026-11-13), on the U64 with the cartridge from
-`/SD/idi8b/geoultra/` (drive C is the apps DNP, 8 MB). Passed by hand on
-2026-11-13 and taken off: the right button, the menus and keys, the
-toolbar's buttons, sorting, the icon view, the look, two panes, the
-drag start (see "Hand tests 2026-11-13" below).
+To do (updated 2026-11-13 evening), on the U64 with the cartridge from
+`/SD/idi8b/geoultra/` (drive C is the apps DNP, 8 MB). The whole list
+was gone through by hand on 2026-11-13 (see "Hand tests 2026-11-13"
+below); left to redo after the fixes:
 
-- The fixes of 2026-11-13: geoFolder first in the geos menu (on drive C
-  too, with its full list of accessories), and in an application's;
-  the Settings Desktop page's boxes in columns; the theme dialogs
-  without stray colours; the preview's frame and the "palette" button
-  on the Theme page; a double click in an Open dialog (folder, file):
-  confirmed by the user the same day.
-- Drag and drop (2026-11-12; the drag start confirmed 2026-11-13): a
-  selection dragged with the mouse (its icon follows the pointer) onto
-  the other pane (same drive: moved,
-  another drive: copied) and onto a folder in the same list; C= held at
-  the release the other way; a quick double click still opens; a press
-  held still for two seconds stays a click.
-- Drag and drop, later additions (2026-11-12): the dragged icon visible
-  in blue (the sweep's colour fix); the folder row or sidebar line under
-  the pointer inverted while dragging and back to normal after; a drop
-  on a drive or favourite in the sidebar (one list); a drop on the
-  sidebar line of the drive shown, or on the other pane showing the
-  same folder, does nothing; a click in one pane and a quick click on
-  the same row in the other does not open anything.
-- GeoUltra Settings (2026-11-12): geos > settings and the toolbar's
-  settings button (two sliders, before gush; home is gone from the
-  toolbar, still in the go menu) start it; the Desktop page's options
-  set by a click; Save, then OK: back in the desktop with the chosen
-  view, toolbar, clock and panes; "Start with GEOS 2.0's" and a reboot
-  starts GEOS 2.0's deskTop (set it back afterwards); Cancel after a
-  change asks first.
-- The palette (2026-11-13): settings, Theme page, part palette on a
-  copy of Night: a colour's red, green and blue changed (the screen
-  follows at once), Save, then the desktop with that theme; "none"
-  back to the Ultimate's palette.
-- The theme editor (2026-11-13): settings, Theme page: a copy of
-  GeoUltra named "Mine", its desk and menu bar recoloured (the preview
-  follows), Save, "use", OK: the desktop in it; view > theme lists it.
-- The GeoDesk64 items (2026-11-12): settings, Desktop page: Sort by
-  date and size (folders first), Existing "skip" and "newer" (copy a
-  newer geoWrite document over an older copy: replaced; an older one:
-  kept), Delete "at once"; two panes, a program started and quit: both
-  folders back.
-- The Time page (2026-11-12): the zone (UTC+01:00 for the Netherlands)
-  and summer time "EU rule", the server from the new list (2026-11-13:
-  none, time.google.com, time.windows.com, pool.ntp.org, custom...), Save, then "now": the clock in
-  the menu bar right; set... with a date typed; a reboot keeps the right
-  time (the server at every start). Verified on the U64 by
-  s3bu64.py on 2026-11-12; the summer switch itself in March 2027.
-- The System page (2026-11-12): turbo off and a step with - and +
-  (the speed changes at once), full speed again; add... on the slow
-  list picks a program from drive A (Disk goes to B, C, D) and shows
-  its name, remove takes it out; Save, then gush's `turbo` shows the
-  step; hibernation 1 min.
-- The pointer designs (2026-11-12): settings, Pointer page: each of
-  classic, large, hand and cross changes the pointer at once; the hand's
-  fingertip and the crosshair's centre point where clicks land (try a
-  small icon or a menu item); after a reboot the chosen one is still
-  there; back to classic afterwards if wanted.
-- Two panes kept (2026-11-12): two panes on, the desktop restarted
-  (reboot): it comes back in two panes; off, restarted: one list
-  (SETTINGS.INI gets `panes=1` or `panes=2`).
-- Copying a GEOS program onto usb0 (it becomes NAME.cvt) and back to
-  drive C (it becomes the program again and starts); opening the .cvt
-  on usb0 shows "Not opened here".
+- Settings' lines kept in SETTINGS.INI (the INI bug, "Requests" below):
+  then again: delete "at once" (7.4), copy "newer" with dated documents
+  (7.3), the pointer kept after a reboot (10.4), the turbo step and
+  hibernation kept, two panes kept after a program (7.5).
+- The Time page after its fixes: the zone and summer time changing the
+  clock at once, "now" with feedback and the date line redrawn, the
+  hour lost after a reboot with a time set by hand (8.4).
+- After the next build: the frame round the swatch rows, the readable
+  error texts (a drop on a full drive), up to 10 themes, delete on the
+  Theme page.
 
 Done 2026-11-11: the right mouse button on the U64 ("Verified on
 hardware").
@@ -628,6 +589,19 @@ inside itself, geoFolder falling off full geos menus (drive E's desk
 accessories now first, with a place kept for them). New in Open
 dialogs: a double click opens (a folder entered, a file opened).
 
+Later the same day (the user, tests 2-12 of the list): drag and drop
+(all six steps), its extras (a drop on drive B said "error $03": the
+1541 image had 27 blocks free, correct but to be worded), Settings'
+start, Desktop page, Cancel, the palette, the theme editor ("Mine"),
+sorting, copy "skip", the System page (turbo, slow list, hibernation),
+the pointer designs, two panes kept after a reboot, CVT to usb0 and
+back pass. Fixed the same day: geoFolder, programs and documents not
+starting with two panes (PanesKeep changed r6, r2, r3), Settings'
+dialogs over coloured cells, the palette after Cancel (the desktop puts
+the Ultimate's own back when its theme has none). Dropped by the user:
+the choice of GEOS 2.0's deskTop and the Classic style. Failed: see the
+list above (the INI bug, the Time page).
+
 Requests from the same session, to do:
 - Done 2026-11-13: the GeoUltra info box: the version as
   vMAJOR.MINOR.PATCH-YYYYMMDD-HHMM (as UBoot64-v2; the numbers in the
@@ -645,11 +619,57 @@ Requests from the same session, to do:
   MegaPatch. A new kernal overlay module (the resident areas are full).
   Built after the info box and gush's close button.
 - The menus: keyboard shortcuts right-aligned (by measured width).
+- Sorting (the user, 2026-11-13): a reverse order (folders still first;
+  sort= gets a "-" form, e.g. sort=-date), a small icon at the right of
+  the path line that turns it round, and in the detailed view a click
+  on a column's heading (name, size, date) sorts by it (a second click
+  reverses).
+- Settings and the desktop writing SETTINGS.INI (the user's test
+  2026-11-13): delete=, copy= and panes= set in Settings were gone from
+  the file afterwards, and "delete at once" still asked. Suspected: the
+  desktop writes its own older copy of the text over Settings' changes
+  (PanesKeep, ThemeSave, sort and view); to reproduce on the U64 with a
+  script, then fix (the desktop reads the file again before each write,
+  or changes only its own line on disk).
+- copy=newer with dated GEOS documents: tested only with plain files
+  (no date) so far; a test with two dated documents (VICE and U64).
+- GeoUltra Settings in the desktop's theme (the user, 2026-11-13): its
+  colours from the theme in use (desk, menu bar, frame lines, the side
+  list's selection), and more chrome: frame lines round the whole
+  window and between its parts, and a title bar with a stripe pattern
+  (as GEOS windows have) carrying "GeoUltra Settings". The Theme page's
+  "use" then repaints Settings itself in the theme at once (the user's
+  test 2026-11-13: "use" changing nothing on the screen felt wrong).
+- Two panes, a drive per pane (decided by the user 2026-11-13): drive
+  letters A B C D E at the right end of each pane's path line (only
+  drives with an image; the pane's own drive inverted), a click
+  switches that pane's drive; a click on the path text opens a list
+  under it with what the sidebar holds (drives, the Ultimate's roots,
+  favourites). The path text loses that room (cut from the left
+  sooner). The desktop core has little room: list and letters in an
+  overlay.
 - Two panes: the inactive pane's selection hidden (kept, shown again
   when it is active); the new-folder report (left pane read, both path
   lines inverted) not reproduced in VICE yet: which way it was made.
-- The Time page: the NTP server from a list (time.google.com,
-  time.windows.com, pool.ntp.org, as UBoot-v2) or custom.
+- Done 2026-11-13: the Time page's NTP server from a list
+  (time.google.com, time.windows.com, pool.ntp.org, as UBoot-v2) or
+  custom (tests/settings/s3b.py).
+- The Time page (the user's test 2026-11-13): a change of zone or summer
+  time shifts GEOS's clock at once (now only at the next "now" or cold
+  start); "now" inverted while it asks, the date line redrawn after, a
+  failure said; a time set by hand came back an hour early after a
+  reboot (offset was 6300 then; to measure on the U64: the Ultimate's
+  clock round trip, a resumed session, summer time).
+- Themes: up to 10 (the user, 2026-11-13; the desktop's menu and
+  Settings), a message when the list is full (Copy did nothing), and
+  delete on the Theme page for one's own themes (a second overlay for
+  the page: overlay 5 has 6 bytes left).
+- The desktop's error dialog in words for the common errors (not enough
+  room, directory full, write protected, file exists), the number for
+  the rest (a drop on a full 1541 image said "failed: error $03").
+- `make deploy` uploads the apps DNP to the test folder, which is drive
+  C while mounted: only on request (a running session writes its REU
+  copy back over it, so nothing was lost).
 - Closing an application on a large image (the 8 MB apps DNP) takes
   seconds: the whole image is written back. A message while it runs
   ("Writing drive C back"), and only the changed tracks: the Command
