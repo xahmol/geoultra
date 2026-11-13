@@ -186,15 +186,31 @@ def scenes(t):
     p.click(135, PATH_Y - 3)                     # C in the left pane (A B C E U)
     time.sleep(4)
     t.mark("leftc")
-    y = ROW0_Y + 8 * ROW_H                       # a file in C (folders come first)
-    p.drag(60, y, 240, ROW0_Y + 3 * ROW_H)       # onto the right pane: copied as .cvt
+    y = ROW0_Y + 14 * ROW_H                      # "alarm clock" in C (row 0 "..",
+    p.drag(60, y, 240, ROW0_Y + 3 * ROW_H)       # 1-12 folders): to usb0 as .cvt
     time.sleep(6)
     t.mark("dragged")
     # 3. geoWrite from the geos menu's geoFolder, and gush
     t.ev("scene", name="geowrite")
-    p.double(60, ROW0_Y)                         # C's first folder (Writing?)
+    p.double(60, ROW0_Y + 12 * ROW_H)            # C's folder Writing
     time.sleep(4)
     t.mark("folder")
+    p.double(60, ROW0_Y + 10 * ROW_H)            # GEOWRITE in it
+    time.sleep(14)
+    p.install()                                  # (geoWrite's start reset the hook)
+    t.mark("geowrite")
+    p.click(102, 86)                             # its Open
+    time.sleep(4)
+    t.mark("open")
+    p.click(75, 116)                             # the drive letter A (MegaPatch's)
+    time.sleep(6)
+    t.mark("open-a")
+    p.click(222, 115)                            # Cancel (the box's right icon)
+    time.sleep(3)
+    p.click(102, 110)                            # Quit on its start dialog
+    time.sleep(14)
+    p.install()
+    t.mark("back")
     t.ev("scene", name="geos")
     p.click(*MENU_GEOS)
     time.sleep(1)
