@@ -31,6 +31,8 @@ from ultimate import Ultimate  # noqa: E402
 import png  # noqa: E402
 
 IP = "192.168.1.148"
+STREAM_PORT = 11002             # (11000 is OBS's on the Windows side: WSL shares
+                                # ports; the firewall rule allows 11000-11010)
 HOME = "/USB0/GEOULTRA/"
 PALETTE = [(0x00, 0x00, 0x00), (0xFF, 0xFF, 0xFF), (0x81, 0x33, 0x38), (0x75, 0xCE, 0xC8),
            (0x8E, 0x3C, 0x97), (0x56, 0xAC, 0x4D), (0x2E, 0x2C, 0x9B), (0xED, 0xF1, 0x71),
@@ -66,7 +68,7 @@ class Take:
         """A scene or step boundary: logged; in a dry run, a screenshot."""
         self.ev("mark", name=name)
         if self.mode == "dry":
-            with self.u.video_stream(11000) as st:
+            with self.u.video_stream(STREAM_PORT) as st:
                 frame = st.frames(1)[0]
             path = os.path.join(self.out, "%02d-%s.png" % (len(self.shots), name))
             png.write(path, frame, PALETTE)
@@ -218,7 +220,7 @@ def main():
         t.put("HIBERNAT.BIN", None)
         t.put("SETTINGS.INI", START_INI)
         if mode == "rec":
-            st = t.u.video_stream(11000).__enter__()
+            st = t.u.video_stream(STREAM_PORT).__enter__()
             cap = threading.Thread(target=t.capture, args=(st,))
             cap.start()
         scenes(t)
