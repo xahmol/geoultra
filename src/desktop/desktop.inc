@@ -68,6 +68,8 @@ INSUFF_SPACE    = 3             ; the engine's errors errors.s words
 WR_PR_ON        = $26           ; (src/inc/engine.inc)
 FILE_EXISTS     = $40
 DIR_NOT_EMPTY   = $41
+ERR_IMAGE       = $60           ; the desktop's own: a disk image onto A-D
+                                ; refused (tree.s, errors.s)
 
 ; Layout (docs/DESKTOP.md, "Screen"), the entry name, dialogs, modifiers
 BASELINE        = 7             ; a row's baseline below its top
@@ -176,7 +178,10 @@ K_CBM           = 4
 LIST_MAX        = 4             ; favourites, recent documents, [desktop] lines
 PATH_LEN        = 63            ; a path and its zero (entryName's size:
                                 ; SidePress shows one in the question)
-TEXT_MAX        = 3072          ; an INI file's bytes, at most
+TEXT_MAX        = 2048          ; an INI file's bytes, at most (3072 until
+                                ; 2026-11-13: 1 KB back for the core; the
+                                ; files are far smaller; settings.inc INI_MAX,
+                                ; gush sysset.s the same)
 L_FAV           = 0             ; the lists ("which")
 L_REC           = 1
 L_DESK          = 2             ; SETTINGS.INI's [desktop] lines

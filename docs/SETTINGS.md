@@ -170,7 +170,7 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   each rebuild their REU state when started). `$6000-$7F3F` is GEOS's
   background screen (used for menus and dialogs).
 - **`src/inc/ini.inc`, shared**: SETTINGS.INI (and MOUNTS.INI, theme
-  files) read whole into a buffer (at most 3072 bytes, as today), then
+  files) read whole into a buffer (at most 2048 bytes; 3072 until 2026-11-13), then
   edited there: `IniFind` (a section and a key: the value's place),
   `IniSet` (a key's value replaced, or the line added at its section's
   end, the section added at the file's end when missing; other lines

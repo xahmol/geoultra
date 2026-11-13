@@ -253,7 +253,7 @@ colour is a property of an element, by name:
   entries, a path's last part (a one-part path such as `/a` whole), and
   leaves out lines below the screen. Writing keeps the file's other
   lines (its section moves to the end): the file is read whole (at most
-  3072 bytes, else not written), written as a `.TMP` file that then
+  2048 bytes (3072 until 2026-11-13), else not written), written as a `.TMP` file that then
   takes its place, so a failed write leaves the old file. Without a
   home folder (VICE: no Ultimate) nothing is read or written and the
   lists live until the desktop starts again. Tests: tests/desktop/d5.py

@@ -19,7 +19,7 @@
         .import IniFind, IniSet, iniLen, NoRoom, dirty, Write
         .import UseSettings, UseTheme, themeDirty, themeLoaded, themeNo
         .import themeCount, themePart, themeNames, themePath, themeTmp
-        .import IniPaths, IniLoad, IniEmpty, noFile, PageColours
+        .import IniPaths, IniLoad, IniEmpty, noFile
         .import KeyLo, KeyHi, LColKind, WordsLo, WordsHi, ColourNames
         .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
         .import PalKey, IniDel

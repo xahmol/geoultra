@@ -17,8 +17,8 @@
         .include "hw.inc"
 
         .export DoDlgBox, RstrFrmDialogue, SaveState, RestoreState, InitGEOEnv
-        .export gfLeft, gfTop, gfSel, gfFirst, gfType, gfCls     ; (module 87,
-        .export GfFind, GfCopy, GfDraw, dbIndex, gfDrvOn         ; drvlist.s)
+        .export gfLeft, gfTop, dbIndex, gfDrvOn                  ; (module 87,
+                                                                 ; drvlist.s)
         .export gfDrvPick
         .import OvlCall
         .import DoIcons, StartMouseMode, UseSystemFont, PutString

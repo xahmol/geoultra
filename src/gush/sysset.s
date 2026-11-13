@@ -16,7 +16,7 @@ FE_SETTIME      = 27
 FE_NTP          = 29
 FE_BAD_PATH     = $49
 FE_ULTIMATE     = $4F
-TEXT_MAX        = 3072          ; SETTINGS.INI's bytes, at most
+TEXT_MAX        = 2048          ; SETTINGS.INI's bytes, at most (as the desktop)
                                 ; (geos.inc: year, then month, day, hour,
                                 ; minutes, seconds)
 

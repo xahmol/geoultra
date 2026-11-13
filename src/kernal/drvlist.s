@@ -12,11 +12,10 @@
 
         .include "geos.inc"
 
-        .import SetDevice, PutChar, FrameRectangle, InvertRectangle, Rectangle
+        .import PutChar, FrameRectangle, InvertRectangle, Rectangle
         .import SetPattern, IsMseInRegion
-        .import gfLeft, gfTop, gfSel, gfFirst, gfType, gfCls, dbIndex, gfDrvOn
+        .import gfLeft, gfTop, dbIndex, gfDrvOn
         .import gfDrvPick
-        .import GfFind, GfCopy, GfDraw
 
 LET_W           = 11            ; a letter's button
 LET_H           = 11

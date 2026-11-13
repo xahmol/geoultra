@@ -13,10 +13,10 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, Setup, Slot, Store, text, counts, which, at, work
+        .import FileEngine, Setup, Slot, Store, text, counts, which, at
         .import panes, wantPanes, sortMode, deskPrefs
         .import wantTheme, wantView, wantToolbar, curName, clockMode, viewMode, tbMode
-        .importzp lp, sp
+        .importzp sp
         .export Ov_LoadAll, Ov_Save, Ov_ThemeSave, Ov_ViewSave, Ov_ClockSave, Ov_ToolbarSave
         .export Ov_PanesSave, Ov_PanesKeep
 Ov_LoadAll = LoadAll            ; (the stubs in ovl.s, overlay 4)

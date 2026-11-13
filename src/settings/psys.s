@@ -10,7 +10,7 @@
         .include "engine.inc"
         .include "settings.inc"
 
-        .import ChoiceDraw, ChoicePress, ButtonDraw, OnButton, TextWidth
+        .import ChoiceDraw, ChoicePress, ButtonDraw, OnButton
         .import IniFind, IniSet, IniDel, iniSkip, sel, dirty, NoRoom
         .import FileEngine
         .export Ov_SysDraw, Ov_SysPress
