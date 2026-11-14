@@ -261,6 +261,16 @@ RRGGBB values (black ... light grey), as in the Night theme's file. The
 desktop's menus and dialogs take the menu bar's colours; programs and
 desk accessories keep GEOS's own.
 
+In the icon view the icons can be coloured by type: a theme's
+`icons-apps=`, `icons-documents=`, `icons-accessories=`,
+`icons-system=` (fonts, drivers, boot files), `icons-folders=` (folders
+and drives) and `icons-ultimate=` lines each give a colour (on the
+desk's background); a type without a line keeps the desk's colour.
+`icons-bytype=off` switches them off for the theme, `iconcolours=off`
+in `SETTINGS.INI` (Settings' Desktop page, "Icon colours") for every
+theme. On Settings' Theme page they are one part, "icons by type": on
+or off, the type's ink (or "none"), and the type chosen with [-] [+].
+
 ## Settings
 
 The desktop keeps its settings in `GEOULTRA/SETTINGS.INI` on the stick
@@ -273,6 +283,7 @@ view=list            (list, icons, detailed)
 clock=24             (24, 12, off)
 toolbar=16           (16: two lines, 8: one line, off)
 panes=1              (1: one list, 2: two panes)
+iconcolours=off      (the icon view's colours by type off; on: the theme's)
 
 [favourites]
 /usb0/geoultra

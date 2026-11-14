@@ -293,6 +293,18 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   the theme, each "ink on paper": applications, documents, desk
   accessories, system files (fonts, drivers, boot files), folders and
   drives; plus Ultimate files. A missing line keeps the single icon
-  colour of today. Icon view only.
+  colour of today. Icon view only. Optional (the user, the same day):
+  "none" per type on the Theme page (its line out), icons-bytype=on|off
+  in the theme, iconcolours=on|off in SETTINGS.INI (the Desktop page).
+  **Done 2026-11-14:** themedef.inc lines 15-21 (icons-bytype, then the
+  six types: ink only, on the desk's paper, ITYPE_NONE $FF when not
+  set); the desktop's iconview.s Tint (the icon view's grid on a cell
+  row, gridTop, so an icon's three colour-cell rows are its own) and
+  inifile.s (PREF_PLAIN); the Theme page's part 15 "icons by type" (on,
+  off as its style; the ink row with "none"; the type picker on the
+  paper row; iType in the core), the palette now part 16; the Desktop
+  page's row "Icon colours". Tests: s4.py (VICE: the lines written,
+  none, off), d22.py (VICE: the colour cells, both switches), d9.py (the
+  grid).
 
 Beta 1 needs S1-S6's first versions (docs/DESIGN.md, "Releases").

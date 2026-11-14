@@ -29,7 +29,7 @@
         .exportzp vp
         .export ReadChrome, Colours, PageColours, TitleBar
         .export MarkOn, MarkOff, RowTop, Dialog
-        .export cColour
+        .export cColour, iType
 
 ; The theme's lines the chrome reads (themedef.inc's order), C_* their
 ; places in cStyle and cColour.
@@ -79,6 +79,7 @@ FirstLoad:
         sta themeLoaded
         lda #0
         sta themePart
+        sta iType               ; (BSS: not cleared at the start)
         jmp LoadTheme
 
 ; UsedName: name = the theme in use (SETTINGS.INI [desktop] theme=;
@@ -932,6 +933,9 @@ TitleW:         .byte "GeoUltra Settings", PLAINTEXT, 0
 
         .segment "BSS"
 
+iType:          .res 1          ; the Theme page's icon colour by type shown
+                                ; (0-5: its line LINE_ITYPES + iType; kept
+                                ; here: the page's overlay is fetched anew)
 cStyle:         .res CHROME_N   ; the chrome's styles (their words' index)
 cColour:        .res CHROME_N   ; and colours (ink << 4 | paper)
 cAt:            .res 1

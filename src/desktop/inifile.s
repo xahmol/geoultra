@@ -524,6 +524,17 @@ DeskRead:
         lda deskPrefs
         ora #PREF_NOASK
         sta deskPrefs
+:       ldx #KEY_ICOLS          ; iconcolours=off (iconview.s): no icon
+        jsr KeyVal              ; colours by type (on, off: the second
+        bcs :+                  ; letter tells)
+        ldy #1
+        lda (r0),y
+        ora #$20
+        cmp #'f'
+        bne :+
+        lda deskPrefs
+        ora #PREF_PLAIN
+        sta deskPrefs
 :       ldx #KEY_PANE2          ; the other pane's folder, into its state
         jsr KeyVal             ; in the REU (list.s's PaneInit gave it "/"
         bcs @end                ; before this; the user, 2026-11-12: two
@@ -929,8 +940,11 @@ KEY_PANE2       = 5
 KEY_SORT        = 6
 KEY_COPY        = 7
 KEY_DEL         = 8
+KEY_ICOLS       = 9
 KeyLo:  .byte <KTheme, <KView, <KClock, <KToolbar, <KPanes, <KPane2, <KSort, <KCopy, <KDel
+        .byte <KIcols
 KeyHi:  .byte >KTheme, >KView, >KClock, >KToolbar, >KPanes, >KPane2, >KSort, >KCopy, >KDel
+        .byte >KIcols
 SDesk:          .byte "desktop", 0
 STime:          .byte "time", 0
 KAdjust:        .byte "adjust", 0
@@ -943,6 +957,7 @@ KPane2:         .byte "pane2", 0
 KSort:          .byte "sort", 0
 KCopy:          .byte "copy", 0
 KDel:           .byte "delete", 0
+KIcols:         .byte "iconcolours", 0
 First:                                  ; a value's first character
 ViewFirst:      .byte "lid", 0          ; list, icons, detailed
 ClockFirst:     .byte "21o", 0          ; 24, 12, off

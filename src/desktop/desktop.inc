@@ -140,6 +140,8 @@ ST_OFF          = 1             ; icons, status: 0 on
 ; The view (theme.s viewMode) and the clock (clockMode)
 THM_STYLES      = 11            ; a theme record: style bytes, then colour
 THM_LEN         = 23            ; bytes (theme.s's record, themefile.s's)
+ITYPES_N        = 6             ; the icon colours by type after it
+ITYPE_NONE      = $FF           ; (themedef.inc: not set)
 BIG_BANK        = 6             ; the icon view's generic icons in the REU
 BIG_PAGE        = $FE           ; (tooldraw.s puts them, iconview.s reads;
                                 ; after the icon cache, iconview.s)
@@ -157,6 +159,8 @@ COPY_REPLACE    = 1             ; copy= what an existing file at the
 COPY_SKIP       = 2             ; target gets (tree.s CopyFile)
 COPY_NEWER      = 3
 PREF_NOASK      = $04           ; delete=now: no question first (actions.s)
+PREF_PLAIN      = $08           ; iconcolours=off: no icon colours by type
+                                ; (iconview.s; the user, 2026-11-14)
 ENTRY_MAX       = 1024          ; a pane's entries (list.s: two REU banks)
 SEL_LEN         = ENTRY_MAX / 8 ; the selection's bytes
 DROP_OTHER_COPY = 2             ; a drop (listin.s -> desktop.s DropDo; 0

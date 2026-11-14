@@ -21,14 +21,14 @@
         .import themeCount, themePart, themeNames
         .import noFile
         .import KeyLo, KeyHi, LColKind, ColourNames
-        .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
+        .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER, LINE_ITYPES, ITYPES_N, LINE_BYTYPE
         .import PalKey, IniDel
         .export Ov_ThemeDraw, Ov_ThemePress, row, SWATCH_X
         .import BarOn, BarOff, ThemesFull, Ask2, repaint, ReadChrome
         .import FirstLoad, AddName, NameAt, LoadTheme
         .import ReadLine, LineKey, HasWords, NextWord, Colour
         .import STheme, OnText, SDesktop, KTheme, ThemePaths, tmp, idx, line, style, ink, paper, name, val, pbuf
-        .import cColour, InUse, DeleteTheme, buf
+        .import cColour, InUse, DeleteTheme, buf, iType
         .importzp vp
 
         .segment "ZEROPAGE"
@@ -102,6 +102,16 @@ Ov_ThemePress:
         cmp #PALETTE
         bne :+
         jmp PalPress
+:       cmp #ITYPE_PART
+        bne :+
+        jsr TypePress           ; (the type picker, none)
+        bcc @end
+        lda #LINE_BYTYPE        ; its style row: icons-bytype on, off
+        jsr ReadLine
+        jsr StylePress
+        bcc @end
+        jsr ReadPart            ; its ink row: the type's line
+        jmp SwatchPress
 :       jsr StylePress
         bcc @end
         jmp SwatchPress
@@ -380,7 +390,13 @@ PartDraw:
         sta r0L
         lda KeyHi,x
         sta r0H
-        lda #NAME_X
+        cpx #ITYPE_PART         ; (the icon colours by type: one part)
+        bne :+
+        lda #<TByType
+        sta r0L
+        lda #>TByType
+        sta r0H
+:       lda #NAME_X
         sta r11L
         lda #0
         sta r11H
@@ -392,6 +408,16 @@ PartDraw:
         cmp #PALETTE
         bne :+
         jsr PalDraw
+        jmp Preview
+:       lda themePart
+        cmp #ITYPE_PART
+        bne :+
+        lda #LINE_BYTYPE        ; icons by type: on, off as its style;
+        jsr ReadLine            ; the type's ink; the type picker on the
+        jsr StyleDraw           ; paper row
+        jsr ReadPart
+        jsr SwatchesDraw
+        jsr TypeDraw
         jmp Preview
 :       jsr ReadPart
         jsr StyleDraw
@@ -425,6 +451,11 @@ Labels: ldx #2
         inx
         inx
         inx
+:       cpy #ITYPE_PART         ; (icons by type: "Type" for "Paper")
+        bne :+
+        cpx #2
+        bne :+
+        ldx #6
 :       lda LowLo,x
         sta r0L
         lda LowHi,x
@@ -446,8 +477,148 @@ Labels: ldx #2
 ; ReadPart: style, ink, paper of the part from its line (missing: the
 ; first style, dark grey on light grey).
 ReadPart:
+        jsr PartLine
+        jsr ReadLine
+        lda themePart           ; an icon colour by type not set: no ink
+        cmp #ITYPE_PART         ; (none framed)
+        bne @end
+        jsr LineKey
+        jsr IniFind
+        bcc @end
+        lda #NO_INK
+        sta ink
+@end:   rts
+
+; PartLine: A = the theme line the part edits (icons by type: the line
+; of the type shown, iType).
+PartLine:
         lda themePart
-        jmp ReadLine
+        cmp #ITYPE_PART
+        bne :+
+        lda iType
+        clc
+        adc #LINE_ITYPES
+:       rts
+
+; StyleLine: A = the line of the part's style row (icons by type:
+; icons-bytype's on, off).
+StyleLine:
+        lda themePart
+        cmp #ITYPE_PART
+        bne PartLine
+        lda #LINE_BYTYPE
+        rts
+
+; TypeDraw: the type picker on the paper row, [-] the type's name [+],
+; and "none" after the ink row's swatches (framed: the type not set).
+TypeDraw:
+        lda #<BNone             ; (its frame of before cleared)
+        ldx #>BNone
+        jsr OnBox
+        lda #0
+        jsr SetPattern
+        jsr Rectangle
+        lda #<BNone
+        ldx #>BNone
+        jsr ButtonDraw
+        lda ink
+        cmp #NO_INK
+        bne :+
+        lda #<BNone
+        ldx #>BNone
+        jsr OnBox
+        lda #$FF
+        jsr FrameRectangle
+:       lda #<BTypeDn
+        ldx #>BTypeDn
+        jsr ButtonDraw
+        lda #<BTypeUp
+        ldx #>BTypeUp
+        jsr ButtonDraw
+        ldx iType
+        lda TypeLo,x
+        sta r0L
+        lda TypeHi,x
+        sta r0H
+        lda #<TYPE_NAME_X
+        sta r11L
+        lda #>TYPE_NAME_X
+        sta r11H
+        lda #TYPE_Y
+        sta r1H
+        jmp PutString
+
+; OnBox: r2-r4 = button A/X's box, a pixel larger all round.
+OnBox:  sta r0L
+        stx r0H
+        ldy #0
+        lda (r0),y
+        sec
+        sbc #2
+        sta r3L
+        iny
+        lda (r0),y
+        sbc #0
+        sta r3H
+        iny
+        lda (r0),y
+        sec
+        sbc #2
+        sta r2L
+        clc
+        adc #BTN_H + 3
+        sta r2H
+        iny
+        lda (r0),y              ; its width
+        clc
+        adc r3L
+        adc #3
+        sta r4L
+        lda r3H
+        adc #0
+        sta r4H
+        rts
+
+; TypePress: C clear when the click was on the type picker's [-] or
+; [+]: the previous or next type shown (its swatches, the preview).
+TypePress:
+        lda #<BNone             ; none: the type's line out of the theme
+        ldx #>BNone
+        jsr OnButton
+        bcs @dnb
+        jsr PartLine
+        sta line
+        jsr LineKey
+        jsr IniDel
+        lda #1
+        sta themeDirty
+        jsr PartDraw
+        clc
+        rts
+@dnb:   lda #<BTypeDn
+        ldx #>BTypeDn
+        jsr OnButton
+        bcs :+
+        ldx iType
+        bne @dn
+        ldx #ITYPES_N
+@dn:    dex
+        jmp @set
+:       lda #<BTypeUp
+        ldx #>BTypeUp
+        jsr OnButton
+        bcs @no
+        ldx iType
+        inx
+        cpx #ITYPES_N
+        bcc @set
+        ldx #0
+@set:   stx iType
+        jsr PartDraw
+        clc
+        rts
+@no:    sec
+        rts
 ; WriteLine: line's value in the file's words from style, ink, paper
 ; (by its kind), set in the theme's text; themeDirty; the preview.
 WriteLine:
@@ -664,7 +835,7 @@ StylePress:
         bcc @box
 @hit:   stx style
         jsr WriteLine
-        lda themePart           ; (WriteLine kept line: the part's)
+        jsr StyleLine           ; (WriteLine kept line: the part's)
         jsr ReadLine
         jsr StyleDraw
         jsr Preview
@@ -724,6 +895,9 @@ Swatches:
         sta (vp),y
         dey
         bpl @c
+        lda chosen              ; (none chosen, NO_INK: no frame)
+        cmp #SWATCHES
+        bcs @bar
         jsr RowBox              ; the chosen one framed
         lda chosen
         asl a
@@ -755,7 +929,7 @@ Swatches:
         asl a
         ora chosen
         sta (vp),y
-        jmp BarOn               ; (settings.s: a frame round the row, so
+@bar:   jmp BarOn               ; (settings.s: a frame round the row, so
                                 ; the page's own colour shows too; the
                                 ; user, 2026-11-13)
 
@@ -1374,8 +1548,17 @@ BOX             = 7
 BOX_TEXT        = 11
 STYLE_GAP       = 8             ; between a word and the next box
 STYLES_MAX      = 4
-PALETTE         = LINES_N       ; the part after the lines: the palette
-PARTS           = LINES_N + 1
+ITYPE_PART      = LINE_BYTYPE   ; the icon colours by type: one part (the
+                                ; user, 2026-11-14): icons-bytype's on, off
+                                ; and the type lines by iType
+PALETTE         = LINE_BYTYPE + 1 ; then the palette
+PARTS           = LINE_BYTYPE + 2
+        .assert LINE_ITYPES + ITYPES_N = LINES_N, error, "parts: the type lines last"
+TYPE_NAME_X     = STYLE_X + 18
+TYPE_Y          = PAPER_ROW * 8 + 7 ; (the paper row's label's baseline)
+NONE_X          = SWATCH_X + 16 * 8 + 4 ; after the ink row's swatches
+NO_INK          = $FF           ; ink: the type's line not there
+BTN_H           = 12            ; a button's height (widgets.s)
 PAL_LEN         = 48            ; 16 RGB triplets
 PAL_STEP        = 4             ; an R, G or B step
 PAL_BUTTONS     = 7             ; R- R+ G- G+ B- B+ default
@@ -1394,8 +1577,8 @@ PREV_WORDS      = 6
 LabelLo:        .byte <LTheme, <LPart
 LabelHi:        .byte >LTheme, >LPart
 LabelY:         .byte THEME_Y, PART_Y
-LowLo:          .byte <LStyle, <LInk, <LPaper, <LRgb, 0, <LColour
-LowHi:          .byte >LStyle, >LInk, >LPaper, >LRgb, 0, >LColour
+LowLo:          .byte <LStyle, <LInk, <LPaper, <LRgb, 0, <LColour, <LType
+LowHi:          .byte >LStyle, >LInk, >LPaper, >LRgb, 0, >LColour, >LType
 LowY:           .byte STYLE_Y, INK_ROW * 8 + 7, PAPER_ROW * 8 + 7
 BtnLo:          .byte <BThemeDn, <BThemeUp, <BUse, <BCopy, <BPartDn, <BPartUp, <BPal, <BDel
 BtnHi:          .byte >BThemeDn, >BThemeUp, >BUse, >BCopy, >BPartDn, >BPartUp, >BPal, >BDel
@@ -1526,6 +1709,26 @@ LInk:           .byte "Ink", 0
 LPaper:         .byte "Paper", 0
 LRgb:           .byte "RGB", 0
 LColour:        .byte "Colour", 0
+LType:          .byte "Type", 0
+TByType:        .byte "icons by type", 0
+TypeLo:         .byte <TyApps, <TyDocs, <TyDas, <TySys, <TyFolders, <TyUlt
+TypeHi:         .byte >TyApps, >TyDocs, >TyDas, >TySys, >TyFolders, >TyUlt
+TyApps:         .byte "applications", 0
+TyDocs:         .byte "documents", 0
+TyDas:          .byte "desk accessories", 0
+TySys:          .byte "system files", 0
+TyFolders:      .byte "folders, drives", 0
+TyUlt:          .byte "Ultimate files", 0
+BTypeDn:        .word STYLE_X
+                .byte TYPE_Y - 9, 14
+                .word TMinus
+BTypeUp:        .word PLUS_X
+                .byte TYPE_Y - 9, 14
+                .word TPlus
+BNone:          .word NONE_X
+                .byte INK_ROW * 8 - 2, 28
+                .word TNone
+TNone:          .byte "none", 0
 TMinus:         .byte "-", 0
 TPlus:          .byte "+", 0
 TUse:           .byte "use", 0

@@ -590,6 +590,11 @@ below); left to redo after the fixes:
   - The menus' keys right-aligned (geos, file, view menus).
   - Two panes: a selection in one pane hidden when the other is
     active, back when it is active again.
+  - The boot splash's full version line (matches GeoUltra info).
+  - Icon colours by type: on the Theme page's "icons by type" part give
+    a few types a colour (none, off), Save, use the theme: the icon view
+    coloured by type; Settings' Desktop page "Icon colours: off" turns
+    them off for every theme.
 
 Done 2026-11-11: the right mouse button on the U64 ("Verified on
 hardware").

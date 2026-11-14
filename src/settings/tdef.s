@@ -8,3 +8,4 @@
 
         .export KeyLo, KeyHi, LColKind, WordsLo, WordsHi, ColourNames, PalKey
         .exportzp LINES_N, KIND_PALETTE, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
+        .exportzp LINE_ITYPES, ITYPES_N, LINE_BYTYPE

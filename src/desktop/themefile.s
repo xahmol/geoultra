@@ -28,7 +28,7 @@
         .include "desktop.inc"
 
         .import FileEngine, ThemeName, Derive, tMenu, themeNo
-        .import tCols, viewMode, cProgs
+        .import tCols, viewMode, cProgs, cIconT, tByType
         .import text            ; (side.s's INI text: never in use at the same time)
         .export Ov_ThemeFiles, Ov_ThemeUse, Ov_PalReset   ; (overlay 1: ovl.s)
         .export themeNames, themeCount, curName, hasPal
@@ -675,7 +675,12 @@ Write:  lda #<buf
         lda #0
         sta kind
 @line:  ldx kind
-        lda KeyLo,x
+        ldy LColour,x           ; an icon colour by type not set ($FF):
+        lda tMenu,y             ; no line (the desk's colours stay)
+        cmp #ITYPE_NONE
+        bne :+
+        jmp @next
+:       lda KeyLo,x
         pha
         lda KeyHi,x
         tax
@@ -731,7 +736,7 @@ Write:  lda #<buf
         and #$0F
         jsr ColourOut
 @eol:   jsr NewLine
-        inc kind
+@next:  inc kind
         lda kind
         cmp #LINES_N
         bcs :+
@@ -966,6 +971,13 @@ ThemeSet:
         iny
         cpy #THM_LEN
         bcc @b
+        lda #ITYPE_NONE         ; (the built-in themes: no icon colours by
+        ldx #ITYPES_N - 1       ; type; a file's lines set them after)
+@t:     sta cIconT,x
+        dex
+        bpl @t
+        inx                     ; (X 0: icons-bytype on)
+        stx tByType
         lda #VIEW_LIST          ; the theme's view (its columns style)
         ldx tCols
         beq :+
@@ -1102,9 +1114,15 @@ Pal5:   ; Mono
 ; the record's colour byte (theme.s, Themes' order).
 LStyle: .byte NO_STYLE, NO_STYLE, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, NO_STYLE
         .byte NO_STYLE          ; programs
+        .byte 29                ; icons-bytype (tByType, after cIconT)
+        .res ITYPES_N, NO_STYLE ; icons by type
+        .assert * - LStyle = LINES_N, error, "LStyle: a byte per line"
 LColour:                        ; (offsets from tMenu: 11 the border ...)
         .byte 11, 12, 13, 14, 15, 16, 0, 0, 17, 18, 19, 0, 20, 21
         .byte 22                ; programs (cProgs)
+        .byte 0                 ; icons-bytype (no colours)
+        .byte 23, 24, 25, 26, 27, 28 ; icons by type (cIconT, after the record)
+        .assert * - LColour = LINES_N, error, "LColour: a byte per line"
 RowsVal:        .byte 9, 8
         .include "themedef.inc"  ; (the format's tables, shared with GeoUltra
                                 ; Settings' theme editor)

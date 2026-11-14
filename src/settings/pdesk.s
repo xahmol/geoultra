@@ -35,7 +35,7 @@ COL4            = 282           ; labels to 134, each column's longest
 Y0              = PAGE_TOP + 20 ; the rows' baselines, 18 apart
 DY              = 18
 
-Rows:   .byte 7
+Rows:   .byte 8
         .byte Y0                                ; the view
         .word LView, SDesktop, KView
         .byte 3, 0
@@ -78,6 +78,11 @@ Rows:   .byte 7
         .byte 2, 0
         .word COL1, TAskFirst, VAsk
         .word COL2, TAtOnce, VNow
+        .byte Y0 + 7 * DY                       ; icon colours by type
+        .word LIcols, SDesktop, KIcols          ; (the user, 2026-11-14:
+        .byte 2, 0                              ; optional, whatever the
+        .word COL1, TByType, VOn                ; theme says)
+        .word COL2, TOff, VOff
 
 SDesktop:       .byte "desktop", 0
 KView:          .byte "view", 0
@@ -87,6 +92,10 @@ KPanes:         .byte "panes", 0
 KSort:          .byte "sort", 0
 KCopy:          .byte "copy", 0
 KDel:           .byte "delete", 0
+KIcols:         .byte "iconcolours", 0
+LIcols:         .byte "Icon colours", 0
+TByType:        .byte "by type", 0
+VOn:            .byte "on", 0
 LCopy:          .byte "Existing", 0
 LDel:           .byte "Delete", 0
 TAsk:           .byte "ask", 0

@@ -24,7 +24,7 @@
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList
         .export Neutral, Dialog, MenuNeutral, Recover, ClockTick
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
-        .export lettersDue, rootsSeen, sortDue
+        .export lettersDue, rootsSeen, sortDue, cIconT, cDesk, tByType
         .import PaneLetters
         .export lastMin, clockX, MonLo, MonHi, stripL, listR, paneR
         .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
@@ -667,6 +667,14 @@ cStatus:        .byte $1C
 cToolbar:       .byte $BF         ; (the toolbar's row: ink << 4 | paper)
 cProgs:         .byte $BF         ; programs' colours (themefile.s: to the
                                   ; kernal's progColours and screencolors)
+cIconT:         .res ITYPES_N, ITYPE_NONE ; after the record (THM_LEN): the
+                                ; icon view's ink by type (apps, documents,
+                                ; desk accessories, system, folders and
+                                ; drives, Ultimate files; iconview.s),
+                                ; ITYPE_NONE: the desk's (themefile.s)
+        .assert cIconT - tMenu = THM_LEN, error, "cIconT: right after the record"
+tByType:        .byte 0         ; icons-bytype: 0 on, 1 off (cIconT unused)
+        .assert tByType - tMenu = 29, error, "tByType: themefile.s's LStyle"
 
 ; Derived (Derive)
 themeNo:        .byte 0

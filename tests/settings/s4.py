@@ -155,7 +155,7 @@ def main():
                    "984E20 5B3800 D1676D 4A4A4A 7B7B7B 9FEF93 6D6AEF B2B2B2").split()
         for _ in range(3):                                  # menubar -> palette
             press(156, PART_Y - 3, t=3)
-        check("the palette part (after programs, 14)", sbyte("themePart"), 15)
+        check("the palette part (after icons by type, 15)", sbyte("themePart"), 16)
         press(SWATCH_X + 6 * 8 + 3, PAPER_Y, t=3)          # blue
         press(118 + 40 + 7, STYLE_Y - 3, t=3)              # R +
         want = default[:]
@@ -165,6 +165,27 @@ def main():
         g.png("settings-s4-palette")
         press(118 + 168 + 16, STYLE_Y - 3, t=3)            # none
         check("none: palette= taken out", theme_text(), b"[theme]\r\n")
+        # S4.6: icons by type (the user, 2026-11-14): one part with a type
+        # picker on the paper row, on/off as its style, "none" per type.
+        press(156, PART_Y - 3, t=3)                          # palette -> 15
+        check("the part before the palette: icons by type (15)", sbyte("themePart"), 15)
+        press(SWATCH_X + 5 * 8 + 3, INK_Y, t=3)              # green
+        check("applications' ink green: icons-apps=green", theme_text(),
+              b"[theme]\r\nicons-apps=green\r\n")
+        press(236 + 7, PAPER_Y - 3, t=3)                     # type [+]
+        check("type [+]: documents", sbyte("iType"), 1)
+        press(SWATCH_X + 6 * 8 + 3, INK_Y, t=3)              # blue
+        press(118 + 7, PAPER_Y - 3, t=3)                     # type [-]
+        check("documents blue; [-] back to applications",
+              (theme_text(), sbyte("iType")),
+              (b"[theme]\r\nicons-apps=green\r\nicons-documents=blue\r\n", 0))
+        g.png("settings-s4-bytype")
+        press(SWATCH_X + 16 * 8 + 4 + 14, INK_Y - 3, t=3)    # none
+        check("none: icons-apps= taken out", theme_text(),
+              b"[theme]\r\nicons-documents=blue\r\n")
+        press(118 + 40, STYLE_Y - 3, t=3)                     # style: off
+        check("off: icons-bytype=off", theme_text(),
+              b"[theme]\r\nicons-documents=blue\r\nicons-bytype=off\r\n")
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

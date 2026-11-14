@@ -17,6 +17,7 @@
         .import listL, listTop, bottom, rows, cur, row, RowEntry
         .import IsSelected, entryInfo, entryName, IconFor, Icons, TextWidth
         .import FileEngine, text, IsDotDot, stripL
+        .import Paint, px0, px1, py0, py1, pcol, cIconT, cDesk, tByType, deskPrefs
         .export IconLayout, DrawCell, CellAt, IconsForget, step, bigOk
 
 CELL_CARDS      = 5             ; a cell: 5 cards wide (the icon on 1-3)
@@ -65,9 +66,14 @@ IconLayout:
         clc
         adc first
         sta gridCard
-        lda bottom              ; the rows: (bottom + 1 - listTop) / CELL_H
+        lda listTop             ; the grid's top on a cell row (the icons'
+        clc                     ; colour cells their own: the colours by
+        adc #7                  ; type, the user 2026-11-14)
+        and #$F8
+        sta gridTop
+        lda bottom              ; the rows: (bottom + 1 - gridTop) / CELL_H
         sec
-        sbc listTop
+        sbc gridTop
         clc
         adc #1
         ldx #0
@@ -113,14 +119,15 @@ DrawCell:
         rol cellX+1
         asl cellX
         rol cellX+1
-        txa                     ; its top: listTop + row * 32
+        txa                     ; its top: gridTop + row * 32
         asl a
         asl a
         asl a
         asl a
         asl a
-        adc listTop
+        adc gridTop
         sta cellY
+        jsr Tint
         jsr GetIcon
         lda #<icon
         sta r0L
@@ -154,6 +161,71 @@ DrawCell:
         lda #$FF
         jmp FrameRectangle
 @end:   rts
+
+; Tint: the icon's colour cells (cards card+1 to card+3, the cell's
+; three top rows: cellY on a cell row) in its group's ink on the desk's
+; paper (cIconT, the theme's icons-apps= ... lines; a group not set,
+; icons-bytype=off or SETTINGS.INI iconcolours=off: the desk's colours). Groups: 0 applications (and auto-exec), 1 documents and
+; other files, 2 desk accessories, 3 system files (fonts, drivers, boot),
+; 4 folders and drives, 5 Ultimate files. Destroys A, X, Y.
+Tint:   ldy #1                  ; (documents)
+        lda entryInfo + FI_KIND
+        cmp #K_GEOS
+        bne @kind
+        ldx entryInfo + FI_GTYPE
+        cpx #16
+        bcs @group
+        ldy TypeGroup,x
+        bpl @group              ; (always)
+@kind:  ldy #4
+        cmp #K_DRIVE
+        beq @group
+        cmp #K_FOLDER
+        beq @group
+        cmp #K_UDIR
+        beq @group
+        ldy #5
+        cmp #K_UFILE
+        beq @group
+        ldy #1                  ; (a plain CBM file: as documents)
+@group: ldx #ITYPE_NONE          ; (off in SETTINGS.INI, iconcolours=,
+        lda deskPrefs           ; or in the theme, icons-bytype=: the
+        and #PREF_PLAIN         ; desk's colours)
+        ora tByType
+        bne :+
+        ldx cIconT,y
+:       lda cDesk
+        cpx #ITYPE_NONE
+        beq :+
+        and #$0F                ; ink << 4 | the desk's paper
+        sta pcol
+        txa
+        asl a
+        asl a
+        asl a
+        asl a
+        ora pcol
+:       sta pcol
+        ldx card
+        inx
+        stx px0
+        inx
+        inx
+        stx px1
+        lda cellY
+        lsr a
+        lsr a
+        lsr a
+        sta py0
+        clc
+        adc #2
+        sta py1
+        jmp Paint
+
+; The group of each GEOS file type (Tint): 0 non-GEOS, BASIC, assembly,
+; data, system, desk accessory, application, application data, font,
+; printer, input, disk driver, boot, temporary, auto-exec, input 128.
+TypeGroup:      .byte 1, 1, 1, 1, 3, 2, 0, 1, 3, 3, 3, 3, 3, 3, 0, 3
 
 ; Name: entryName centred under the icon (from the cell's left edge when
 ; it is wider than the cell, cut at its right edge).
@@ -248,7 +320,7 @@ CellAt: lda gridCard            ; x from the grid's left edge
         stx col
         lda mouseYPos
         sec
-        sbc listTop
+        sbc gridTop
         bcc @no
         ldx #0
 @row:   cmp #CELL_H
@@ -515,6 +587,7 @@ bigOk:          .byte 0         ; 1: the generic icons are in the REU
 gridCols:       .res 1
 gridRows:       .res 1
 gridCard:       .res 1          ; the grid's first card
+gridTop:        .res 1          ; its top (listTop on a cell row)
 first:          .res 1
 col:            .res 1
 card:           .res 1
