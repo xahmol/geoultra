@@ -274,9 +274,21 @@ UCI).
   boot disk's AUTO_EXEC files (input and printer drivers, configuration
   tools) before the deskTop, GeoUltra's cold start should run those of
   drive A (or a configured drive and folder) before its desktop; today
-  they can only be started by hand (GetFile handles them). To decide:
-  which drive and folder, the order, a key to skip them, and how they
-  meet hibernation's resume.
+  they can only be started by hand (GetFile handles them). Decided by
+  the user (2026-11-14): a list in SETTINGS.INI, `[system]
+  autoexec=/a/CONFIGURE` lines (a path with its drive and folder), run
+  in that order at a fresh cold start only (not after a resumed
+  session), skipped while SHIFT is held (the user, the same day: C=
+  stays the resume's key alone, so a fresh start after a broken session
+  still runs them; both held: a fully clean start); only GEOS AUTO_EXEC
+  files; edited on a new **Start** page in
+  GeoUltra Settings (a list with add (a file dialog of AUTO_EXEC files
+  on A-E), remove, up and down; room there for later start-up
+  choices). Kernal part built 2026-11-14 (src/kernal/autoexec.s, modules
+  92-93: the list read into REU bank 1 $1C00 at the cold start's end,
+  EnterDeskTop's module 0 starting the next one; U64 test autou64.py:
+  two files in the list's order, a missing one skipped, firstBoot FALSE
+  meanwhile and TRUE after).
 - **User manuals** (when design and functions are stable): system (boot,
   drives and images, MOUNTS.INI, hibernation, turbo, the REU), desktop
   (docs/DESKTOP_MANUAL.md), gush (docs/GUSH_MANUAL.md), settings,

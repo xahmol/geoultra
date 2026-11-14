@@ -11,6 +11,7 @@
         .import pointerPic, UseSystemFont, RecoverRectangle
         .import sysFlgCopy, DiskInit, ExtraColours, ClockInit
         .import MountAll, SerialFromDisk, TurboInit, SaveJumpTab, HibResumeOvl, RtcClockOvl
+        .import autoIdx, OvlCall
         .import PointerInit
         .export ColdStart
         .import startGush, FileEngine
@@ -195,6 +196,9 @@ ColdStart:                      ; $4F00: the boot ROM jumps here
         sta r0H                 ; errors left: the Ultimate's clock stays)
         lda #FE_NTP
         jsr FileEngine
+        jsr AutoStart           ; SETTINGS.INI autoexec=: run first, then the
+        lda autoIdx             ; desktop (module 92; EnterDeskTop goes on
+        bpl @loop               ; with them)
         bit startGush           ; SETTINGS.INI start=gush: gush from drive
         bpl @loop               ; E (FE_RUNSYS); back only when it failed
         lda #<gushName
@@ -207,5 +211,8 @@ ColdStart:                      ; $4F00: the boot ROM jumps here
 
 gushName:
         .byte "gush", 0
+AutoStart:
+        jsr OvlCall
+        .byte 92, 0
 FE_RUNSYS       = 22            ; (engine.inc)
 FE_NTP          = 29

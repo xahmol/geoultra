@@ -494,6 +494,7 @@ test-engine-u64: check-deploy all build/uciprobe.bin
 	$(PYTHON) tests/engine/imgu64.py build/geoultra64.crt
 	$(PYTHON) tests/engine/longu64.py build/geoultra64.crt
 	$(PYTHON) tests/engine/sizeu64.py build/geoultra64.crt
+	$(PYTHON) tests/engine/autou64.py build/geoultra64.crt
 
 # A UCI probe run inside GeoUltra on the U64 (feu64.py, U64.uci): raw
 # commands while developing.

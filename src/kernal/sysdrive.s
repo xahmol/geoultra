@@ -29,7 +29,7 @@
         .export AppFTypes, ftStart, ftAll, ftLeft
         .export sysName, sysActive, sysType, sysCurType, sysBase, sysFlags
         .export sysTracks, sysFolderT, sysFolderS, sysSlot, ownDesk, sysActive
-        .export imgFlags, imgBank, imgType, imgTracks, uTouch
+        .export imgFlags, imgBank, imgType, imgTracks, uTouch, autoIdx
         .import OvlCall, FindFTypes, FindFile
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
@@ -90,6 +90,8 @@ imgFlags:       .byte 0
 imgBank:        .byte 0         ; its first REU bank
 imgType:        .byte 0         ; its DRV_* type
 imgTracks:      .byte 0         ; native: its tracks (else 0)
+autoIdx:        .byte $FF       ; autoexec.s (module 92): the next auto-exec
+                                ; of the cold start's list ($FF: none running)
 uTouch:         .byte 0         ; module 88: a plain Ultimate path was
                                 ; resolved in this call (module 81 clears it)
 

@@ -580,6 +580,9 @@ OvFirstInit:
         sta CPU_PORT
         rts
 
+AutoNext:
+        jsr OvlCall
+        .byte 92, 3
 EnterDeskTopVec = $C22C         ; the jump table entry (jmp EnterDeskTop)
 FE_RUNSYS       = 22            ; (engine.inc: an application from drive E)
 APP_RAM         = $0400
@@ -597,6 +600,8 @@ OvEnterDeskTop:
         jsr InitMachine
         jsr Background
         jsr RefusedMsg          ; an application refused: why (sysdrive.s)
+        jsr AutoNext            ; the cold start's auto-execs: the next one
+                                ; (no return while one starts; module 92)
         bit ownDesk             ; GeoUltra's desktop (sysdrive.s ownDesk)
         bpl @old                ; from drive E (FE_RUNSYS); back only
         ldx #OWN_LEN            ; when it cannot start: then GEOS 2.0's
