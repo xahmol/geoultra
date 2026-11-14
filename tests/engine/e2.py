@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""File engine step E2 on GeoUltra in VICE (docs/FILE_ENGINE.md).
+"""File engine on GeoUltra in VICE (docs/FILE_ENGINE.md).
 
 On the drives of feharness.py (A the GEOS 2.0 disk, only read; B the
 reference D81 of the real 1581 DOS): FE_COPY and FE_MOVE (a CBM file in

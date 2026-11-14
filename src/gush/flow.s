@@ -1,4 +1,4 @@
-; gush: statements and control flow (docs/GUSH.md, "Step 3", sub-step 4).
+; gush: statements and control flow (docs/GUSH.md).
 ; Exec runs a text in gush's REU (a script's area, or a typed line copied
 ; to LINE_BANK) statement by statement: statements end at a line's end or
 ; an unquoted ";"; "#" at a word's start comments to the line's end. The

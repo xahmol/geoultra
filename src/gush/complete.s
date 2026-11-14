@@ -1,5 +1,5 @@
-; gush: completion with the <- key (docs/GUSH.md, "Step 3", sub-step 7;
-; overlay 3, ovl.s). The word before the cursor (back to a space, ";" or
+; gush: completion with the <- key (docs/GUSH.md; overlay 3, ovl.s). The
+; word before the cursor (back to a space, ";" or
 ; "|", taken as typed: no quotes) is the start of a name: in the folder
 ; its path gives (or the current one), and for a statement's first word
 ; without "/" also of gush's commands. The first <- adds what all the

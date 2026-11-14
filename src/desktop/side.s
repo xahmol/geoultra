@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: the sidebar's favourites and recent documents
-; (docs/DESKTOP.md, step D5b). Favourite folders are kept in
+; (docs/DESKTOP.md). Favourite folders are kept in
 ; SETTINGS.INI's [favourites] section, recent documents in RECENT.INI's
 ; [recent] section (both in the home folder, a path a line); the desktop
 ; reads them at its start (applications reuse its memory). Up to
@@ -11,7 +11,7 @@
 ; or written: the lists then live until the desktop starts again. A click on a favourite goes
 ; there, C=+click asks to remove it; a click on a recent document opens
 ; it in its folder. SETTINGS.INI's [desktop] lines are kept the same
-; way (a third list, not shown): theme=, view=, clock= (step D7a). The
+; way (a third list, not shown): theme=, view=, clock=. The
 ; files themselves are read and written by inifile.s (overlay 4); the
 ; lists live here. Own code.
 

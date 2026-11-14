@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """GeoUltra's desktop in VICE: two panes (docs/DESKTOP.md, "Two panes",
-step P4). From /a: two panes switched on (TwoPanes, as view > two panes
+). From /a: two panes switched on (TwoPanes, as view > two panes
 runs it): the left pane /a active, the right one "/"; the list view;
 a click in the right pane makes it active (its cursor on the entry
 clicked); C=SPACE back to the left; RETURN on drive b in the right
 pane opens /b there while the left keeps /a; each pane's free space on
 its half of the status line; copy and move to the other pane (C=T,
-C=M) into a new /b/dst; drag and drop (step P6): gush dragged from /b
+C=M) into a new /b/dst; drag and drop (): gush dragged from /b
 onto the right pane (the same drive: moved), F1 dragged onto a new
 folder box in the same list (moved into it); two panes off: the view
 from before back; in one list F1 dropped on drive b's sidebar line

@@ -1,5 +1,5 @@
 ; GeoUltra Settings: the Drives page (overlay 7, ovl.s; docs/SETTINGS.md
-; "S5"; the user's decisions of 2026-11-14). Three views on one page:
+; the user's decisions of 2026-11-14). Three views on one page:
 ;
 ; - the drives: a row per drive A-D: its image's name, "choose" and
 ;   "none" (unmount, asked first); for a mounted one "long names on/off"

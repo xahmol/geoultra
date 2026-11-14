@@ -1,5 +1,5 @@
-; GeoUltra Settings: the Time page (overlay 4, ovl.s; docs/SETTINGS.md,
-; "S3 decisions"): SETTINGS.INI's [time] as the kernal reads it
+; GeoUltra Settings: the Time page (overlay 4, ovl.s; docs/SETTINGS.md):
+; SETTINGS.INI's [time] as the kernal reads it
 ; (enginentp.s modules 77-79): ntp= the server, offset= seconds from UTC
 ; (signed), summer=eu or off (the EU's rule, module 79); "now" sets the
 ; clocks from the server (FE_NTP, with the settings written first: the

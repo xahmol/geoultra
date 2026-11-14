@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop on the U64, step D6 (docs/DESKTOP.md): disk images.
+"""GeoUltra's desktop on the U64 (docs/DESKTOP.md): disk images.
 A favourite (SETTINGS.INI, made for the test and deleted again) takes the
 desktop to /usb0/geoultra/test; the cursor walks to geopub.d64 (its name
 read back through the clipboard, C=C) and RETURN opens the mount dialog;

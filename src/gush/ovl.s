@@ -2,7 +2,7 @@
 ; the resident core at $0400-$4FFF (console, editor, parser, executor,
 ; variables, scripts, redirection, starting programs); records 1-OVL_N
 ; overlays linked at TRANS ($5000-$5FFF, gush.cfg), the area external
-; commands (step 3.8) use too. OvlInit, the first thing at gush's start
+; commands use too. OvlInit, the first thing at gush's start
 ; (dirEntryBuf still holds gush's own entry, GetFile left it), reads each
 ; overlay record once into the application's REU bank OVL_BANK, 4 KB
 ; each, so a later cd or another drive never matters; the stubs at the

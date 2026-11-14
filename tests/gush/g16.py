@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's pipes in VICE (docs/GUSH.md, "Step 3", sub-step 5): two and
+"""gush's pipes in VICE (docs/GUSH.md): two and
 three stages, ls into a pipe, read from a pipe, a pipe into a file, a
 pipe as an if's condition, a quoted | as text.
 Usage: tests/gush/g16.py

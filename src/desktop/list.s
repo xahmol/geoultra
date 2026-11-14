@@ -1,9 +1,9 @@
-; GeoUltra Desktop: the list (docs/DESKTOP.md, step D2). A folder's
+; GeoUltra Desktop: the list (docs/DESKTOP.md). A folder's
 ; entries are read once (FE_OPENDIR, FE_READDIR) into an entry table in
 ; the application's REU, ENTRY_SIZE bytes each from bank ENTRY_BANK on
 ; (up to ENTRY_MAX), in directory order; the list area shows `rows`
 ; of them from `top`, with a scroll strip at the right edge, drawn in
-; the theme's look (theme.s, step D7a: title bar, icons, selection and
+; the theme's look (theme.s: title bar, icons, selection and
 ; cursor styles, the status line). The selection
 ; is a bit per entry (`sel`), the cursor (`cur`) the entry the keys move.
 ; Mouse: a click selects the entry under it alone, SHIFT+click the range

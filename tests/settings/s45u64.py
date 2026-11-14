@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The theme's programs= on the U64 (docs/SETTINGS.md, step S4.5): a test
+"""The theme's programs= on the U64 (docs/SETTINGS.md): a test
 Custom.ini with programs=white on blue and SETTINGS.INI theme=Custom;
 after a boot the desktop has given the kernal's progColours (info.s,
 $C0F4, which FirstInit gives every program) and GEOS's screencolors

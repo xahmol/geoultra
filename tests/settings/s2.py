@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings in VICE, step S2 (docs/SETTINGS.md): the Pointer
+"""GeoUltra Settings in VICE (docs/SETTINGS.md): the Pointer
 page. Started from the desktop as in s1.py; a click on a design sets
 [system] pointer= in the INI text and applies it at once (FE_POINTER,
 the kernal's module 86): sprite 0's picture is the design's

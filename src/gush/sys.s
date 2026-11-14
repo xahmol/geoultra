@@ -1,4 +1,4 @@
-; gush: system commands (docs/GUSH.md, "Step 2"): mount, umount,
+; gush: system commands (docs/GUSH.md): mount, umount,
 ; mkimg, free, reboot. Own code.
 
         .include "geos.inc"

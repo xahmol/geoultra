@@ -1,5 +1,5 @@
-; GeoUltra Desktop: the toolbar's history, back and forward (step T2;
-; docs/DESKTOP.md "Toolbar and right-click": "back and forward keep a
+; GeoUltra Desktop: the toolbar's history, back and forward
+; (docs/DESKTOP.md "Toolbar and right-click": "back and forward keep a
 ; short history of the folders visited"). Each folder the list goes to
 ; (open.s, Into; the first one at the start) is recorded as the current
 ; place; back and forward go to the one before or after it without

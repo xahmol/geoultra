@@ -141,7 +141,7 @@ def main():
             call(k["Refresh"], 0, s=6)
             got = order()
             check(title + "; folders still first", (got[:4], got[4:]), (["..", "Adir", "Mdir", "zdir"], want))
-        # Two panes, step P3: the other pane's state swapped in and back.
+        # Two panes: the other pane's state swapped in and back.
         def state():
             return (bytes(v.mem_get(k["path"], k["path"] + 7)).split(b"\0")[0].decode("latin1"),
                     word("count"), v.mem_get(k["entryBank"], k["entryBank"])[0])

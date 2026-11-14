@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""File engine step E4 on the Ultimate 64: mounting while GEOS runs
+"""File engine on the Ultimate 64: mounting while GEOS runs
 (docs/FILE_ENGINE.md "Mount"; enginemount.s).
 
 GeoUltra from the U64's flash (feu64.py); the cartridge given on the

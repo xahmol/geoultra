@@ -1,4 +1,4 @@
-; gush: external commands (docs/GUSH.md, "Step 3", sub-step 8; writing
+; gush: external commands (docs/GUSH.md; writing
 ; one: docs/GUSH_COMMANDS.md). A module is a file whose data starts with
 ; MOD_MAGIC ("GCMD"), the API version it needs and a jmp to its code,
 ; built for the transient area TRANS ($5000, 4 KB at most, the overlays'

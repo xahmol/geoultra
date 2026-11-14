@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: two panes (docs/DESKTOP.md, "Two panes": the
-; user's decisions of 2026-11-12; steps P4-P6). Side by side, 160 pixels
+; user's decisions of 2026-11-12). Side by side, 160 pixels
 ; each, the sidebar hidden; each pane its own folder, list and
 ; selection (list.s keeps the active pane's state, SwapPane exchanges it
 ; with the other's in the REU). The panes show the list view (the

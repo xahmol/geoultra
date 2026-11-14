@@ -1,4 +1,4 @@
-; GeoUltra Desktop: disk images (docs/DESKTOP.md, step D6). Opening a
+; GeoUltra Desktop: disk images (docs/DESKTOP.md). Opening a
 ; disk image on the Ultimate (.d64, .d71, .d81, .dnp) asks for a drive:
 ; a dialog with a button per letter A-D, next to each the image mounted
 ; there now or "free" (free letters offered too: user, 2026-11-06); the

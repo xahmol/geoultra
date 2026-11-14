@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""gush's completion with the <- key in VICE (docs/GUSH.md, "Step 3",
-sub-step 7): a command name, a file name (a space after it), a path with
+"""gush's completion with the <- key in VICE (docs/GUSH.md): a command name, a file name (a space after it), a path with
 a folder part, the common part of two names, a second <- listing them
 (the line shown again), one folder (a "/" after it).
 Usage: tests/gush/g17.py

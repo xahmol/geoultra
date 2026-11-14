@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's redirection in VICE (docs/GUSH.md, "Step 3", sub-step 2): >,
+"""gush's redirection in VICE (docs/GUSH.md): >,
 >> and < with files on a GEOS drive; an error stays on the screen while
 the output goes to a file; > without a file; a quoted > is text.
 Usage: tests/gush/g13.py

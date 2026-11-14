@@ -1,5 +1,5 @@
-; gush: test, [ ], read, true, false (docs/GUSH.md, "Step 3", sub-step
-; 4). Their answer is the line's status ($?, failed: 0 true, 1 false).
+; gush: test, [ ], read, true, false (docs/GUSH.md). Their answer is the
+; line's status ($?, failed: 0 true, 1 false).
 ; test: no words false; one word: true when not empty; "! ..." the
 ; opposite; -e/-f/-d path (there, a file, a folder or drive), -z/-n word
 ; (empty, not empty); a = b, a != b; numbers (16 bits, signed) -eq -ne

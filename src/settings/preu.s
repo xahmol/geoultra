@@ -1,5 +1,5 @@
 ; GeoUltra Settings: the REU page (overlay 6, ovl.s; docs/SETTINGS.md,
-; "S6"; the user's decisions of 2026-11-14): a map of the 16 MB REU as a
+; the user's decisions of 2026-11-14): a map of the 16 MB REU as a
 ; 16 x 16 grid, one 8 x 8 cell per 64 KB bank coloured by its use
 ; (system, drives A-D, the file engine, the applications' legacy REU,
 ; free; the legacy banks not in use hatched), a legend beside it, and

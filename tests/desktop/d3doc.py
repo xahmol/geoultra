@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE, step D3b (docs/DESKTOP.md): a document opens
+"""GeoUltra's desktop in VICE (docs/DESKTOP.md): a document opens
 with its application. Drive A is the user's GEOS64.D81 (GEOS_ORACLE81,
 only read: the harness uses a copy; never committed), which holds
 geoWrite and "ReadMe 1581", a geoWrite 2.1 document. The desktop goes to

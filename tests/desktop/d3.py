@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE, step D3a (docs/DESKTOP.md): opening. From
+"""GeoUltra's desktop in VICE (docs/DESKTOP.md): opening. From
 "/": RETURN on b enters /b, cursor left goes back to "/"; a click on
 drive B's sidebar line goes to /b; a double click on gush there starts
 it (gush's code at $0400; the double-click count set again before the

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's scripts in VICE (docs/GUSH.md, "Step 3", sub-step 3): a script
+"""gush's scripts in VICE (docs/GUSH.md): a script
 by name and with source, $0 $1 $#, comments, exit N and $?, variables
 shared, a script running a script, a script's output into a file, a
 script found along PATH. (gushrc: gu64.py, it needs the home folder.)

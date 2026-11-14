@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's external commands in VICE (docs/GUSH.md, "Step 3", sub-step 8;
+"""gush's external commands in VICE (docs/GUSH.md,
 docs/GUSH_COMMANDS.md): wc (build/cmds/wc.cvt, a module) on drive B: a
 file, two files and their total, the input from a pipe and from <, no
 input, a missing file, by its path; an overlay command afterwards (the

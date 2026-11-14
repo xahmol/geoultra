@@ -1239,7 +1239,7 @@ ListKey:
         clc
         rts
 
-; --- Drag and drop (two panes P6; the user's decisions of 2026-11-12)
+; --- Drag and drop (two panes; the user's decisions of 2026-11-12)
 
 ; Drag (ListPress, a press on entry pick): when pick is selected and the
 ; pointer moves DRAG_MIN pixels with the button held, the selection is

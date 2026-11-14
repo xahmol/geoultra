@@ -1,5 +1,5 @@
-; GeoUltra Settings: the System page (overlay 3, ovl.s; docs/SETTINGS.md,
-; "S3 decisions"): turbo, the slow list and hibernation, over
+; GeoUltra Settings: the System page (overlay 3, ovl.s; docs/SETTINGS.md):
+; turbo, the slow list and hibernation, over
 ; SETTINGS.INI's [system] keys as the kernal reads them (mount.s):
 ; turbo=N (a speed step 0-15) or turbo=off, no key for full speed;
 ; slow=NAME once per application that runs at 1 MHz (up to 6, the start

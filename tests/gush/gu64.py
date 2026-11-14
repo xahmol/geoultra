@@ -146,7 +146,7 @@ class GushU64:
 
 
 def mounts(g):
-    """mount, umount (gush step 2): MOUNTS.INI saved first and put back."""
+    """mount, umount (gush): MOUNTS.INI saved first and put back."""
     check, out = g.check, g.out
     ini = os.path.join(OUT, "gu64-mounts.ini")
     g.u.ftp_get("/USB0/GEOULTRA/MOUNTS.INI", ini)
@@ -182,7 +182,7 @@ def mounts(g):
 
 
 def system(g):
-    """turbo, turbo -s, date (gush step 2): SETTINGS.INI as it was after
+    """turbo, turbo -s, date (gush): SETTINGS.INI as it was after
     (none on the test stick: removed again); the clock set to the time it
     shows, so it moves by a second or two at most."""
     import ftplib
@@ -359,7 +359,7 @@ def run(crt):
     g.start()
     rows = g.lines()
     check("gush started on the U64", rows[0].startswith("gush, the GeoUltra shell") if rows else rows, True)
-    check("HOME and PATH (step 3.1)", (out("echo $HOME"), out("echo $PATH")),
+    check("HOME and PATH", (out("echo $HOME"), out("echo $PATH")),
           ("/USB0/GEOULTRA", "/e/bin:/USB0/GEOULTRA/bin"))
     g.run("rm -f /a/INI '/a/A long name for the copy on the stick'")   # (left over)
     g.run("rm -f %s/*" % HOME)
@@ -373,19 +373,19 @@ def run(crt):
     g.run("cp /a/INI ini.txt")
     check("cp back onto the stick, ls", out("ls"), "ini.txt")
     check("cat on the stick", out("cat ini.txt", settle=3), last)
-    g.run("echo redirected > r.txt", settle=3)     # (step 3.2: > on the stick)
+    g.run("echo redirected > r.txt", settle=3)     # (> on the stick)
     g.run("cat < r.txt", settle=3)
     check("> and < on the stick", g.lines()[-2], "redirected")
-    g.run("cat r.txt | cat", settle=3)             # (step 3.5: a pipe)
+    g.run("cat r.txt | cat", settle=3)             # (a pipe)
     check("a pipe from the stick", g.lines()[-2], "redirected")
     g.run("a:")                                     # (drive switch: usb0: back here)
     check("usb0: back in the folder on the stick", out("usb0:; pwd"), HOME)
-    g.keys("cat r.t")                               # (step 3.7: completion)
+    g.keys("cat r.t")                               # (completion)
     g.keys([20], settle=4)                          # (KEY_LARROW)
     check("completion on the stick", g.lines()[-1].rstrip(), "$ cat r.txt")
     g.keys("\r", settle=3)
     import ftplib
-    ftp = ftplib.FTP(g.u.ip)                          # (step 3.8: a module as CVT)
+    ftp = ftplib.FTP(g.u.ip)                          # (a module as CVT)
     ftp.login()
     with open(os.path.join(ROOT, "build", "cmds", "wc.cvt"), "rb") as f:
         ftp.storbinary("STOR /USB0/GEOULTRA/test/gush/wc.cvt", f)
@@ -393,7 +393,7 @@ def run(crt):
     check("an external command on the stick (wc.cvt)", g.lines()[-2].split(), ["1", "1", "11", "r.txt"])
     ftp.delete("/USB0/GEOULTRA/test/gush/wc.cvt")
     ftp.quit()
-    g.run("ifconfig", settle=4)                     # (step 3.9: the network)
+    g.run("ifconfig", settle=4)                     # (the network)
     rows = g.lines()[-5:-1]
     check("ifconfig: the U64's own address", rows[0], "address  " + g.u.ip)
     ntp_long(g)
@@ -486,7 +486,7 @@ def run(crt):
     rows = g.lines()
     check("geoFolder's gush button: a fresh gush", (rows[0].startswith("gush, the GeoUltra shell") if rows
                                                      else rows, rows[1:]), (True, ["$"]))
-    check("gushrc run at its start (step 3.3)", out("echo $G"), "from gushrc")
+    check("gushrc run at its start", out("echo $G"), "from gushrc")
     ftp.delete("/USB0/GEOULTRA/gushrc")
     ftp.quit()
     g.run("reboot", settle=1)                       # (last: it ends the session)
@@ -494,7 +494,7 @@ def run(crt):
     desk = open(os.path.join(ROOT, "build", "desktop", "desktop.bin"), "rb").read()[:16]
     check("reboot: GeoUltra started afresh (the cold start ends in the desktop)",
           bytes(u.read(0x0400, 16)), desk)
-    g.start()                                       # (step 3.6: the history kept)
+    g.start()                                       # (the history kept)
     lb = g.lbl["lineBuf"]
     got = []
     for _ in range(2):

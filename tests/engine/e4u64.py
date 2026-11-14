@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""File engine step E4 on the Ultimate 64: CVT (docs/FILE_ENGINE.md,
+"""File engine on the Ultimate 64: CVT (docs/FILE_ENGINE.md,
 "Copying"; enginecvt.s).
 
 GeoUltra from the U64's flash (feu64.py); the cartridge given on the

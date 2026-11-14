@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings in VICE, step S3 (docs/SETTINGS.md): the System
+"""GeoUltra Settings in VICE (docs/SETTINGS.md): the System
 page. Started from the desktop as in s1.py, with an empty INI text
 (VICE): the defaults (full speed, step 15, hibernation 30 s); turbo
 off, the stepper down a step (turbo=14), full speed again (the key

@@ -1,5 +1,5 @@
 ; Auto-exec files at the cold start (the user's decisions of 2026-11-14;
-; docs/DESIGN.md "Phases"): SETTINGS.INI [system] autoexec=/a/CONFIGURE
+; docs/DESIGN.md): SETTINGS.INI [system] autoexec=/a/CONFIGURE
 ; lines (a path with its drive and folder), run in that order at a fresh
 ; cold start only (not after a resumed session: HibResume does not
 ; return then), skipped while SHIFT is held (C= is the resume's own key:

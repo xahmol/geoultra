@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings in VICE, step S4.3 (docs/SETTINGS.md): the Theme
+"""GeoUltra Settings in VICE (docs/SETTINGS.md): the Theme
 page, the theme editor. VICE has no theme files: the page edits an
 empty text named after SETTINGS.INI's theme (none: GeoUltra). The
 border's paper, the desk's ink and paper, the menu bar's style set by

@@ -483,7 +483,7 @@ test-gush: all build/gush/docpeek.cvt
 test-gush-u64: check-deploy all
 	$(PYTHON) tests/gush/gu64.py build/geoultra64.crt
 
-# The file engine on the Ultimate, step E3 (tests/engine/e3u64.py): the
+# The file engine on the Ultimate (tests/engine/e3u64.py): the
 # cartridge into the U64's flash and a reboot, then the Ultimate's file
 # system and raw copies; only in /USB0/GEOULTRA/test and on the test
 # images (MOUNTS.INI pointing at them), everything removed again.

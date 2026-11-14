@@ -1,4 +1,4 @@
-; GeoUltra Desktop: opening (docs/DESKTOP.md, step D3a). Open: the
+; GeoUltra Desktop: opening (docs/DESKTOP.md). Open: the
 ; cursor's entry (RETURN, a double click): a folder or drive entered
 ; (FE_CD), an application started in the desktop's place, a desk
 ; accessory run (it comes back: the screen drawn again). Up (cursor
@@ -8,7 +8,7 @@
 ; short name; on drive E (no slot stays E's, FILE_ENGINE.md) an
 ; application through FE_RUNSYS, a desk accessory through GetFile by
 ; its name (GetFile falls back to drive E). A document opens with its
-; application (Document, step D3b). Own code.
+; application (Document). Own code.
 
         .include "geos.inc"
         .include "desktop.inc"

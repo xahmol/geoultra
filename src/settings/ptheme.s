@@ -1,5 +1,5 @@
-; GeoUltra Settings: the Theme page (overlay 5, ovl.s; docs/SETTINGS.md,
-; "S4 decisions"): the theme editor, in compact rows: Theme [-] name [+]
+; GeoUltra Settings: the Theme page (overlay 5, ovl.s; docs/SETTINGS.md):
+; the theme editor, in compact rows: Theme [-] name [+]
 ; with "use" (SETTINGS.INI [desktop] theme=) and "copy" (a new theme
 ; file from this one); Part [-] name [+] (the theme file's lines,
 ; src/inc/themedef.inc); the part's style; its ink and paper as 16
@@ -1024,7 +1024,7 @@ SwatchPress:
         jsr SwatchesDraw
         jmp Preview
 
-; --- the palette (an Ultimate 64's 16 colours as RGB: S4.4, the
+; --- the palette (an Ultimate 64's 16 colours as RGB: the
 ; user's choice of 2026-11-13)
 
 ; PalDraw: the palette read (ReadPal), the colour to change chosen in

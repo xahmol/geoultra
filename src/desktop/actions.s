@@ -1,4 +1,4 @@
-; GeoUltra Desktop: actions on the selection (docs/DESKTOP.md, step D4).
+; GeoUltra Desktop: actions on the selection (docs/DESKTOP.md).
 ; Copy and cut keep the source folder (srcPath) and the names of the
 ; selected entries (or the cursor's, when none is selected) in the
 ; application's REU (bank CLIP_BANK, CLIP_SIZE bytes each); paste copies

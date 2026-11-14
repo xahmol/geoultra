@@ -252,19 +252,6 @@ DrawPage:
         sta pageVec+1
         jmp (pageVec)
 
-; Later: the note on a page still to come.
-Later:  lda #<LaterText
-        sta r0L
-        lda #>LaterText
-        sta r0H
-        lda #<(PAGE_LEFT + 2)
-        sta r11L
-        lda #>(PAGE_LEFT + 2)
-        sta r11H
-        lda #PAGE_TOP + 16
-        sta r1H
-        jmp PutString
-
 ; --- the mouse
 
 ; Press (otherPressVec; the buttons are DoIcons's): a page name makes
@@ -321,9 +308,6 @@ Press:  lda mouseData
         jmp Repaint
 @go:    jmp (pageVec)
 @end:   rts
-
-NoPress:
-        rts
 
 ; --- the buttons (DoIcons)
 
@@ -501,8 +485,8 @@ Digit:  cmp #10
 SIDE_X          = 6
 SIDE_BASE       = 11            ; a page name's baseline below its row top
 
-; Each page's drawing and click routines (stubs into its overlay, ovl.s;
-; Later and NoPress for the pages still to come), in PAGE_* order.
+; Each page's drawing and click routines (stubs into its overlay, ovl.s),
+; in PAGE_* order.
 DrawLo:         .byte <ThemeDraw, <DeskDraw, <SysDraw, <TimeDraw, <DriveDraw, <ReuDraw
                 .byte <PtrDraw, <StartDraw
 DrawHi:         .byte >ThemeDraw, >DeskDraw, >SysDraw, >TimeDraw, >DriveDraw, >ReuDraw
@@ -523,7 +507,6 @@ N4:             .byte "Drives", 0
 N5:             .byte "REU", 0
 N6:             .byte "Pointer", 0
 N7:             .byte "Start", 0
-LaterText:      .byte "This page comes in a later step.", 0
 IniName:        .byte "SETTINGS.INI", 0
 TmpName:        .byte "SETTINGS.TMP", 0
 

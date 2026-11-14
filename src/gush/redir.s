@@ -1,4 +1,4 @@
-; gush: redirection (docs/GUSH.md, "Step 3", sub-step 2). Parse turns an
+; gush: redirection (docs/GUSH.md). Parse turns an
 ; unquoted ">", ">>" or "<" into a word of one marker byte (REDIR_OUT,
 ; REDIR_ADD, REDIR_IN); Redirect takes each with the word after it (the
 ; file) off the line and opens the file through the file engine. While

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings on the U64, step S1 (docs/SETTINGS.md): the Desktop
+"""GeoUltra Settings on the U64 (docs/SETTINGS.md): the Desktop
 page writing SETTINGS.INI. The user's own SETTINGS.INI is set aside
 first and put back byte for byte at the end. A test SETTINGS.INI (with
 a comment, a [favourites] section and [desktop] view=icons) is read at

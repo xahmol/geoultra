@@ -571,10 +571,12 @@ handling, the GEOS contract, clarity, and since 2026-11-04 (user)
 maintainability: short single-purpose routines with header comments,
 named constants, no undocumented coupling across modules, overlay
 modules split by function, shared code in includes, tests per routine.
-For the next sweep (the user, 2026-11-14): take every "step" and
-"phase" out of the code and above all the UI (gush's welcome line still
-says "step 3"); the program speaks of what it does, not of the plan's
-stages.
+Done 2026-11-14 (the user's request): every "step" and "phase" of the
+plan taken out of the code, the UI and the tests (gush's welcome line
+said "step 3"; Settings' unused "This page comes in a later step." and
+its Later routine removed; comments and test titles point to the docs
+without a stage). The plan's stages stay in the docs only; the turbo's
+speed steps (0-15) are a setting, not a stage, and keep their name.
 
 Log:
 

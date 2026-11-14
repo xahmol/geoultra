@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE, step D1 (docs/DESKTOP.md): started from
+"""GeoUltra's desktop in VICE (docs/DESKTOP.md): started from
 drive E (FE_RUNSYS) on the gush test setup (drive A the GEOS 2.0 disk,
 drive B a D81). Checked from its state in memory (build/desktop/
 desktop.lbl): drawing on both screens, RecoverVector set, the path and

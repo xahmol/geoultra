@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings on the U64, step S3b (docs/SETTINGS.md): the Time
+"""GeoUltra Settings on the U64 (docs/SETTINGS.md): the Time
 page's "now" with a real time server. A test SETTINGS.INI with [time]
 ntp=pool.ntp.org, offset=3600 and summer=eu; settings started, the Time
 page, "now" (the settings written, then FE_NTP): GEOS's clock against

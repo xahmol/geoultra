@@ -47,11 +47,11 @@ FE_NTP          = 29            ; the clocks from an NTP server
 FE_UCI          = 30            ; a command to the Ultimate, its reply
 FE_POINTER      = 31            ; the mouse pointer's design (pointer.s)
 FE_COUNT        = 32
-FE_VER          = $0003         ; FE_VERSION's answer (E3)
+FE_VER          = $0003         ; FE_VERSION's answer (the engine's version)
 
 ; FE_COPY, FE_MOVE: flags (r2L)
 FC_OVERWRITE    = $01           ; an existing target file is replaced
-FC_RAW          = $02           ; no CVT conversion (E4; GEOS drives: none)
+FC_RAW          = $02           ; no CVT conversion (GEOS drives: none)
 
 ; FE_OPEN: modes (r2L)
 FO_READ         = 0
@@ -73,7 +73,7 @@ FE_IS_FOLDER    = $4B           ; a file was expected
 FE_BAD_HANDLE   = $4C           ; not open, or no handle number
 FE_NO_HANDLE    = $4D           ; all FE_HANDLES in use
 FE_NOT_SUPPORTED = $4E          ; not (yet) on this kind of path
-FE_ULTIMATE     = $4F           ; the Ultimate's DOS refused (E3)
+FE_ULTIMATE     = $4F           ; the Ultimate's DOS refused
 FE_NO_SLOT      = $50           ; drive E needs an empty drive letter (A-D)
 FE_MOUNTED      = $51           ; a disk image gone into is mounted on A-D
 
@@ -119,7 +119,7 @@ FE_UPART_MAX    = 120           ; the last part of an Ultimate path (it
 ; REU bank 1, $C000-$C7FF: the engine's lasting state (and FE_WSAVE)
 FE_BANK         = 1
 FE_MAGIC        = $C000         ; "FE", FE_LAYOUT: the area is set up
-FE_LAYOUT       = 2             ; (1: E1-E3, the directory in 128 bytes)
+FE_LAYOUT       = 2             ; (1: the earlier layout, the directory in 128 bytes)
 FE_CWD          = $C100         ; the current directory (256 bytes)
 FE_HANDLES      = $C200         ; FE_HANDLES_N handles of FE_HSIZE bytes
 FE_HANDLES_N    = 4

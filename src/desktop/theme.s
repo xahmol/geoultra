@@ -1,5 +1,5 @@
-; GeoUltra Desktop: themes (docs/DESKTOP.md, "Look and themes", step
-; D7a). A theme is a style byte per design element and a colour byte per
+; GeoUltra Desktop: themes (docs/DESKTOP.md, "Look and themes"). A theme
+; is a style byte per design element and a colour byte per
 ; colour (THM_LEN bytes); the six built-in themes are from the approved
 ; mock-up (2026-11-06). ThemeSet copies one into the record and derives
 ; the layout the drawing routines use (sidebar width, title bar, row
@@ -7,7 +7,8 @@
 ; cell the desktop paints goes to the colour matrix and to a shadow copy
 ; (Paint); dialogs (Dialog) and the desktop's menus (MenuNeutral, from
 ; their DYN_SUB_MENU routines) get the menu bar's colours, desk
-; accessories and programs (Neutral) GEOS's own, and Recover (RecoverVector) gives a rectangle back
+; accessories and programs (Neutral) GEOS's own, and Recover
+; (RecoverVector) gives a rectangle back
 ; its bitmap and its shadow colours. The clock in the menu bar is drawn
 ; by ClockDraw, kept current by ClockTick (appMain). Own design and code.
 
@@ -492,7 +493,8 @@ DLG_Y0          = 32 / 8
 DLG_Y1          = (127 + 8) / 8
 
 ; MenuNeutral: the menu table at r0 (a DYN_SUB_MENU routine's result)
-; gets the menu bar's colours under it before GEOS draws it; Recover gives the
+; gets the menu bar's colours under it before GEOS draws it; Recover
+; gives the
 ; desktop's back when it closes. r0 kept.
 MenuNeutral:
         ldy #0                  ; top, bottom, left (word), right (word)
@@ -721,7 +723,7 @@ rootsSeen:      .byte 0         ; listin.s: the Ultimate's roots (0 not yet
                                 ; counted, 1 none, 2 some)
 paneR:          .word SCREEN_RIGHT ; the list area's (with the strip) right
                                 ; edge: the whole list now; a pane's with
-                                ; two panes (DESKTOP.md, P4)
+                                ; two panes (DESKTOP.md)
 at:             .byte 0
 tmp:            .byte 0
 px0:            .byte 0

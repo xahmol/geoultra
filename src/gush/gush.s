@@ -115,7 +115,7 @@ Status: lda minutes
         sta r0H
         jmp ConStatus
 
-Hello:  .byte "gush, the GeoUltra shell (step 3)", CR, 0
+Hello:  .byte "gush, the GeoUltra shell", CR, 0
 NoOvl:  .byte "gush: its overlays could not be read: file", CR
         .byte "and system commands, test and read fail.", CR, 0
 

@@ -5,7 +5,7 @@
 ; the Ultimate's roots; favourites and recent documents from side.s),
 ; the mouse and key routines that hand on to the list (list.s), opening
 ; (open.s) and the actions (actions.s). Drawn in the theme's look
-; (theme.s, step D7a) on both screens; RecoverVector = Recover (theme.s),
+; (theme.s) on both screens; RecoverVector = Recover (theme.s),
 ; so menus and dialogs give back the bitmap and the colours under them.
 ; Own design and code.
 
