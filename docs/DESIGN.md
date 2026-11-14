@@ -713,7 +713,8 @@ Requests from the same session, to do:
   sooner). The desktop core has little room: list and letters in an
   overlay.
 - Two panes: the inactive pane's selection hidden (kept, shown again
-  when it is active); the new-folder report (left pane read, both path
+  when it is active; done 2026-11-14: list.s IsSelected answers none
+  while panes.s draws the inactive pane, tests/desktop/d20.py); the new-folder report (left pane read, both path
   lines inverted) not reproduced in VICE yet: which way it was made.
 - Done 2026-11-13: the Time page's NTP server from a list
   (time.google.com, time.windows.com, pool.ntp.org, as UBoot-v2) or

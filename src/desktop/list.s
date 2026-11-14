@@ -1809,10 +1809,15 @@ ClearSel:
         rts
         .assert SEL_LEN <= 128, error, "ClearSel: dey/bpl counts to 128"
 
-; IsSelected: Z clear when entry A/X is selected.
+; IsSelected: Z clear when entry A/X is selected. While panes.s draws
+; the inactive pane (paneDim) none is: its selection is hidden, kept,
+; and shown again when the pane is active (the user, 2026-11-13).
 IsSelected:
         jsr Locate
-        and sel,x
+        ldy paneDim
+        beq :+
+        lda #0
+:       and sel,x
         rts
 
 ; Select (A/X, Y: 0 off, 1 on, 2 toggle).
