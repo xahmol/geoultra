@@ -36,7 +36,6 @@ VERB_DELETING   = 2             ; (list.s, ProgressStart)
 FE_CANCELLED    = $47
 FE_BAD_PATH     = $49
 FE_IS_FOLDER    = $4B
-FE_NOT_SUPPORTED = $4E
 PATH_END        = 254           ; a path's last place (with its zero)
 
         .segment "ZEROPAGE"

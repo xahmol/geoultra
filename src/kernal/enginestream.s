@@ -16,7 +16,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS, FindFile, sysActive
+        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
 
 CBM_SEQ         = $81           ; a closed SEQ file
 
@@ -35,6 +35,8 @@ UOpen:  jsr OvlCall             ; (module 61: on the Ultimate; a stub:
         .byte 61, 0             ; back to the function's caller)
 Drop:   jsr OvlCall             ; (module 51: a deleted file's record)
         .byte 51, 3
+HMark:  jsr OvlCall             ; (module 81: the handle's drive byte)
+        .byte 81, 21
 
 ; FE_OPEN: r0 = a file, r2L = FO_READ, FO_WRITE (a new file; an existing
 ; one is replaced) or FO_APPEND (at its end; made when not there).
@@ -61,10 +63,8 @@ OvOpen: jsr NewHandle
         beq @ret
         ldx feDrive             ; the folder holding it
         txa
-        bit sysActive           ; (drive E shown: bit 7, HDrive)
-        bvc :+
-        ora #$80
-:       sta feH + H_DRIVE
+        jsr HMark               ; (drive E or a disk image shown there:
+        sta feH + H_DRIVE       ; marked, HDrive)
         lda folderT-8,x
         sta feH + H_FOLDT
         lda folderS-8,x

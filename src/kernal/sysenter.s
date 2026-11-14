@@ -17,6 +17,7 @@
         .import drvFlags, drvTracks, SysRAMOp, folderT, folderS
         .import sysActive, sysType, sysCurType, sysBase, sysFlags
         .import sysTracks, sysFolderT, sysFolderS, sysSlot
+        .import imgFlags, uTouch, OvlCall
 
 HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
 
@@ -30,6 +31,7 @@ HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
         jmp HideE               ; entry 12
         jmp FreeSlot            ; entry 15
         jmp HDrive              ; entry 18
+        jmp HMark               ; entry 21
 
 ; Enter: the current slot shows drive E, a read-only native image of
 ; SYSDRV_TRACKS tracks at SYSDRV_BANK in its root folder, and curDirHead
@@ -152,10 +154,12 @@ Page:   sta r0L
 dmaDir: .byte 0
 
 ; Usable: C clear when drive E can be shown on the current drive (not a
-; native one with more than SYSDRV_TRACK tracks, and not shown already).
+; native one with more than SYSDRV_TRACK tracks, and nothing shown
+; already: E, or a disk image the engine shows, whose slot values E's
+; would overwrite).
 Usable: sec
-        bit sysActive
-        bmi @end
+        lda sysActive
+        bne @end
         ldx curDrive
         lda driveType-8,x
         and #$0F
@@ -217,13 +221,25 @@ ShowE:  pha
 @taken: ldx #FE_NO_SLOT
         rts
 
-; HideE (the engine's end): the slot back when the engine showed E. A
-; function that leaves its drive current (FE_SELECT: feTouched 0) cannot
-; leave E's slot so: it fails (FE_NOT_SUPPORTED) and the dispatcher puts
-; the caller's drive back.
-HideE:  bit sysActive
+; HideE (the engine's end): the slot back when the engine showed E or a
+; disk image (written back first, module 89 Leave). A function that
+; leaves its drive current (FE_SELECT: feTouched 0) cannot leave the slot
+; so: it fails (FE_NOT_SUPPORTED) and the dispatcher puts the caller's
+; drive back. First: a function that may write on the Ultimate and was
+; given a plain Ultimate path (uTouch, module 88) drops the image's copy
+; in the REU (it may have changed or replaced that very file).
+HideE:  lda uTouch
+        beq @shown
+        jsr ImgDrop             ; (module 90)
+        lda #0
+        sta uTouch
+@shown: bit sysActive
         bvc @end
-        lda feTouched
+        lda sysActive
+        and #$20
+        beq :+
+        jsr ImgLeave            ; (module 89: written back)
+:       lda feTouched
         bne @back
         lda #$FF
         sta feTouched
@@ -232,15 +248,50 @@ HideE:  bit sysActive
 @back:  jmp SlotBack
 @end:   rts
 
-; HDrive: A = a handle's H_DRIVE (bit 7: drive E, shown in that slot):
-; the slot made current (E shown again when it was E's), A = the device.
-; X = 0 or FE_NO_SLOT.
-HDrive: tay
-        and #$7F
-        cpy #$80
-        bcs ShowE
-        jsr SetDevice
+; HDrive: A = a handle's H_DRIVE (bit 7: drive E, shown in that slot;
+; bits 7 and 6: a disk image, module 89): the slot made current (E or the
+; image shown again when it was theirs), A = the device. X = 0 or
+; FE_NO_SLOT (FE_BAD_HANDLE: the image's copy is gone).
+HDrive: cmp #$C0
+        bcc @e
+        and #$0F
+        jsr ImgShow             ; (module 88)
         lda curDrive
         rts
+@e:     tay
+        and #$7F
+        cpy #$80
+        bcc :+
+        jmp ShowE
+:       jsr SetDevice
+        lda curDrive
+        rts
+
+; HMark: A = the drive byte of a handle on device A (modules 26, 32):
+; with $80 when the engine shows drive E in that slot, $C0 when it shows
+; a disk image there (HDrive). X, Y kept.
+HMark:  sta hmDev
+        cmp sysSlot             ; (a device, as A)
+        bne @plain
+        lda sysActive           ; ($C0 E, $60 an image; $80: E for an
+        and #$60                ; application, not the engine's)
+        beq @plain
+        asl a
+        ora hmDev
+        rts
+@plain: lda hmDev
+        rts
+
+hmDev:  .byte 0
+
+ImgLeave:
+        jsr OvlCall
+        .byte 89, 3
+ImgShow:
+        jsr OvlCall
+        .byte 88, 3
+ImgDrop:
+        jsr OvlCall
+        .byte 90, 3
 
         .endscope

@@ -75,6 +75,7 @@ FE_NO_HANDLE    = $4D           ; all FE_HANDLES in use
 FE_NOT_SUPPORTED = $4E          ; not (yet) on this kind of path
 FE_ULTIMATE     = $4F           ; the Ultimate's DOS refused (E3)
 FE_NO_SLOT      = $50           ; drive E needs an empty drive letter (A-D)
+FE_MOUNTED      = $51           ; a disk image gone into is mounted on A-D
 
 ; What a resolved path names (feKind, set by the walk in module 24)
 FE_P_ROOT       = 0             ; "/"
@@ -287,6 +288,24 @@ FE_LAST_BANK    = FE_UBANK - 1
 FE_WSAVE        = $C700         ; REU bank 1: the work area while the
                                 ; write-back runs (it uses $9F70-$9FFF)
 FE_WORK_LEN     = $A000 - FE_WORK
+
+; Disk images gone into like folders (engineimg.s, modules 88 and 89; the
+; user's decision 2026-11-13): /usb0/x/disk.d81/... loads the image into
+; free REU banks (module 68, as a mount) and shows it in an empty slot
+; A-D for the call (sysenter.s keeps the slot's values; sysActive $60);
+; its changes are written back at the call's end. The copy stays in the
+; REU for the next call (imgFlags, sysdrive.s) while nothing else may
+; have changed the file.
+IMG_PATH        = $1A00         ; REU bank 1: the loaded image's path (64)
+IMG_SAVE        = $1A40         ; REU bank 1: feInfo's 32 bytes meanwhile
+MOUNT_ENTRY     = $0120         ; REU bank 1: a drive's mount table entry
+MOUNT_PATHS     = $0200         ; (32 bytes each) and its image path (64)
+imStart         = FE_WORK + 57  ; the image's part in fePath: its start,
+imEnd           = FE_WORK + 58  ; its end, the character there
+imCh            = FE_WORK + 59
+imOff           = FE_WORK + 60  ; module 89: a place in the paths compared
+imBuf           = feInfo + 16   ; module 89: 16 bytes of a path (feInfo's
+                                ; 32 bytes are kept at IMG_SAVE meanwhile)
 
 ; FE_NTP (enginentp.s), over the same place
 nTime           = feInfo        ; the time: NTP seconds, then Unix ones (4)

@@ -24,6 +24,7 @@
         .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck, turboNow
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
+        .import imgFlags
 
 WR_VER_ERR      = $25           ; (as the disk driver: write failed)
 
@@ -278,7 +279,8 @@ Resumed:
         pla
         sta CPU_PORT
         ldx #0
-        rts
+        stx imgFlags            ; (a disk image's copy in the REU: not
+        rts                     ; in the file, gone)
 
 
         .segment "OVL10"

@@ -68,7 +68,12 @@ INSUFF_SPACE    = 3             ; the engine's errors errors.s words
 WR_PR_ON        = $26           ; (src/inc/engine.inc)
 FILE_EXISTS     = $40
 DIR_NOT_EMPTY   = $41
+FE_NOT_SUPPORTED = $4E
+FE_NO_SLOT      = $50
+FE_MOUNTED      = $51
 ERR_IMAGE       = $60           ; the desktop's own: a disk image onto A-D
+ERR_REU         = $61           ; a disk image gone into: no room in the REU
+ERR_INIMG       = $62           ; a program or document inside a disk image
                                 ; refused (tree.s, errors.s)
 
 ; Layout (docs/DESKTOP.md, "Screen"), the entry name, dialogs, modifiers

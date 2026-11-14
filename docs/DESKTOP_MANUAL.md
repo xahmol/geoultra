@@ -115,7 +115,8 @@ Opening an entry:
 - a GEOS **application** or **desk accessory**: starts it; a **document**
   starts the application it belongs to with it;
 - a **disk image** on the Ultimate (`.d64`, `.d71`, `.d81`, `.dnp`):
-  mounts it, asking on which drive (A-D);
+  goes into it like a folder (see "Disk images and drives"); mounting
+  it on a drive is in the context menu and on the toolbar;
 - any **other file on the Ultimate**: is not opened (see "Drives: what
   works where").
 
@@ -175,10 +176,25 @@ default), **one line** (the icons alone, one more row for the list) or
 
 Drives A to D hold disk images from the Ultimate (they are kept in the
 REU while mounted, and changes are written back to the image file).
-Opening an image on the Ultimate mounts it: choose the drive in the
-dialog. The eject icon on a drive's line in the sidebar unmounts it
+Mount an image from the context menu or the toolbar: choose the drive in
+the dialog. The eject icon on a drive's line in the sidebar unmounts it
 (after writing it back). Which images are mounted at the start is in
 `GEOULTRA/MOUNTS.INI` (`A=/USB0/path/image.d81`, one line per drive).
+
+Opening (double click, RETURN) an image on the Ultimate goes into it
+like a folder, without mounting it: its files are listed, and they can
+be copied in and out, renamed and deleted; changes are written to the
+image file straight away. `..` leaves it again. It needs:
+
+- an **empty drive letter** (A-D): the image borrows it for a moment
+  for each step, unseen;
+- **room in the REU** for the whole image (a D81 13 banks of 64 KB, a
+  DNP one per track), beside the mounted drives;
+- the image **not mounted**: a mounted one is opened through its drive.
+
+Programs and documents inside an image cannot be started or opened
+from there ("Mount the disk image to open it."): mount it, or copy them
+to a drive first.
 
 ## Drives: what works where
 
@@ -201,7 +217,9 @@ What this means in practice:
   the GEOS file again. Plain CBM files get `.prg`, `.seq` or `.usr` on
   the Ultimate and lose it again on the way back. gush's `cp` does the
   same.
-- **Disk images on the Ultimate** are opened by mounting them on A-D.
+- **Disk images on the Ultimate** can be gone into like folders (their
+  files copied in and out, renamed, deleted); to start their programs or
+  open their documents, mount them on A-D.
 - **Sizes**: the Ultimate's listings give no sizes, so the detailed
   view leaves them empty for files there; Info shows a file's size.
 - **Real disk drives** on the serial bus are not supported yet.

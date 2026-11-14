@@ -29,6 +29,7 @@
         .export AppFTypes, ftStart, ftAll, ftLeft
         .export sysName, sysActive, sysType, sysCurType, sysBase, sysFlags
         .export sysTracks, sysFolderT, sysFolderS, sysSlot, ownDesk, sysActive
+        .export imgFlags, imgBank, imgType, imgTracks, uTouch
         .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
@@ -80,11 +81,25 @@ ftCount:        .byte 0         ; 0: no application's list pending
 ftAll:          .byte 0         ; OvFTypes: names that fitted at the start
 ftLeft:         .byte 0         ; and those left before E's search
                                 ; (resident: Enter reloads module 15)
+; A disk image gone into (engineimg.s, modules 88, 89): its copy in the
+; REU kept between engine calls. imgFlags: bit 7 the copy is there and
+; matches the file (cleared by a call that may write on the Ultimate,
+; module 81, and by a resumed session, module 8), F_BACKUP and F_DIRTY
+; carried from one showing to the next.
+imgFlags:       .byte 0
+imgBank:        .byte 0         ; its first REU bank
+imgType:        .byte 0         ; its DRV_* type
+imgTracks:      .byte 0         ; native: its tracks (else 0)
+uTouch:         .byte 0         ; module 88: a plain Ultimate path was
+                                ; resolved in this call (module 81 clears it)
 
         .segment "CODE"
 
 ; Resident: survive nested overlay calls (overlay.s).
-sysActive:      .byte 0         ; $80: the current slot shows drive E
+sysActive:      .byte 0         ; $80: the current slot shows drive E ($C0:
+                                ; for the engine); $60: a disk image
+                                ; gone into (engineimg.s; bit 7 clear: the
+                                ; driver's rule for E's BAM stays off)
 sysName:        .word 0         ; SysFindFile's name
 sysR6:          .word 0         ; r6, A, Y after the failed FindFile
 sysA:           .byte 0
@@ -97,7 +112,8 @@ sysFlags:       .byte 0
 sysTracks:      .byte 0
 sysFolderT:     .byte 0
 sysFolderS:     .byte 0
-sysSlot:        .byte 0         ; the slot E is shown in (its driveType index)
+sysSlot:        .byte 0         ; the slot E (or a disk image, engineimg.s)
+                                ; is shown in: its device, 8-11
 ownDesk:        .byte $80       ; $80: EnterDeskTop starts GeoUltra's desktop
                                 ; (always since 2026-11-13: desktop=geos
                                 ; dropped, user; 0 kept for a test that

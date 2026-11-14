@@ -93,10 +93,13 @@ errLine:
         .byte OK, DBI_X_2, DBI_Y_2
         .byte 0
 ErrCodes:       .byte INSUFF_SPACE, FULL_DIRECTORY, WR_PR_ON, FILE_EXISTS, DIR_NOT_EMPTY
-                .byte FILE_NOT_FOUND, ERR_IMAGE
+                .byte FILE_NOT_FOUND, ERR_IMAGE, FE_MOUNTED, FE_NO_SLOT, ERR_REU
+                .byte ERR_INIMG
 ERRS = * - ErrCodes
 ErrLo:          .byte <ENoRoom, <EDirFull, <ELocked, <EExists, <ENotEmpty, <ENotFound, <EImage
+                .byte <EMounted, <ENoSlot, <ENoReu, <EInImg
 ErrHi:          .byte >ENoRoom, >EDirFull, >ELocked, >EExists, >ENotEmpty, >ENotFound, >EImage
+                .byte >EMounted, >ENoSlot, >ENoReu, >EInImg
 ENoRoom:        .byte "Not enough room on the drive.", 0
 EDirFull:       .byte "The directory is full.", 0
 ELocked:        .byte "The drive cannot be written to.", 0
@@ -104,5 +107,9 @@ EExists:        .byte "A file of that name is there.", 0
 ENotEmpty:      .byte "The folder is not empty.", 0
 ENotFound:      .byte "Not found.", 0
 EImage:         .byte "Disk images stay on the Ultimate", 0
+EMounted:       .byte "It is mounted: open its drive.", 0
+ENoSlot:        .byte "It needs an empty drive A-D.", 0
+ENoReu:         .byte "Not enough free REU for it.", 0
+EInImg:         .byte "Mount the disk image to open it.", 0
 errText:        .byte "failed: error $"
 errCode:        .byte "00", 0

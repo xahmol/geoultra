@@ -21,7 +21,8 @@ entries; GEOS 2.0's deskTop, geoWrite and geoPaint run on it in VICE, and
 the deskTop runs on an Ultimate 64 from disk images mounted at boot.
 GeoUltra starts in its own desktop (in development: a list of the
 drives' and the Ultimate's files, open, copy, delete, rename, new
-folders, favourites, mounting and unmounting disk images, themes as
+folders, favourites, mounting and unmounting disk images, going into
+disk images on the Ultimate like folders, themes as
 editable files, on the Ultimate 64 with their own colour palettes). The
 decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

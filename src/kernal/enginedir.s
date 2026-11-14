@@ -7,7 +7,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS, FindFile, sysActive
+        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
 
         .segment "OVL25"
         .scope Mod25
@@ -129,6 +129,8 @@ Path:   lda argR0
 
 UOpen:  jsr OvlCall             ; (module 38: FE_OPENDIR on the Ultimate)
         .byte 38, 0
+HMark:  jsr OvlCall             ; (module 81: the handle's drive byte)
+        .byte 81, 21
 
         .include "fereu.inc"
         .include "fehandle.inc"
@@ -204,10 +206,8 @@ OvOpenDir:
 @where:
         lda feDrive
         tax
-        bit sysActive           ; (drive E shown: bit 7, so the handle
-        bvc :+                  ; shows it again, HDrive)
-        ora #$80
-:       sta feH + H_DRIVE
+        jsr HMark               ; (drive E or a disk image shown there:
+        sta feH + H_DRIVE       ; marked, so HDrive shows it again)
         lda folderT-8,x
         sta feH + H_FOLDT
         lda folderS-8,x

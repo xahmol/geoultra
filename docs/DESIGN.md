@@ -680,7 +680,9 @@ Requests from the same session, to do:
   Disk image files (.d64 .d71 .d81 .dnp .g64) are not copied or moved
   onto GEOS drives A-D ("Disk images stay on the Ultimate's file
   system"); between Ultimate folders they may (not while mounted).
-  Order: (3) now; (1) and (2) after the video's items. (3) done
+  Order: (3) now; (1) and (2) after the video's items. (1) and (2)
+  done 2026-11-14 (engineimg.s, modules 88-90; open.s; FILE_ENGINE.md
+  "Paths"; U64 tests tests/engine/imgu64.py, tests/desktop/d19u64.py). (3) done
   2026-11-13: tree.s ImageToGeos, before every single-file copy or move
   (paste, drag and drop, copy and move to the other pane), the message
   "Disk images stay on the Ultimate" (errors.s, ERR_IMAGE $60). The

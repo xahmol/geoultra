@@ -23,8 +23,6 @@
         .import natLoaded, WriteBackNow, hibState
 
 SYS_BANK        = 1
-MOUNT_ENTRY     = $0120         ; (reudrv.s, mount.s)
-MOUNT_PATHS     = $0200         ; 64 bytes per drive
 DIRTY_MAPS      = $2000         ; $2000 bytes per drive
 PATH_MAX        = 63            ; an image path in its 64 bytes
 U_LOAD_REU      = $21

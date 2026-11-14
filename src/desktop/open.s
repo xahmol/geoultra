@@ -16,7 +16,7 @@
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
         .import cur, count, path, Redraw, RecentAdd, Mount, Leave, SideArrows
         .export Open, Up, Drive, Into, Document, Back
-        .import HistAdd
+        .import HistAdd, IsImage, Error
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
 ST_LD_DATA      = $80
@@ -40,11 +40,25 @@ Open:   lda count               ; (an empty folder: nothing)
         beq @enter
         cmp #K_DRIVE
         beq @enter
-        cmp #K_UFILE            ; (a disk image: mounted, mount.s)
-        bne :+
-        jmp Mount
-:
-        cmp #K_GEOS
+        cmp #K_UFILE            ; a disk image: gone into like a folder
+        bne @geos               ; (the user, 2026-11-13; the engine's
+        jsr IsImage             ; engineimg.s); another file: Mount says
+        bcs @mount              ; it is not opened here
+        lda #<entryName
+        sta r0L
+        lda #>entryName
+        sta r0H
+        lda #FE_CD
+        jsr FileEngine
+        txa
+        bne @noimg
+        jmp Entered
+@noimg: cpx #INSUFF_SPACE       ; (here: the REU's room, not a drive's)
+        bne @err
+        ldx #ERR_REU
+@err:   jmp Error               ; (the image's name on its first line)
+@mount: jmp Mount
+@geos:  cmp #K_GEOS
         bne @end
         lda entryInfo + FI_GTYPE
         cmp #APPLICATION
@@ -62,12 +76,13 @@ Into:   sta r0L                 ; FE_CD (A/X), then the list read again
         lda #FE_CD
         jsr FileEngine
         txa
-        bne @end
+        bne NoCd
+Entered:                        ; (Open: a disk image gone into)
         jsr ListRead
         jsr HistAdd             ; (history.s: the toolbar's back, forward)
         jsr SideArrows          ; (desktop.s: the open drive's arrow)
         jmp ListDraw
-@end:   rts
+NoCd:   rts
 
 ; Up: the parent folder (nothing at "/").
 Up:     lda path + 1
@@ -143,7 +158,7 @@ Program:
         jsr FileEngine
         txa
         beq :+
-        rts                     ; (not found: nothing)
+        jmp InImage             ; (not found: nothing)
 :       lda #<shortName
         sta r6L
         lda #>shortName
@@ -153,6 +168,16 @@ Start:  jsr Leave               ; (desktop.s: the panes kept, GEOS's colours)
         sta r0L                 ; back)
         jsr GetFile
         jmp Back                ; (a desk accessory came back)
+
+; InImage: X = FE_SELECT's error: inside a disk image gone into (its
+; slot is lent for one engine call only: FE_NOT_SUPPORTED) the message
+; that it must be mounted; else nothing (not found).
+InImage:
+        cpx #FE_NOT_SUPPORTED
+        bne @end
+        ldx #ERR_INIMG
+        jmp Error
+@end:   rts
 
 ; Document: entryName (a GEOS file in path that is no program) opened
 ; with its application, as the deskTop passes a document: the parent's
@@ -203,8 +228,9 @@ Document:
         lda #FE_SELECT
         jsr FileEngine
         txa
-        bne @none
-        lda curDrive
+        beq :+
+        jmp InImage
+:       lda curDrive
         sta docDrive
         jsr FindApp             ; in the document's folder
         bcc Launch

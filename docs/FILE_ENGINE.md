@@ -75,6 +75,36 @@ C callers (geos-oscar64) get a thin wrapper per function later.
   run at the same time), one per task when task switching comes.
   `.` and `..` work everywhere; `..` at a drive's root goes to `/`, at
   `/` it stays there.
+- **Disk images as folders** (the user's decision 2026-11-13; built
+  2026-11-14, engineimg.s, modules 88-90): a path that goes through a
+  disk image on the Ultimate (`.d64`, `.d71`, `.d81`, `.dnp`), such as
+  `/usb0/x/disk.d81/notes`, names a file inside it. The image is loaded
+  into free REU banks (as `FE_MOUNT` loads one, module 68) and shown in
+  an empty slot A-D for that call only, the way drive E is
+  (`sysActive` `$60`); the rest of the path is walked there as on a
+  GEOS drive (native folders and 1581 partitions too). An image as the
+  last part counts as the folder for `FE_OPENDIR` and `FE_CD`, and as
+  the file for every other function (`FE_STAT`, `FE_COPY`,
+  `FE_DELETE`, `FE_MOUNT` ...). Changes are written back to the image
+  at the end of the call that made them (the write-back's changed
+  runs; the first one after a load copies the image into
+  `GEOULTRA/BACKUP/` as for a mount). The image's copy stays in the REU
+  for the next call (`imgFlags`, its path at REU `$01:1A00`) and is
+  dropped by a call that may write on the Ultimate with a plain
+  Ultimate path (it may have changed that very file), by a mount whose
+  banks overlap it, and by a resumed session. Listing handles keep the
+  image (`H_DRIVE` `$C0` + device) and show it again for each
+  `FE_READDIR`. Errors: `FE_NO_SLOT` (no empty slot A-D, or drive E is
+  shown in the same call), `FE_MOUNTED` (`$51`, the image is mounted on
+  a drive A-D: use that drive), `INSUFF_SPACE` (no room in the REU, as
+  for a mount). Limits: one image per call (a copy between two
+  images, or between an image and drive E, is refused); the slot is
+  lent for one call, so `FE_SELECT` (a program started or a document
+  opened from inside an image) fails with `FE_NOT_SUPPORTED`: mount the
+  image for that; a file changed on the Ultimate by something else
+  than the engine (FTP, the Ultimate's own menus) while the image's
+  copy is in the REU is not noticed until a writing call or a mount
+  drops the copy. Test: `tests/engine/imgu64.py` (U64).
 - Names exact and case-sensitive. Wildcards `*` and `?` only in the last
   component of `FE_OPENDIR`'s pattern; gush expands its arguments from
   that listing, so every other call takes exact names.
@@ -238,6 +268,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 75 | `FE_TURBO`, `FE_HOME`, `FE_SETTIME`, `FE_REBOOT` (enginesys.s; `fework.inc` shared with module 66) |
 | 76-79 | `FE_NTP` (enginentp.s; from GeoUTime, GeoUTools, and ntp2ultimate by MaxPlap): the exchange, SETTINGS.INI read, the date and the clocks, its `[time]` lines (`fehome.inc` shared with module 75) |
 | 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |
+| 88-90 | disk images gone into like folders (engineimg.s): the path looked at and a handle's image shown again; the slot and the write-back; the image loaded or found in the REU, the comparisons, a writing call's drop ("Paths") |
 
 From one Ultimate path to another (2026-11-11, modules 83 to 85,
 engineuu.s): `FE_MOVE` on the same volume is one RENAME from the

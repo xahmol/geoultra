@@ -313,6 +313,10 @@ Ultimate:
         bne @ch
 @endT:  cpy feEnd
         bne @nextT
+        jsr ImgProbe            ; (module 88: a disk image on the way:
+        bcc @img                ; gone into, the walk goes on in it)
+        txa
+        bne @ret
         lda #FE_P_ULTIMATE
         sta feKind
         ldx #FE_NOT_SUPPORTED
@@ -350,7 +354,11 @@ Ultimate:
         bne @name
 @nf:    ldx #FILE_NOT_FOUND
         sec
-        rts
+@img:   rts
+
+ImgProbe:
+        jsr OvlCall
+        .byte 88, 0
 
 Tops:   .byte "usb0", 0, "usb1", 0, "sd", 0, 0
 
