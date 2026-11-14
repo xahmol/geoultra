@@ -51,6 +51,7 @@ OvlFail:
         Stub ToolbarSave, 4
         Stub PanesSave, 4
         Stub PanesKeep, 4
+        Stub SortSave, 4
         Stub ToolDraw, 5        ; overlay 5: tooldraw.s
         Stub BigInit, 5
         Stub ClockDraw, 5

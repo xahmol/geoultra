@@ -265,7 +265,8 @@ Keys:   ldy #ROW_SECT
         rts
 
 ; Current: sel for row `row`: the option whose value the INI text holds
-; for its key (any case), else the row's default.
+; for its key (any case, a "-" in front left out), else the row's
+; default.
 Current:
         jsr RowAt
         ldy #ROW_DEF
@@ -276,7 +277,15 @@ Current:
         jsr IniFind             ; (r2 the value, A its length)
         bcs @end
         sta len
-        lda #0
+        ldy #0                  ; a "-" in front: the same option (the
+        lda (r2),y              ; desktop's sort=-date, reversed; a click
+        cmp #'-'                ; writes it plain again)
+        bne :+
+        dec len
+        inc r2L
+        bne :+
+        inc r2H
+:       lda #0
         sta opt
 @opt:   jsr RowAt               ; (IniFind leaves tp alone; op moves)
         lda opt

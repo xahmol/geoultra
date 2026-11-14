@@ -167,6 +167,15 @@ TB_BUTTONS      = 17            ; (toolbar.s, tooldraw.s)
 VIEW_LIST       = 0
 VIEW_ICONS      = 1
 VIEW_DETAILED   = 2
+SORT_REV        = $80           ; sortMode: the order reversed (sort=-date;
+SORT_KEYS       = $7F           ; the user, 2026-11-13), the rest the key
+SORT_DATE       = 1             ; (0 name, 3 type)
+SORT_SIZE       = 2
+COL_SIZE        = 246           ; the detailed view (list.s): sizes end
+COL_DATE        = 254           ; here, dates start here (their headings
+                                ; on the path line: a click sorts, listin.s)
+ARROW_ROOM      = 10            ; one list: the sort arrow's room at the
+                                ; path line's right end (list.s, listin.s)
 CLOCK_24        = 0
 CLOCK_12        = 1
 CLOCK_OFF       = 2

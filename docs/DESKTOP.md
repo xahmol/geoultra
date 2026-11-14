@@ -502,6 +502,20 @@ colour is a property of an element, by name:
   hand-ordered disks may follow). The sort runs in an overlay, from
   MainLoop right after a folder is read (reading only marks the list),
   so the list is drawn once, sorted.
+- **The order turned round, columns (the user, 2026-11-13 and
+  2026-11-14; done 2026-11-14):** `sort=` takes a "-" in front for the
+  reversed order (`sort=-date`; sortMode's bit 7, SORT_REV), folders
+  and ".." still first (sort.s inverts a key's bytes after its group).
+  An arrow at the right end of the path line (one list; with two panes
+  the first of the letters) points down for the order as named and up
+  when reversed; a click turns it round. In the detailed view a click
+  on the Size or Date heading on the path line sorts by it, a second
+  click reverses, a third goes back to names; the column sorted by is
+  bold. Each change writes `sort=` (inifile.s SortSave) and sorts the
+  list again (ClockTick, sortDue: the sort and the settings are other
+  overlays than the click; two panes are both read again). Settings'
+  Desktop page shows `-date` as date (choice.s leaves the "-" out); a
+  choice made there is the plain order. Test tests/desktop/d18.py.
 - **Done 2026-11-12 (night):** copy, paste, move and delete onto drive
   C tested on the U64 (tests/desktop/d10u64.py); sorting (sort.s,
   overlay 6; tests/desktop/d11.py); docs/DESKTOP_MANUAL.md. The core ends

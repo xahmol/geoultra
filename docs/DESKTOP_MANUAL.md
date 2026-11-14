@@ -35,6 +35,15 @@ drives, then files, each group by name; upper and lower case are the
 same for the order. (Folders with more than 384 entries keep the order
 they have on disk.)
 
+The small arrow at the right end of the path line turns the order
+round (with two panes it is the first of the letters): pointing down,
+the order is as chosen (names A to Z, the newest or the largest
+first); pointing up, it is reversed. Folders and ".." stay first. In
+the detailed view, a click on "Size" or "Date" sorts by that column, a
+second click reverses it, and a third goes back to names; the column
+the list is sorted by is shown in bold. The order is kept in
+SETTINGS.INI (`sort=`, with a "-" in front when reversed).
+
 ## Views
 
 view > view chooses how the list shows the entries (the toolbar's view

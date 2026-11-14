@@ -24,13 +24,13 @@
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList
         .export Neutral, Dialog, MenuNeutral, Recover, ClockTick
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
-        .export lettersDue, rootsSeen
+        .export lettersDue, rootsSeen, sortDue
         .import PaneLetters
         .export lastMin, clockX, MonLo, MonHi, stripL, listR, paneR
         .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
         .export tbMode, topY, titleEnd
         .import ToolPaint, IconLayout, step, sortPending, SortNow, RightPress
-        .import SetGeom, panes
+        .import SetGeom, panes, DrawPanes, SortSave
         .import BusyPause, BusyResume
 
 CPU_PORT        = $01
@@ -549,10 +549,21 @@ Recover:
 
 ; --- The clock ------------------------------------------------------------
 
-; ClockTick (appMain): a list waiting to be sorted sorted (list.s,
-; SortNow); the clock drawn again when the minute changed.
+; ClockTick (appMain): a new sort order (sortDue, from a click in
+; overlay 8) saved and the list sorted again (two panes: both read
+; again); a list waiting to be sorted sorted (list.s, SortNow); the
+; clock drawn again when the minute changed.
 ClockTick:
-        lda sortPending         ; (list.s: a folder read, to be sorted;
+        lda sortDue
+        beq @sort
+        lda #0
+        sta sortDue
+        jsr SortSave            ; (overlay 4: sort=)
+        lda panes
+        beq :+
+        jmp DrawPanes           ; (its active pane sorted at the next tick)
+:       inc sortPending
+@sort:  lda sortPending         ; (list.s: a folder read, to be sorted;
         beq :+                  ; here, in MainLoop, an overlay may run:
                                 ; never in a dialog, as DoDlgBox clears
                                 ; appMain while it runs, dialog.s)
@@ -696,6 +707,8 @@ titleEnd:       .byte 40        ; the title bar's end (topY + 8)
 stripL:         .word STRIP_LEFT ; the list's scroll strip (its left edge),
 listR:          .word STRIP_LEFT - 3 ; the list's right edge,
 lettersDue:     .byte 0         ; list.s PaneMark: the letters to draw
+sortDue:        .byte 0         ; listin.s: the order changed by a click
+                                ; (ClockTick: saved, sorted, drawn)
 rootsSeen:      .byte 0         ; listin.s: the Ultimate's roots (0 not yet
                                 ; counted, 1 none, 2 some)
 paneR:          .word SCREEN_RIGHT ; the list area's (with the strip) right

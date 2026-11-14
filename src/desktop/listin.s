@@ -21,6 +21,7 @@
         .import RowY, RowBox, ry, row, viewMode
         .export Ov_ListPress, Ov_ListKey, Ov_ListEnd, Ov_SelAll, Ov_PaneLetters
         .import lettersDue, Drive, FileEngine, rootsSeen
+        .import sortMode, sortDue, SortArrow, listR
 Ov_ListEnd = ListEnd
 Ov_SelAll = SelAll
 DrawSprite      = $C1C6         ; GEOS jump table
@@ -106,8 +107,10 @@ PathPress:
 ; Drawn from ClockTick (lettersDue, set by list.s PaneMark), as ListDraw
 ; also runs inside other overlays.
 
-LETTERS         = 6             ; A-E and U at most
+LETTERS         = 7             ; the sort arrow, A-E and U at most
 LET_U           = 5
+LET_SORT        = 6             ; (the sort order's arrow: first, list.s
+                                ; SortArrow; a click turns it round)
 DRIVE_LETTERS   = 5
 LET_PITCH       = 9
 
@@ -128,7 +131,9 @@ Ov_PaneLetters:
 ; E, 5 U when the Ultimate has roots: rootsSeen, counted once), ln their
 ; number.
 BuildSet:
-        ldy #0
+        lda #LET_SORT
+        sta lset
+        ldy #1
         ldx #0
 @drv:   lda driveType,x
         beq :+
@@ -176,7 +181,15 @@ PaneRow:
         sta r1H
         ldx li
         lda lset,x
-        clc
+        cmp #LET_SORT
+        bne :+
+        lda r11L                ; (the arrow: 7 pixels in the 9 of a slot)
+        bne @x
+        dec r11H
+@x:     dec r11L
+        jsr SortArrow
+        jmp @next
+:       clc
         adc #'A'
         cmp #'A' + LET_U
         bne :+
@@ -328,6 +341,75 @@ LetBox: lda pathY
         sta r4H
         rts
 
+; SortUnder (ListPress, one list, a press on the path line): on the
+; sort arrow at its right end, the order turned round; in the detailed
+; view on the Size or Date heading, sorted by it (SortCol). C clear when
+; it was one of them, else C set.
+SortUnder:
+        lda listR
+        sec
+        sbc #ARROW_ROOM
+        sta r3L
+        lda listR+1
+        sbc #0
+        sta r3H
+        lda mouseXPos
+        cmp r3L
+        lda mouseXPos+1
+        sbc r3H
+        bcc @cols
+        jmp SortFlip
+@cols:  lda viewMode
+        cmp #VIEW_DETAILED
+        bne @no
+        lda mouseXPos+1
+        bne @date
+        lda mouseXPos
+        cmp #COL_DATE - 2
+        bcs @date
+        cmp #COL_SIZE - SIZE_HEAD
+        bcc @no
+        lda #SORT_SIZE
+        jmp SortCol
+@date:  lda #SORT_DATE
+        jmp SortCol
+@no:    sec
+        rts
+
+; SortCol: a click on column A's heading: sorted by it; again: reversed;
+; a third time: by name again (the user, 2026-11-14).
+SortCol:
+        sta stmp
+        lda sortMode
+        and #SORT_KEYS
+        cmp stmp
+        beq @same
+        lda stmp
+        jmp NewSort
+@same:  lda sortMode
+        bmi @name
+        ora #SORT_REV
+        bne NewSort             ; (always)
+@name:  lda #0
+        beq NewSort             ; (always)
+
+; SortFlip: the sort arrow: the order turned round.
+SortFlip:
+        lda sortMode
+        eor #SORT_REV
+; NewSort: sortMode = A, the selection cleared (the entries move), the
+; list sorted again, sort= written: ClockTick, as the sort and the
+; settings are other overlays (sortDue). C clear.
+NewSort:
+        sta sortMode
+        jsr ClearSel
+        lda #1
+        sta sortDue
+        clc
+        rts
+
+SIZE_HEAD       = 30            ; the Size heading's room before COL_SIZE
+
 ; LetterUnder (ListPress, a press on the path line): with two panes and
 ; the pointer on a letter, C clear and A = its code ('a'-'e' for Drive,
 ; 'U' for RootMenu); else C set.
@@ -352,7 +434,12 @@ LetterUnder:
         rts
 @hit:   ldx li
         lda lset,x
-        cmp #LET_U
+        cmp #LET_SORT
+        bne :+
+        lda #'S'                ; (SortFlip)
+        clc
+        rts
+:       cmp #LET_U
         bne :+
         lda #'U'                ; (RootMenu)
         clc
@@ -456,12 +543,12 @@ RootMenu:
 PlaceMenu:
         lda #0
         sta mcount
-        jsr BuildSet            ; the drives shown as letters (not U)
-        ldx #0
+        jsr BuildSet            ; the drives shown as letters (not U, not
+        ldx #0                  ; the sort arrow)
 @drv:   stx li
         lda lset,x
         cmp #LET_U
-        beq @ndrv
+        bcs @ndrv               ; (LET_U, LET_SORT)
         pha
         jsr NewItem             ; "drive A"
         pla
@@ -828,6 +915,7 @@ rpath:  .res ROOT_LEN + 2
 
 lset:   .res LETTERS                ; BuildSet: the letters shown
 ln:     .byte 0                 ; and their number
+stmp:   .byte 0                 ; SortCol: the column
 lpane:  .byte 0                 ; the pane at hand
 li:     .byte 0                 ; the letter at hand
 lcur:   .byte 0                 ; the pane's drive (0-4, $FF: none)
@@ -854,13 +942,19 @@ ListPress:
         bcs @title
         jsr LetterUnder         ; (two panes: a drive letter there?)
         bcs :+
-        cmp #'U'
+        cmp #'S'
+        bne @root
+        jmp SortFlip            ; (the sort arrow)
+@root:  cmp #'U'
         bne @drive
         jmp RootMenu            ; (the Ultimate's roots: a list)
 @drive: jmp Drive               ; (open.s: its root; C clear after it)
 :       lda panes               ; two panes: the path text opens the
         beq :+                  ; places' list; one list: its parts
         jmp PlaceMenu
+:       jsr SortUnder           ; (one list: the arrow, a column heading)
+        bcs :+
+        rts
 :       jmp PathPress
 @title: clc
         rts

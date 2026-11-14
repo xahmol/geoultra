@@ -119,7 +119,15 @@ Keys:   lda #<text
         iny
         sta (kp),y
         bne @pad                ; (Y not 0: always)
-@ptr:   ldy #0                  ; ptrs[i] = this key
+@ptr:   bit sortMode        ; reversed (SORT_REV): the key's bytes
+        bpl @keep               ; after its group inverted, so folders
+        ldy #KEY_CHARS          ; stay first
+@inv:   lda (kp),y
+        eor #$FF
+        sta (kp),y
+        dey
+        bne @inv
+@keep:  ldy #0                  ; ptrs[i] = this key
         lda kp
         sta (pp),y
         iny
@@ -144,11 +152,14 @@ Keys:   lda #<text
 
 ; Lead: the sort order's bytes after the group (sortMode, SETTINGS.INI
 ; [desktop] sort=; the user, 2026-11-12, after GeoDesk64's sort modes):
-; name: none; date: newest first (year with its century, month, day,
+; (bit 7, SORT_REV: the whole order reversed, Keys) name: none; date:
+; newest first (year with its century, month, day,
 ; hour, minute, each inverted); size: largest first (its three low
 ; bytes, inverted); type: the GEOS file type + 1 (other files 0). The
 ; name follows in what is left of the key. Y = the last byte written.
-Lead:   ldx sortMode
+Lead:   lda sortMode
+        and #SORT_KEYS
+        tax
         beq @end
         dex
         beq @date

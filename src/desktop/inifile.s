@@ -18,7 +18,7 @@
         .import wantTheme, wantView, wantToolbar, curName, clockMode, viewMode, tbMode
         .importzp sp
         .export Ov_LoadAll, Ov_Save, Ov_ThemeSave, Ov_ViewSave, Ov_ClockSave, Ov_ToolbarSave
-        .export Ov_PanesSave, Ov_PanesKeep
+        .export Ov_PanesSave, Ov_PanesKeep, Ov_SortSave
 Ov_LoadAll = LoadAll            ; (the stubs in ovl.s, overlay 4)
 Ov_Save = Save
 Ov_ThemeSave = ThemeSave
@@ -27,6 +27,7 @@ Ov_ClockSave = ClockSave
 Ov_ToolbarSave = ToolbarSave
 Ov_PanesSave = PanesSave
 Ov_PanesKeep = PanesKeep
+Ov_SortSave = SortSave
 
         .segment "OV4"
 
@@ -481,13 +482,30 @@ DeskRead:
         jsr Pick
         bcs @pane2
         sta wantPanes
-@pane2: ldx #KEY_SORT           ; sort= (sort.s): name, date, size, type
-        jsr KeyVal
+@pane2: ldx #KEY_SORT           ; sort= (sort.s): name, date, size, type;
+        jsr KeyVal             ; "-" in front: reversed (SORT_REV)
         bcs :+
+        ldy #0
+        sty key
+        lda (r0),y
+        cmp #'-'
+        bne @key
+        lda #SORT_REV
+        sta key
+        inc r0L
+        bne @key
+        inc r0H
+@key:   lda key             ; (Pick uses key: the flag on the stack)
+        pha
         ldx #SortFirst - First
         jsr Pick
-        bcs :+
+        bcs @nok
+        sta key
+        pla
+        ora key
         sta sortMode
+        bcc :+                  ; (C clear: always)
+@nok:   pla
 :       ldx #KEY_COPY           ; copy= (tree.s): ask, replace, skip, newer
         jsr KeyVal
         bcs :+
@@ -653,6 +671,35 @@ ToolbarSave:
         ldx #KEY_TOOLBAR
         ldy #ToolbarWords - Words
         bne Word                ; (not 0: always)
+; SortSave: "sort=" and sortMode's word, "-" in front when reversed.
+SortSave:
+        ldx #0
+        lda sortMode
+        bpl :+
+        lda #'-'
+        sta sortVal
+        inx
+:       lda sortMode
+        and #SORT_KEYS
+        asl a                   ; (SortWords: four letters each)
+        asl a
+        tay
+        lda #4
+        sta at
+@ch:    lda SortWords,y
+        sta sortVal,x
+        inx
+        iny
+        dec at
+        bne @ch
+        lda #0
+        sta sortVal,x
+        lda #<sortVal
+        sta r1L
+        lda #>sortVal
+        sta r1H
+        ldx #KEY_SORT
+        jmp SetLine
 ClockSave:
         lda clockMode
         ldx #KEY_CLOCK
@@ -909,6 +956,8 @@ ViewWords:      .byte "list", 0, "icons", 0, "detailed", 0
 ClockWords:     .byte "24", 0, "12", 0, "off", 0
 ToolbarWords:   .byte "16", 0, "8", 0, "off", 0
 PanesWords:     .byte "1", 0, "2", 0
+SortWords:      .byte "namedatesizetype" ; (sort=, SortSave: four each)
+sortVal:        .res 6          ; SortSave: "-" and the word
 
 NameLo:         .byte <IniName, <RecName, <IniName
 NameHi:         .byte >IniName, >RecName, >IniName

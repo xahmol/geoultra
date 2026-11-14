@@ -32,7 +32,8 @@ PANE_DIV        = 159           ; two panes: the line between them
         .export Frame, Place, SortNow, sortPending, RightPress, SwapPane
         .export PaneInit, FreeRead
         .export EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, Follow
-        .export ThumbRows
+        .export ThumbRows, SortArrow
+        .import sortMode, boldOn
         .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd
         .import CopyOther, MoveOther
         .import SortList
@@ -52,9 +53,8 @@ ST_BUF_LEN      = PROG_NAME_END + 2 + 5 + 7 + 1 ; stBuf: the progress
                                 ; line's name, ", 65535 blocks" and the zero
 R_LEN           = 32            ; r0-r15
 RAM_ALL         = $30
-COL_SIZE        = 246           ; the detailed view: sizes end here,
-COL_DATE        = 254           ; dates start here,
 COL_NAME_END    = 202           ; names are clipped here
+ARROW_DROP      = 5             ; the sort arrow's top above the baseline
 
 ; The entry table
 ENTRY_SIZE      = 128           ; info (16), long name (61), spare
@@ -234,12 +234,36 @@ ListDraw:
         clc
         adc #4
         sta textX
-        lda #<path
+        lda panes               ; one list: the sort arrow at the line's
+        bne :+                  ; right end (two panes: in the letters,
+        lda viewMode            ; listin.s), the path clipped before it
+        cmp #VIEW_DETAILED      ; (detailed: clipped before the columns)
+        beq :+
+        lda listR
+        sec
+        sbc #ARROW_ROOM
+        sta textClip
+        lda listR+1
+        sbc #0
+        sta textClip+1
+:       lda #<path
         ldx #>path
         ldy pathY
         jsr Text
+        jsr NameClip
         jsr PaneMark            ; (two panes: the active one's path line)
         jsr Header
+        lda panes
+        bne :+
+        lda listR
+        sec
+        sbc #ARROW_ROOM - 2
+        sta r11L
+        lda listR+1
+        sbc #0
+        sta r11H
+        jsr SortArrow
+:
         lda pathY               ; (to the frame's right edge: the scroll
         clc                     ; strip starts below it)
         adc #2
@@ -575,6 +599,8 @@ NameClip:
 Header: lda viewMode
         cmp #VIEW_DETAILED
         bne @end
+        lda #SORT_SIZE          ; (the sort's column in bold: a click on
+        jsr HeadBold            ; it sorts, listin.s)
         ldy #0
         ldx #SizeWord
         jsr Words
@@ -583,6 +609,8 @@ Header: lda viewMode
         jsr RightAtSize
         ldy pathY
         jsr ColText
+        lda #SORT_DATE
+        jsr HeadBold
         ldy #0
         ldx #DateWord
         jsr Words
@@ -591,8 +619,71 @@ Header: lda viewMode
         lda #COL_DATE
         sta textX
         ldy pathY
-        jmp ColText
+        jsr ColText
+        lda #0
+        sta currentMode
+        sta boldOn
 @end:   rts
+
+; HeadBold: bold (currentMode, and boldOn for TextWidth) when the list
+; is sorted by column A (sortMode without SORT_REV), else plain.
+HeadBold:
+        sta tmpB
+        lda sortMode
+        and #SORT_KEYS
+        ldx #0
+        ldy #0
+        cmp tmpB
+        bne :+
+        ldx #SET_BOLD
+        iny
+:       stx currentMode
+        sty boldOn
+        rts
+
+; SortArrow: the sort order's arrow at x r11 (7 pixels wide), on the
+; path line: pointing down as sort= says (names A-Z, the newest, the
+; largest first), up when reversed (SORT_REV). Destroys A, X, Y, r3,
+; r4, r11L and what HorizontalLine destroys.
+SortArrow:
+        lda r11L
+        sta arX
+        lda r11H
+        sta arX+1
+        lda #0
+        sta arI
+@line:  lda arI                 ; its row: 0-3 down, 3-0 up
+        bit sortMode
+        bpl :+
+        eor #3
+:       clc
+        adc pathY
+        sec
+        sbc #ARROW_DROP
+        sta r11L
+        lda arX                 ; x + i to x + 6 - i
+        clc
+        adc arI
+        sta r3L
+        lda arX+1
+        adc #0
+        sta r3H
+        lda #6
+        sec
+        sbc arI
+        clc
+        adc arX
+        sta r4L
+        lda arX+1
+        adc #0
+        sta r4H
+        lda #$FF
+        jsr HorizontalLine
+        inc arI
+        lda arI
+        cmp #4
+        bcc @line
+        rts
 
 ; Columns: the entry's size (KB or MB; not for folders and drives) right-
 ; aligned at COL_SIZE, its date (GEOS files) at COL_DATE, on row ry.
@@ -2018,6 +2109,9 @@ Follow: lda cur+1               ; cur < top: top = cur
         .segment "DATA"
 
 sortPending:    .byte 0         ; 1: read, not yet sorted (SortNow)
+tmpB:           .byte 0         ; HeadBold: the column
+arX:            .word 0         ; SortArrow: its x
+arI:            .byte 0         ; and its row
 
 count:          .word 0         ; entries in the table
 top:            .word 0         ; the first shown

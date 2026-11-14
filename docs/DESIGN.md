@@ -647,7 +647,9 @@ Requests from the same session, to do:
   MegaPatch. A new kernal overlay module (the resident areas are full).
   Built after the info box and gush's close button.
 - The menus: keyboard shortcuts right-aligned (by measured width).
-- Sorting (the user, 2026-11-13): a reverse order (folders still first;
+- Done 2026-11-14 (docs/DESKTOP.md; the user chose the headings on the
+  path line, a third click back to names; tests/desktop/d18.py):
+  Sorting (the user, 2026-11-13): a reverse order (folders still first;
   sort= gets a "-" form, e.g. sort=-date), a small icon at the right of
   the path line that turns it round, and in the detailed view a click
   on a column's heading (name, size, date) sorts by it (a second click
