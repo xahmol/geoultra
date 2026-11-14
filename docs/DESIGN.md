@@ -260,6 +260,10 @@ UCI).
   interrupt-level routine through GEOS's own mouse and key variables),
   so that the recording needs one start command and no memory reads
   that disturb the picture (at most a done flag once a second).
+  Done 2026-11-14: a sneak peek at version 0.1 (the repository stays
+  private until the release), live at https://youtu.be/KjweEX6IJIk;
+  made with tools/video (autopilot.s, pilot.py, scenes.py, edit.py),
+  announced on Facebook and a forum.
   Scenes: the boot and splash, the desktop (list and icon view, themes,
   two panes, drag and drop), the mount dialogue, geoWrite and geoPaint
   from folders, gush, GeoUltra Settings (themes, palette, pointer,
