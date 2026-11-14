@@ -245,7 +245,13 @@ phase 3 (task switching, printing, spooler, clipboard), the documents
 (user manuals, technical reference, developer guide) and the serial
 numbers per application (`[serials]` and the Settings card); after that
 the 1.0 release. Phases 4 (Ultimate II+), 5 (GEOS 128) and 6 (real IEC
-drives) and the network roadmap are 1.x and later.
+drives) and the network roadmap are 1.x and later. Order of work
+(agreed 2026-11-14): a code sweep that takes "step" and "phase" out of
+the code and the UI; the rest of phase 3 (task switching first, then
+spooler and clipboard, then printing); the serial numbers per
+application; Beta 1; then the beta's feedback alongside the Ultimate II+
+version (phase 4, mostly the same cartridge), and later the C128
+(phase 5) as its own track; then 1.0.
 
 **Releases and documentation (the user, 2026-11-12):**
 
