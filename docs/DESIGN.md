@@ -690,8 +690,10 @@ Requests from the same session, to do:
   Settings (a default takes its key out); the pointer after a reboot
   (10.4) to retest (a plain reboot resumes the hibernated session,
   which may predate the change).
-- copy=newer with dated GEOS documents: tested only with plain files
-  (no date) so far; a test with two dated documents (VICE and U64).
+- Done 2026-11-14 (tests/desktop/d21.py, VICE): copy=newer with dated
+  GEOS documents: tested only with plain files (no date) so far; a test
+  with two dated documents (an older one left out, a newer one
+  replacing).
 - Disk images on the Ultimate's file system (decided by the user
   2026-11-13): (1) going into an image (D64, D71, D81, DNP) like a
   folder: the file engine loads it into free REU and serves it through
