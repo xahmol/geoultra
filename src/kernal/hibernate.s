@@ -24,7 +24,7 @@
         .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck, turboNow
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo
-        .import imgFlags
+        .import imgFlags, TaskMany, TaskInit
 
 WR_VER_ERR      = $25           ; (as the disk driver: write failed)
 
@@ -194,8 +194,10 @@ hibErr:         .byte 0
 Suspend:
         ldx #DEV_NOT_FOUND
         lda uciPresent
-        bne @go
-        rts
+        beq @end
+        jsr TaskMany            ; (several tasks: not yet; task.s)
+        bcc @go
+@end:   rts
 @go:    jsr WriteBackNow        ; the drives' changes go to their images
         lda CPU_PORT
         pha
@@ -280,7 +282,9 @@ Resumed:
         sta CPU_PORT
         ldx #0
         stx imgFlags            ; (a disk image's copy in the REU: not
-        rts                     ; in the file, gone)
+        jsr TaskInit            ; in the file, gone; the other tasks too)
+        ldx #0
+        rts
 
 
         .segment "OVL10"

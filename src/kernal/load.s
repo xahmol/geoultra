@@ -28,6 +28,7 @@ JT_COPY         = $1000         ; its copy in REU bank 1
         .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
+        .import taskName
         .import WriteBackNow, SysFindFile, AppGate, RefusedMsg, ownDesk, FileEngine
 
 DA_BANK         = 18
@@ -600,6 +601,8 @@ OvEnterDeskTop:
         jsr InitMachine
         jsr Background
         jsr RefusedMsg          ; an application refused: why (sysdrive.s)
+        lda #0                  ; (the task's name: the desktop's, task.s)
+        sta taskName
         jsr AutoNext            ; the cold start's auto-execs: the next one
                                 ; (no return while one starts; module 92)
         bit ownDesk             ; GeoUltra's desktop (sysdrive.s ownDesk)

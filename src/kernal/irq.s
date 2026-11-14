@@ -7,7 +7,7 @@
         .export MainLoopCall, PtrDX, PtrDY
         .import KeyScan, GetNextChar, ProcessTimers, RunProcesses
         .import SleepTick, WakeSleepers, CallRoutine, TimeUpdate, AlarmTick
-        .import HibTick, RtcCheck
+        .import TaskTick, TaskCheck
         .import MenuTick, CheckMousePos, IconTick, PromptTick, GetRandom
 
         .segment "DATA"
@@ -91,7 +91,7 @@ InterruptMain:
         jsr ProcessTimers
         jsr SleepTick
         jsr AlarmTick
-        jsr HibTick             ; (then WbTick)
+        jsr TaskTick            ; (C= + RUN/STOP; then HibTick, WbTick)
         jmp GetRandom
 
 ; Position sprite 0 (the pointer) at mouseXPos/mouseYPos. The offsets'
@@ -136,7 +136,7 @@ MainLoop:
         jsr RunProcesses
         jsr WakeSleepers
         jsr TimeUpdate
-        jsr RtcCheck            ; (then WbCheck)
+        jsr TaskCheck           ; (the task popup; then RtcCheck, WbCheck)
         jmp MainLoop
 
 CallApp:

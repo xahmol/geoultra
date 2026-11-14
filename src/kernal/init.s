@@ -11,7 +11,7 @@
         .import pointerPic, UseSystemFont, RecoverRectangle
         .import sysFlgCopy, DiskInit, ExtraColours, ClockInit
         .import MountAll, SerialFromDisk, TurboInit, SaveJumpTab, HibResumeOvl, RtcClockOvl
-        .import autoIdx, OvlCall
+        .import autoIdx, OvlCall, TaskInit
         .import PointerInit
         .export ColdStart
         .import startGush, FileEngine
@@ -196,6 +196,7 @@ ColdStart:                      ; $4F00: the boot ROM jumps here
         sta r0H                 ; errors left: the Ultimate's clock stays)
         lda #FE_NTP
         jsr FileEngine
+        jsr TaskInit            ; (task.s: this the only task)
         jsr AutoStart           ; SETTINGS.INI autoexec=: run first, then the
         lda autoIdx             ; desktop (module 92; EnterDeskTop goes on
         bpl @loop               ; with them)

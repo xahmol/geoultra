@@ -30,6 +30,8 @@
         .export sysName, sysActive, sysType, sysCurType, sysBase, sysFlags
         .export sysTracks, sysFolderT, sysFolderS, sysSlot, ownDesk, sysActive
         .export imgFlags, imgBank, imgType, imgTracks, uTouch, autoIdx
+        .import taskName
+NAME_LEN        = 13            ; (task.s: taskName's length)
         .import OvlCall, FindFTypes, FindFile
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
@@ -258,7 +260,14 @@ OvAppGate:
         lda #$80                ; refused
         sta sysRefused
         jmp EnterDeskTop        ; (resets the stack)
-@speed: jsr SpeedFor            ; its turbo speed (speed.s)
+@speed: ldx #NAME_LEN - 2       ; its permanent name: the task's (task.s)
+@nm:    lda fileHeader + O_GHFNAME,x
+        sta taskName,x
+        dex
+        bpl @nm
+        lda #0
+        sta taskName + NAME_LEN - 1
+        jsr SpeedFor            ; its turbo speed (speed.s)
 @go:    ldx #0
         stx sysA
         ldx #31

@@ -224,6 +224,16 @@ What this means in practice:
   view leaves them empty for files there; Info shows a file's size.
 - **Real disk drives** on the serial bus are not supported yet.
 
+## Tasks
+
+C= + RUN/STOP, in the desktop or in any application, opens the task
+list: each running task (its application's name; the current one with
+a "*"), "new task" (the current one is kept as it is and a fresh
+desktop starts) and "close task" (the current one ends; the last one
+stays). Cursor up and down and RETURN, or a click, choose; RUN/STOP or
+a click outside closes the list. Each task keeps its own memory in the
+REU; while more than one runs, the session is not hibernated yet.
+
 ## Themes
 
 view > theme chooses the look: **GeoUltra** (the default), **GEOS
