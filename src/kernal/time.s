@@ -13,6 +13,7 @@
         .include "hw.inc"
 
         .export ClockInit, TodMode, TimeUpdate, AlarmTick
+        .import OvlCall
 
 month           = year + 1
 day             = year + 2
@@ -149,39 +150,11 @@ TimeUpdate:
 @end:   plp
         rts
 
-; NextDay: day + 1, then month and year (leap years every fourth year).
+; NextDay: day + 1, then month and year (module 94, once a day: moved
+; out of KEXT for room, 2026-11-14).
 NextDay:
-        ldy month
-        lda daysInMonth-1,y
-        cpy #2
-        bne @last
-        tax
-        lda year
-        and #3
-        bne @feb
-        inx
-@feb:   txa
-@last:  cmp day
-        beq @month
-        inc day
-        rts
-@month: ldy #1
-        sty day
-        inc month
-        lda month
-        cmp #13
-        bne @end
-        sty month
-        inc year
-        lda year
-        cmp #100
-        bne @end
-        dey
-        sty year
-@end:   rts
-
-daysInMonth:
-        .byte 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+        jsr OvlCall
+        .byte 94, 0
 
 ; FromBCD: A (BCD) -> binary. Destroys X.
 FromBCD:
@@ -239,3 +212,44 @@ AlarmTick:
         beq @end
         dec alarmWarn
 @end:   rts
+
+        .segment "OVL94"                ; overlay module 94: the date's
+        .scope Mod94                    ; roll-over (MainLoop, TimeUpdate)
+
+        jmp NextDay             ; entry 0
+
+; NextDay: day + 1, then month and year (leap years every fourth year).
+NextDay:
+        ldy month
+        lda daysInMonth-1,y
+        cpy #2
+        bne @last
+        tax
+        lda year
+        and #3
+        bne @feb
+        inx
+@feb:   txa
+@last:  cmp day
+        beq @month
+        inc day
+        rts
+@month: ldy #1
+        sty day
+        inc month
+        lda month
+        cmp #13
+        bne @end
+        sty month
+        inc year
+        lda year
+        cmp #100
+        bne @end
+        dey
+        sty year
+@end:   rts
+
+daysInMonth:
+        .byte 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+
+        .endscope
