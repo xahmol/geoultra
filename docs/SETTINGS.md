@@ -279,8 +279,20 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
 - **S4, the Theme page:** the theme editor (themefile.s's parsing
   shared, the mock preview, palettes).
 - **S5, the Drives page:** MOUNTS.INI, DNP sizes, long names, new
-  images.
+  images. The user, 2026-11-14, first version with all four: the boot
+  mounts (A-D's images from MOUNTS.INI, picked with the file dialog, or
+  none), a native drive's size (MOUNTS.INI tracks=N, the REU room
+  shown), long names on or off per drive, and a new empty image
+  (D64/D71/D81/DNP, FE_MKIMG).
 - **S6, the REU page:** the legacy size, the map, task slots (the slots
-  once tasks exist).
+  once tasks exist). The user, 2026-11-14, first version with all
+  three: a read-only map of the 16 MB (system banks, each drive's, a
+  disk image's copy, free), the legacy REU size old applications see
+  (ramExpSize), the number of task slots.
+- **S4.6, icon colours by type** (the user, 2026-11-14): five groups in
+  the theme, each "ink on paper": applications, documents, desk
+  accessories, system files (fonts, drivers, boot files), folders and
+  drives; plus Ultimate files. A missing line keeps the single icon
+  colour of today. Icon view only.
 
 Beta 1 needs S1-S6's first versions (docs/DESIGN.md, "Releases").

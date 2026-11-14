@@ -85,7 +85,7 @@ build/tools/%.cvt: build/tools/%.bin src/tools/%.toml
 # Its status line says how to leave it (mksplash.py's own mode).
 build/tools/splash.bin: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/system9.py
 	@mkdir -p build/tools build/gen
-	$(PYTHON) tools/splash/mksplash.py build/gen/splashinfo.bin build/gen/splashinfo_col.bin \
+	GU_VERSION=v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH) $(PYTHON) tools/splash/mksplash.py build/gen/splashinfo.bin build/gen/splashinfo_col.bin \
 		build/gen/splashinfo.png "A key or a click: back to the desktop"
 	cat build/gen/splashinfo.bin build/gen/splashinfo_col.bin > $@
 
@@ -295,9 +295,9 @@ build/overlays64s.bin: build/overlays64.bin
 
 SPLASH   = $(GEN)/splash.bin $(GEN)/splash_col.bin $(GEN)/splash_msg.bin $(GEN)/splash.inc
 
-$(SPLASH) &: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/system9.py
+$(SPLASH) &: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/system9.py build/kernal64.bin
 	@mkdir -p $(GEN)
-	$(PYTHON) tools/splash/mksplash.py --boot $(SPLASH)
+	GU_KERNAL=build/kernal64.bin $(PYTHON) tools/splash/mksplash.py --boot $(SPLASH)
 
 # The splash comes first: the boot ROM copies it with the CPU (--cpu 2).
 $(GEN)/image.bin $(GEN)/image.inc: build/kernal64.bin build/reudrv64.bin build/init64.bin build/kbf64.bin \

@@ -341,7 +341,24 @@ def draw_logo(cell_x, y):
     return cell_x
 
 
-VERSION = "v0.1   (C) 2026 Xander Mol"
+
+
+def version():
+    """The version line's number: from the built kernal's info block when
+    GU_KERNAL names it (the boot splash: vMAJOR.MINOR.PATCH-YYYYMMDD-HHMM
+    as GeoUltra info shows it; $C0E2 major, minor; $C0F5 patch, then the
+    build's year, month, day, hour, minute), else GU_VERSION, else v0.1
+    (the user, 2026-11-14: the full version on the splash)."""
+    path = os.environ.get("GU_KERNAL")
+    if path:
+        k = open(path, "rb").read()
+        major, minor = k[0xE2], k[0xE3]
+        patch, yy, mm, dd, hh, mi = k[0xF5:0xFB]
+        return "v%d.%d.%d-20%02d%02d%02d-%02d%02d" % (major, minor, patch, yy, mm, dd, hh, mi)
+    return os.environ.get("GU_VERSION", "v0.1")
+
+
+VERSION = version() + "   (C) 2026 Xander Mol"
 # Boot status messages: (symbol, text), strip number = index; the boot
 # ROM colours error messages light red.
 MESSAGES = [
@@ -360,6 +377,9 @@ if LAYOUT in "AB":
     else:                                       # text left, logo right
         draw_logo(31, BAND_ROW * 8 + 2)
         tx = 8
+    if text_width(VERSION) > W - tx:             # (the full version: less gap)
+        VERSION = VERSION.replace("   ", "  ")
+    assert text_width(VERSION) <= W - tx, "the version line does not fit: " + VERSION
     text(VERSION, tx, BAND_ROW * 8 + 7)          # in cell row 22 only
     text(STATUS, tx, BAND_ROW * 8 + 20)         # in cell rows 23-24 only
     STATUS_CELLS = (tx // 8, 24)
