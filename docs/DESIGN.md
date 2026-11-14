@@ -570,6 +570,26 @@ below); left to redo after the fixes:
 - After the next build: the frame round the swatch rows, the readable
   error texts (a drop on a full drive), up to 10 themes, delete on the
   Theme page.
+- New on 2026-11-14 (cartridge deployed; automatic tests passed in
+  VICE and on the U64), to try by hand:
+  - Settings drawn in the theme in use (title bar, side list mark,
+    colours) with a few themes; "use" on the Theme page repaints it.
+  - Theme page: delete a theme (asks first; the theme in use and the
+    last one refused); a copy deleted before Save.
+  - Sorting: the arrow at the path line's right end, Size and Date
+    headings in the detailed view (click, again, a third time), the
+    arrow among the letters with two panes; sort= in SETTINGS.INI.
+  - Disk images on the Ultimate: a double click goes into one like a
+    folder (a D64 and a D81; a small DNP), copy files in and out
+    (check the image afterwards, e.g. by mounting it), delete or
+    rename inside, ".." out; a mounted image ("It is mounted: open its
+    drive."); a program inside ("Mount the disk image to open it.");
+    with drive D in use too (no empty letter: "It needs an empty drive
+    A-D."); a large DNP beside the 8 MB drive C ("Not enough free REU
+    for it."). Mounting from the context menu and toolbar still works.
+  - The menus' keys right-aligned (geos, file, view menus).
+  - Two panes: a selection in one pane hidden when the other is
+    active, back when it is active again.
 
 Done 2026-11-11: the right mouse button on the U64 ("Verified on
 hardware").
