@@ -47,6 +47,8 @@ Load:   jsr OvlCall             ; (module 68: the image loaded)
         .byte 68, 0
 Enter:  jsr OvlCall             ; (module 69: the new drive entered; a
         .byte 69, 0             ; stub: back to the function's caller)
+Comma:  jsr OvlCall             ; (module 91: a size after the path)
+        .byte 91, 0
 
 ; FE_MOUNT: r0 = a drive ("/a"-"/d"), r1 = a disk image on the Ultimate
 ; (.d64, .d71, .d81, .dnp; its path at most PATH_MAX characters). The
@@ -72,6 +74,7 @@ OvMount:
         bne @end
         lda feName
         beq @end
+        jsr Comma               ; (module 91: ",tracks=N" off the path)
         ldy #$FF                ; its length
 @len:   iny
         lda fePath,y
@@ -265,6 +268,11 @@ TmpName:        .byte "MOUNTS.TMP", 0
         jmp Load                ; entry 0
         jmp Banks0              ; entry 3 (FE_MKIMG, module 71)
 
+Want:   jsr OvlCall             ; (module 91: the banks for a size)
+        .byte 91, 3
+Then:   jsr OvlCall             ; (module 91: after the load)
+        .byte 91, 6
+
         .include "feult.inc"
         .include "fecd.inc"
         .include "femount.inc"
@@ -290,6 +298,7 @@ Load:   jsr UCd
         bne :+
         jsr Native
         bne @close
+        jsr Want                ; (module 91: another size wanted)
 :       jsr Banks0
         bcs @close
         lda #U_LOAD_REU         ; LOAD_REU: address, length (4 bytes each)
@@ -310,6 +319,9 @@ Load:   jsr UCd
         jsr UPut
         jsr UNoData
         jsr UExec
+        txa
+        bne @close
+        jsr Then                ; (module 91: the BAM for another size)
 @close: stx feM
         lda #U_CLOSE
         jsr UBegin
@@ -470,8 +482,8 @@ Enter:  ldx mSlot
         sta ramBase,x
         lda mTracks
         sta drvTracks,x
-        lda #0
-        sta drvFlags,x
+        lda mResz               ; (F_RESIZED: mounted at another size,
+        sta drvFlags,x          ; module 91; else 0)
         jsr TableOp
         lda #<fePath            ; the path, for the write-back
         sta r0L

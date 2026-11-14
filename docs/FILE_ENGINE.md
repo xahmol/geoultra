@@ -133,7 +133,7 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 14 | `FE_READ` | Y = handle, r1 = buffer, r2 = length | r2 = bytes read |
 | 15 | `FE_WRITE` | Y = handle, r1 = buffer, r2 = length | |
 | 16 | `FE_DF` | r0 = path on a drive | r1 = free, r2 = total (blocks; Ultimate: KB) |
-| 17 | `FE_MOUNT` | r0 = drive path (`/a`-`/d`), r1 = an image on the Ultimate (`.d64`, `.d71`, `.d81`, `.dnp`; its path at most 63 characters) | the drive's old image unmounted (written back), the new one loaded into free REU banks, the drive at its root; MOUNTS.INI written anew (`INSUFF_SPACE`: no room in the REU) |
+| 17 | `FE_MOUNT` | r0 = drive path (`/a`-`/d`), r1 = an image on the Ultimate (`.d64`, `.d71`, `.d81`, `.dnp`; its path at most 63 characters) | the drive's old image unmounted (written back), the new one loaded into free REU banks, the drive at its root; MOUNTS.INI written anew (`INSUFF_SPACE`: no room in the REU); the image path may end in `,tracks=N` (a DNP mounted at N tracks, as MOUNTS.INI; module 91, 2026-11-14: larger, the new tracks free; smaller, refused when files lie after them; the drive F_RESIZED and changed, so the file gets the size at its write-back) |
 | 18 | `FE_UMOUNT` | r0 = drive path | written back, the drive emptied; MOUNTS.INI anew (`DEV_NOT_FOUND`: no image; `FE_ULTIMATE`: the write-back failed, the drive stays) |
 | 19 | `FE_GETLONG` | r0 = path, r1 = 61-byte buffer | the long name, else the short one |
 | 20 | `FE_SETLONG` | as `FE_RENAME` | (the same function) |
@@ -268,6 +268,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 75 | `FE_TURBO`, `FE_HOME`, `FE_SETTIME`, `FE_REBOOT` (enginesys.s; `fework.inc` shared with module 66) |
 | 76-79 | `FE_NTP` (enginentp.s; from GeoUTime, GeoUTools, and ntp2ultimate by MaxPlap): the exchange, SETTINGS.INI read, the date and the clocks, its `[time]` lines (`fehome.inc` shared with module 75) |
 | 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |
+| 91 | a DNP mounted at another size (enginesize.s): the path's `,tracks=N`, the banks, the BAM after the load |
 | 88-90 | disk images gone into like folders (engineimg.s): the path looked at and a handle's image shown again; the slot and the write-back; the image loaded or found in the REU, the comparisons, a writing call's drop ("Paths") |
 
 From one Ultimate path to another (2026-11-11, modules 83 to 85,

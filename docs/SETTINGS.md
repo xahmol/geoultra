@@ -299,6 +299,12 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   with it a new long name is cut to 16 characters (module 50 OvShort)
   and no GU.LONGNAMES record is made; existing records still work.
   U64 test longu64.py (13 checks).
+  A DNP's size at once (the user, 2026-11-14): FE_MOUNT's path with
+  ",tracks=N" (module 91; the cold start's ResizeFirst/ResizeThen for
+  the running system); the Drives page will unmount and mount again
+  with it. U64 test sizeu64.py (8 checks; the refusal of a smaller size
+  with files after it is not covered: the test image's files lie in
+  its first tracks).
 - **S6, the REU page:** the legacy size, the map, task slots (the slots
   once tasks exist). The user, 2026-11-14, first version with all
   three: a read-only map of the 16 MB (system banks, each drive's, a
