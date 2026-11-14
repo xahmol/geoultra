@@ -7,13 +7,13 @@
 ; other lines kept (its section moves to the end), as gush's turbo -s
 ; does (sysset.s). Without an Ultimate (VICE) nothing is read or
 ; written. The [desktop] keys: theme=, view=, clock=, toolbar=, panes=
-; (DeskRead, the *Save routines). Calls only the core (side.s's Setup, Slot, Store, the
+; (DeskRead, the *Save routines). Calls only the core (side.s's Setup, Slot, the
 ; file engine). Own code.
 
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, Setup, Slot, Store, text, counts, which, at
+        .import FileEngine, Setup, Slot, text, counts, which, at
         .import panes, wantPanes, sortMode, deskPrefs
         .import wantTheme, wantView, wantToolbar, curName, clockMode, viewMode, tbMode
         .importzp sp

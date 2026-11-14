@@ -15,10 +15,10 @@
         .include "desktop.inc"
 
         .export ThemeName, themeNo, tCols
-        .export tMenu, tSide, tHead, tTitle, tRows, tCols, tIcons, tSel, tCur, tScroll, tStatus
-        .export cDesk, cMenu, cSide, cHead, cTitle, cSel, cStatus, cHeadP, cToolbar
+        .export tMenu, tHead, tTitle, tCols, tIcons, tSel, tCur, tScroll, tStatus
+        .export cSide, cSel, cHeadP, cToolbar
         .export cProgs
-        .export cIconP, cSideIconP, cAccentP, cSideAccentP
+        .export cSideIconP, cAccentP, cSideAccentP
         .export sideW, listL, ejectCard, pathY, listTop, rowH, rows, bottom
         .export trackTop, trackBot, trackH, iconCard, nameX, sideTx, stY0, stY1
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList

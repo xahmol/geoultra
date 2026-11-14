@@ -20,7 +20,7 @@
 
         .import FileEngine, SideRedraw, SideHeading, SideItem, SideGap, SideArrows
         .import itemText, itemName, itemIcon, itemEject
-        .import ThemeFiles, ThemeUse, curName, clockMode, viewMode
+        .import ThemeFiles, ThemeUse, viewMode
         .import ListRead, ListDraw, Fetch, IsSelected, Modifiers, mods
         .import IsDotDot
         .import Into, Document, Ask
@@ -28,11 +28,11 @@
         .import LoadAll, Save   ; (ovl.s: overlay 4, inifile.s)
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
         .export text            ; (themefile.s reads and writes a theme in it)
-        .export Setup, Slot, Store, counts, which, at, work, wantTheme, wantView
+        .export Setup, Slot, counts, which, at, wantTheme, wantView
         .export wantToolbar, wantPanes, sortMode, deskPrefs
         .import PanesOn
         .import tbMode, Derive
-        .exportzp lp, sp        ; (inifile.s, overlay 4, uses them)
+        .exportzp sp            ; (inifile.s, overlay 4, uses it)
 
 CODE_FAV        = $80           ; sidebar codes (desktop.s, Press; CODE_REC
                                 ; in desktop.inc): the base + the index

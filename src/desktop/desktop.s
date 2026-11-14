@@ -29,9 +29,9 @@ dropPath = text + 1024           ; a drop's target folder (listin.s; text's
         .export openReq
         .import Root, Home, Top, ListEnd, Up
         .import Eject, HasImage, EjectIcon, IconUp
-        .import ThemeName, themeNo, Paint, px0, px1, py0, py1, pcol
+        .import ThemeName, Paint, px0, px1, py0, py1, pcol
         .import ThemeUse, themeNames, themeCount, curName, hasPal, PalReset
-        .import PaintAll, PaintSide, Neutral, Dialog, MenuNeutral, Recover
+        .import PaintAll, PaintSide, Neutral, MenuNeutral, Recover
         .import ClockDraw, ClockTick, TextWidth, boldOn, clockMode, viewMode
         .import tHead, tIcons, cHeadP, cSide, cSideIconP, cSideAccentP
         .import sideW, ejectCard, sideTx, rowH, bottom

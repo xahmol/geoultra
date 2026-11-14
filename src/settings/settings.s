@@ -9,7 +9,7 @@
         .include "engine.inc"
         .include "settings.inc"
 
-        .import FirstLoad, ReadChrome, Colours, PageColours, SideColours
+        .import FirstLoad, ReadChrome, Colours, PageColours
         .import TitleBar, MarkOn, MarkOff, RowTop, Dialog
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
         .import TimeDraw, TimePress, ThemeDraw, ThemePress

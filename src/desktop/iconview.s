@@ -14,10 +14,10 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import listL, listTop, bottom, rows, viewMode, cur, row, RowEntry
+        .import listL, listTop, bottom, rows, cur, row, RowEntry
         .import IsSelected, entryInfo, entryName, IconFor, Icons, TextWidth
         .import FileEngine, text, IsDotDot, stripL
-        .export IconLayout, DrawCell, CellAt, IconsForget, step, gridCols, bigOk
+        .export IconLayout, DrawCell, CellAt, IconsForget, step, bigOk
 
 CELL_CARDS      = 5             ; a cell: 5 cards wide (the icon on 1-3)
 CELL_W          = CELL_CARDS * 8

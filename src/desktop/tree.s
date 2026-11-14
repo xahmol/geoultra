@@ -22,7 +22,7 @@
         .import FileEngine, Error, Dialog, ProgressStart, ProgressBlock
         .import deskPrefs
         .import progN, progTotal, entryName, entryInfo, path, text
-        .export TreeStart, PasteItem, DeleteItem, Ask3
+        .export TreeStart, PasteItem, DeleteItem
 
 full = text                     ; (actions.s, Source: the item's path)
 

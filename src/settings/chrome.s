@@ -20,16 +20,16 @@
         .importzp CK_NONE, CK_PAPER
         .import TextWidth, page, iniPath
 
-        .export FirstLoad, InUse, DeleteTheme, ListThemes, AddName, SameName, NameAt, LoadTheme
-        .export ThemePaths, ReadTheme, ReadLine, LineKey, HasWords, Word
-        .export NextWord, Past, Colour, OnWord
-        .export OnText, SDesktop, KTheme, STheme, DefaultName, ThemesDir, IniDot, TmpDot
-        .export tmp, idx, start, line, style, ink, paper, handle, info, name
+        .export FirstLoad, InUse, DeleteTheme, AddName, NameAt, LoadTheme
+        .export ThemePaths, ReadLine, LineKey, HasWords
+        .export NextWord, Colour
+        .export OnText, SDesktop, KTheme, STheme
+        .export tmp, idx, line, style, ink, paper, name
         .export val, buf, pbuf
         .exportzp vp
-        .export ReadChrome, Colours, PageColours, SideColours, TitleBar
-        .export MarkOn, MarkOff, RowTop, Dialog, Paint
-        .export px0, px1, py0, py1, pcol, cColour, cStyle
+        .export ReadChrome, Colours, PageColours, TitleBar
+        .export MarkOn, MarkOff, RowTop, Dialog
+        .export cColour
 
 ; The theme's lines the chrome reads (themedef.inc's order), C_* their
 ; places in cStyle and cColour.

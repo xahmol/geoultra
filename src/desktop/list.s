@@ -16,7 +16,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, Open, Up, Into
+        .import FileEngine, Open
         .import IconUp, IconFor, TextWidth, Paint, PaintList, px0, px1, py0, py1, pcol
         .import tTitle, tIcons, tSel, tCur, tScroll, tStatus, cSel, cAccentP
         .import listL, iconCard, nameX, pathY, listTop, rowH, rows, bottom
@@ -38,7 +38,7 @@ PANE_DIV        = 159           ; two panes: the line between them
         .import CopyOther, MoveOther
         .import SortList
         .import topY, titleEnd
-        .export ProgressStart, ProgressBlock, progN, progTotal, SelCount
+        .export ProgressStart, ProgressBlock, progN, progTotal
         .import Busy, Idle
         .import text            ; (side.s's INI text, PathPress's path: not
                                 ; in use while a folder is entered)

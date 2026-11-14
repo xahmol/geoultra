@@ -17,7 +17,7 @@
 
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
         .import deskPrefs
-        .import entryInfo, entryName, cur, count, path, IsDotDot
+        .import entryName, cur, count, path, IsDotDot
         .import Busy, Idle
         .import TreeStart, PasteItem, DeleteItem   ; (tree.s, the same overlay)
         .import text            ; (side.s's INI text holds `full` while one

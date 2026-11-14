@@ -16,7 +16,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import tbMode, topY, cToolbar, Paint, px0, px1, py0, py1, pcol
+        .import topY, cToolbar, Paint, px0, px1, py0, py1, pcol
         .import Up, Into, ListKey, ListEnd, SelAll, ListRead, ListDraw
         .import View, viewMode, NewFolder, Copy, Paste, Delete, FileEngine
         .import HistBack, HistForward, text, Info, Gush, TwoPanes, Settings

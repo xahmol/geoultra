@@ -8,7 +8,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import entryInfo, entryName, IsImage
+        .import entryInfo, IsImage
         .export IconUp, IconFor, Busy, Idle, BusyPause, BusyResume, Icons
 
 FONT            = 8             ; GEOS file type

@@ -451,6 +451,9 @@ LetterUnder:
 
 ; ReadRoots: rootN = the Ultimate's roots (the root listing's Ultimate
 ; folders, ROOTS_MAX at most), their names in roots.
+ROOTS_MAX       = 4
+ROOT_LEN        = 8             ; a root's name and its zero (defined
+                                ; before use: zero page addressing)
 ReadRoots:
         lda #0
         sta rootN
@@ -510,8 +513,6 @@ ReadRoots:
 ; opens one in the pane (MenuRun). PlaceMenu (a click on the path text,
 ; two panes; the user, 2026-11-13): drives, roots and favourites in a list
 ; under it, as the sidebar holds them. C clear.
-ROOTS_MAX       = 4
-ROOT_LEN        = 8             ; a root's name and its zero
 ITEMS_MAX       = 12
 ITEM_LEN        = 16            ; an item's text and its zero
 ROOT_H          = 12
