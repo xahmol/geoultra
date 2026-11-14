@@ -18,12 +18,14 @@
         .include "hw.inc"
 
         .import OvlCall, HibTick, RtcCheck, SysRAMOp, EnterDeskTop
+        .import legacyBase, taskSlots
         .import GetNextChar, Rectangle, FrameRectangle, InvertRectangle
         .import PutString, SetPattern, UseSystemFont
         .export TaskTick, TaskCheck, TaskInit, TaskMany, taskName, taskCur
 
 TASK_BANK       = 19            ; slot n's RAM: REU bank 19 + n (DESIGN "REU map")
 TASKS_MAX       = 8
+LEGACY_FIRST    = 192           ; (reu.s: task n's legacy area 192 + n * size)
 TABLE           = $1E00         ; REU bank 1: per slot TBL_LEN bytes: used,
 TBL_LEN         = 16            ; the name (NAME_LEN, zero-ended)
 NAME_LEN        = 13
@@ -572,7 +574,16 @@ Away:   pla                     ; (our return address: kept across)
 ; None free: back.
 NewTask:
         ldx #0
-@f:     txa
+        lda #LEGACY_FIRST
+        sta base                 ; (slot X's legacy area: 192 + X * size)
+@f:     cpx taskSlots           ; (tasks=, and while the areas fit below
+        bcs @none               ; bank 256)
+        lda base
+        clc
+        adc ramExpSize
+        bcc :+
+        bne @none               ; (past bank 255)
+:       txa
         asl a
         asl a
         asl a
@@ -580,12 +591,18 @@ NewTask:
         tay
         lda TBLBUF,y
         beq @got
+        lda base
+        clc
+        adc ramExpSize
+        sta base
         inx
         cpx #TASKS_MAX
         bcc @f
-        rts
+@none:  rts
 @got:   stx target
         jsr Away
+        lda base                 ; its own legacy REU area (reu.s)
+        sta legacyBase
         lda target              ; the new one: used, no name
         sta taskCur
         lda #0
@@ -665,6 +682,7 @@ VicOp:  sty tmp
 target:         .byte 0
 ret:            .word 0
 tmp:            .byte 0
+base:           .byte 0         ; (NewTask: the slot's legacy area)
 nameBuf:        .res ::TBL_LEN
 
         .endscope

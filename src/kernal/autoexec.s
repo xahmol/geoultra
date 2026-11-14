@@ -17,7 +17,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import SysRAMOp, autoIdx, FileEngine, GetFile, OvlCall
+        .import SysRAMOp, autoIdx, FileEngine, GetFile, OvlCall, taskSlots
 
 firstBoot       = $88C5         ; GEOS: FALSE while the boot runs auto-execs
 AUTO_LIST       = $1C00         ; REU bank 1: the list (free up to $1FFF)
@@ -39,7 +39,8 @@ ReadIni:
         .byte 93, 0
 
 ; AutoStart (the cold start's end, a fresh start): firstBoot TRUE; unless
-; SHIFT is held, SETTINGS.INI's autoexec= paths to the list, and with
+; SHIFT is held, SETTINGS.INI's autoexec= paths to the list (tasks= read
+; always), and with
 ; one or more autoIdx 0 and firstBoot FALSE (EnterDeskTop starts them).
 AutoStart:
         lda #$FF
@@ -65,11 +66,12 @@ AutoStart:
         sta $DC00
         pla
         sta CPU_PORT
-        txa
-        bne @end
+        stx shift
         jsr ReadIni
         bcs @end
-        jsr Parse
+        jsr Parse               ; (tasks= too: read with SHIFT held)
+        lda shift
+        bne @end
         lda count
         beq @end
         cmp #AUTO_MAX           ; (an empty entry after the last one)
@@ -83,8 +85,8 @@ AutoStart:
         sta firstBoot
 @end:   rts
 
-; Parse: the [system] section's autoexec= lines (keys in any case) to the
-; list in their order, count of them (AUTO_MAX at most; a path longer
+; Parse: the [system] section's tasks= to taskSlots, its autoexec=
+; lines (keys in any case) to the list in their order, count of them (AUTO_MAX at most; a path longer
 ; than AUTO_LEN - 1 left out).
 Parse:  lda #0
         sta count
@@ -110,8 +112,19 @@ Parse:  lda #0
         beq @skip
         ldx #AutoKey - Keys     ; "autoexec="
         jsr Match
+        bcc @auto
+        ldx #TasksKey - Keys    ; "tasks=": the task slots, 1-8 (reu.s
+        jsr Match               ; taskSlots, task.s; Settings' REU page)
         bcs @skip
-        jsr Take                ; (Y at the value)
+        lda (r0),y
+        sec
+        sbc #'1'
+        cmp #8
+        bcs @skip
+        adc #1
+        sta taskSlots
+        bne @skip               ; (always)
+@auto:  jsr Take                ; (Y at the value)
 @skip:  ldy #0                  ; the line's end, then past its LF
 @s:     lda (r0),y
         beq @next
@@ -255,6 +268,8 @@ AutoNext:
 Keys:
 SysKey:         .byte "[system]", 0
 AutoKey:        .byte "autoexec=", 0
+TasksKey:       .byte "tasks=", 0
+shift:          .byte 0
 count:          .byte 0
 inSys:          .byte 0
 

@@ -4,7 +4,8 @@ task.s): the desktop in /b; a request (taskReq, as C= + RUN/STOP sets
 it) opens the popup: the desktop, new task, close task. "new task": a
 fresh desktop in slot 1, moved to /a there; the popup again: back to
 task 0, its desktop still in /b (its own RAM); to task 1 again: /a;
-"close task" in task 1: back in task 0, the popup's list one shorter.
+"close task" in task 1: back in task 0, the popup's list one shorter;
+with tasks=1 "new task" is refused. Each task's legacy REU area checked.
 Keys go straight into the kernal's key queue (the popup has its own
 loop). Screens: build/harness/gush/desktop-d23*.png.
 Usage: tests/desktop/d23.py
@@ -137,6 +138,8 @@ def main():
         key(KEY_DOWN)
         key(CR, s=12)                                       # new task
         check("new task: slot 1, a fresh desktop", kbyte("taskCur"), 1)
+        size = v.mem_get(0x88C3, 0x88C3)[0]
+        check("its own legacy REU area: 192 + size", kbyte("legacyBase"), 192 + size)
         v.mem_set(0x4F00, b"/a\0")
         tick, routine = k["ClockTick"], k["Into"]
         v.mem_set(KEY_STUB, bytes([0xA9, tick & 0xFF, 0x8D, 0x9B, 0x84, 0xA9, tick >> 8, 0x8D, 0x9C, 0x84,
@@ -150,7 +153,7 @@ def main():
         key(KEY_UP)
         key(CR, s=8)                                        # to task 0
         g.png("desktop-d23-task0")
-        check("back in task 0: still /b", (kbyte("taskCur"), here()), (0, "/b"))
+        check("back in task 0: still /b, legacy area 192", (kbyte("taskCur"), here(), kbyte("legacyBase")), (0, "/b", 192))
         popup()
         key(KEY_DOWN)
         key(CR, s=8)                                        # to task 1
@@ -163,6 +166,11 @@ def main():
         popup()
         check("one task left", v.mem_get(P_COUNT, P_COUNT)[0], 3)
         key(KEY_STOP, s=3)
+        v.mem_set(kern["taskSlots"], b"\x01")             # tasks=1: no room
+        popup()
+        key(KEY_DOWN)
+        key(CR, s=6)
+        check("tasks=1: new task refused, still task 0", (kbyte("taskCur"), here()), (0, "/b"))
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

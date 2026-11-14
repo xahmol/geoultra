@@ -12,10 +12,10 @@
         .include "hw.inc"
 
         .export DoRAMOp, StashRAM, FetchRAM, SwapRAM, VerifyRAM
-        .export MoveData, i_MoveData, legacyBase, SysRAMOp
+        .export MoveData, i_MoveData, legacyBase, SysRAMOp, taskSlots
         .import DoInlineReturn
 
-LEGACY_FIRST    = 192           ; task 0's area; task n at 192 + 8n
+LEGACY_FIRST    = 192           ; task 0's area; task n at 192 + n * ramExpSize
 returnAddress   = $3D
 
         .segment "DATA"
@@ -23,7 +23,9 @@ returnAddress   = $3D
 port:   .byte 0
 bank:   .byte 0
 legacyBase:                     ; the current task's legacy REU area
-        .byte LEGACY_FIRST
+        .byte LEGACY_FIRST      ; (task.s sets it for a new task)
+taskSlots:                      ; the task slots: [system] tasks= (mount.s),
+        .byte 8                 ; within the legacy area (task.s)
 mdCount:.res 2
 
         .segment "CODE"
