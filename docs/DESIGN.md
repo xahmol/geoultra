@@ -777,9 +777,14 @@ Requests from the same session, to do:
   Interface seeks in an open file (`DOS_CMD_FILE_SEEK`) and saves an REU
   range into it (`DOS_CMD_SAVE_REU` with address and length); to test
   on the U64: an open for writing that does not truncate the image.
-- tests/gush/gu64.py edits a mounted image outside GeoUltra (FTP and
-  c1541), which damaged geoFolder on the test D81 (the REU copy written
-  back over it): to change, and a warning in the docs.
+- Done 2026-11-14: tests/gush/gu64.py edited a mounted image outside
+  GeoUltra (FTP and c1541), which damaged geoFolder on the test D81 (the
+  REU copy written back over it): gush and geoFolder now go onto drive A
+  through FE_COPY (their CVTs in a scratch folder); the test also sets
+  aside the user's HIBERNAT.BIN and gush_history (its reboot resumed
+  or used them) and puts them back, boots build/geoultra64.crt by
+  default, and takes the expected mount list and MOUNTS.INI line from
+  the file itself (it had A and B only); 52 of 52 pass on the U64.
 
 ## Still open
 

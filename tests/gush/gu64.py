@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """gush on the Ultimate 64 (docs/GUSH.md, "Tests").
 
-Before the reboot gush (and geoFolder) are written onto drive A's test
-copy (/USB0/GEOULTRA/test/GEOS64.D81, by FTP and VICE's c1541; never the
-user's own image), then GeoUltra boots from the U64's flash with the
+Before the reboot gush (and geoFolder) are copied onto drive A's test
+copy (/USB0/GEOULTRA/test/GEOS64.D81, mounted on A; never the user's own
+image) through GeoUltra (FTP into a scratch folder, then FE_COPY: never
+an edit of the mounted image behind GeoUltra's back), then GeoUltra boots from the U64's flash with the
 cartridge given, gush starts from drive A (GetFile through appMain), and
 its commands run on the Ultimate's file system in
 /USB0/GEOULTRA/test/gush (made and removed by the test): ls, cd, pwd,
@@ -12,6 +13,8 @@ long names, cp -r both ways; then a desk accessory (geoFolder) started
 and closed, gush's screen back, and its gush button (a fresh gush).
 Usage: tests/gush/gu64.py [build/geoultra64.crt]
 """
+import ftplib
+import io
 import os
 import subprocess
 import sys
@@ -21,11 +24,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
 sys.path.insert(0, HERE)
-from feu64 import U64  # noqa: E402
-from gushvice import labels, COLS, ROWS_TEXT, C1541, OUT  # noqa: E402
+from feu64 import U64, env_ip  # noqa: E402
+from gushvice import labels, COLS, ROWS_TEXT, OUT  # noqa: E402
 
 KEY_STUB = 0xC0A0
-IMAGE = "/USB0/GEOULTRA/test/GEOS64.D81"
+CVTS = "/USB0/GEOULTRA/test/gu64cvt"         # (made and removed here)
+USER_FILES = ("HIBERNAT.BIN", "gush_history")
 HOME = "/usb0/geoultra/test/gush"
 
 
@@ -35,23 +39,31 @@ class GushU64:
         self.ok = True
         self.lbl = labels()
         os.makedirs(OUT, exist_ok=True)
-        # Old copies out through GeoUltra itself (c1541's -delete does not
-        # match GEOS's lower-case names), written back; then the new ones
-        # added to the image and the U64 booted with it.
+        # Old copies out and the new ones in through GeoUltra itself
+        # (drive A's image is mounted: edited by FTP and c1541 behind its
+        # back, the REU copy written back over it, which once damaged
+        # geoFolder on it): the CVTs put in a scratch folder by FTP and
+        # copied onto /a by FE_COPY; written back, then a fresh boot.
         self.settle()
         self.u.boot(crt)
         for name in ("/a/gush", "/a/geoFolder"):
             while self.u.fe(7, s0=name)[0] == 0:            # FE_DELETE
                 pass
+        subprocess.run(["curl", "-s", "--ftp-create-dirs", "-T",
+                        os.path.join(ROOT, "build", "gush", "gush.cvt"),
+                        "ftp://%s%s/" % (self.u.ip, CVTS)], check=True)
+        subprocess.run(["curl", "-s", "-T", os.path.join(ROOT, "build", "tools", "geofolder.cvt"),
+                        "ftp://%s%s/" % (self.u.ip, CVTS)], check=True)
+        for cvt, name in (("gush.cvt", "gush"), ("geofolder.cvt", "geoFolder")):
+            x = self.u.fe(5, s0="%s/%s" % (CVTS.lower(), cvt), s1="/a/" + name, timeout=300)[0]
+            if x:
+                raise RuntimeError("FE_COPY %s onto /a: error %d" % (cvt, x))
+        for cvt in ("gush.cvt", "geofolder.cvt"):
+            subprocess.run(["curl", "-s", "-Q", "DELE %s/%s" % (CVTS, cvt),
+                            "ftp://%s/" % self.u.ip], capture_output=True)
+        subprocess.run(["curl", "-s", "-Q", "RMD %s" % CVTS, "ftp://%s/" % self.u.ip], capture_output=True)
         time.sleep(4)
         self.settle()
-        local = os.path.join(OUT, "u64-a.d81")
-        self.u.ftp_get(IMAGE, local)
-        subprocess.run([C1541, "-attach", local,
-                        "-geoswrite", os.path.join(ROOT, "build", "gush", "gush.cvt"),
-                        "-geoswrite", os.path.join(ROOT, "build", "tools", "geofolder.cvt")],
-                       capture_output=True, check=True)
-        self.u.ftp_put(local, IMAGE)
         self.u.boot(crt)
 
     def settle(self):
@@ -140,8 +152,10 @@ def mounts(g):
     g.u.ftp_get("/USB0/GEOULTRA/MOUNTS.INI", ini)
     try:
         g.run("mount")
-        check("mount: the drives' images", g.lines()[-3:-1],
-              ["/a  1581    /USB0/GEOULTRA/test/GEOS64.D81", "/b  1541    /USB0/GEOULTRA/test/neos.d64"])
+        drives = [(l[0].lower(), l[2:]) for l in open(ini, "rb").read().decode("latin1").split("\r\n")
+                  if len(l) > 2 and l[1] == "="]
+        listed = [(l.split()[0][1:], l.split()[-1]) for l in g.lines()[-1 - len(drives):-1]]
+        check("mount: the drives' images (as MOUNTS.INI has them)", listed, drives)
         g.run("mount /usb0/geoultra/test/geopub.d64 /d", settle=8)
         g.run("ls /d", settle=3)
         check("mount an image into /d, ls /d", "GEOPUBLISH" in " ".join(g.lines()[-6:]), True)
@@ -307,7 +321,39 @@ def ntp_long(g):
 
 
 def main():
-    crt = sys.argv[1] if len(sys.argv) > 1 else None
+    """The user's HIBERNAT.BIN and gush_history set aside first (the test
+    reboots, which would resume or use them, and writes a history) and
+    put back at the end, whatever happens."""
+    crt = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build", "geoultra64.crt")
+    ftp = ftplib.FTP(env_ip())
+    ftp.login()
+    kept = {}
+    for name in USER_FILES:
+        data = io.BytesIO()
+        try:
+            ftp.retrbinary("RETR /USB0/GEOULTRA/" + name, data.write)
+            kept[name] = data.getvalue()
+            ftp.delete("/USB0/GEOULTRA/" + name)
+        except ftplib.error_perm:
+            pass
+    ftp.quit()
+    try:
+        ok = run(crt)
+    finally:
+        ftp = ftplib.FTP(env_ip())
+        ftp.login()
+        for name in USER_FILES:
+            try:
+                ftp.delete("/USB0/GEOULTRA/" + name)
+            except ftplib.error_perm:
+                pass
+            if name in kept:
+                ftp.storbinary("STOR /USB0/GEOULTRA/" + name, io.BytesIO(kept[name]))
+        ftp.quit()
+    sys.exit(0 if ok else 1)
+
+
+def run(crt):
     g = GushU64(crt)
     check, out = g.check, g.out
     g.start()
@@ -322,10 +368,11 @@ def main():
     g.run("cd " + HOME)
     check("cd, pwd", out("pwd"), HOME)
     g.run("cp /usb0/geoultra/MOUNTS.INI /a/INI")    # (the user's file only read)
-    check("cp from the stick onto drive A, cat", out("cat /a/INI", settle=3).startswith("B="), True)
+    last = [l for l in mounts_ini().split("\r\n") if l][-1]
+    check("cp from the stick onto drive A, cat (its last line)", out("cat /a/INI", settle=3), last)
     g.run("cp /a/INI ini.txt")
     check("cp back onto the stick, ls", out("ls"), "ini.txt")
-    check("cat on the stick", out("cat ini.txt", settle=3).startswith("B="), True)
+    check("cat on the stick", out("cat ini.txt", settle=3), last)
     g.run("echo redirected > r.txt", settle=3)     # (step 3.2: > on the stick)
     g.run("cat < r.txt", settle=3)
     check("> and < on the stick", g.lines()[-2], "redirected")
@@ -454,11 +501,17 @@ def main():
         g.keys([16], settle=1)                      # cursor up
         got.append(bytes(u.read(lb, 16)).split(b"\0")[0])
     check("history across sessions: reboot, then the line before", got, [b"reboot", b"echo $G"])
-    ftp = ftplib.FTP(u.ip)
+    return g.ok
+
+
+def mounts_ini():
+    """MOUNTS.INI's text (only read)."""
+    ftp = ftplib.FTP(env_ip())
     ftp.login()
-    ftp.delete("/USB0/GEOULTRA/gush_history")
+    data = io.BytesIO()
+    ftp.retrbinary("RETR /USB0/GEOULTRA/MOUNTS.INI", data.write)
     ftp.quit()
-    sys.exit(0 if g.ok else 1)
+    return data.getvalue().decode("latin1")
 
 
 if __name__ == "__main__":
