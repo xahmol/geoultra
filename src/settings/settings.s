@@ -18,7 +18,7 @@
         .export themePath, themeTmp, noFile, DrawPage, page, repaint, BarOn, BarOff, ThemesFull, Ask2
         .import row
         .importzp SWATCH_X        ; (152: exported as zero page)
-        .export IniPaths, IniLoad, IniEmpty, IniSet, IniFind, iniLen
+        .export IniPaths, IniLoad, IniEmpty, IniSet, IniFind, iniLen, iniPath
 
         .segment "ZEROPAGE"
 

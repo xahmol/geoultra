@@ -28,7 +28,7 @@
         .import FirstLoad, AddName, SameName, NameAt, LoadTheme, ReadTheme
         .import ReadLine, LineKey, HasWords, Word, NextWord, Past, Colour, OnWord
         .import STheme, OnText, SDesktop, KTheme, ThemePaths, tmp, idx, start, line, style, ink, paper, name, val, pbuf
-        .import cColour
+        .import cColour, InUse, DeleteTheme, buf
         .importzp vp
 
         .segment "ZEROPAGE"
@@ -247,6 +247,75 @@ UseIt:  jsr UseSettings
         sta dirty
         sta repaint             ; (settings.s: Settings drawn again in it)
         jmp ReadChrome          ; (chrome.s: its colours and styles)
+
+; DeleteIt: the theme shown deleted (its file, at once), when it is not
+; the one in use and not the last; asked first. The next one shown.
+DeleteIt:
+        lda noFile              ; (no Ultimate: no files)
+        bne @no
+        lda themeCount
+        cmp #2
+        bcc @no
+        jsr InUse               ; (chrome.s)
+        bcs @ask
+        lda #<UsedDlg
+        ldx #>UsedDlg
+        jsr Ask2
+        jmp @back
+@no:    rts
+@ask:   ldx #0                  ; "Delete the theme <name>?"
+@txt:   lda DelText,x
+        beq :+
+        sta buf,x
+        inx
+        bne @txt
+:       jsr NameAt
+        ldy #0
+@nm:    lda (vp),y
+        beq :+
+        sta buf,x
+        inx
+        iny
+        bne @nm
+:       lda #'?'
+        sta buf,x
+        lda #PLAINTEXT
+        sta buf + 1,x
+        lda #0
+        sta buf + 2,x
+        lda #<buf
+        sta askText
+        lda #>buf
+        sta askText+1
+        lda #<DelDlg
+        ldx #>DelDlg
+        jsr Ask2
+        cmp #YES
+        bne @back
+        jsr DeleteTheme         ; (chrome.s)
+        txa
+        bne @back               ; (not deleted: the list as it was)
+        lda themeNo             ; out of the list: the ones after it up
+        asl a
+        asl a
+        asl a
+        asl a
+        tax
+@mv:    lda themeNames + THEME_NAME,x
+        sta themeNames,x
+        inx
+        cpx #(THEMES_MAX - 1) * THEME_NAME
+        bcc @mv
+        dec themeCount
+        lda themeNo             ; (it was the last: the one before)
+        cmp themeCount
+        bcc :+
+        dec themeNo
+:       lda #0
+        sta themeDirty
+        jsr LoadTheme
+@back:  jsr NameDraw
+        jmp PartDraw
 
 ; Copy: a new theme from this one: its name typed (the input dialog),
 ; added to the list and shown; its text this one's with name= changed;
@@ -1313,7 +1382,9 @@ CTRL_GET_PALETTE = $51          ; uci-oscar64 manual, firmware 3.15a on the
 CTRL_SET_COLOUR = $53           ; Ultimate 64)
 CTRL_RESET_PALETTE = $54
 LABELS          = 2             ; (Theme, Part; the rest: Labels)
-BUTTONS         = 7
+BUTTONS         = 8
+DEL_Y           = (PREV_ROW + 5) * 8 - 6 ; the delete button's top (its row
+                                ; ends with the preview's last)
 AREAS           = 9
 PREV_WORDS      = 6
 
@@ -1323,10 +1394,10 @@ LabelY:         .byte THEME_Y, PART_Y
 LowLo:          .byte <LStyle, <LInk, <LPaper, <LRgb, 0, <LColour
 LowHi:          .byte >LStyle, >LInk, >LPaper, >LRgb, 0, >LColour
 LowY:           .byte STYLE_Y, INK_ROW * 8 + 7, PAPER_ROW * 8 + 7
-BtnLo:          .byte <BThemeDn, <BThemeUp, <BUse, <BCopy, <BPartDn, <BPartUp, <BPal
-BtnHi:          .byte >BThemeDn, >BThemeUp, >BUse, >BCopy, >BPartDn, >BPartUp, >BPal
-ActLo:          .byte <ThemeDown, <ThemeUp, <UseIt, <Copy, <PartDown, <PartUp, <PalPart
-ActHi:          .byte >ThemeDown, >ThemeUp, >UseIt, >Copy, >PartDown, >PartUp, >PalPart
+BtnLo:          .byte <BThemeDn, <BThemeUp, <BUse, <BCopy, <BPartDn, <BPartUp, <BPal, <BDel
+BtnHi:          .byte >BThemeDn, >BThemeUp, >BUse, >BCopy, >BPartDn, >BPartUp, >BPal, >BDel
+ActLo:          .byte <ThemeDown, <ThemeUp, <UseIt, <Copy, <PartDown, <PartUp, <PalPart, <DeleteIt
+ActHi:          .byte >ThemeDown, >ThemeUp, >UseIt, >Copy, >PartDown, >PartUp, >PalPart, >DeleteIt
 
 BThemeDn:       .word MINUS_X
                 .byte THEME_Y - 9, 14
@@ -1349,7 +1420,11 @@ BPartUp:        .word PLUS_X
 BPal:           .word USE_X             ; (the user, 2026-11-13: the palette
                 .byte PART_Y - 9, 64    ; was hard to find)
                 .word TPalette
+BDel:           .word LABEL_X               ; (the user, 2026-11-13: delete on
+                .byte DEL_Y, 36             ; the Theme page; left of the preview,
+                .word TDelete               ; the Theme row is full)
 TPalette:       .byte "palette", 0
+TDelete:        .byte "delete", 0
 
 ; The preview's areas: the line whose colours they take (themedef.inc's
 ; order: 0 border, 1 desk, 2 menubar, 3 sidebar, 4 headings, 9
@@ -1413,6 +1488,20 @@ DefaultPal:
 ; Black or white on each colour (1 white on the dark ones).
 Contrast:       .byte 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0
 
+DelDlg:         .byte DEF_DB_POS | 1
+                .byte DBVARSTR, TXT_LN_X, TXT_LN_1_Y + 6, askText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word DelText2
+                .byte YES, 1, DBI_Y_2
+                .byte NO, DBI_X_2, DBI_Y_2
+                .byte 0
+UsedDlg:        .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word UsedText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word UsedText2
+                .byte OK, 1, DBI_Y_2
+                .byte 0
 SaveDlg:        .byte DEF_DB_POS | 1
                 .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
                 .word SaveText
@@ -1439,6 +1528,10 @@ TPlus:          .byte "+", 0
 TUse:           .byte "use", 0
 TCopy:          .byte "copy", 0
 SaveText:       .byte BOLDON, "Save this theme first?", PLAINTEXT, 0
+DelText:        .byte BOLDON, "Delete the theme ", 0
+DelText2:       .byte "Its file goes at once.", 0
+UsedText:       .byte BOLDON, "This theme is in use.", PLAINTEXT, 0
+UsedText2:      .byte "Use another one first.", 0
 CopyAsk:        .byte BOLDON, "The new theme's name:", PLAINTEXT, 0
 WMenu:          .byte "geos  file  view", 0
 WSide:          .byte "Drives", 0

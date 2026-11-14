@@ -18,9 +18,9 @@
         .import themeCount, themePart, themeNames, themePath, themeTmp, noFile
         .import KeyLo, KeyHi, LColKind, WordsLo, WordsHi, ColourNames
         .importzp CK_NONE, CK_PAPER
-        .import TextWidth, page
+        .import TextWidth, page, iniPath
 
-        .export FirstLoad, ListThemes, AddName, SameName, NameAt, LoadTheme
+        .export FirstLoad, InUse, DeleteTheme, ListThemes, AddName, SameName, NameAt, LoadTheme
         .export ThemePaths, ReadTheme, ReadLine, LineKey, HasWords, Word
         .export NextWord, Past, Colour, OnWord
         .export OnText, SDesktop, KTheme, STheme, DefaultName, ThemesDir, IniDot, TmpDot
@@ -64,7 +64,27 @@ vp:             .res 2          ; a word or a name being walked
 ; ([desktop] theme=; none: GeoUltra) chosen and read.
 FirstLoad:
         jsr ListThemes
-        jsr UseSettings         ; the theme in use
+        jsr UsedName
+@find:  ldx #0                  ; its place in the list (or added)
+@try:   cpx themeCount
+        bcs @add
+        stx themeNo
+        jsr SameName
+        bcc @load
+        ldx themeNo
+        inx
+        bne @try
+@add:   jsr AddName
+@load:  lda #1
+        sta themeLoaded
+        lda #0
+        sta themePart
+        jmp LoadTheme
+
+; UsedName: name = the theme in use (SETTINGS.INI [desktop] theme=;
+; none, or too long: GeoUltra). Leaves SETTINGS.INI's text in use.
+UsedName:
+        jsr UseSettings
         lda #<SDesktop
         sta r0L
         lda #>SDesktop
@@ -81,7 +101,7 @@ FirstLoad:
         lda #0
         sta name,y
 @ch:    dey
-        bmi @find
+        bmi @end
         lda (r2),y
         sta name,y
         jmp @ch
@@ -89,24 +109,39 @@ FirstLoad:
         ldx #0
 @def:   lda DefaultName,x
         sta name,x
-        beq @find
+        beq @end
         inx
         bne @def
-@find:  ldx #0                  ; its place in the list (or added)
-@try:   cpx themeCount
-        bcs @add
-        stx themeNo
-        jsr SameName
-        bcc @load
-        ldx themeNo
-        inx
-        bne @try
-@add:   jsr AddName
-@load:  lda #1
-        sta themeLoaded
-        lda #0
-        sta themePart
-        jmp LoadTheme
+@end:   rts
+
+; InUse: C clear when themeNames[themeNo] is the theme in use. Leaves
+; the theme's text in use; name the theme in use.
+InUse:  jsr UsedName
+        jsr UseTheme
+        jmp SameName
+
+; DeleteTheme: THEMES/<themeNames[themeNo]>.ini deleted (themePath and
+; themeTmp set to it). X = 0 or the error (no home folder: FE_ULTIMATE).
+DeleteTheme:
+        jsr ThemePaths
+        lda #<themePath
+        sta r0L
+        lda #>themePath
+        sta r0H
+        lda #<themeTmp
+        sta r1L
+        lda #>themeTmp
+        sta r1H
+        jsr IniPaths
+        ldx #FE_ULTIMATE
+        bcs @end
+        lda #<iniPath
+        sta r0L
+        lda #>iniPath
+        sta r0H
+        lda #FE_DELETE
+        jmp FileEngine
+@end:   rts
 
 ; ListThemes: themeNames = the THEMES folder's files ("<name>.ini", up
 ; to THEMES_MAX), themeCount their number; none without an Ultimate.

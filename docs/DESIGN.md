@@ -728,8 +728,13 @@ Requests from the same session, to do:
   choice; tests s3b.py, s3cu64.py).
 - Done 2026-11-13: up to 10 themes (the desktop's menu and Settings;
   the user), Copy with a full list says "Room for 10 themes. Delete one
-  first." Open: delete on the Theme page for one's own themes (a second
-  overlay for the page: overlay 5 is full).
+  first." Done 2026-11-14: delete on the Theme page (a "delete" button
+  left of the preview: asked first, "Delete the theme <name>? Its file
+  goes at once."; the theme in use stays, "This theme is in use. Use
+  another one first."; the last one stays; the one before shown after);
+  room from the parser's move to the core, no second overlay needed
+  (overlay 5: 831 bytes free). Test tests/settings/s46u64.py (its own
+  Ztest theme; the user's files only read).
 - Done 2026-11-13: the desktop's error dialog in words for the common
   errors (not enough room, directory full, cannot be written to, a file
   of that name, folder not empty, not found), the number for the rest.

@@ -452,7 +452,7 @@ NowNtp: lda #<Now               ; the button inverted while it asks (the
         lda #>NtpFail
         sta r0H
         jsr Dialog              ; (chrome.s: over the desk's colours)
-:       jmp DateDraw
+        jmp DateDraw
 @back:  lda #<Now               ; (the button as it was)
         ldx #>Now
         jmp ButtonDraw

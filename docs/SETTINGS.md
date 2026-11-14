@@ -115,8 +115,12 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   the Ultimate's palette now (GET_PALETTE), in VICE from the U64's
   default (DefaultPal, read from a U64-II). Each step goes to the
   Ultimate at once (SET_PALETTE_COLOR) and rewrites palette= (16
-  RRGGBB, as the desktop reads it). The overlay has 76 bytes left: the
-  next additions to this page need a second overlay. Tests: s4.py
+  RRGGBB, as the desktop reads it). (The overlay had 76 bytes left
+  then; 831 since the theme parser moved to the core, 2026-11-14.)
+  **Delete (2026-11-14):** a "delete" button left of the preview
+  deletes the theme shown, its file at once, after a question; not the
+  theme in use ("This theme is in use. Use another one first.") and not
+  the last one. Test: s46u64.py. Tests: s4.py
   (VICE, 11 checks), s4u64.py (the change seen live with GET_PALETTE,
   palette= written and taken out; files restored).
   **S4.5 done (2026-11-13), programs=:** the theme line for the screen
