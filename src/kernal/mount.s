@@ -926,11 +926,13 @@ Mount:  lda drive
 ; --- A native drive of another size than its DNP (docs/DESIGN.md "DNP
 ; of another size than the drive", user 2026-11-04) ---------------------
 
-; SizeOption (after ReadPath): ",tracks=N" at the end of the path gives
-; wantTracks = N (0: none); the path ends before the comma.
+; SizeOption (after ReadPath): options after the path, each after a
+; comma: ",tracks=N" gives wantTracks = N (0: none), ",longnames=off"
+; wantNoLong = F_NOLONG; the path ends before the first comma.
 SizeOption:
         lda #0
         sta wantTracks
+        sta wantNoLong
         ldx #0
 @find:  lda path,x
         beq @end
@@ -942,13 +944,34 @@ SizeOption:
 @comma: lda #0
         sta path,x
         stx pathLen
+@opt:   inx                     ; an option: "tracks=N" or "longnames=off"
+        lda path,x
+        ora #$20
+        sta r2L                 ; (its key's first letter)
 @eq:    inx
         lda path,x
         beq @end
         cmp #'='
         bne @eq
+        lda r2L
+        cmp #'l'
+        bne @digit
+        lda path+2,x            ; longnames=: "off" by its second letter
+        ora #$20
+        cmp #'f'
+        bne @next
+        lda #F_NOLONG
+        sta wantNoLong
+@next:  inx                     ; on to the next option
+        lda path,x
+        beq @end
+        cmp #','
+        beq @opt
+        bne @next
 @digit: inx
         lda path,x
+        cmp #','
+        beq @opt
         sec
         sbc #'0'
         cmp #10
@@ -1101,6 +1124,7 @@ BamDma: pha
         rts
 
 wantTracks:     .byte 0         ; MOUNTS.INI ",tracks=N" (0: the file's)
+wantNoLong:     .byte 0         ; ",longnames=off": F_NOLONG
 fileTracks:     .byte 0         ; the DNP's own track count
 resized:        .byte 0         ; F_RESIZED for the mount table, or 0
 
@@ -1249,7 +1273,8 @@ Enter:  lda drive
         sta TABLE+$21,x
         lda tracks
         sta TABLE+$22,x
-        lda resized             ; F_RESIZED or 0
+        lda resized             ; F_RESIZED or 0, F_NOLONG
+        ora wantNoLong
         sta TABLE+$23,x
         lda drive               ; the log: type and bank
         asl

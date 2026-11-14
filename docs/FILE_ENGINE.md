@@ -139,7 +139,7 @@ C callers (geos-oscar64) get a thin wrapper per function later.
 | 20 | `FE_SETLONG` | as `FE_RENAME` | (the same function) |
 | 21 | `FE_SELECT` | r0 = a file on a GEOS drive, r1 = 17-byte buffer | its drive and folder made the caller's current ones (not put back); its short name in r1's buffer (for `GetFile`) |
 | 22 | `FE_RUNSYS` | r0 = an application's name on drive E | started (`LdApplic`; module 55 in sysdrive.s); back only with an error |
-| 23 | `FE_MOUNTINFO` | r0 = drive path, r1 = 64-byte buffer | r2L = its `DRV_*` type, r3L = a native drive's tracks, the image's path in the buffer (`DEV_NOT_FOUND`: none) |
+| 23 | `FE_MOUNTINFO` | r0 = drive path, r1 = 64-byte buffer; or r1 = 0 and r3L = 1 (long names off) or 0 (on): the switch set (2026-11-14) | r2L = its `DRV_*` type, r3L = a native drive's tracks, r3H = its flags (`F_NOLONG` $10: long names off), the image's path in the buffer (`DEV_NOT_FOUND`: none); setting: MOUNTS.INI written anew (`,longnames=off`), X only |
 | 24 | `FE_MKIMG` | r0 = a new image on the Ultimate (`.d64`, `.d71`, `.d81`, `.dnp`), r1 = its disk name (or 0), r2L = a DNP's tracks (2-255; 0: 16) | made empty (header, BAM, directory; ID "GU") in free REU banks and saved (`FILE_EXISTS`: there already; `INSUFF_SPACE`: no room in the REU) |
 | 25 | `FE_TURBO` | r2L = $FF: ask; 0-15: set (also for applications started later) | r1L = the U64's speed step (`DEV_NOT_FOUND`: no turbo registers) |
 | 26 | `FE_HOME` | r1 = 32-byte buffer | the home folder's path ("/USB0/GEOULTRA/") |
@@ -264,7 +264,7 @@ enginefile.s, enginecopy.s, enginestream.s):
 | 55 | `FE_RUNSYS` (sysdrive.s: drive E shown for a moment, `sysenter.inc`) |
 | 56-60 | CVT (enginecvt.s): out, VLIR out, in, VLIR in, recognised |
 | 61-64 | streams on the Ultimate (enginestreamu.s): open, read, write, their setup |
-| 65-70 | mounting (enginemount.s): `FE_MOUNT` checked, `FE_UMOUNT` and `FE_MOUNTINFO`, MOUNTS.INI opened and closed, banks found and the image loaded, the drive entered, MOUNTS.INI's text |
+| 65-70 | mounting (enginemount.s): `FE_MOUNT` checked, `FE_UMOUNT`, MOUNTS.INI opened and closed, banks found and the image loaded, the drive entered and `FE_MOUNTINFO` (module 69 since 2026-11-14), MOUNTS.INI's text |
 | 75 | `FE_TURBO`, `FE_HOME`, `FE_SETTIME`, `FE_REBOOT` (enginesys.s; `fework.inc` shared with module 66) |
 | 76-79 | `FE_NTP` (enginentp.s; from GeoUTime, GeoUTools, and ntp2ultimate by MaxPlap): the exchange, SETTINGS.INI read, the date and the clocks, its `[time]` lines (`fehome.inc` shared with module 75) |
 | 71-74 | new images (enginemkimg.s): `FE_MKIMG` (banks, saved), an empty D64/D71, an empty native image and the banks cleared, an empty D81 |

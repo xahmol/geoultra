@@ -100,7 +100,6 @@ OvMount:
 
         jmp OvUmount            ; entry 0
         jmp Unmount             ; entry 3
-        jmp OvInfo              ; entry 6
 
         .include "fereu.inc"
         .include "femount.inc"
@@ -128,47 +127,6 @@ OvUmount:
         bne @end
         jmp Ini
 @end:   rts
-
-; FE_MOUNTINFO: r0 = a drive ("/a"-"/d"), r1 = a buffer of 64 bytes.
-; r2L = its DRV_* type (0: none), r3L = a native drive's tracks; the
-; image's path in the buffer. X = 0, or DEV_NOT_FOUND when the drive
-; holds no image.
-OvInfo: jsr ParseDrive
-        bcs @end
-        lda driveType,x
-        and #$0F
-        sta argR2
-        lda drvTracks,x
-        sta argR3
-        lda #0
-        sta argR2+1
-        sta argR3+1
-        lda argR2
-        bne :+
-        ldx #DEV_NOT_FOUND
-@end:   rts
-:       txa                     ; MOUNT_PATHS + 64 * drive
-        asl
-        asl
-        asl
-        asl
-        asl
-        asl
-        sta r1L
-        lda #>MOUNT_PATHS
-        sta r1H
-        lda argR1
-        sta r0L
-        lda argR1+1
-        sta r0H
-        lda #64
-        sta r2L
-        lda #0
-        sta r2H
-        ldy #REU_FETCH
-        jsr ReuOp
-        ldx #0
-        rts
 
 ; Unmount: drive mSlot's changes written back (every drive's: the
 ; write-back's own module), then the drive emptied; the caller's drive,
@@ -433,12 +391,73 @@ Banks0: lda #FE_FIRST_BANK
         .scope Mod69
 
         jmp Enter               ; entry 0
+        jmp OvInfo              ; entry 3 (FE_MOUNTINFO; moved from module
+                                ; 66 for room, 2026-11-14)
 
         .include "fereu.inc"
         .include "fedrive.inc"
+        .include "femount.inc"
 
 Ini:    jsr OvlCall             ; (module 67: MOUNTS.INI anew; a stub)
         .byte 67, 0
+
+; FE_MOUNTINFO: r0 = a drive ("/a"-"/d"), r1 = a buffer of 64 bytes.
+; r1 = 0 instead (no buffer: the old callers always pass one): long
+; names set, r3L 1 off, 0 on (F_NOLONG; the mount table and MOUNTS.INI
+; written anew; the user, 2026-11-14, Settings' Drives page). Out also:
+; r3H the drive's flags (F_NOLONG: long names off).
+; r2L = its DRV_* type (0: none), r3L = a native drive's tracks; the
+; image's path in the buffer. X = 0, or DEV_NOT_FOUND when the drive
+; holds no image.
+OvInfo: jsr ParseDrive
+        bcs @end
+        stx mSlot
+        lda argR1               ; r1 = 0: long names set (r3L 1: off)
+        ora argR1+1
+        bne @get
+        lda drvFlags,x
+        and #$FF ^ F_NOLONG
+        lsr argR3
+        bcc :+
+        ora #F_NOLONG
+:       sta drvFlags,x
+        jsr TableOp             ; (its mount table entry; MOUNTS.INI anew:
+        jmp Ini                 ; X its error; no info, no path copied)
+@get:   lda drvFlags,x          ; r3H: its flags
+        sta argR3+1
+        lda driveType,x
+        and #$0F
+        sta argR2
+        lda drvTracks,x
+        sta argR3
+        lda #0
+        sta argR2+1
+        lda argR2
+        bne :+
+        ldx #DEV_NOT_FOUND
+@end:   rts
+:       txa                     ; MOUNT_PATHS + 64 * drive
+        asl
+        asl
+        asl
+        asl
+        asl
+        asl
+        sta r1L
+        lda #>MOUNT_PATHS
+        sta r1H
+        lda argR1
+        sta r0L
+        lda argR1+1
+        sta r0H
+        lda #64
+        sta r2L
+        lda #0
+        sta r2H
+        ldy #REU_FETCH
+        jsr ReuOp
+        ldx #0
+        rts
 
 ; Enter (from module 65, the image loaded): the drive's mount table
 ; entry, path (fePath) and an empty dirty map; the driver's state; the
@@ -590,7 +609,7 @@ Line:   lda #<diskBlkBuf        ; its path
 @size:  ldx mSlot
         lda drvFlags,x
         and #F_RESIZED
-        beq @eol
+        beq @long
         ldx #0
 @tr:    stx mTmp
         lda Tracks,x
@@ -604,6 +623,19 @@ Line:   lda #<diskBlkBuf        ; its path
         lda drvTracks,x
         jsr Decimal
         bne @end
+@long:  ldx mSlot               ; ",longnames=off" (F_NOLONG)
+        lda drvFlags,x
+        and #F_NOLONG
+        beq @eol
+        ldx #0
+@lo:    stx mTmp
+        lda NoLong,x
+        beq @eol
+        jsr Out
+        bne @end
+        ldx mTmp
+        inx
+        bne @lo
 @eol:   lda #13
         jsr Out
         bne @end
@@ -684,5 +716,6 @@ Exec:   jsr UNoData
 Head:           .byte "[drives]", 13, 10
 HeadLen         = * - Head
 Tracks:         .byte ",tracks=", 0
+NoLong:         .byte ",longnames=off", 0
 
         .endscope

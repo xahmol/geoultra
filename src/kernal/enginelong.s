@@ -11,7 +11,9 @@
         .include "hw.inc"
         .include "kcalls.inc"
         .include "engine.inc"
+        .include "drvflags.inc"
 
+        .import drvFlags
         .import OvlCall, SysRAMOp, folderT, folderS, FindFile
 
 OFF_FNAME       = 3
@@ -334,7 +336,14 @@ OvShort:
         lda feTmp,x
         bne @len
         cpx #FE_NAME_MAX + 1
-        bcs @long
+        bcc @copy
+        ldy curDrive            ; long names off on this drive (F_NOLONG,
+        lda drvFlags-8,y        ; MOUNTS.INI longnames=off): cut to
+        and #F_NOLONG           ; FE_NAME_MAX, so no record is made (the
+        beq @long               ; callers ask IsLongT)
+        ldx #FE_NAME_MAX
+        lda #0
+        sta feTmp,x
 @copy:  lda feTmp,x             ; (with its zero)
         sta feShort,x
         dex

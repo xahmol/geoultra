@@ -125,7 +125,7 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 27, 3             ; FE_SETLONG (= FE_RENAME)
         .byte 27, 15            ; FE_SELECT
         .byte 55, 0             ; FE_RUNSYS (sysdrive.s)
-        .byte 66, 6             ; FE_MOUNTINFO (enginemount.s)
+        .byte 69, 3             ; FE_MOUNTINFO (enginemount.s)
         .byte 71, 0             ; FE_MKIMG (enginemkimg.s)
         .byte 75, 0             ; FE_TURBO (enginesys.s)
         .byte 75, 3             ; FE_HOME

@@ -33,7 +33,9 @@ TEST = "/USB0/GEOULTRA/test"
 INI = "/USB0/GEOULTRA/MOUNTS.INI"
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "engine")
-D64, DNP = "geopub.d64", "ramapps.DNP"
+D64, DNP = "geopub.d64", "gumnt.dnp"           # (DNP: build/sysdrive-plain.dnp, 8
+                                                # tracks, put there and removed: room
+                                                # in the REU beside an 8 MB drive C)
 C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
 
 
@@ -119,6 +121,7 @@ class Test:
         e = img.entry("MNTTEST")
         check("written back into the image", e is not None and img.contents(e)[0], b"mounted\r")
         check("MOUNTS.INI without /d again", self.ini(), saved[INI])
+        self.u.ftp_put(os.path.join(ROOT, "build", "sysdrive-plain.dnp"), TEST + "/" + DNP)
         x = fe(FE_MOUNT, s0="/d", s1=TEST + "/" + DNP, timeout=300)[0]
         i = info("/d")
         check("FE_MOUNT a DNP into /d (native)", (x, i[:2]), (0, (0, 4)))
@@ -126,6 +129,8 @@ class Test:
         x = fe(FE_MOUNT, s0="/d", s1=TEST + "/" + D64, timeout=120)[0]
         check("FE_MOUNT over it: the D64 in /d now", (x, info("/d")[:2]), (0, (0, 1)))
         check("FE_UMOUNT /d", fe(FE_UMOUNT, s0="/d", timeout=120)[0], 0)
+        subprocess.run(["curl", "-s", "-Q", "DELE %s/%s" % (TEST, DNP), "ftp://%s/" % self.u.ip],
+                       capture_output=True)
         check("A and B as they were", (info("/a")[:2], info("/b")[:2], self.ini()),
               ((0, 3), (0, 1), saved[INI]))
         self.mkimg(saved)

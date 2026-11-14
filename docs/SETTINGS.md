@@ -293,6 +293,12 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   own folder; OK mounts). "new image": a dialog with the type [-] [+]
   (a DNP's tracks [-] n [+]) and a typed name, made in the browser's
   folder (GEOULTRA/ by default), then offered for a drive.
+  **Kernal part done (2026-11-14):** long names off per drive: drvFlags
+  F_NOLONG ($10), MOUNTS.INI ",longnames=off" (read at the cold start,
+  written by module 70), set by FE_MOUNTINFO with r1 = 0 (module 69);
+  with it a new long name is cut to 16 characters (module 50 OvShort)
+  and no GU.LONGNAMES record is made; existing records still work.
+  U64 test longu64.py (13 checks).
 - **S6, the REU page:** the legacy size, the map, task slots (the slots
   once tasks exist). The user, 2026-11-14, first version with all
   three: a read-only map of the 16 MB (system banks, each drive's, a
