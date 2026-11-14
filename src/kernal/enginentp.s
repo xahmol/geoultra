@@ -29,9 +29,14 @@ NTP_FIRST       = $1B           ; the request's first byte: version 3, client
 NTP_SECONDS     = 2 + 32        ; the reply's seconds in the read's data (its
                                 ; length first; GeoUTime's uii_data[34])
 TRIES           = 4
-TEXT            = diskBlkBuf    ; SETTINGS.INI's first 511 bytes (modules
+TEXT            = diskBlkBuf    ; SETTINGS.INI, a part at a time (modules
 TEXT_MAX        = $1FF          ; 77, 79; fileHeader after diskBlkBuf)
         .assert fileHeader = diskBlkBuf + $100, error, "TEXT: two pages"
+; SETTINGS.INI read in parts (modules 77, 79; free until module 78):
+tail            = nDays         ; the unfinished line kept at TEXT (word)
+cut             = nRest         ; where it starts in the part (word) and
+cutCh           = nRest + 2     ; its first character (0 marks the end)
+parts           = nYear         ; parts read so far
 
 NTP_ROUNDS      = 2             ; the exchange tried this often
         .segment "OVL76"
@@ -223,17 +228,26 @@ Reply:  lda #<diskBlkBuf
 
 Parse:  jsr OvlCall             ; (module 79: its [time] lines; a stub)
         .byte 79, 0
+Keep:   jsr OvlCall             ; (module 79: the lines before cut, the
+        .byte 79, 6             ; rest to TEXT's start)
 
 ; OvSettings: from SETTINGS.INI in the home folder, [time] section:
 ; ntp=server to nHost (else empty), offset=seconds (signed, decimal) to
-; nOff (else 0). Only its first TEXT_MAX bytes are read. X = 0 (also
-; without the file), or the error.
+; nOff (else 0), summer=eu to nDst. Read in parts of up to TEXT_MAX
+; bytes: each part's whole lines go to module 79, the unfinished last
+; line moves to TEXT's start and the next part follows it (a line longer
+; than TEXT_MAX ends the reading). X = 0 (also without the file), or the error.
 OvSettings:
         lda #0
         sta nHost
         sta nOff
         sta nOff+1
         sta nOff+2
+        sta nTry                ; (module 79: inside [time])
+        sta nDst
+        sta tail
+        sta tail+1
+        sta parts
         jsr Home
         txa
         bne @end
@@ -253,34 +267,97 @@ OvSettings:
         beq @none
         txa
         bne @end
-        lda #U_READ
+@part:  jsr Part
+        stx feM
+        lda #U_CLOSE            ; (after the last part, or an error)
+        jsr UBegin
+        jsr UNoData
+        jsr UExec
+        ldx feM
+        rts
+@none:  ldx #0
+@end:   rts
+
+; Part: the parts, until one comes back short. X = 0 or the error (one
+; after the first part: the end, as for a short one).
+Part:   lda #U_READ             ; TEXT_MAX - tail bytes after the tail
         jsr UBegin
         lda #<TEXT_MAX
+        sec
+        sbc tail
         jsr UPut
         lda #>TEXT_MAX
+        sbc tail+1
         jsr UPut
         lda #<TEXT
+        clc
+        adc tail
         sta r0L
         lda #>TEXT
+        adc tail+1
         sta r0H
         lda #<(TEXT + TEXT_MAX)
         sta uEnd
         lda #>(TEXT + TEXT_MAX)
         sta uEnd+1
         jsr UExec
-        lda #0                  ; the text's end
-        tay
+        txa
+        beq @read
+        ldy parts               ; (a later part: the end of the file)
+        beq @end
+        ldx #0
+@read:  inc parts
+        ldy #0                  ; the text's end
+        tya
         sta (r0),y
-        stx feM
-        lda #U_CLOSE
-        jsr UBegin
-        jsr UNoData
-        jsr UExec
-        ldx feM
-        bne @end
-        jmp Parse
-@none:  ldx #0
+        lda r0L                 ; short (or a later part's error): the end
+        cmp #<(TEXT + TEXT_MAX)
+        bne @last
+        lda r0H
+        cmp #>(TEXT + TEXT_MAX)
+        bne @last
+        jsr Whole               ; full: its whole lines, the rest kept
+        bcc Part
+@last:  jmp Parse               ; (X = 0 from it)
 @end:   rts
+
+; Whole (a full part at TEXT, r0 its end): its whole lines to module 79,
+; the unfinished last one moved to TEXT's start (tail its length). C set
+; when there is no LF in it (a line longer than TEXT_MAX: module 79
+; takes the part, and the reading ends there).
+Whole:  lda r0L                 ; the last line's start (after the last LF)
+        sta r5L
+        lda r0H
+        sta r5H
+@back:  lda r5H
+        cmp #>TEXT
+        bne :+
+        lda r5L
+        cmp #<TEXT
+        beq @none
+:       lda r5L
+        bne :+
+        dec r5H
+:       dec r5L
+        lda (r5),y
+        cmp #10
+        bne @back
+        inc r5L                 ; past it
+        bne :+
+        inc r5H
+:       lda r5L
+        sta cut
+        lda r5H
+        sta cut+1
+        lda (r5),y
+        sta cutCh
+        tya                     ; the whole lines end there
+        sta (r5),y
+        jsr Keep                ; (module 79; the flags not kept on the
+        clc                     ; way back)
+        rts
+@none:  sec
+        rts
 
 IniName:        .byte "SETTINGS.INI", 0
 
@@ -537,6 +614,7 @@ Months: .byte 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 
         jmp Parse               ; entry 0
         jmp Summer              ; entry 3 (module 78, Dst)
+        jmp Keep                ; entry 6 (module 77, Whole)
 
 month           = year + 1      ; GEOS's clock (geos.inc: year)
 day             = year + 2
@@ -589,16 +667,14 @@ LastSun:
         rts
 
 
-; Parse (from module 77, SETTINGS.INI at TEXT, zero-ended): the lines
-; of [time]: "ntp=", "offset=" and "summer=" (eu: nDst 1; keys in any
-; case).
+; Parse (from module 77, a part of SETTINGS.INI at TEXT, zero-ended,
+; whole lines): the lines of [time]: "ntp=", "offset=" and "summer="
+; (eu: nDst 1; keys in any case). nTry (inside [time]) carries over from
+; the part before; module 77 clears it and nDst first. X = 0.
 Parse:  lda #<TEXT
         sta r5L
         lda #>TEXT
         sta r5H
-        lda #0
-        sta nDst
-        sta nTry                ; (here: inside [time])
 @line:  ldy #0
         lda (r5),y
         beq @end
@@ -635,7 +711,9 @@ Parse:  lda #<TEXT
 @skip:  lda (r5),y
         beq @end
         iny
-        cmp #10
+        bne :+
+        inc r5H                 ; (a line over 255 characters)
+:       cmp #10
         bne @skip
         tya
         clc
@@ -742,6 +820,45 @@ Offset: lda (r5),y
         eor #3
         bne @neg
 @end:   rts
+
+; Keep (from module 77: a full part at TEXT up to r0, zero-ended at cut,
+; whose character was cutCh): its whole lines parsed, then the line at
+; cut (unfinished) moved to TEXT's start, tail its length.
+Keep:   jsr Parse
+        lda cut                 ; the line's start back, then to TEXT
+        sta r5L
+        lda cut+1
+        sta r5H
+        lda #<TEXT
+        sta r6L
+        lda #>TEXT
+        sta r6H
+        ldy #0
+        lda cutCh
+        sta (r5),y
+@move:  lda r5L
+        cmp r0L
+        bne :+
+        lda r5H
+        cmp r0H
+        beq @moved
+:       lda (r5),y
+        sta (r6),y
+        inc r5L
+        bne :+
+        inc r5H
+:       inc r6L
+        bne @move
+        inc r6H
+        bne @move
+@moved: lda r6L                 ; tail = its length
+        sec
+        sbc #<TEXT
+        sta tail
+        lda r6H
+        sbc #>TEXT
+        sta tail+1
+        rts
 
 Keys:
 TimeKey:        .byte "[time]", 0

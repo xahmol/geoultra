@@ -231,6 +231,81 @@ def system(g):
         f.quit()
 
 
+def ntp_try(g, ini, off):
+    """SETTINGS.INI = INI, ntp run (up to three times: a server may not
+    answer once): True when the clock is then within a minute of UTC +
+    OFF, else what gush showed."""
+    import datetime
+    import ftplib
+    import io
+    f = ftplib.FTP(g.u.ip)
+    f.login()
+    f.storbinary("STOR /USB0/GEOULTRA/SETTINGS.INI", io.BytesIO(ini))
+    f.quit()
+    for attempt in range(3):
+        g.run("ntp", settle=8)
+        if not g.lines()[-2].startswith("gush:"):
+            break
+    try:
+        got = datetime.datetime.strptime(g.lines()[-2], "%Y-%m-%d %H:%M:%S")
+        want = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) + datetime.timedelta(seconds=off)
+        return abs((got - want).total_seconds()) < 60
+    except ValueError:
+        return g.lines()[-2]
+
+
+def ntp_long(g):
+    """ntp with SETTINGS.INI read in parts (enginentp.s, modules 77 and 79;
+    2026-11-14, before only its first 511 bytes): a file over 1 KB with
+    [time]'s ntp= line across the first part's end and offset= two parts
+    on, and one of exactly 511 bytes (the read after it finds the file's
+    end). The offsets an hour apart from the clock's own, so a lost
+    offset= shows; the clock's own offset back at the end. SETTINGS.INI as
+    it was after (none: removed again)."""
+    import datetime
+    import ftplib
+    import io
+    check = g.check
+    f = ftplib.FTP(g.u.ip)
+    f.login()
+    names = [n for n, _ in f.mlsd("/USB0/GEOULTRA")]
+    before = None
+    if "SETTINGS.INI" in names:
+        b = io.BytesIO()
+        f.retrbinary("RETR /USB0/GEOULTRA/SETTINGS.INI", b.write)
+        before = b.getvalue()
+    f.quit()
+    try:
+        now = g.out("date")
+        utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        clock = datetime.datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
+        off = round((clock - utc).total_seconds() / 900) * 900
+        ntp = b"ntp=pool.ntp.org\r\n"
+        head = b"[desktop]\r\n"
+        fill = 511 - 6 - len(head) - len(b"[time]\r\n") - len(b"note=\r\n")
+        ini = head + b"note=" + b"a" * fill + b"\r\n" + b"[time]\r\n" + ntp
+        check("long SETTINGS.INI: ntp= across byte 511", ini.index(ntp) < 511 < ini.index(ntp) + len(ntp), True)
+        n = 0
+        while len(ini) < 1100:
+            ini += b"pad%02d=a line the module skips\r\n" % n
+            n += 1
+        ini += b"offset=%d\r\n" % (off + 3600)
+        check("long SETTINGS.INI (%d bytes): ntp and offset= found" % len(ini), ntp_try(g, ini, off + 3600), True)
+        ini = b"[time]\r\n" + ntp
+        last = b"offset=%d\r\n" % (off - 3600)
+        ini += b"note=" + b"b" * (511 - len(ini) - len(last) - len(b"note=\r\n")) + b"\r\n" + last
+        check("SETTINGS.INI of exactly 511 bytes", (len(ini), ntp_try(g, ini, off - 3600)), (511, True))
+        check("the clock's own offset again", ntp_try(g, b"[time]\r\n" + ntp + b"offset=%d\r\n" % off, off), True)
+    finally:
+        f = ftplib.FTP(g.u.ip)
+        f.login()
+        if before is None:
+            f.delete("/USB0/GEOULTRA/SETTINGS.INI")
+        else:
+            f.storbinary("STOR /USB0/GEOULTRA/SETTINGS.INI", io.BytesIO(before))
+        f.quit()
+
+
 def main():
     crt = sys.argv[1] if len(sys.argv) > 1 else None
     g = GushU64(crt)
@@ -274,6 +349,7 @@ def main():
     g.run("ifconfig", settle=4)                     # (step 3.9: the network)
     rows = g.lines()[-5:-1]
     check("ifconfig: the U64's own address", rows[0], "address  " + g.u.ip)
+    ntp_long(g)
     check("ifconfig: netmask, gateway, mac", [r.split()[0] for r in rows], ["address", "netmask", "gateway", "mac"])
     g.run("wget http://example.com/", settle=20)
     got = g.lines()[-2]
