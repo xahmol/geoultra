@@ -17,7 +17,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
+        .import OvlCall, folderT, folderS, FindFile
 
 CBM_REL         = 4             ; CBM type (directory entry +0, bits 0-2)
 

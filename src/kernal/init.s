@@ -6,10 +6,10 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .import IrqEntry, InterruptMain, DefMouseVector, DefFaultVector
-        .import Rectangle, FrameRectangle, SetPattern
-        .import pointerPic, UseSystemFont, PutString, RecoverRectangle
-        .import StringWidth, sysFlgCopy, DiskInit, ExtraColours, ClockInit
+        .import InterruptMain, DefMouseVector, DefFaultVector
+        .import Rectangle, SetPattern
+        .import pointerPic, UseSystemFont, RecoverRectangle
+        .import sysFlgCopy, DiskInit, ExtraColours, ClockInit
         .import MountAll, SerialFromDisk, TurboInit, SaveJumpTab, HibResumeOvl, RtcClockOvl
         .import PointerInit
         .export ColdStart

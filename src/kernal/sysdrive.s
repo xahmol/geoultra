@@ -30,7 +30,7 @@
         .export sysName, sysActive, sysType, sysCurType, sysBase, sysFlags
         .export sysTracks, sysFolderT, sysFolderS, sysSlot, ownDesk, sysActive
         .export imgFlags, imgBank, imgType, imgTracks, uTouch
-        .import OvlCall, FindFTypes, FindFile, drvFlags, drvTracks, SysRAMOp
+        .import OvlCall, FindFTypes, FindFile
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
 HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1

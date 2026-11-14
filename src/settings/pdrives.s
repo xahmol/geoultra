@@ -1453,14 +1453,15 @@ NameDlg:        .byte DEF_DB_POS | 1
                 .byte OK, 1, DBI_Y_2
                 .byte CANCEL, DBI_X_2, DBI_Y_2
                 .byte 0
-ERRS            = 4
-ErrCode:        .byte INSUFF_SPACE, FE_NOT_SUPPORTED, FILE_EXISTS, FE_ULTIMATE
-ErrLo:          .byte <ENoRoom, <ESize, <EExists, <EUlt
-ErrHi:          .byte >ENoRoom, >ESize, >EExists, >EUlt
+ERRS            = 5
+ErrCode:        .byte INSUFF_SPACE, FE_NOT_SUPPORTED, FILE_EXISTS, FE_ULTIMATE, FE_MOUNTED
+ErrLo:          .byte <ENoRoom, <ESize, <EExists, <EUlt, <EMounted
+ErrHi:          .byte >ENoRoom, >ESize, >EExists, >EUlt, >EMounted
 ENoRoom:        .byte "Not enough free REU for it.", 0
 ESize:          .byte "Files lie beyond that size.", 0
 EExists:        .byte "A file of that name is there.", 0
 EUlt:           .byte "The Ultimate refused it.", 0
+EMounted:       .byte "Another drive has that image.", 0
 ErrNum:         .byte "It did not work: error $"
 errHex:         .byte "00", 0
 

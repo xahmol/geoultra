@@ -17,7 +17,7 @@
         .import drvFlags, drvTracks, SysRAMOp, folderT, folderS
         .import sysActive, sysType, sysCurType, sysBase, sysFlags
         .import sysTracks, sysFolderT, sysFolderS, sysSlot
-        .import imgFlags, uTouch, OvlCall
+        .import uTouch, OvlCall
 
 HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
 

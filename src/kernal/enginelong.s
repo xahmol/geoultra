@@ -14,7 +14,7 @@
         .include "drvflags.inc"
 
         .import drvFlags
-        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
+        .import OvlCall, FindFile
 
 OFF_FNAME       = 3
 OFF_DATE        = 23

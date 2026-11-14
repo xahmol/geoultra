@@ -16,8 +16,7 @@
         .include "engine.inc"
         .include "drvflags.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS, drvTracks, drvFlags
-        .import natLoaded
+        .import SysRAMOp
 
 SYS_BANK        = 1
 MIN_TRACKS      = 2             ; native: track 1 and one more at least

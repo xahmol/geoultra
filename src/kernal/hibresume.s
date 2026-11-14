@@ -4,7 +4,7 @@
         .include "hw.inc"
         .include "kcalls.inc"
 
-        .import uciPresent, Resume, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
+        .import uciPresent, Resume, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo
 
 HIB_RAM         = 19
 HIB_SCRATCH     = 20

@@ -104,6 +104,9 @@ class Test:
         check("errors: drive E, a file that is no image, /d empty",
               (fe(FE_MOUNT, s0="/e", s1=TEST + "/" + D64)[0], fe(FE_MOUNT, s0="/d", s1=INI)[0],
                fe(FE_UMOUNT, s0="/d")[0]), (BAD_PATH, NOT_SUPPORTED, DEV_NOT_FOUND))
+        check("the image drive A has, onto /d: refused (FE_MOUNTED)",
+              (fe(FE_MOUNT, s0="/d", s1="/usb0/geoultra/test/geos64.d81", timeout=60)[0], info("/d")),
+              (0x51, (DEV_NOT_FOUND,)))
         x = fe(FE_MOUNT, s0="/d", s1="/usb0/geoultra/test/" + D64, timeout=120)[0]
         check("FE_MOUNT %s into /d" % D64, (x, info("/d")), (0, (0, 1, "/usb0/geoultra/test/" + D64)))
         img = Image(os.path.join(OUT, "mnt-save-" + D64))
@@ -175,7 +178,7 @@ class Test:
 
 
 def main():
-    crt = sys.argv[1] if len(sys.argv) > 1 else None
+    crt = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build", "geoultra64.crt")
     t = Test(crt)
     t.run()
     sys.exit(0 if t.ok else 1)

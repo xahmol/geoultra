@@ -24,7 +24,7 @@
 JT_START        = $C100         ; the GEOS 2.0 jump table
 JT_SIZE         = $01D7
 JT_COPY         = $1000         ; its copy in REU bank 1
-        .import FindFile, ReadFile, GetFHdrInfo, CopyFString, CallRoutine
+        .import FindFile, ReadFile, GetFHdrInfo, CopyFString
         .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall

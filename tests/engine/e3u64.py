@@ -19,6 +19,8 @@ from feu64 import U64  # noqa: E402
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from e2 import Image  # noqa: E402
 
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 (FE_VERSION, FE_STAT, FE_OPENDIR, FE_READDIR, FE_CLOSE, FE_COPY, FE_MOVE, FE_DELETE,
  FE_MKDIR, FE_RMDIR, FE_RENAME, FE_CD, FE_PWD, FE_OPEN, FE_READ, FE_WRITE, FE_DF) = range(17)
 K_ROOT, K_DRIVE, K_FOLDER, K_GEOS, K_CBM, K_UFILE, K_UDIR = range(7)
@@ -227,7 +229,7 @@ class Test:
 
 
 def main():
-    crt = sys.argv[1] if len(sys.argv) > 1 else None
+    crt = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build", "geoultra64.crt")
     t = Test(crt)
     t.run()
     sys.exit(0 if t.ok else 1)

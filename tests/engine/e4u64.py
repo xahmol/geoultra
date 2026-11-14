@@ -239,7 +239,7 @@ class Test:
 
 
 def main():
-    crt = sys.argv[1] if len(sys.argv) > 1 else None
+    crt = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build", "geoultra64.crt")
     t = Test(crt)
     t.run()
     sys.exit(0 if t.ok else 1)

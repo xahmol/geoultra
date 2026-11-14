@@ -83,6 +83,8 @@ OvMount:
         bcs @end
         jsr Type
         bcs @end
+        jsr Twice               ; (another drive has it: FE_MOUNTED)
+        bcs @end
         ldx mSlot               ; the drive's old image first
         lda driveType,x
         and #$0F
@@ -96,6 +98,67 @@ OvMount:
         jmp Enter
 @end:   rts
 
+
+; Twice: C set and X = FE_MOUNTED when a drive other than mSlot has the
+; image fePath names (any case: MOUNTS.INI may have it in capitals): two
+; REU copies of one file would write over each other (the thirteenth
+; code sweep, 2026-11-14). Else C clear.
+Twice:  ldx #3
+@d:     stx mTmp
+        cpx mSlot
+        beq @next
+        lda driveType,x
+        and #$0F
+        beq @next
+        txa                     ; its path: MOUNT_PATHS + 64 * drive
+        asl
+        asl
+        asl
+        asl
+        asl
+        asl
+        sta r1L
+        lda #>MOUNT_PATHS
+        sta r1H
+        lda #<diskBlkBuf
+        sta r0L
+        lda #>diskBlkBuf
+        sta r0H
+        lda #64
+        sta r2L
+        lda #0
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        ldy #REU_FETCH
+        jsr SysRAMOp
+        ldy #$FF
+@c:     iny
+        lda diskBlkBuf,y
+        jsr Lower
+        sta mIdx
+        lda fePath,y
+        jsr Lower
+        cmp mIdx
+        bne @next
+        cmp #0
+        bne @c
+        ldx #FE_MOUNTED
+        sec
+        rts
+@next:  ldx mTmp
+        dex
+        bpl @d
+        clc
+        rts
+
+; Lower: A in lower case.
+Lower:  cmp #'A'
+        bcc :+
+        cmp #'Z' + 1
+        bcs :+
+        ora #$20
+:       rts
         .endscope
 
         .segment "OVL66"
