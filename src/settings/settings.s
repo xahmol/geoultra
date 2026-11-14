@@ -9,11 +9,13 @@
         .include "engine.inc"
         .include "settings.inc"
 
+        .import FirstLoad, ReadChrome, Colours, PageColours, SideColours
+        .import TitleBar, MarkOn, MarkOff, RowTop, Dialog
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
         .import TimeDraw, TimePress, ThemeDraw, ThemePress
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
         .export themeLoaded, themeNo, themeCount, themePart, themeNames
-        .export themePath, themeTmp, noFile, PageColours, DrawPage, BarOn, BarOff, ThemesFull, Ask2
+        .export themePath, themeTmp, noFile, DrawPage, page, repaint, BarOn, BarOff, ThemesFull, Ask2
         .import row
         .importzp SWATCH_X        ; (152: exported as zero page)
         .export IniPaths, IniLoad, IniEmpty, IniSet, IniFind, iniLen
@@ -43,6 +45,11 @@ Start:  jsr OvlInit             ; (ovl.s: the pages into the REU, while
         lda #ST_WR_FORE | ST_WR_BACK ; both screens: dialogs give back
         sta dispBufferOn        ; what was under them
         jsr Load
+        lda #0
+        sta repaint
+        jsr FirstLoad           ; (chrome.s: the theme in use, its chrome)
+        jsr ReadChrome
+        jsr UseSettings
         lda #PAGE_DESKTOP
         sta page
         jsr DrawAll
@@ -136,33 +143,20 @@ MaxHi:  .byte >INI_MAX, >THEME_MAX
 
 ; --- drawing
 
-; DrawAll: the whole screen: cleared, the title, the lines, the side
-; list, the page.
+; DrawAll: the whole screen in the theme (chrome.s): cleared, the
+; colours, a frame round it, the title bar, the lines between the parts,
+; the side list, the page.
 DrawAll:
         lda #0
         jsr SetPattern
-        lda #0
-        sta r2L
-        sta r3L
-        sta r3H
-        lda #199
-        sta r2H
-        lda #<SCREEN_RIGHT
-        sta r4L
-        lda #>SCREEN_RIGHT
-        sta r4H
+        jsr Screen
         jsr Rectangle
-        lda #<Title             ; the title, bold
-        sta r0L
-        lda #>Title
-        sta r0H
-        lda #<TITLE_X
-        sta r11L
-        lda #>TITLE_X
-        sta r11H
-        lda #TITLE_Y
-        sta r1H
-        jsr PutString
+Repaint:                        ; (the Theme page's "use": the buttons'
+        jsr Colours             ; strip keeps DoIcons's buttons)
+        jsr Screen
+        lda #$FF
+        jsr FrameRectangle
+        jsr TitleBar
         lda #TITLE_LINE         ; the lines: under the title, above the
         jsr HLine               ; buttons, between the list and the page
         lda #BUTTON_LINE
@@ -180,6 +174,19 @@ DrawAll:
         jsr DrawSide
         jmp DrawPage
 
+; Screen: r2-r4 = the whole screen.
+Screen: lda #0
+        sta r2L
+        sta r3L
+        sta r3H
+        lda #199
+        sta r2H
+        lda #<SCREEN_RIGHT
+        sta r4L
+        lda #>SCREEN_RIGHT
+        sta r4H
+        rts
+
 ; HLine: a full-width line at y A.
 HLine:  sta r11L
         lda #0
@@ -192,7 +199,7 @@ HLine:  sta r11L
         lda #$FF
         jmp HorizontalLine
 
-; DrawSide: the page names, the current one inverted.
+; DrawSide: the page names, the current one marked (chrome.s MarkOn).
 DrawSide:
         ldx #0
 @name:  stx at
@@ -215,29 +222,7 @@ DrawSide:
         cpx #PAGES_N
         bcc @name
         lda page
-; Mark: page A's name inverted (again: back to normal).
-Mark:   jsr RowTop
-        sta r2L
-        clc
-        adc #SIDE_ROW - 1
-        sta r2H
-        lda #0
-        sta r3L
-        sta r3H
-        sta r4H
-        lda #SIDE_W - 1
-        sta r4L
-        jmp InvertRectangle
-
-; RowTop: A = page A's row top (SIDE_TOP + A * SIDE_ROW).
-RowTop: tax
-        lda #SIDE_TOP
-@add:   dex
-        bmi @end
-        clc
-        adc #SIDE_ROW
-        bne @add
-@end:   rts
+        jmp MarkOn
 
 ; DrawPage: the page area cleared, the current page drawn (its
 ; overlay), or a note for pages still to come.
@@ -252,9 +237,9 @@ DrawPage:
         sta r3L
         lda #>PAGE_LEFT
         sta r3H
-        lda #<SCREEN_RIGHT
+        lda #<(SCREEN_RIGHT - 1)  ; (inside the frame)
         sta r4L
-        lda #>SCREEN_RIGHT
+        lda #>(SCREEN_RIGHT - 1)
         sta r4H
         jsr Rectangle
         jsr PageColours
@@ -264,32 +249,6 @@ DrawPage:
         lda DrawHi,x
         sta pageVec+1
         jmp (pageVec)
-
-; PageColours: the page area's colour cells (rows 2-21, cards 11-39)
-; back to the screen's colours (the Theme page colours its own).
-PageColours:
-        lda #<(COLOR_MATRIX + 2 * 40 + PAGE_CARD)
-        sta r0L
-        lda #>(COLOR_MATRIX + 2 * 40 + PAGE_CARD)
-        sta r0H
-        ldx #PAGE_ROWS
-@row:   ldy #40 - PAGE_CARD - 1
-        lda screencolors
-@cell:  sta (r0),y
-        dey
-        bpl @cell
-        lda r0L
-        clc
-        adc #40
-        sta r0L
-        bcc :+
-        inc r0H
-:       dex
-        bne @row
-        rts
-
-PAGE_CARD       = PAGE_LEFT / 8 ; (card 11: x 88)
-PAGE_ROWS       = 20            ; (rows 2-21: y 16-175)
 
 ; Later: the note on a page still to come.
 Later:  lda #<LaterText
@@ -331,10 +290,10 @@ Press:  lda mouseData
         beq @end
         stx at
         lda page                ; the old name back to normal, the new one
-        jsr Mark                ; inverted, its page drawn
+        jsr MarkOff             ; marked, its page drawn
         lda at
         sta page
-        jsr Mark
+        jsr MarkOn
         jmp DrawPage
 @page:  lda mouseYPos           ; the page area?
         cmp #PAGE_TOP
@@ -346,7 +305,19 @@ Press:  lda mouseData
         sta pageVec
         lda PressHi,x
         sta pageVec+1
-        jmp (pageVec)
+        jsr @go
+        lda repaint             ; the Theme page's "use": all of it again
+        beq @end                ; in the theme (from here: an overlay may
+        lda #0                  ; not call one)
+        sta repaint
+        lda #0                  ; above the buttons' strip cleared
+        jsr SetPattern
+        jsr Screen
+        lda #BUTTON_LINE - 1
+        sta r2H
+        jsr Rectangle
+        jmp Repaint
+@go:    jmp (pageVec)
 @end:   rts
 
 NoPress:
@@ -441,9 +412,7 @@ Ask2:   pha
         sta r0H
         pla
         sta r0L
-        jsr DoDlgBox
-        lda r0L
-        rts
+        jmp Dialog              ; (chrome.s: over the desk's colours)
 
 ; ThemesFull (the Theme page's copy): no room for another theme file.
 ThemesFull:
@@ -499,8 +468,7 @@ Plain:  pha
         sta r0H
         pla
         sta r0L
-        jsr DoDlgBox
-        lda r0L
+        jsr Dialog              ; (chrome.s: over the desk's colours)
         pha
         jsr DrawPage
         pla
@@ -528,9 +496,8 @@ Digit:  cmp #10
 
 ; --- data
 
-TITLE_X         = 112
 SIDE_X          = 6
-SIDE_BASE       = 9             ; a page name's baseline below its row top
+SIDE_BASE       = 11            ; a page name's baseline below its row top
 
 ; Each page's drawing and click routines (stubs into its overlay, ovl.s;
 ; Later and NoPress for the pages still to come), in PAGE_* order.
@@ -544,7 +511,6 @@ PressHi:        .byte >ThemePress, >DeskPress, >SysPress, >TimePress, >NoPress, 
                 .byte >PtrPress
         .assert * - PressHi = PAGES_N, error, "a press routine per page"
 
-Title:          .byte BOLDON, "GeoUltra Settings", PLAINTEXT, 0
 NameLo:         .byte <N0, <N1, <N2, <N3, <N4, <N5, <N6
 NameHi:         .byte >N0, >N1, >N2, >N3, >N4, >N5, >N6
 N0:             .byte "Theme", 0
@@ -618,6 +584,8 @@ dirty:          .res 1          ; something changed since the last write
 noFile:         .res 1          ; nothing to write (no Ultimate)
 iniText:        .res INI_MAX + 1 ; SETTINGS.INI's text and its zero
 themeText:      .res THEME_MAX + 1 ; a theme file's text (the Theme page)
+repaint:        .res 1          ; the Theme page's "use": DrawAll after its
+                                ; click (Press)
 curText:        .res 1          ; ini.inc's text: 0 SETTINGS.INI, 1 the theme
 textLenLo:      .res 2          ; the other text's length while one is used
 textLenHi:      .res 2

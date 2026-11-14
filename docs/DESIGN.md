@@ -682,7 +682,11 @@ Requests from the same session, to do:
   (paste, drag and drop, copy and move to the other pane), the message
   "Disk images stay on the Ultimate" (errors.s, ERR_IMAGE $60). The
   desktop core is full after it (0 bytes): room first for the next.
-- GeoUltra Settings in the desktop's theme (the user, 2026-11-13): its
+- Done 2026-11-14 (src/settings/chrome.s; VICE test-settings, the
+  U64 with GeoUltra, Night, Flat and Mono: stripes, line and solid
+  title bars, invert, bar and frame selections; the Theme page's
+  overlay 1.1 KB free after the parser moved to the core):
+  GeoUltra Settings in the desktop's theme (the user, 2026-11-13): its
   colours from the theme in use (desk, menu bar, frame lines, the side
   list's selection), and more chrome: frame lines round the whole
   window and between its parts, and a title bar with a stripe pattern

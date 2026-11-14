@@ -12,7 +12,7 @@
 
         .import ChoiceDraw, ChoicePress, ButtonDraw, OnButton
         .import IniFind, IniSet, IniDel, iniSkip, sel, dirty, NoRoom
-        .import FileEngine
+        .import FileEngine, Dialog
         .export Ov_SysDraw, Ov_SysPress
 
         .segment "OV3"
@@ -454,7 +454,7 @@ Pick:   ldx curDrive            ; a drive A-D that is there
         sta r0L
         lda #>PickDlg
         sta r0H
-        jsr DoDlgBox
+        jsr Dialog              ; (chrome.s: over the desk's colours)
         lda sysDBData
         cmp #DISK
         bne :+

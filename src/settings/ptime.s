@@ -13,7 +13,7 @@
 
         .import ChoiceDraw, ChoicePress, ButtonDraw, OnButton
         .import IniFind, IniSet, IniDel, dirty, NoRoom, FileEngine, Write
-        .import DrawPage, Ask2
+        .import DrawPage, Ask2, Dialog
         .export Ov_TimeDraw, Ov_TimePress
 
         .segment "ZEROPAGE"
@@ -451,7 +451,7 @@ NowNtp: lda #<Now               ; the button inverted while it asks (the
         sta r0L
         lda #>NtpFail
         sta r0H
-        jsr DoDlgBox
+        jsr Dialog              ; (chrome.s: over the desk's colours)
 :       jmp DateDraw
 @back:  lda #<Now               ; (the button as it was)
         ldx #>Now
@@ -1122,7 +1122,7 @@ EditDate:
         sta r0L
         lda #>DateFail
         sta r0H
-        jmp DoDlgBox
+        jmp Dialog              ; (chrome.s: over the desk's colours)
 @end:   rts
 
 ; Num2: A = the two digits at buf + Y; C set when they are not digits.
@@ -1160,7 +1160,7 @@ Ask:    lda #<buf
         sta r0L
         lda #>AskDlg
         sta r0H
-        jsr DoDlgBox
+        jsr Dialog              ; (chrome.s: over the desk's colours)
         lda r0L
         cmp #DBGETSTRING        ; (RETURN ends it as OK)
         beq @ok

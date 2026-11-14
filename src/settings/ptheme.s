@@ -24,11 +24,15 @@
         .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
         .import PalKey, IniDel
         .export Ov_ThemeDraw, Ov_ThemePress, row, SWATCH_X
-        .import BarOn, BarOff, ThemesFull, Ask2
+        .import BarOn, BarOff, ThemesFull, Ask2, repaint, ReadChrome
+        .import FirstLoad, AddName, SameName, NameAt, LoadTheme, ReadTheme
+        .import ReadLine, LineKey, HasWords, Word, NextWord, Past, Colour, OnWord
+        .import STheme, OnText, SDesktop, KTheme, ThemePaths, tmp, idx, start, line, style, ink, paper, name, val, pbuf
+        .import cColour
+        .importzp vp
 
         .segment "ZEROPAGE"
 
-vp:             .res 2          ; a word or a name being walked
 askText:        .res 2          ; the copy's question (DBVARSTR)
 
         .segment "OV5"
@@ -105,264 +109,6 @@ Ov_ThemePress:
 
 ; --- the theme: its file, its name
 
-; FirstLoad: the theme files listed (THEMES), the one SETTINGS.INI uses
-; ([desktop] theme=; none: GeoUltra) chosen and read.
-FirstLoad:
-        jsr ListThemes
-        jsr UseSettings         ; the theme in use
-        lda #<SDesktop
-        sta r0L
-        lda #>SDesktop
-        sta r0H
-        lda #<KTheme
-        sta r1L
-        lda #>KTheme
-        sta r1H
-        jsr IniFind
-        bcs @default
-        cmp #THEME_NAME
-        bcs @default
-        tay
-        lda #0
-        sta name,y
-@ch:    dey
-        bmi @find
-        lda (r2),y
-        sta name,y
-        jmp @ch
-@default:
-        ldx #0
-@def:   lda DefaultName,x
-        sta name,x
-        beq @find
-        inx
-        bne @def
-@find:  ldx #0                  ; its place in the list (or added)
-@try:   cpx themeCount
-        bcs @add
-        stx themeNo
-        jsr SameName
-        bcc @load
-        ldx themeNo
-        inx
-        bne @try
-@add:   jsr AddName
-@load:  lda #1
-        sta themeLoaded
-        lda #0
-        sta themePart
-        jmp LoadTheme
-
-; ListThemes: themeNames = the THEMES folder's files ("<name>.ini", up
-; to THEMES_MAX), themeCount their number; none without an Ultimate.
-ListThemes:
-        lda #0
-        sta themeCount
-        lda #<buf               ; the home folder
-        sta r1L
-        lda #>buf
-        sta r1H
-        lda #0
-        sta buf
-        lda #FE_HOME
-        jsr FileEngine
-        txa
-        bne @end
-        ldy #$FF                ; + "THEMES"
-@home:  iny
-        lda buf,y
-        bne @home
-        ldx #0
-@dir:   lda ThemesDir,x
-        sta buf,y
-        beq @open
-        iny
-        inx
-        bne @dir
-@open:  lda #<buf
-        sta r0L
-        lda #>buf
-        sta r0H
-        lda #FE_OPENDIR
-        jsr FileEngine
-        sta handle
-        txa
-        bne @end
-@read:  lda themeCount
-        cmp #THEMES_MAX
-        bcs @close
-        lda #<info
-        sta r1L
-        lda #>info
-        sta r1H
-        lda #<name
-        sta r2L
-        lda #>name
-        sta r2H
-        lda #0
-        sta r3L
-        sta r3H
-        lda #FE_READDIR
-        ldy handle
-        jsr FileEngine
-        txa
-        bne @close
-        jsr IniName             ; "x.ini": its name to the list
-        bcs @read
-        jsr AddName
-        jmp @read
-@close: lda #FE_CLOSE
-        ldy handle
-        jsr FileEngine
-@end:   rts
-
-; IniName: C clear when name ends in ".ini" (any case): that cut off.
-IniName:
-        ldy #$FF
-@end:   iny
-        lda name,y
-        bne @end
-        cpy #5
-        bcc @no
-        ldx #2                  ; ("ini" backwards)
-@ext:   dey
-        lda name,y
-        ora #$20
-        cmp IniExt,x
-        bne @no
-        dex
-        bpl @ext
-        dey                     ; (the ".")
-        lda name,y
-        cmp #'.'
-        bne @no
-        lda #0
-        sta name,y
-        clc
-        rts
-@no:    sec
-        rts
-
-; AddName: name (zero-ended, THEME_NAME at most) as the list's next one
-; (when there is room); themeNo = it.
-AddName:
-        lda themeCount
-        cmp #THEMES_MAX
-        bcs @end
-        sta themeNo
-        jsr NameAt
-        ldy #0
-@ch:    lda name,y
-        sta (vp),y
-        beq @done
-        iny
-        cpy #THEME_NAME - 1
-        bcc @ch
-        lda #0
-        sta (vp),y
-@done:  inc themeCount
-@end:   rts
-
-; SameName: C clear when themeNames[themeNo] is name (any case).
-SameName:
-        jsr NameAt
-        ldy #$FF
-@ch:    iny
-        lda (vp),y
-        beq @end                ; (the list's name ends: name's too?)
-        ora #$20
-        sta tmp
-        lda name,y
-        beq @no
-        ora #$20
-        cmp tmp
-        beq @ch
-@no:    sec
-        rts
-@end:   lda name,y
-        bne @no
-        clc
-        rts
-
-; NameAt: vp = themeNames[themeNo].
-NameAt: lda themeNo
-        asl a
-        asl a
-        asl a
-        asl a                   ; (THEME_NAME 16)
-        clc
-        adc #<themeNames
-        sta vp
-        lda #>themeNames
-        adc #0
-        sta vp+1
-        rts
-        .assert THEME_NAME = 16, error, "NameAt: * 16"
-
-; LoadTheme: themePath/themeTmp for themeNames[themeNo], its file read
-; into the theme's text (not there, no Ultimate: an empty text);
-; themeDirty cleared.
-LoadTheme:
-        jsr ThemePaths
-        jmp ReadTheme
-
-; ThemePaths: themePath, themeTmp for themeNames[themeNo].
-ThemePaths:
-        jsr NameAt
-        ldx #0                  ; "THEMES/" name ".ini" and ".tmp"
-@dir:   lda ThemesDir,x
-        beq :+
-        sta themePath,x
-        sta themeTmp,x
-        inx
-        bne @dir
-:       lda #'/'
-        sta themePath,x
-        sta themeTmp,x
-        inx
-        ldy #0
-@name:  lda (vp),y
-        beq @ext
-        sta themePath,x
-        sta themeTmp,x
-        inx
-        iny
-        bne @name
-@ext:   ldy #0
-@e:     lda IniDot,y
-        sta themePath,x
-        lda TmpDot,y
-        sta themeTmp,x
-        beq @end
-        inx
-        iny
-        bne @e
-@end:   rts
-
-; ReadTheme: the theme's file (themePath) into its text (not there, no
-; Ultimate: an empty text); themeDirty cleared.
-ReadTheme:
-        jsr UseTheme
-        lda #0
-        sta themeDirty
-        sta iniLen
-        sta iniLen+1
-        jsr IniEmpty
-        lda noFile
-        bne @end
-        lda #<themePath
-        sta r0L
-        lda #>themePath
-        sta r0H
-        lda #<themeTmp
-        sta r1L
-        lda #>themeTmp
-        sta r1H
-        jsr IniPaths
-        bcs @end
-        jsr IniLoad
-@end:   rts
-
 ; NameDraw: the theme's name between its buttons.
 NameDraw:
         lda #THEME_Y
@@ -388,15 +134,15 @@ NameDraw:
         jmp PutString
 
 ; Clear: the text's place at baseline A from x X to NEXT_X - 2 (a
-; name's room, before its [+]); ClearRow: to the screen's right edge.
+; name's room, before its [+]); ClearRow: to the frame round the screen.
 Clear:  ldy #<(NEXT_X - 2)
         sty r4L
         ldy #>(NEXT_X - 2)
         jmp ClearAt
 ClearRow:
-        ldy #<SCREEN_RIGHT
+        ldy #<(SCREEN_RIGHT - 1) ; (inside settings.s's frame)
         sty r4L
-        ldy #>SCREEN_RIGHT
+        ldy #>(SCREEN_RIGHT - 1)
 ClearAt:
         sty r4H
         sta tmp
@@ -499,7 +245,8 @@ UseIt:  jsr UseSettings
         jmp NoRoom
 :       lda #1
         sta dirty
-        rts
+        sta repaint             ; (settings.s: Settings drawn again in it)
+        jmp ReadChrome          ; (chrome.s: its colours and styles)
 
 ; Copy: a new theme from this one: its name typed (the input dialog),
 ; added to the list and shown; its text this one's with name= changed;
@@ -628,202 +375,7 @@ Labels: ldx #2
 ; first style, dark grey on light grey).
 ReadPart:
         lda themePart
-; ReadLine: style, ink, paper of line A (as ReadPart).
-ReadLine:
-        sta line
-        lda #0
-        sta style
-        lda #DEF_INK
-        sta ink
-        lda #DEF_PAPER
-        sta paper
-        jsr LineKey
-        jsr IniFind             ; (r2 its value, A its length)
-        bcs @end
-        cmp #VAL_MAX
-        bcc :+
-        lda #VAL_MAX
-:       tay                     ; the value, lower case, to val
-        lda #0
-        sta val,y
-@ch:    dey
-        bmi @parse
-        lda (r2),y
-        cmp #'A'
-        bcc :+
-        cmp #'Z' + 1
-        bcs :+
-        ora #$20
-:       sta val,y
-        jmp @ch
-@parse: ldy #0
-        jsr HasWords
-        beq @colours
-        jsr Word                ; the style: its word's index
-        bcs :+
-        sta style
-:       jsr Past                ; (to after ", ")
-@colours:
-        ldx line
-        lda LColKind,x
-        cmp #CK_NONE
-        beq @end
-        jsr Colour              ; the first colour (Y: the place in val)
-        bcs @end
-        pha
-        ldx line
-        lda LColKind,x
-        cmp #CK_PAPER
-        bne :+
-        pla
-        sta paper
-        rts
-:       pla
-        sta ink
-        jsr OnWord              ; " on " and the second
-        bcs @end
-        jsr Colour
-        bcs @end
-        sta paper
-@end:   rts
-
-; LineKey: r0 = "theme", r1 = line's key.
-LineKey:
-        lda #<STheme
-        sta r0L
-        lda #>STheme
-        sta r0H
-        ldx line
-        lda KeyLo,x
-        sta r1L
-        lda KeyHi,x
-        sta r1H
-        rts
-
-; HasWords: Z clear when line has style words (themedef.inc).
-HasWords:
-        ldx line
-        lda WordsLo,x
-        sta vp
-        lda WordsHi,x
-        sta vp+1
-        sty tmp
-        ldy #0
-        lda (vp),y
-        ldy tmp
-        cmp #0
-        rts
-
-; Word: A = the index of the word of line's list (vp) at val + Y (to
-; its "," or end), Y past it; C set when none matches.
-Word:   sty start
-        lda #0
-        sta idx
-@word:  ldy #0
-        lda (vp),y
-        beq @none               ; (the list's end)
-        ldx start
-@ch:    lda (vp),y
-        beq @end
-        cmp val,x
-        bne @skip
-        inx
-        iny
-        bne @ch
-@end:   lda val,x               ; (the text's word ends here too)
-        beq @yes
-        cmp #','
-        beq @yes
-@skip:  jsr NextWord
-        inc idx
-        jmp @word
-@yes:   txa
-        tay
-        lda idx
-        clc
-        rts
-@none:  ldy start
-        sec
-        rts
-
-; NextWord: vp past its word and the word's zero.
-NextWord:
-        ldy #0
-@ch:    lda (vp),y
-        iny
-        cmp #0
-        bne @ch
-        tya
-        clc
-        adc vp
-        sta vp
-        bcc :+
-        inc vp+1
-:       rts
-
-; Past: Y past "," and the spaces after it.
-Past:   lda val,y
-        beq @end
-        iny
-        cmp #','
-        bne Past
-@sp:    lda val,y
-        cmp #' '
-        bne @end
-        iny
-        bne @sp
-@end:   rts
-
-; Colour: A = the colour named at val + Y (to " on " or the end), Y
-; past it; C set when no name matches.
-Colour: sty start
-        lda #0
-        sta idx
-        lda #<ColourNames
-        sta vp
-        lda #>ColourNames
-        sta vp+1
-@name:  ldy #0
-        lda (vp),y
-        beq @none
-        ldx start
-@ch:    lda (vp),y
-        beq @end
-        cmp val,x
-        bne @skip
-        inx
-        iny
-        bne @ch
-@end:   lda val,x               ; (the text's name ends here too)
-        beq @yes
-        cmp #' '
-        beq @yes
-@skip:  jsr NextWord
-        inc idx
-        jmp @name
-@yes:   txa
-        tay
-        lda idx
-        clc
-        rts
-@none:  ldy start
-        sec
-        rts
-
-; OnWord: Y past " on "; C set when it is not there.
-OnWord: ldx #0
-@ch:    lda OnText,x
-        beq @yes
-        cmp val,y
-        bne @no
-        inx
-        iny
-        bne @ch
-@yes:   clc
-        rts
-@no:    sec
-        rts
-
+        jmp ReadLine
 ; WriteLine: line's value in the file's words from style, ink, paper
 ; (by its kind), set in the theme's text; themeDirty; the preview.
 WriteLine:
@@ -1083,7 +635,7 @@ RowClear:
         lda row
         jsr Cells
         ldy #SWATCHES - 1
-        lda screencolors
+        lda cColour + 1         ; (chrome.s: the desk's, as the page)
 @c:     sta (vp),y
         dey
         bpl @c
@@ -1750,7 +1302,6 @@ BOX             = 7
 BOX_TEXT        = 11
 STYLE_GAP       = 8             ; between a word and the next box
 STYLES_MAX      = 4
-VAL_MAX         = 60            ; a line's value, at most
 PALETTE         = LINES_N       ; the part after the lines: the palette
 PARTS           = LINES_N + 1
 PAL_LEN         = 48            ; 16 RGB triplets
@@ -1761,8 +1312,6 @@ CTRL_TARGET     = 4             ; the Ultimate's control target (ultimate-
 CTRL_GET_PALETTE = $51          ; uci-oscar64 manual, firmware 3.15a on the
 CTRL_SET_COLOUR = $53           ; Ultimate 64)
 CTRL_RESET_PALETTE = $54
-DEF_INK         = 11            ; a missing line: dark grey on light grey
-DEF_PAPER       = 15
 LABELS          = 2             ; (Theme, Part; the rest: Labels)
 BUTTONS         = 7
 AREAS           = 9
@@ -1877,17 +1426,7 @@ NameDlg:        .byte DEF_DB_POS | 1
                 .byte CANCEL, DBI_X_2, DBI_Y_2
                 .byte 0
 
-SDesktop:       .byte "desktop", 0
-KTheme:         .byte "theme", 0
-STheme:         .byte "theme", 0
 KName:          .byte "name", 0
-DefaultName:    .byte "GeoUltra", 0
-ThemesDir:      .byte "THEMES", 0
-IniDot:         .byte ".ini", 0
-TmpDot:         .byte ".tmp", 0
-IniExt:         .byte "ini"
-                .byte 0
-OnText:         .byte " on ", 0
 LTheme:         .byte "Theme", 0
 LPart:          .byte "Part", 0
 LStyle:         .byte "Style", 0
@@ -1910,15 +1449,8 @@ WStatus:        .byte "3 entries", 0
 
 ; Scratch (overlay data: fetched anew with the overlay)
 at:             .byte 0
-tmp:            .byte 0
 tmp2:           .byte 0
-idx:            .byte 0
-start:          .byte 0
 new:            .byte 0
-line:           .byte 0         ; the line being read or written
-style:          .byte 0         ; its style (its word's index)
-ink:            .byte 0         ; its colours
-paper:          .byte 0
 row:            .byte 0
 rows:           .byte 0
 cards:          .byte 0
@@ -1935,11 +1467,3 @@ hexText:        .res 3
 uciCmd:         .res 6          ; the control target's command, its bytes
 pal:            .res PAL_LEN    ; the palette (16 RGB)
 colour:         .byte 0
-handle:         .byte 0
-info:           .res 16
-name:           .res 64         ; a file's name (FE_READDIR), a theme's
-val:            .res VAL_MAX + 1 ; a line's value
-pbuf = name                     ; palette='s value (111 and its zero: over
-        .assert VAL_MAX + 1 + 64 >= 112, error, "pbuf: name and val"
-                                ; name and val, not in use meanwhile)
-buf:            .res 48         ; the THEMES folder's path

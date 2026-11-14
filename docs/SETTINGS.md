@@ -17,8 +17,15 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   menu) and from gush.
 - Layout: a side list of pages on the left (Theme, Desktop, System,
   Drives, REU, Pointer), the page's settings on the right as GEOS icons
-  and fields, OK, Cancel and Save at the bottom; in the theme's look
-  (the menu bar's colours for the frame, as the desktop's dialogs).
+  and fields, OK, Cancel and Save at the bottom; in the theme in use
+  (since 2026-11-14, src/settings/chrome.s): a frame round the screen,
+  the title bar in the theme's title bar style and colours (stripes
+  with a gap for "GeoUltra Settings", solid, line, none), the side list
+  in the side bar's colours with the current page marked as the
+  theme's selection (invert, bar, frame), the page in the desk's
+  colours, the buttons' strip in the menu bar's, the border colour;
+  dialogs over the desk's colours. The Theme page's "use" draws
+  Settings again in that theme at once.
 - **S3 decisions (the user, 2026-11-12):** the time gets its own page,
   **Time**, after System (seven pages: Theme, Desktop, System, Time,
   Drives, REU, Pointer); System keeps turbo, the slow list and
@@ -181,10 +188,10 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   without an Ultimate; reading and writing the file are separate
   routines. gush's `sysset.s` and the desktop's `inifile.s` move onto it
   later (their own copies of the same work), each in its own commit.
-- The theme: read through the same code as the desktop's theme files
-  (themefile.s's parsing moves into a shared include in step S4, when
-  the editor needs to write them too; until then the frame takes the
-  menu bar's colours from SETTINGS.INI's theme by the desktop's rules).
+- The theme: the core (chrome.s) lists THEMES, reads the theme in use
+  at the start and parses its lines (ReadLine; moved from the Theme
+  page's overlay on 2026-11-14), so Settings draws itself in it; the
+  Theme page uses the same routines for the theme it shows.
 
 ## Steps
 

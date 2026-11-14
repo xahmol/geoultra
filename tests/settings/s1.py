@@ -18,7 +18,7 @@ from gushvice import Gush, OUT, harness, KEY_STUB  # noqa: E402
 from vicemon import RESP_CHECKPOINT  # noqa: E402
 
 PAGE_DESKTOP, PAGE_SYSTEM = 1, 2
-SIDE_TOP, SIDE_ROW = 20, 14
+SIDE_TOP, SIDE_ROW = 24, 16
 Y0, DY, X1, X2 = 16 + 20, 18, 137, 191         # pdesk.s COL1, COL2
 CANCEL_XY = (27 * 8 + 24, 188)
 YES_XY = (90, 110)

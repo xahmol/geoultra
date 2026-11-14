@@ -25,18 +25,20 @@ TXT_LN_4_Y      = 64            ; a dialog's fourth text line (16 to 80 in steps
 
 ; The screen (docs/SETTINGS.md, "Decisions": a side list of pages, the
 ; page on the right, OK, Cancel and Save at the bottom)
-TITLE_Y         = 10            ; the title's baseline
-TITLE_LINE      = 14            ; the line under it
+TITLE_Y         = 11            ; the title's baseline (the bar: y 0-15)
+TITLE_LINE      = 15            ; the line under it
 SIDE_W          = 80            ; the side list: x 0-79
 SIDE_LINE       = 82            ; the line between list and page
-SIDE_TOP        = 20            ; the first page name's row top
-SIDE_ROW        = 14            ; a page name's row
+SIDE_TOP        = 24            ; the first page name's row top (rows on
+SIDE_ROW        = 16            ; whole cards: the mark's colours)
 PAGE_LEFT       = 90            ; the page: x 90-319
 PAGE_TOP        = 16            ; y 16 to PAGE_BOTTOM
 PAGE_BOTTOM     = 171
-BUTTON_LINE     = 174           ; the line above the buttons
+BUTTON_LINE     = 176           ; the line above the buttons (the buttons'
+                                ; strip: card rows 22-24)
 BUTTON_Y        = 180           ; the buttons' top
 SCREEN_RIGHT    = 319
+PAGE_CARD       = PAGE_LEFT / 8 ; the page's first card (11: x 88)
 PAGES_N         = 7             ; Theme, Desktop, System, Time, Drives,
                                 ; REU, Pointer (PAGE_*; the user,
                                 ; 2026-11-12: Time its own page)
@@ -54,3 +56,8 @@ INI_MAX         = 2048          ; (as the desktop's TEXT_MAX; 3072 until 2026-11
 THEME_MAX       = 1024          ; a theme file (the desktop's FILE_MAX)
 THEME_NAME      = 16            ; a theme's name and its zero
 THEMES_MAX      = 10            ; theme files listed (as the desktop's menu)
+
+; A theme's line (chrome.s ReadLine)
+VAL_MAX         = 60            ; a line's value, at most
+DEF_INK         = 11            ; a missing line: dark grey on light grey
+DEF_PAPER       = 15

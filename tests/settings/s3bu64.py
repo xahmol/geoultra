@@ -22,7 +22,7 @@ from feu64 import U64  # noqa: E402
 SETTINGS = "/USB0/GEOULTRA/SETTINGS.INI"
 KEY_STUB = 0xC0A0
 TEST_INI = b"[time]\r\nntp=pool.ntp.org\r\noffset=3600\r\nsummer=eu\r\n"
-PAGE_TIME, SIDE_TOP, SIDE_ROW = 3, 20, 14
+PAGE_TIME, SIDE_TOP, SIDE_ROW = 3, 24, 16
 NOW_XY = (160, 45 + 5)
 
 
