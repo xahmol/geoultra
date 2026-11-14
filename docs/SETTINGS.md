@@ -292,7 +292,11 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   folder's disk images and subfolders, ".." up, starting in the image's
   own folder; OK mounts). "new image": a dialog with the type [-] [+]
   (a DNP's tracks [-] n [+]) and a typed name, made in the browser's
-  folder (GEOULTRA/ by default), then offered for a drive.
+  folder (GEOULTRA/ by default), then offered for a drive. (2026-11-14,
+  the user: the new image as a form on the page, not in a dialog box:
+  Type [-] [+], a DNP's Tracks [-] [+], the name in a box that opens the
+  text dialog, make and cancel; a drive's tracks stepper only changes
+  the number, a "resize" button beside it remounts once.)
   **Kernal part done (2026-11-14):** long names off per drive: drvFlags
   F_NOLONG ($10), MOUNTS.INI ",longnames=off" (read at the cold start,
   written by module 70), set by FE_MOUNTINFO with r1 = 0 (module 69);
@@ -305,6 +309,12 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   with it. U64 test sizeu64.py (8 checks; the refusal of a smaller size
   with files after it is not covered: the test image's files lie in
   its first tracks).
+  **S5 done (2026-11-14):** pdrives.s (overlay 7; the browser's
+  buffers in the core, settings.s): the rows, the browser (its
+  subfolders and disk images, 24 at most, names up to 47 characters;
+  [-] [+] page through), the form (Type, Tracks, Name, make; then
+  offered for the first empty drive), unmount asked first, long names
+  on/off, tracks [-] [+] and resize. U64 test s5u64.py.
 - **S6, the REU page:** the legacy size, the map, task slots (the slots
   once tasks exist). The user, 2026-11-14, first version with all
   three: a read-only map of the 16 MB (system banks, each drive's, a

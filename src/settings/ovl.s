@@ -13,7 +13,7 @@ TRANS           = $5000
 TRANS_SIZE      = $1000
 OVL_BANK        = 7             ; the application's REU bank 7 (drive E's
                                 ; programs each rebuild their REU state)
-OVL_N           = 6
+OVL_N           = 7
 
         .segment "CODE"
 
@@ -36,3 +36,5 @@ OvlFail:
         Stub ThemePress, 5
         Stub ReuDraw, 6         ; overlay 6: preu.s
         Stub ReuPress, 6
+        Stub DriveDraw, 7       ; overlay 7: pdrives.s
+        Stub DrivePress, 7

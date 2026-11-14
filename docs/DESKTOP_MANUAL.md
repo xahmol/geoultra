@@ -300,7 +300,13 @@ leave), Cancel (leave; it asks when something was changed) and Save
 cell per 64 KB: the system, each drive, the file engine, the legacy
 REU, free) and sets the REU old applications see (512 KB to 4 MB per
 task) and the number of task slots, together at most 4 MB; they take
-effect at the next start. Its first page is **Desktop**: which desktop starts
+effect at the next start. The **Drives** page shows drives A-D with
+their images: "choose" browses the Ultimate's folders for a disk image
+and mounts it at once, "none" unmounts (asked first; changes are
+written back), "long names on/off" switches long names for that drive,
+a DNP's tracks [-] [+] with "resize" mounts it again at that size, and
+"new image" makes an empty D64, D71, D81 or DNP (then offers to mount
+it). Its first page is **Desktop**: which desktop starts
 (GeoUltra's or GEOS 2.0's), the view, the toolbar, the clock and two
 panes, the sort order (name, date: newest first, size: largest first,
 type; folders always first), what happens when a copied file is

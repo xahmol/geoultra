@@ -13,12 +13,14 @@
         .import TitleBar, MarkOn, MarkOff, RowTop, Dialog
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
         .import TimeDraw, TimePress, ThemeDraw, ThemePress, ReuDraw, ReuPress
+        .import DriveDraw, DrivePress
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
         .export themeLoaded, themeNo, themeCount, themePart, themeNames
         .export themePath, themeTmp, noFile, DrawPage, page, repaint, BarOn, BarOff, ThemesFull, Ask2
         .import row
         .importzp SWATCH_X        ; (152: exported as zero page)
         .export IniPaths, IniLoad, IniEmpty, IniSet, IniFind, iniLen, iniPath
+        .export bpath, tpath, kinds, names
 
         .segment "ZEROPAGE"
 
@@ -501,13 +503,13 @@ SIDE_BASE       = 11            ; a page name's baseline below its row top
 
 ; Each page's drawing and click routines (stubs into its overlay, ovl.s;
 ; Later and NoPress for the pages still to come), in PAGE_* order.
-DrawLo:         .byte <ThemeDraw, <DeskDraw, <SysDraw, <TimeDraw, <Later, <ReuDraw
+DrawLo:         .byte <ThemeDraw, <DeskDraw, <SysDraw, <TimeDraw, <DriveDraw, <ReuDraw
                 .byte <PtrDraw
-DrawHi:         .byte >ThemeDraw, >DeskDraw, >SysDraw, >TimeDraw, >Later, >ReuDraw
+DrawHi:         .byte >ThemeDraw, >DeskDraw, >SysDraw, >TimeDraw, >DriveDraw, >ReuDraw
                 .byte >PtrDraw
-PressLo:        .byte <ThemePress, <DeskPress, <SysPress, <TimePress, <NoPress, <ReuPress
+PressLo:        .byte <ThemePress, <DeskPress, <SysPress, <TimePress, <DrivePress, <ReuPress
                 .byte <PtrPress
-PressHi:        .byte >ThemePress, >DeskPress, >SysPress, >TimePress, >NoPress, >ReuPress
+PressHi:        .byte >ThemePress, >DeskPress, >SysPress, >TimePress, >DrivePress, >ReuPress
                 .byte >PtrPress
         .assert * - PressHi = PAGES_N, error, "a press routine per page"
 
@@ -584,6 +586,10 @@ dirty:          .res 1          ; something changed since the last write
 noFile:         .res 1          ; nothing to write (no Ultimate)
 iniText:        .res INI_MAX + 1 ; SETTINGS.INI's text and its zero
 themeText:      .res THEME_MAX + 1 ; a theme file's text (the Theme page)
+bpath:          .res 128        ; the Drives page's browser (pdrives.s,
+tpath:          .res 146        ; kept in the core: its overlay is full):
+kinds:          .res 24         ; the folder, a path built, the entries'
+names:          .res 24 * 48    ; kinds and names (NAMES_MAX x NAME_LEN)
 repaint:        .res 1          ; the Theme page's "use": DrawAll after its
                                 ; click (Press)
 curText:        .res 1          ; ini.inc's text: 0 SETTINGS.INI, 1 the theme

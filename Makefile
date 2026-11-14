@@ -156,7 +156,7 @@ build/settings/settings.cvt: $(SETSRCS) src/settings/settings.inc $(SETICONS) bu
 	for f in $(SETSRCS); do $(CA65) -g -I src/inc -I src/settings -I build/gen -o build/settings/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/settings/settings.cfg -m build/settings/settings.map -Ln build/settings/settings.lbl -o build/settings/settings.bin build/settings/settings.o $(patsubst src/settings/%.s,build/settings/%.o,$(filter-out src/settings/settings.s,$(SETSRCS)))
 	$(PYTHON) $(GEOSAPP) src/settings/settings.toml build/settings/settings.bin build/settings/settings-seq.cvt
-	$(PYTHON) tools/vlircvt.py build/settings/settings-seq.cvt $@ build/settings/settings.bin.1 build/settings/settings.bin.2 build/settings/settings.bin.3 build/settings/settings.bin.4 build/settings/settings.bin.5 build/settings/settings.bin.6
+	$(PYTHON) tools/vlircvt.py build/settings/settings-seq.cvt $@ build/settings/settings.bin.1 build/settings/settings.bin.2 build/settings/settings.bin.3 build/settings/settings.bin.4 build/settings/settings.bin.5 build/settings/settings.bin.6 build/settings/settings.bin.7
 
 # External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
 # at gush's transient area (src/cmds/cmd.cfg), a GEOS APPL_DATA file of
@@ -548,6 +548,7 @@ test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt
 	$(PYTHON) tests/desktop/d16u64.py build/geoultra64.crt
 	$(PYTHON) tests/desktop/d19u64.py build/geoultra64.crt
+	$(PYTHON) tests/settings/s5u64.py build/geoultra64.crt
 	$(PYTHON) tests/settings/s3cu64.py build/geoultra64.crt
 
 # Writing to a 1571 drive, on a D71 the test formats itself.

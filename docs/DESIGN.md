@@ -269,6 +269,14 @@ UCI).
   from folders, gush, GeoUltra Settings (themes, palette, pointer,
   time). Filmed when the hand tests, the file box drive letters and
   the Settings Drives and REU pages are done.
+- **Auto-exec files at the cold start** (the user, 2026-11-14, put on
+  the roadmap after a question online): as GEOS 2.0's boot runs the
+  boot disk's AUTO_EXEC files (input and printer drivers, configuration
+  tools) before the deskTop, GeoUltra's cold start should run those of
+  drive A (or a configured drive and folder) before its desktop; today
+  they can only be started by hand (GetFile handles them). To decide:
+  which drive and folder, the order, a key to skip them, and how they
+  meet hibernation's resume.
 - **User manuals** (when design and functions are stable): system (boot,
   drives and images, MOUNTS.INI, hibernation, turbo, the REU), desktop
   (docs/DESKTOP_MANUAL.md), gush (docs/GUSH_MANUAL.md), settings,
@@ -595,6 +603,9 @@ below); left to redo after the fixes:
     a few types a colour (none, off), Save, use the theme: the icon view
     coloured by type; Settings' Desktop page "Icon colours: off" turns
     them off for every theme.
+  - Settings' Drives page: choose an image for an empty drive in the
+    browser, long names off and on, none (unmount), a new image, a
+    DNP's resize; the REU page's grid with your drives.
 
 Done 2026-11-11: the right mouse button on the U64 ("Verified on
 hardware").
