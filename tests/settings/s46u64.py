@@ -6,7 +6,8 @@ file the test deletes; the user's SETTINGS.INI and theme files are only
 read, and checked byte for byte at the end. Settings on its Theme page:
 the theme in use (GeoUltra) refuses to go ("This theme is in use.");
 [+] to Ztest, delete, No: the file stays; delete, Yes: the file is gone,
-the list one shorter, the theme shown the one before it. Then Cancel:
+the list one shorter, the theme shown the one before it; a copy not
+saved yet (no file) goes from the list too. Then Cancel:
 nothing was changed, so Settings ends at once. Screens:
 build/harness/gush/settings-s46-*.png.
 Usage: tests/settings/s46u64.py [build/geoultra64.crt]
@@ -141,6 +142,18 @@ def main():
               (exists(), len(names), b"Ztest" in names), (False, count - 1, False))
         check("the one before it shown",
               u.read(s["themeNo"], 1)[0], before_z - 1 if before_z == count - 1 else before_z)
+        # A copy not saved yet (no file; put in the list as "copy" adds
+        # it, as a name cannot be typed here): delete, Yes takes it out.
+        n = u.read(s["themeCount"], 1)[0]
+        u.write(s["themeNames"] + 16 * n, b"Zghost\0")
+        u.write(s["themeCount"], bytes([n + 1]))
+        u.write(s["themeNo"], bytes([n]))
+        press(*DELETE_XY, t=4)
+        press(*YES_XY, t=6)
+        names = [bytes(u.read(s["themeNames"] + 16 * i, 16)).split(b"\0")[0]
+                 for i in range(u.read(s["themeCount"], 1)[0])]
+        check("an unsaved copy (no file): delete, Yes takes it out of the list",
+              (len(names), b"Zghost" in names), (n, False))
         press(*CANCEL_XY, t=6)                     # (nothing changed: no question)
         shot("back")
     finally:

@@ -16,18 +16,18 @@
         .include "settings.inc"
 
         .import ButtonDraw, OnButton, TextWidth, FileEngine
-        .import IniFind, IniSet, iniLen, NoRoom, dirty, Write
+        .import IniFind, IniSet, NoRoom, dirty, Write
         .import UseSettings, UseTheme, themeDirty, themeLoaded, themeNo
-        .import themeCount, themePart, themeNames, themePath, themeTmp
-        .import IniPaths, IniLoad, IniEmpty, noFile
-        .import KeyLo, KeyHi, LColKind, WordsLo, WordsHi, ColourNames
+        .import themeCount, themePart, themeNames
+        .import noFile
+        .import KeyLo, KeyHi, LColKind, ColourNames
         .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER
         .import PalKey, IniDel
         .export Ov_ThemeDraw, Ov_ThemePress, row, SWATCH_X
         .import BarOn, BarOff, ThemesFull, Ask2, repaint, ReadChrome
-        .import FirstLoad, AddName, SameName, NameAt, LoadTheme, ReadTheme
-        .import ReadLine, LineKey, HasWords, Word, NextWord, Past, Colour, OnWord
-        .import STheme, OnText, SDesktop, KTheme, ThemePaths, tmp, idx, start, line, style, ink, paper, name, val, pbuf
+        .import FirstLoad, AddName, NameAt, LoadTheme
+        .import ReadLine, LineKey, HasWords, NextWord, Colour
+        .import STheme, OnText, SDesktop, KTheme, ThemePaths, tmp, idx, line, style, ink, paper, name, val, pbuf
         .import cColour, InUse, DeleteTheme, buf
         .importzp vp
 
@@ -294,7 +294,10 @@ DeleteIt:
         bne @back
         jsr DeleteTheme         ; (chrome.s)
         txa
-        bne @back               ; (not deleted: the list as it was)
+        beq @gone
+        cpx #FILE_NOT_FOUND     ; (a copy not saved yet has no file: out
+        bne @back               ; of the list too; else the list as it was)
+@gone:
         lda themeNo             ; out of the list: the ones after it up
         asl a
         asl a
