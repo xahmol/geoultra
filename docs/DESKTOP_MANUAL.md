@@ -296,7 +296,11 @@ iconcolours=off      (the icon view's colours by type off; on: the theme's)
 button; in gush: `"/e/GU Settings"`) changes these without editing the
 file: a list of pages on the left, the page on the right, OK (save and
 leave), Cancel (leave; it asks when something was changed) and Save
-(save and stay). Its first page is **Desktop**: which desktop starts
+(save and stay). The **REU** page shows how the 16 MB are used (a
+cell per 64 KB: the system, each drive, the file engine, the legacy
+REU, free) and sets the REU old applications see (512 KB to 4 MB per
+task) and the number of task slots, together at most 4 MB; they take
+effect at the next start. Its first page is **Desktop**: which desktop starts
 (GeoUltra's or GEOS 2.0's), the view, the toolbar, the clock and two
 panes, the sort order (name, date: newest first, size: largest first,
 type; folders always first), what happens when a copied file is

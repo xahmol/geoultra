@@ -513,6 +513,24 @@ ReadSettings:
         sta turboStep
         jmp @skip
 @serial3:
+        cmp #'L'                ; "EGACY=" the REU applications see (KB:
+        bne @serial4            ; 512, 1024, 2048, 4096 by the first digit;
+        ldx #legacyKey - keys   ; the user, 2026-11-14: Settings' REU page,
+        jsr Match               ; within the 4 MB legacy area)
+        bne @skip0
+        ldy #0
+        lda (r1),y
+        ldx #3
+@leg:   cmp LegacyDigit,x
+        beq @legSet
+        dex
+        bpl @leg
+        bmi @skip0              ; (another value: 512 KB stays)
+@legSet:
+        lda LegacyBanks,x
+        sta ramExpSize
+        jmp @skip
+@serial4:
         cmp #'S'
         bne @skip0
         lda r1L                 ; (Match reads on: back for the next key)
@@ -591,6 +609,9 @@ startKey:       .byte "TART=GUSH", 0
 protKey:        .byte "ROTECTION=BYPASS", 0
 ptrKey:         .byte "OINTER=", 0
 pcolKey:        .byte "OINTERCOLOUR=", 0
+legacyKey:      .byte "EGACY=", 0
+LegacyDigit:    .byte "5124"            ; legacy= 512, 1024, 2048, 4096 KB
+LegacyBanks:    .byte 8, 16, 32, 64     ; (64 KB banks)
 .endif
 
 ; Decimal: A = the decimal number that follows (up to 255; stops at the

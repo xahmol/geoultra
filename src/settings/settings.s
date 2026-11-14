@@ -12,7 +12,7 @@
         .import FirstLoad, ReadChrome, Colours, PageColours
         .import TitleBar, MarkOn, MarkOff, RowTop, Dialog
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
-        .import TimeDraw, TimePress, ThemeDraw, ThemePress
+        .import TimeDraw, TimePress, ThemeDraw, ThemePress, ReuDraw, ReuPress
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
         .export themeLoaded, themeNo, themeCount, themePart, themeNames
         .export themePath, themeTmp, noFile, DrawPage, page, repaint, BarOn, BarOff, ThemesFull, Ask2
@@ -501,13 +501,13 @@ SIDE_BASE       = 11            ; a page name's baseline below its row top
 
 ; Each page's drawing and click routines (stubs into its overlay, ovl.s;
 ; Later and NoPress for the pages still to come), in PAGE_* order.
-DrawLo:         .byte <ThemeDraw, <DeskDraw, <SysDraw, <TimeDraw, <Later, <Later
+DrawLo:         .byte <ThemeDraw, <DeskDraw, <SysDraw, <TimeDraw, <Later, <ReuDraw
                 .byte <PtrDraw
-DrawHi:         .byte >ThemeDraw, >DeskDraw, >SysDraw, >TimeDraw, >Later, >Later
+DrawHi:         .byte >ThemeDraw, >DeskDraw, >SysDraw, >TimeDraw, >Later, >ReuDraw
                 .byte >PtrDraw
-PressLo:        .byte <ThemePress, <DeskPress, <SysPress, <TimePress, <NoPress, <NoPress
+PressLo:        .byte <ThemePress, <DeskPress, <SysPress, <TimePress, <NoPress, <ReuPress
                 .byte <PtrPress
-PressHi:        .byte >ThemePress, >DeskPress, >SysPress, >TimePress, >NoPress, >NoPress
+PressHi:        .byte >ThemePress, >DeskPress, >SysPress, >TimePress, >NoPress, >ReuPress
                 .byte >PtrPress
         .assert * - PressHi = PAGES_N, error, "a press routine per page"
 

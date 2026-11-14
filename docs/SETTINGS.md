@@ -283,12 +283,35 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   mounts (A-D's images from MOUNTS.INI, picked with the file dialog, or
   none), a native drive's size (MOUNTS.INI tracks=N, the REU room
   shown), long names on or off per drive, and a new empty image
-  (D64/D71/D81/DNP, FE_MKIMG).
+  (D64/D71/D81/DNP, FE_MKIMG). Also decided 2026-11-14: a change of a
+  boot mount is applied at once too (FE_MOUNT/FE_UMOUNT with write-back,
+  as the mount dialog), not only at the next boot; the page has a row
+  per drive A-D (image name, choose, none; a DNP's tracks [-] n [+];
+  long names on/off) and a "new image" button below. "choose": Settings'
+  own small browser (a list box like the System page's slow list: the
+  folder's disk images and subfolders, ".." up, starting in the image's
+  own folder; OK mounts). "new image": a dialog with the type [-] [+]
+  (a DNP's tracks [-] n [+]) and a typed name, made in the browser's
+  folder (GEOULTRA/ by default), then offered for a drive.
 - **S6, the REU page:** the legacy size, the map, task slots (the slots
   once tasks exist). The user, 2026-11-14, first version with all
   three: a read-only map of the 16 MB (system banks, each drive's, a
   disk image's copy, free), the legacy REU size old applications see
-  (ramExpSize), the number of task slots.
+  (ramExpSize), the number of task slots. Look (2026-11-14): a bar of
+  the 256 banks coloured by use (system, each drive, the engine, a disk
+  image's copy, legacy areas, free) with a legend; the legacy size and
+  the task slots as steppers below. Scope (2026-11-14): within today's
+  4 MB legacy area (banks 192-255): SETTINGS.INI [system] legacy= (the
+  size per task) and tasks= (the slots), used by the kernal at boot;
+  the steppers keep size x slots within it (512 KB x 8, 1 MB x 4, 2 MB
+  x 2, 4 MB x 1); the drives' area stays banks 31-187 for now.
+  **S6 done (2026-11-14):** preu.s (overlay 6): the grid (REU drives
+  only: a real drive's ramBase means nothing; a native drive's tracks
+  from FE_MOUNTINFO), the legend, the steppers (a larger size cuts the
+  slots to fit); the kernal reads legacy= at the cold start (mount.s:
+  ramExpSize 8, 16, 32 or 64 banks; tasks= waits for task switching).
+  The file engine's REU copy of a disk image gone into is not shown
+  (its state is the kernal's). Test: s6.py (VICE).
 - **S4.6, icon colours by type** (the user, 2026-11-14): five groups in
   the theme, each "ink on paper": applications, documents, desk
   accessories, system files (fonts, drivers, boot files), folders and
