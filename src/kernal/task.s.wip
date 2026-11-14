@@ -1,0 +1,770 @@
+; Task switching (docs/DESIGN.md "Task switcher"; the user's decisions of
+; 2026-11-14). C= + RUN/STOP, in any application, opens a small popup
+; drawn over the screen: the tasks (the current one marked), "new task",
+; "close task"; RETURN or a click switches, RUN/STOP cancels. A switch
+; stashes the VIC's registers and all 64 KB of RAM into the task's REU
+; bank (TASK_BANK + n) and fetches another task's: as the kernal's bytes
+; are the same in every snapshot, the CPU goes on in the other task's
+; copy of this code, which returns to that task as if its own switch
+; had just ended. The task table (a slot's use and its application's
+; name) lives in REU bank 1; the current task's number and name in RAM
+; (each snapshot keeps its own). Resident: the interrupt's check and
+; MainLoop's; module 95 the popup, module 96 the switch and the table.
+; Own design and code; the behaviour after MegaPatch 3's TaskManager
+; (idea only, docs/DESIGN.md).
+
+        .include "geos.inc"
+        .include "hw.inc"
+
+        .import OvlCall, HibTick, RtcCheck, SysRAMOp, EnterDeskTop
+        .import GetNextChar, Rectangle, FrameRectangle, InvertRectangle
+        .import PutString, SetPattern, UseSystemFont
+        .export TaskTick, TaskCheck, TaskInit, TaskMany, taskName, taskCur
+
+TASK_BANK       = 19            ; slot n's RAM: REU bank 19 + n (DESIGN "REU map")
+TASKS_MAX       = 8
+TABLE           = $1E00         ; REU bank 1: per slot TBL_LEN bytes: used,
+TBL_LEN         = 16            ; the name (NAME_LEN, zero-ended)
+NAME_LEN        = 13
+VICS            = $1F00         ; REU bank 1: per slot the VIC's 47 registers
+VIC_LEN         = 47
+SCREEN_SAVE     = $A000         ; REU bank 1: the popup's rows of the screen
+COLOUR_SAVE     = $AF00         ; and their colour cells
+SYS_BANK        = 1
+
+        .segment "KEXT"
+
+; TaskTick (the interrupt, before HibTick; I/O in): C= and RUN/STOP held
+; together (one column of the matrix: RUN/STOP row bit 7, C= row bit 5)
+; set taskReq once per press. $DC00 is put back (the input driver reads
+; port 1 next frame).
+TaskTick:
+        lda $DC00
+        pha
+        lda #$7F
+        sta $DC00
+        lda $DC01
+        tax
+        pla
+        sta $DC00
+        txa
+        and #$A0
+        bne @up
+        lda taskHeld
+        bne @hib
+        lda #$80
+        sta taskHeld
+        sta taskReq
+        bne @hib                ; (always)
+@up:    lda #0
+        sta taskHeld
+@hib:   jmp HibTick
+
+; TaskCheck (MainLoop, at its end, never inside a disk call): a request
+; opens the popup (module 95).
+TaskCheck:
+        bit taskReq
+        bpl @rtc
+        lda #0
+        sta taskReq
+        jsr OvlCall
+        .byte 95, 0
+@rtc:   jmp RtcCheck
+
+; TaskInit (the cold start; a resumed session: module 8): the table
+; anew, the current task the only one. TaskMany: C set when more than
+; one task runs (module 8: no hibernation then, yet).
+TaskInit:
+        jsr OvlCall
+        .byte 96, 6
+TaskMany:
+        jsr OvlCall
+        .byte 96, 9
+
+taskReq:        .byte 0         ; $80: the popup asked for (TaskTick)
+taskHeld:       .byte 0         ; $80: the keys still held
+taskCur:        .byte 0         ; this snapshot's slot
+taskSP:         .byte 0         ; its stack pointer while it is away
+taskName:       .res NAME_LEN   ; its application's permanent name (0:
+                                ; the desktop; module 15 AppGate, module 0)
+
+; ======================================================================
+
+        .segment "OVL95"
+        .scope Mod95
+
+        jmp Popup               ; entry 0
+
+Switch: jsr OvlCall             ; (module 96: to task A)
+        .byte 96, 0
+NewTask:
+        jsr OvlCall             ; (module 96: a new task; no return)
+        .byte 96, 3
+Close:  jsr OvlCall             ; (module 96: task A closed)
+        .byte 96, 12
+Names:  jsr OvlCall             ; (module 96: the table to TBLBUF)
+        .byte 96, 15
+
+TBLBUF          = $9F70         ; (the slot's scratch: the table's copy,
+                                ; TASKS_MAX * TBL_LEN = 128 bytes)
+BOX_CARD        = 10            ; the popup: cards 10-29, card rows 5-17
+BOX_ROW         = 5
+BOX_ROWS        = 13
+BOX_W           = 20
+ROW_H           = 11
+FIRST_Y         = BOX_ROW * 8 + 22 ; the first entry's baseline
+TEXT_X          = BOX_CARD * 8 + 8
+ITEM_NEW        = $80           ; (items: a slot, or these)
+ITEM_CLOSE      = $81
+
+; Popup: the screen's rows saved, the list drawn, keys and clicks until
+; a choice or RUN/STOP; the screen given back, then the choice done.
+Popup:  ldx #$22                ; the drawing state kept ($22-$38: the
+@keep:  lda $00,x               ; pattern, the font, the mode, the
+        pha                     ; window)
+        inx
+        cpx #$39
+        bne @keep
+        lda dispBufferOn
+        pha
+        lda #ST_WR_FORE
+        sta dispBufferOn
+        ldy #REU_STASH
+        jsr ScreenOp
+        jsr Names
+        jsr UseSystemFont
+        lda #0                  ; the items: each used slot, new, close
+        sta count
+        tax
+@slot:  stx at
+        txa
+        jsr Entry
+        ldy #0
+        lda (r0),y
+        beq :+
+        ldx count
+        lda at
+        sta items,x
+        cmp taskCur
+        bne @n
+        stx sel                 ; (the current one selected)
+@n:     inc count
+:       ldx at
+        inx
+        cpx #TASKS_MAX
+        bcc @slot
+        ldx count
+        lda #ITEM_NEW
+        sta items,x
+        inx
+        lda #ITEM_CLOSE
+        sta items,x
+        inx
+        stx count
+        jsr Draw
+@loop:  cli
+        jsr GetNextChar
+        cmp #KEY_STOP
+        beq @cancel
+        cmp #CR
+        beq @choose
+        cmp #KEY_UP
+        bne :+
+        lda sel
+        beq @loop
+        dec sel
+        jsr Draw
+        jmp @loop
+:       cmp #KEY_DOWN
+        bne @mouse
+        ldx sel
+        inx
+        cpx count
+        bcs @loop
+        stx sel
+        jsr Draw
+        jmp @loop
+@mouse: lda pressFlag
+        and #MOUSE_BIT
+        beq @loop
+        lda pressFlag
+        and #$FF ^ MOUSE_BIT
+        sta pressFlag
+        lda mouseData
+        bmi @loop               ; (a release)
+        jsr ItemUnder
+        bcs @cancel             ; (outside: as RUN/STOP)
+        sta sel
+@choose:
+        ldx sel
+        lda items,x
+        sta choice
+        jmp @end
+@cancel:
+        lda #$FF
+        sta choice
+@end:   ldy #REU_FETCH          ; the screen back
+        jsr ScreenOp
+        pla
+        sta dispBufferOn
+        ldx #$38
+@back:  pla
+        sta $00,x
+        dex
+        cpx #$21
+        bne @back
+        lda choice
+        cmp #$FF
+        beq @done
+        cmp #ITEM_NEW
+        bne :+
+        jmp NewTask
+:       cmp #ITEM_CLOSE
+        bne :+
+        lda taskCur
+        jmp Close
+:       cmp taskCur
+        beq @done
+        jmp Switch
+@done:  rts
+
+; Entry: r0 = slot A's name in TBLBUF (its used byte: 0 free).
+Entry:  asl a
+        asl a
+        asl a
+        asl a
+        clc
+        adc #<TBLBUF
+        sta r0L
+        lda #>TBLBUF
+        adc #0
+        sta r0H
+        rts
+
+; Draw: the box (its cells dark grey on light grey), its frame, the
+; title, each item (the current task with a "*"), the selection
+; inverted.
+Draw:   lda #<(COLOR_MATRIX + BOX_ROW * 40 + BOX_CARD)
+        sta r0L
+        lda #>(COLOR_MATRIX + BOX_ROW * 40 + BOX_CARD)
+        sta r0H
+        ldx #BOX_ROWS
+@cr:    ldy #BOX_W - 1
+        lda #$BF
+@cc:    sta (r0),y
+        dey
+        bpl @cc
+        lda r0L
+        clc
+        adc #40
+        sta r0L
+        bcc :+
+        inc r0H
+:       dex
+        bne @cr
+        lda #0
+        jsr SetPattern
+        jsr Box
+        jsr Rectangle
+        lda #$FF
+        jsr FrameRectangle
+        lda #<TitleT
+        sta r0L
+        lda #>TitleT
+        sta r0H
+        lda #BOX_ROW * 8 + 10
+        jsr TextAt
+        ldx #0
+@item:  stx at
+        lda items,x
+        bmi @word
+        jsr Entry
+        inc r0L                 ; (past the used byte)
+        bne :+
+        inc r0H
+:       ldy #0                  ; an empty name: the desktop
+        lda (r0),y
+        bne @name
+        lda #<DeskT
+        sta r0L
+        lda #>DeskT
+        sta r0H
+        jmp @name
+@word:  cmp #ITEM_NEW
+        bne :+
+        lda #<NewT
+        ldx #>NewT
+        bne @wset
+:       lda #<CloseT
+        ldx #>CloseT
+@wset:  sta r0L
+        stx r0H
+@name:  lda at
+        jsr ItemY
+        jsr TextAt
+        ldx at
+        lda items,x
+        cmp taskCur
+        bne :+
+        lda #<MarkT             ; (the current one)
+        sta r0L
+        lda #>MarkT
+        sta r0H
+        lda at
+        jsr ItemY
+        ldx #TEXT_X - 7
+        jsr TextX
+:       ldx at
+        cpx sel
+        bne :+
+        txa
+        jsr ItemBox
+        jsr InvertRectangle
+:       ldx at
+        inx
+        cpx count
+        bcc @item
+        rts
+
+; TextAt: the text at r0, baseline A, at TEXT_X. TextX: at x X.
+TextAt: ldx #TEXT_X
+TextX:  sta r1H
+        stx r11L
+        lda #0
+        sta r11H
+        jmp PutString
+
+; ItemY: A = item A's baseline.
+ItemY:  tax
+        lda #FIRST_Y
+@m:     dex
+        bmi @end
+        clc
+        adc #ROW_H
+        bne @m
+@end:   rts
+
+; ItemBox: r2-r4 = item A's row.
+ItemBox:
+        jsr ItemY
+        sec
+        sbc #8
+        sta r2L
+        clc
+        adc #ROW_H - 1
+        sta r2H
+        lda #BOX_CARD * 8 + 2
+        sta r3L
+        lda #(BOX_CARD + BOX_W) * 8 - 3
+        sta r4L
+        lda #0
+        sta r3H
+        sta r4H
+        rts
+
+; Box: r2-r4 = the popup.
+Box:    lda #BOX_ROW * 8
+        sta r2L
+        lda #(BOX_ROW + BOX_ROWS) * 8 - 1
+        sta r2H
+        lda #BOX_CARD * 8
+        sta r3L
+        lda #(BOX_CARD + BOX_W) * 8 - 1
+        sta r4L
+        lda #0
+        sta r3H
+        sta r4H
+        rts
+
+; ItemUnder: A = the item under the pointer (C clear); C set: none.
+ItemUnder:
+        lda mouseXPos+1
+        bne @no
+        lda mouseXPos
+        cmp #BOX_CARD * 8
+        bcc @no
+        cmp #(BOX_CARD + BOX_W) * 8
+        bcs @no
+        lda mouseYPos
+        sec
+        sbc #FIRST_Y - 8
+        bcc @no
+        ldx #0
+@d:     cmp #ROW_H
+        bcc :+
+        sbc #ROW_H
+        inx
+        bne @d
+:       cpx count
+        bcs @no
+        txa
+        clc
+        rts
+@no:    sec
+        rts
+
+; ScreenOp: Y = REU command: the popup's card rows of the bitmap and of
+; the colour matrix <-> REU bank 1.
+ScreenOp:
+        sty tmp
+        lda #<(SCREEN_BASE + BOX_ROW * 320)
+        sta r0L
+        lda #>(SCREEN_BASE + BOX_ROW * 320)
+        sta r0H
+        lda #<SCREEN_SAVE
+        sta r1L
+        lda #>SCREEN_SAVE
+        sta r1H
+        lda #<(BOX_ROWS * 320)
+        sta r2L
+        lda #>(BOX_ROWS * 320)
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        jsr SysRAMOp
+        lda #<(COLOR_MATRIX + BOX_ROW * 40)
+        sta r0L
+        lda #>(COLOR_MATRIX + BOX_ROW * 40)
+        sta r0H
+        lda #<COLOUR_SAVE
+        sta r1L
+        lda #>COLOUR_SAVE
+        sta r1H
+        lda #<(BOX_ROWS * 40)
+        sta r2L
+        lda #>(BOX_ROWS * 40)
+        sta r2H
+        ldy tmp
+        jmp SysRAMOp
+
+SCREEN_BASE     = $A000
+
+TitleT:         .byte BOLDON, "Tasks", PLAINTEXT, 0
+DeskT:          .byte "Desktop", 0
+NewT:           .byte "new task", 0
+CloseT:         .byte "close task", 0
+MarkT:          .byte "*", 0
+count:          .byte 0
+sel:            .byte 0
+at:             .byte 0
+tmp:            .byte 0
+choice:         .byte 0
+items:          .res TASKS_MAX + 2
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL96"
+        .scope Mod96
+
+        jmp Switch              ; entry 0 (module 95: to slot A)
+        jmp NewTask             ; entry 3 (module 95)
+        jmp Init                ; entry 6 (TaskInit)
+        jmp Many                ; entry 9 (TaskMany)
+        jmp Close               ; entry 12 (module 95: slot A closed)
+        jmp Names               ; entry 15 (module 95: the table copied)
+
+TBLBUF          = $9F70
+
+; Switch: to slot A: this task's name to the table, its VIC registers and
+; its RAM to its bank (Away); then the other's RAM fetched (Fetch): the
+; CPU goes on in the other task's copy of this code, takes that task's
+; stack pointer and returns from that task's own Switch.
+Switch: sta target
+        jsr Away
+        ; (falls into Fetch)
+
+; Fetch (interrupts off): slot target's RAM fetched inline (a subroutine
+; could not return: the stack changes under it), then its stack, its
+; VIC registers, its flags and CPU port (Away's), back to its caller.
+Fetch:  lda target
+        clc
+        adc #TASK_BANK
+        tax
+        lda #RAM_IO
+        sta CPU_PORT
+        lda #0
+        sta reuC64
+        sta reuC64+1
+        sta reuAddr
+        sta reuAddr+1
+        sta reuLen
+        sta reuLen+1
+        sta reuCtrl
+        stx reuAddr+2
+        lda #REU_FETCH_FF00
+        sta reuCmd
+        lda #RAM_ALL
+        sta CPU_PORT
+        lda REU_TRIGGER
+        sta REU_TRIGGER
+        ldx taskSP              ; (the other task's RAM from here on)
+        txs
+        lda taskCur
+        ldy #REU_FETCH
+        jsr VicOp
+        plp
+        pla
+        sta CPU_PORT
+        rts
+
+; Away: this task's name to its table entry; its CPU port and flags
+; pushed and its stack pointer kept (Fetch takes them back), its VIC
+; registers and RAM stashed to its slot. Interrupts off from here.
+Away:   pla                     ; (our return address: kept across)
+        sta ret
+        pla
+        sta ret+1
+        lda CPU_PORT
+        pha
+        php
+        sei
+        tsx
+        stx taskSP
+        lda taskCur             ; its name to the table
+        jsr NameOp
+        lda taskCur
+        ldy #REU_STASH
+        jsr VicOp
+        ldy #REU_STASH_FF00
+        lda taskCur
+        jsr RamDma
+        lda ret+1
+        pha
+        lda ret
+        pha
+        rts
+
+; NewTask: this task stashed, a free slot used: the desktop started in
+; it (no return). None free: back.
+NewTask:
+        jsr Names
+        ldx #0
+@f:     txa
+        jsr Entry
+        ldy #0
+        lda (r0),y
+        beq @got
+        inx
+        cpx #TASKS_MAX
+        bcc @f
+        rts
+@got:   stx target
+        jsr Away
+        lda target              ; the new one: used, no name
+        sta taskCur
+        lda #0
+        sta taskName
+        lda target
+        jsr NameOp
+        cli
+        jmp EnterDeskTop
+
+; Close: slot A closed: another one's RAM fetched (closing the current
+; task; the last one stays). A slot other than the current: only freed.
+Close:  sta target
+        jsr Names
+        lda target
+        cmp taskCur
+        beq @self
+        jsr Free
+        rts
+@self:  ldx #0                  ; another used slot
+@o:     cpx taskCur
+        beq @next
+        txa
+        jsr Entry
+        ldy #0
+        lda (r0),y
+        bne @got
+@next:  inx
+        cpx #TASKS_MAX
+        bcc @o
+        rts                     ; (the last one: stays)
+@got:   stx target
+        lda taskCur
+        jsr Free
+        sei
+        jmp Fetch               ; (the other's stack and flags taken)
+
+; Free: slot A's used byte 0 in the table.
+Free:   jsr EntryReu
+        lda #0
+        sta TBLBUF
+        lda #1
+        sta r2L
+        ldy #REU_STASH
+        jmp TblOp
+
+; NameOp: slot A in the table: used, with this task's name.
+NameOp: jsr EntryReu
+        lda #1
+        sta TBLBUF
+        ldx #NAME_LEN - 1
+@c:     lda taskName,x
+        sta TBLBUF + 1,x
+        dex
+        bpl @c
+        lda #TBL_LEN
+        sta r2L
+        ldy #REU_STASH
+        jmp TblOp
+
+; EntryReu: r1 = slot A's entry in REU bank 1.
+EntryReu:
+        asl a
+        asl a
+        asl a
+        asl a
+        clc
+        adc #<TABLE
+        sta r1L
+        lda #>TABLE
+        sta r1H
+        rts
+
+; TblOp: Y = REU command, r1, r2L set: TBLBUF <-> REU bank 1.
+TblOp:  lda #<TBLBUF
+        sta r0L
+        lda #>TBLBUF
+        sta r0H
+        lda #0
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        jmp SysRAMOp
+
+; Names: the whole table to TBLBUF (the current task's own name there).
+Names:  lda #<TABLE
+        sta r1L
+        lda #>TABLE
+        sta r1H
+        lda #TASKS_MAX * TBL_LEN
+        sta r2L
+        ldy #REU_FETCH
+        jsr TblOp
+        lda taskCur
+        jsr Entry
+        ldy #NAME_LEN
+@c:     lda taskName - 1,y
+        sta (r0),y
+        dey
+        bne @c
+        rts
+
+; Entry: r0 = slot A's entry in TBLBUF.
+Entry:  asl a
+        asl a
+        asl a
+        asl a
+        clc
+        adc #<TBLBUF
+        sta r0L
+        lda #>TBLBUF
+        adc #0
+        sta r0H
+        rts
+
+; Init: the table cleared, the current task the only one.
+Init:   ldx #TASKS_MAX * TBL_LEN - 1
+        lda #0
+@z:     sta TBLBUF,x
+        dex
+        bpl @z
+        lda #<TABLE
+        sta r1L
+        lda #>TABLE
+        sta r1H
+        lda #TASKS_MAX * TBL_LEN
+        sta r2L
+        ldy #REU_STASH
+        jsr TblOp
+        lda taskCur
+        jmp NameOp
+
+; Many: C set when more than one slot is used.
+Many:   jsr Names
+        ldx #0
+        stx tmp
+@c:     txa
+        jsr Entry
+        ldy #0
+        lda (r0),y
+        beq :+
+        inc tmp
+:       inx
+        cpx #TASKS_MAX
+        bcc @c
+        lda tmp
+        cmp #2
+        rts
+
+; VicOp: A = slot, Y = REU command: the VIC's registers <-> its place in
+; REU bank 1 (I/O in meanwhile).
+VicOp:  sty tmp
+        ldx #VIC_LEN
+        stx r2L
+        ldx #0
+        stx r2H
+        asl a                   ; * 48 (VIC_LEN rounded): * 16 * 3
+        asl a
+        asl a
+        asl a
+        sta r1L
+        asl a
+        clc
+        adc r1L
+        clc
+        adc #<VICS
+        sta r1L
+        lda #>VICS
+        adc #0
+        sta r1H
+        lda #<$D000
+        sta r0L
+        lda #>$D000
+        sta r0H
+        lda #SYS_BANK
+        sta r3L
+        lda CPU_PORT
+        pha
+        lda #RAM_IO
+        sta CPU_PORT
+        ldy tmp
+        jsr SysRAMOp
+        pla
+        sta CPU_PORT
+        rts
+
+; RamDma: A = slot, Y = REU_STASH_FF00: all 64 KB to its bank (the
+; fetch is Fetch's own, inline). I/O in for the registers, all RAM for
+; the trigger; I/O in again after.
+RamDma: clc
+        adc #TASK_BANK
+        tax
+        lda #RAM_IO
+        sta CPU_PORT
+        lda #0
+        sta reuC64
+        sta reuC64+1
+        sta reuAddr
+        sta reuAddr+1
+        sta reuLen
+        sta reuLen+1
+        sta reuCtrl
+        stx reuAddr+2
+        sty reuCmd
+        lda #RAM_ALL
+        sta CPU_PORT
+        lda REU_TRIGGER
+        sta REU_TRIGGER
+        lda #RAM_IO
+        sta CPU_PORT
+        rts
+
+target:         .byte 0
+ret:            .word 0
+tmp:            .byte 0
+
+        .endscope
