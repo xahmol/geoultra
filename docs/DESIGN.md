@@ -647,7 +647,10 @@ Requests from the same session, to do:
   application gets the chosen name back on the current drive, as under
   MegaPatch. A new kernal overlay module (the resident areas are full).
   Built after the info box and gush's close button.
-- The menus: keyboard shortcuts right-aligned (by measured width).
+- Done 2026-11-14 (desktop.s Shortcuts: a GOTOX in each item, its x
+  set at Start from the key's measured width; the desktop's own menus
+  only, the user's choice): The menus: keyboard shortcuts right-aligned
+  (by measured width).
 - Done 2026-11-14 (docs/DESKTOP.md; the user chose the headings on the
   path line, a third click back to names; tests/desktop/d18.py):
   Sorting (the user, 2026-11-13): a reverse order (folders still first;

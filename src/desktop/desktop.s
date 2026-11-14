@@ -80,6 +80,7 @@ Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
         adc #0
         sta feVec+1
         jsr UseSystemFont
+        jsr Shortcuts           ; (the menus' keys right-aligned)
         lda #ST_WR_FORE | ST_WR_BACK ; both screens: the background holds
         sta dispBufferOn        ; what menus and accessories give back
         lda #<Recover           ; menus and dialogs give back what was
@@ -894,6 +895,52 @@ DiskName:
 ; Every submenu is a DYN_SUB_MENU: its routine paints the menu bar's
 ; colours under it (MenuNeutral) before GEOS draws it.
 
+; Shortcuts: each menu item's key (after its GOTOX) right-aligned at its
+; menu's right edge, by its measured width (system font). Once, at
+; Start. Destroys A, X, Y, r0-r2.
+GEOS_R          = 99            ; the menus' right edges (their tables)
+FILE_R          = 139
+VIEW_R          = 129
+SC_MARGIN       = 4             ; the key's room before the frame
+Shortcuts:
+        ldx #SC_N - 1
+@item:  stx at
+        txa
+        asl a
+        tay
+        lda ScItems,y
+        sta r1L
+        lda ScItems+1,y
+        sta r1H
+        ldy #$FF                ; its GOTOX
+@find:  iny
+        lda (r1),y
+        cmp #GOTOX
+        bne @find
+        iny                     ; (Y: the x's low byte)
+        sty tmp
+        tya
+        clc
+        adc #2
+        adc r1L
+        sta r0L
+        lda r1H
+        adc #0
+        sta r0H
+        jsr TextWidth           ; (r2: the key's width)
+        ldx at
+        lda ScRight,x
+        sec
+        sbc r2L
+        ldy tmp
+        sta (r1),y
+        iny
+        lda #0
+        sta (r1),y
+        dex
+        bpl @item
+        rts
+
 ; GeosMenu: "GeoUltra info" and the desk accessories (FindFTypes; drive
 ; E's added by the kernal) into geosMenu. r0 = it.
 GeosMenu:
@@ -1261,7 +1308,7 @@ mainMenu:
 
 geosMenu:
         .byte MENU_BOTTOM, MENU_BOTTOM + 2 * 14
-        .word 0, 99
+        .word 0, GEOS_R
         .byte VERTICAL | UN_CONSTRAINED | GEOS_FIXED
 geosItems:
         .word InfoText
@@ -1277,7 +1324,7 @@ geosItems:
 
 fileMenu:
         .byte MENU_BOTTOM, MENU_BOTTOM + 12 * 14
-        .word 30, 139
+        .word 30, FILE_R
         .byte VERTICAL | UN_CONSTRAINED | 12
         .word OpenItem
         .byte MENU_ACTION
@@ -1318,7 +1365,7 @@ fileMenu:
 
 viewMenu:
         .byte MENU_BOTTOM, MENU_BOTTOM + 6 * 14
-        .word 58, 129
+        .word 58, VIEW_R
         .byte VERTICAL | UN_CONSTRAINED | 6
         .word ThemeText
         .byte DYN_SUB_MENU
@@ -1410,18 +1457,52 @@ diskMenu:
         .word Refresh
 
 
+; The menu items with a key: right-aligned at their menu's right edge
+; (Shortcuts; the user, 2026-11-13).
+ScItems:
+        .word GushItem
+        .word InfoItem
+        .word CopyOtherItem
+        .word MoveOtherItem
+        .word AllItem
+        .word OpenItem
+        .word CopyItem
+        .word CutItem
+        .word PasteItem
+        .word DeleteItem
+        .word RenameItem
+        .word NewItem
+        .word FavItem
+        .word PanesItem
+ScRight:
+        .byte GEOS_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
+        .byte VIEW_R - SC_MARGIN
+SC_N = (ScRight - ScItems) / 2
+
 GeosText:       .byte "geos", 0
 FileText:       .byte "file", 0
 ViewText:       .byte "view", 0
 DiskText:       .byte "disk", 0
 GoText:         .byte "go", 0
 InfoText:       .byte "GeoUltra info", 0
-GushItem:       .byte "gush      C=G", 0
+GushItem:       .byte "gush", GOTOX, 0, 0, "C=G", 0
 SettingsItem:   .byte "settings", 0
-InfoItem:       .byte "info      C=I", 0
-CopyOtherItem:  .byte "copy to other  C=T", 0
-MoveOtherItem:  .byte "move to other C=M", 0
-AllItem:        .byte "select all C=A", 0
+InfoItem:       .byte "info", GOTOX, 0, 0, "C=I", 0
+CopyOtherItem:  .byte "copy to other", GOTOX, 0, 0, "C=T", 0
+MoveOtherItem:  .byte "move to other", GOTOX, 0, 0, "C=M", 0
+AllItem:        .byte "select all", GOTOX, 0, 0, "C=A", 0
 GoTexts:        .byte "back", 0, 0, 0, 0
                 .byte "forward", 0
                 .byte "up", 0, 0, 0, 0, 0, 0
@@ -1429,14 +1510,14 @@ GoTexts:        .byte "back", 0, 0, 0, 0
                 .byte "home", 0, 0, 0, 0
                 .byte "top", 0, 0, 0, 0, 0
                 .byte "end", 0, 0, 0, 0, 0
-OpenItem:       .byte "open      C=O", 0
-CopyItem:       .byte "copy      C=C", 0
-CutItem:        .byte "cut       C=X", 0
-PasteItem:      .byte "paste     C=V", 0
-DeleteItem:     .byte "delete    DEL", 0
-RenameItem:     .byte "rename    C=R", 0
-NewItem:        .byte "new folder C=N", 0
-FavItem:        .byte "favourite  C=F", 0
+OpenItem:       .byte "open", GOTOX, 0, 0, "C=O", 0
+CopyItem:       .byte "copy", GOTOX, 0, 0, "C=C", 0
+CutItem:        .byte "cut", GOTOX, 0, 0, "C=X", 0
+PasteItem:      .byte "paste", GOTOX, 0, 0, "C=V", 0
+DeleteItem:     .byte "delete", GOTOX, 0, 0, "DEL", 0
+RenameItem:     .byte "rename", GOTOX, 0, 0, "C=R", 0
+NewItem:        .byte "new folder", GOTOX, 0, 0, "C=N", 0
+FavItem:        .byte "favourite", GOTOX, 0, 0, "C=F", 0
 ThemeText:      .byte "theme", 0
 ViewsText:      .byte "view", 0
 ClockText:      .byte "clock", 0
@@ -1451,7 +1532,7 @@ TwoLineItem:    .byte "  two lines", 0
 OneLineItem:    .byte "  one line", 0
 TbOffItem:      .byte "  off", 0          ; (its own: Marks writes into it)
 RefreshItem:    .byte "refresh", 0
-PanesItem:      .byte "two panes C=P", 0
+PanesItem:      .byte "two panes", GOTOX, 0, 0, "C=P", 0
 driveLine:      .byte "A", 0
 
 dropReq:        .byte 0         ; listin.s: a drop (DROP_*), done by DropDo
