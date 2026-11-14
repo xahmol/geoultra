@@ -240,6 +240,13 @@ UCI).
 | 5 | GEOS 128 cartridge on a C128 with an Ultimate II+, 40/80 columns |
 | 6 | Real IEC drives: slow universal driver, then turbo drivers (1541, 1581, 1571, CMD FD/HD) |
 
+**Version 1.0 (the user, 2026-11-14):** Beta 1, then the rest of
+phase 3 (task switching, printing, spooler, clipboard), the documents
+(user manuals, technical reference, developer guide) and the serial
+numbers per application (`[serials]` and the Settings card); after that
+the 1.0 release. Phases 4 (Ultimate II+), 5 (GEOS 128) and 6 (real IEC
+drives) and the network roadmap are 1.x and later.
+
 **Releases and documentation (the user, 2026-11-12):**
 
 - **Beta 1, at the end of the desktop work in phase 3** (confirmed by the
