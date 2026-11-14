@@ -288,7 +288,10 @@ UCI).
   92-93: the list read into REU bank 1 $1C00 at the cold start's end,
   EnterDeskTop's module 0 starting the next one; U64 test autou64.py:
   two files in the list's order, a missing one skipped, firstBoot FALSE
-  meanwhile and TRUE after).
+  meanwhile and TRUE after). Settings' Start page built the same day
+  (pstart.s, overlay 8: the list, add through a browser of the GEOS
+  drives' folders and AUTO_EXEC files, remove, up, down; VICE test
+  s7.py).
 - **User manuals** (when design and functions are stable): system (boot,
   drives and images, MOUNTS.INI, hibernation, turbo, the REU), desktop
   (docs/DESKTOP_MANUAL.md), gush (docs/GUSH_MANUAL.md), settings,
@@ -555,6 +558,11 @@ handling, the GEOS contract, clarity, and since 2026-11-04 (user)
 maintainability: short single-purpose routines with header comments,
 named constants, no undocumented coupling across modules, overlay
 modules split by function, shared code in includes, tests per routine.
+For the next sweep (the user, 2026-11-14): take every "step" and
+"phase" out of the code and above all the UI (gush's welcome line still
+says "step 3"); the program speaks of what it does, not of the plan's
+stages.
+
 Log:
 
 | Date | Scope | Findings | Fixed | Open |

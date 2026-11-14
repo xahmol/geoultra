@@ -306,7 +306,10 @@ and mounts it at once, "none" unmounts (asked first; changes are
 written back), "long names on/off" switches long names for that drive,
 a DNP's tracks [-] [+] with "resize" mounts it again at that size, and
 "new image" makes an empty D64, D71, D81 or DNP (then offers to mount
-it). Its first page is **Desktop**: which desktop starts
+it). The **Start** page lists the auto-exec files the cold start runs
+before the desktop, in order (add through a browser of the drives,
+remove, up, down); holding SHIFT at power-on skips them, C= skips
+resuming a hibernated session. Its first page is **Desktop**: which desktop starts
 (GeoUltra's or GEOS 2.0's), the view, the toolbar, the clock and two
 panes, the sort order (name, date: newest first, size: largest first,
 type; folders always first), what happens when a copied file is

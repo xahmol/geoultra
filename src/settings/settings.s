@@ -13,7 +13,7 @@
         .import TitleBar, MarkOn, MarkOff, RowTop, Dialog
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
         .import TimeDraw, TimePress, ThemeDraw, ThemePress, ReuDraw, ReuPress
-        .import DriveDraw, DrivePress
+        .import DriveDraw, DrivePress, StartDraw, StartPress
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
         .export themeLoaded, themeNo, themeCount, themePart, themeNames
         .export themePath, themeTmp, noFile, DrawPage, page, repaint, BarOn, BarOff, ThemesFull, Ask2
@@ -504,17 +504,17 @@ SIDE_BASE       = 11            ; a page name's baseline below its row top
 ; Each page's drawing and click routines (stubs into its overlay, ovl.s;
 ; Later and NoPress for the pages still to come), in PAGE_* order.
 DrawLo:         .byte <ThemeDraw, <DeskDraw, <SysDraw, <TimeDraw, <DriveDraw, <ReuDraw
-                .byte <PtrDraw
+                .byte <PtrDraw, <StartDraw
 DrawHi:         .byte >ThemeDraw, >DeskDraw, >SysDraw, >TimeDraw, >DriveDraw, >ReuDraw
-                .byte >PtrDraw
+                .byte >PtrDraw, >StartDraw
 PressLo:        .byte <ThemePress, <DeskPress, <SysPress, <TimePress, <DrivePress, <ReuPress
-                .byte <PtrPress
+                .byte <PtrPress, <StartPress
 PressHi:        .byte >ThemePress, >DeskPress, >SysPress, >TimePress, >DrivePress, >ReuPress
-                .byte >PtrPress
+                .byte >PtrPress, >StartPress
         .assert * - PressHi = PAGES_N, error, "a press routine per page"
 
-NameLo:         .byte <N0, <N1, <N2, <N3, <N4, <N5, <N6
-NameHi:         .byte >N0, >N1, >N2, >N3, >N4, >N5, >N6
+NameLo:         .byte <N0, <N1, <N2, <N3, <N4, <N5, <N6, <N7
+NameHi:         .byte >N0, >N1, >N2, >N3, >N4, >N5, >N6, >N7
 N0:             .byte "Theme", 0
 N1:             .byte "Desktop", 0
 N2:             .byte "System", 0
@@ -522,6 +522,7 @@ N3:             .byte "Time", 0
 N4:             .byte "Drives", 0
 N5:             .byte "REU", 0
 N6:             .byte "Pointer", 0
+N7:             .byte "Start", 0
 LaterText:      .byte "This page comes in a later step.", 0
 IniName:        .byte "SETTINGS.INI", 0
 TmpName:        .byte "SETTINGS.TMP", 0
