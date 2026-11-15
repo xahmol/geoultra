@@ -242,6 +242,20 @@ document open in one task is saved when you leave that task and cannot
 be opened, deleted, renamed or moved in another task until it is closed
 ("It is open in another task.").
 
+## Clipboard
+
+GEOS programs keep what you cut or copy in scrap files ("Text  Scrap",
+"Photo Scrap"). GeoUltra keeps them in one place for all drives and
+tasks, so you can copy in a program on one drive and paste in another
+on another drive. The clipboard menu:
+
+- **show**: the text's size and first characters, the picture's size
+  and the picture itself (when it is not too large), and how many other
+  scraps there are.
+- **save as file**: each scrap saved as a file in the folder shown (on
+  drive A-D), under a name you give (proposed: "Text  Scrap 1").
+- **clear**: after asking, the clipboard emptied.
+
 ## Themes
 
 view > theme chooses the look: **GeoUltra** (the default), **GEOS

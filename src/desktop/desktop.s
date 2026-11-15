@@ -19,7 +19,7 @@
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
-        .import Refresh, TaskPress, TaskOpen, OpenTask
+        .import Refresh, TaskPress, TaskOpen, OpenTask, ClipShow, ClipSave, ClipClear
         .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
         .import CopyOther, MoveOther, CdPath
         .export dropReq, dropPath, sideCount, sideTops, sideLetters
@@ -262,6 +262,22 @@ MOpen:  jsr GotoFirstMenu
 MOpenTask:
         jsr GotoFirstMenu
         jmp OpenTask
+
+; The clipboard menu (clip.s, overlay 3): the desktop drawn anew after
+; each (show and save use the background screen for the scraps' data).
+MClipShow:
+        jsr GotoFirstMenu
+        jsr ClipShow
+        jmp Back
+MClipSave:
+        jsr GotoFirstMenu
+        jsr ClipSave
+        jsr ListRead
+        jmp Back
+MClipClear:
+        jsr GotoFirstMenu
+        jsr ClipClear
+        jmp Back
 MCopy:  jsr GotoFirstMenu
         jmp Copy
 MCut:   jsr GotoFirstMenu
@@ -1014,7 +1030,7 @@ MenuBottom:
         adc #MENU_BOTTOM
         rts
 
-; FileMenu, ViewMenu, DiskMenu: r0 = their tables, the menu bar's
+; FileMenu, ViewMenu, ClipMenu: r0 = their tables, the menu bar's
 ; colours under them. ViewMenu marks the theme in use with "*".
 FileMenu:
         lda #<fileMenu
@@ -1023,9 +1039,9 @@ FileMenu:
 GoMenu: lda #<goMenu
         ldx #>goMenu
         bne MenuR0
-DiskMenu:
-        lda #<diskMenu
-        ldx #>diskMenu
+ClipMenu:
+        lda #<clipMenu
+        ldx #>clipMenu
         bne MenuR0
 ViewMenu:
         lda #<viewMenu          ; theme, view, clock: submenus
@@ -1296,7 +1312,7 @@ SettingsName:   .byte "GU Settings", 0
 
 mainMenu:
         .byte 0, MENU_BOTTOM
-        .word 0, 124
+        .word 0, 150
         .byte HORIZONTAL | UN_CONSTRAINED | 5
         .word GeosText
         .byte DYN_SUB_MENU
@@ -1310,9 +1326,9 @@ mainMenu:
         .word GoText
         .byte DYN_SUB_MENU
         .word GoMenu
-        .word DiskText
+        .word ClipText
         .byte DYN_SUB_MENU
-        .word DiskMenu
+        .word ClipMenu
 
 geosMenu:
         .byte MENU_BOTTOM, MENU_BOTTOM + 2 * 14
@@ -1459,13 +1475,19 @@ goMenu:
         .word GoItem
         .endrepeat
 
-diskMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 14
-        .word 98, 157
-        .byte VERTICAL | UN_CONSTRAINED | 1
-        .word RefreshItem
+clipMenu:                               ; (was "disk", refresh only; the
+        .byte MENU_BOTTOM, MENU_BOTTOM + 3 * 14 ; user, 2026-11-15: refresh
+        .word 98, 165                   ; stays in view, the clipboard here)
+        .byte VERTICAL | UN_CONSTRAINED | 3
+        .word ClipShowItem
         .byte MENU_ACTION
-        .word Refresh
+        .word MClipShow
+        .word ClipSaveItem
+        .byte MENU_ACTION
+        .word MClipSave
+        .word ClipClearItem
+        .byte MENU_ACTION
+        .word MClipClear
 
 
 ; The menu items with a key: right-aligned at their menu's right edge
@@ -1507,7 +1529,10 @@ SC_N = (ScRight - ScItems) / 2
 GeosText:       .byte "geos", 0
 FileText:       .byte "file", 0
 ViewText:       .byte "view", 0
-DiskText:       .byte "disk", 0
+ClipText:       .byte "clipboard", 0
+ClipShowItem:   .byte "show", 0
+ClipSaveItem:   .byte "save as file", 0
+ClipClearItem:  .byte "clear", 0
 GoText:         .byte "go", 0
 InfoText:       .byte "GeoUltra info", 0
 GushItem:       .byte "gush", GOTOX, 0, 0, "C=G", 0

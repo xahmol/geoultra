@@ -128,7 +128,7 @@ ViewNext:
         lda #VIEW_LIST
 :       jmp View
 ; Refresh: the folder read again (and sorted, list.s).
-; Refresh (the toolbar; view > refresh, disk > refresh): the list read
+; Refresh (the toolbar; view > refresh): the list read
 ; again (the menu closed first when one is open).
 Refresh:
         jsr GotoFirstMenu

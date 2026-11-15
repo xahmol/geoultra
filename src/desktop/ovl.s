@@ -2,7 +2,7 @@
 ; desktop is a VLIR file: record 0 the core at $0400-$4FFF, records 1
 ; to 8 overlays at TRANS ($5000-$5FFF): 1 the theme files
 ; (themefile.s), 2 the actions with the recursion into folders
-; (actions.s, tree.s), 3 mounting (mount.s), 4 the INI files
+; (actions.s, tree.s), 3 mounting (mount.s) and the clipboard (clip.s), 4 the INI files
 ; (inifile.s), 5 the toolbar's drawing and the clock (tooldraw.s), 6
 ; sorting the list (sort.s), 7 the context menu and Info (ctxmenu.s), 8
 ; the list's mouse and key handling (listin.s)
@@ -46,6 +46,9 @@ OvlFail:
         Stub TaskTake, 2
         Stub Mount, 3           ; overlay 3: mount.s
         Stub Eject, 3
+        Stub ClipShow, 3        ; (clip.s: the clipboard menu)
+        Stub ClipSave, 3
+        Stub ClipClear, 3
         Stub LoadAll, 4         ; overlay 4: inifile.s
         Stub Save, 4
         Stub ThemeSave, 4

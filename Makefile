@@ -547,6 +547,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d22.py
 	$(PYTHON) tests/desktop/d23.py
 	$(PYTHON) tests/desktop/d24.py
+	$(PYTHON) tests/desktop/d25.py
 	$(PYTHON) tests/apps/geoludo.py
 	$(PYTHON) tests/apps/geowrite.py
 	$(PYTHON) tests/apps/clipboard.py
