@@ -11,6 +11,7 @@
 
         .import tbMode, topY, Cards
         .import bigOk, tMenu, clockMode, lastMin, clockX, MonLo, MonHi, TextWidth
+        .import spShown, spX, QPut, QDraw0      ; (spool.s: the print queue)
         .export Ov_ToolDraw, Ov_BigInit, Ov_ClockDraw
 Ov_ToolDraw = ToolDraw
 Ov_BigInit = BigInit
@@ -237,14 +238,14 @@ ClockDraw:
         lda tMenu
         cmp #ST_CLOCK
         beq :+
-        rts
+        jmp QDraw0              ; (no clock: the print queue's indicator)
 :       lda minutes
         sta lastMin
         jsr ClockClear
         lda clockMode
         cmp #CLOCK_OFF
         bne :+
-        rts
+        jmp QPut
 :       jsr Weekday             ; the text
         tax
         ldy #0
@@ -335,7 +336,9 @@ ClockDraw:
         sta r0L
         lda #>clockText
         sta r0H
-        jmp PutString
+        jsr PutString
+        jmp QPut                ; (the indicator left of it: its place was
+                                ; cleared with the clock's)
 CLOCK_X0        = 200           ; the clear's left edge before a first text
 CLOCK_TEXT_LEN  = 26            ; "Wed 11 Nov 2026  12:42 pm" and its zero
 
@@ -353,6 +356,13 @@ ClockClear:
         sta r3L
         lda clockX+1
         sta r3H
+        lda spShown             ; the print queue's indicator too (left of
+        beq :+                  ; the clock, spool.s)
+        lda spX
+        sta r3L
+        lda spX+1
+        sta r3H
+:
         lda #<318
         sta r4L
         lda #>318

@@ -126,11 +126,20 @@ build/gen/drvicon_%.inc: tools/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
 	$(PYTHON) tools/mkicons.py --icon $@ DriveIcon$* $*
 
+# The print queue window's buttons (src/desktop/spool.s).
+build/gen/qicons.inc: tools/mkicons.py tools/fonts/system9.py
+	@mkdir -p build/gen
+	$(PYTHON) tools/mkicons.py --icon $@.1 CancelIcon cancel 40
+	$(PYTHON) tools/mkicons.py --icon $@.2 PauseIcon pause
+	$(PYTHON) tools/mkicons.py --icon $@.3 ResumeIcon resume
+	$(PYTHON) tools/mkicons.py --icon $@.4 CloseIcon close
+	cat $@.1 $@.2 $@.3 $@.4 > $@ && rm $@.1 $@.2 $@.3 $@.4
+
 build/gen/splashicon.inc: tools/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
 	$(PYTHON) tools/mkicons.py --icon $@ SplashIcon splash
 
-build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) build/gen/yesall.inc build/gen/splashicon.inc build/gen/bigicons.inc src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
+build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) build/gen/yesall.inc build/gen/splashicon.inc build/gen/qicons.inc build/gen/bigicons.inc src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/desktop
 	for f in $(DESKSRCS); do $(CA65) -g -I src/inc -I build/gen -o build/desktop/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o $(patsubst src/desktop/%.s,build/desktop/%.o,$(filter-out src/desktop/desktop.s,$(DESKSRCS)))
@@ -548,6 +557,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d23.py
 	$(PYTHON) tests/desktop/d24.py
 	$(PYTHON) tests/desktop/d25.py
+	$(PYTHON) tests/desktop/d26.py
 	$(PYTHON) tests/spool/sp1.py
 	$(PYTHON) tests/spool/sp2.py
 	$(PYTHON) tests/spool/sp3.py

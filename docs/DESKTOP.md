@@ -537,8 +537,8 @@ colour is a property of an element, by name:
   assert in ovl.s). Tests: d12.py (VICE, the right button through the
   joyport simulation), d12u64.py (Info's size of an Ultimate file).
 - **Menus and the gush button (the user, 2026-11-12):** every toolbar
-  action also in the menus: geos (GeoUltra info, gush, the desk
-  accessories; the name "geos" kept: the user's decision, applications
+  action also in the menus: geos (GeoUltra info, settings, gush, print
+  queue (2026-11-15), the desk accessories; the name "geos" kept: the user's decision, applications
   draw their own menus anyway), file (open C=O, info C=I, copy C=C, cut
   C=X, paste C=V, delete DEL, rename C=R, new folder C=N, select all C=A,
   favourite C=F), view (theme, view, clock, toolbar, refresh), go (new:
@@ -691,6 +691,22 @@ colour is a property of an element, by name:
     slots (once tasks exist).
   - *Pointer:* 4 own designs: a classic arrow, a large arrow, a hand, a
     crosshair; applied at boot.
+- **The print queue (2026-11-15; docs/DESIGN.md "Print spooler",
+  the user's decisions):** `src/desktop/spool.s`. The menu bar shows
+  "printing 2/5" (job 2 of the 5 since the queue was last empty) or
+  "print paused" right of the menus and left of the date (the status
+  line has no room with two panes); where that does not fit (a 12-hour
+  clock) "print 2/5" or "paused"; nothing when the queue is empty. The
+  core asks `FE_SPOOL` once a second (SpoolTick, from ClockTick) and
+  keeps the state; overlay 5 (with the clock, whose clearing covers the
+  indicator) draws it. A click on it, or geos > print queue, opens the
+  queue window (x 48-271, y 24-167): the title (with "paused" or
+  "printer error"), a line per job (5 at most) with its cancel button,
+  its place, the program, its pages and its state (printing or paused,
+  waiting, cancelled), then pause or resume and close. The window is
+  opened again after each button and when the queue changes while it
+  is open (its own appMain, QTick), so it follows the queue; the
+  indicator with it. Test: d26.py (VICE, 10 checks).
 - **Next, in this order:** two
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,

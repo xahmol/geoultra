@@ -23,13 +23,14 @@
         .export sideW, listL, ejectCard, pathY, listTop, rowH, rows, bottom
         .export trackTop, trackBot, trackH, iconCard, nameX, sideTx, stY0, stY1
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList
-        .export Neutral, Dialog, MenuNeutral, Recover, ClockTick
+        .export Neutral, Dialog, MenuNeutral, Recover, ClockTick, MenuCells, ShadowCells
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Ov_Derive
         .export lettersDue, rootsSeen, sortDue, cIconT, cDesk, tByType
         .import Status, taskRedraw
         .import PaneLetters
         .export lastMin, clockX, MonLo, MonHi, stripL, listR, paneR
         .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
+        .import SpoolTick       ; (spool.s: the print queue's indicator)
         .export tbMode, topY, titleEnd
         .import ToolPaint, IconLayout, step, sortPending, SortNow, RightPress
         .import SetGeom, panes, DrawPanes, SortSave
@@ -599,7 +600,7 @@ ClockTick:
         cmp lastMin
         beq :+
         jmp ClockDraw           ; (overlay 5, tooldraw.s)
-:       rts
+:       jmp SpoolTick           ; (spool.s: once a second)
 
 ; MonthName: r1 = month A's (1-12) three letters. Destroys X.
 MonthName:

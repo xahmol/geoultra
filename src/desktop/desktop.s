@@ -20,6 +20,7 @@
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
         .import Refresh, TaskPress, TaskOpen, OpenTask, ClipShow, ClipSave, ClipClear
+        .import SpoolPress, QueueWin
         .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
         .import CopyOther, MoveOther, CdPath
         .export dropReq, dropPath, sideCount, sideTops, sideLetters
@@ -46,8 +47,8 @@ HEAD_STEP       = 10            ; a heading's lines and the gap after it
 SECTION_GAP     = 3             ; between the sidebar's sections
 NAME_DX         = 10            ; a drive's disk name after its letter
 DA_MAX          = 8             ; desk accessories in the geos menu
-GEOS_FIXED      = 3             ; its items before them: info, settings,
-                                ; gush
+GEOS_FIXED      = 4             ; its items before them: info, settings,
+                                ; gush, print queue
 GO_N            = 7             ; the go menu's items (GoTexts, GoDo)
 GO_TEXT         = 8             ; each one's text: 8 bytes
 DA_NAME_LEN     = 17            ; a GEOS name and its zero
@@ -115,8 +116,11 @@ Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
 ; Press (otherPressVec): a press (not a release) in the list, else on a
 ; sidebar line (its drive's root; on a drive's eject icon its unmount).
 Press:  lda mouseData
-        bmi @end
-        jsr TaskPress           ; (C clear: on the tasks, list.s)
+        bmi @out
+        jsr SpoolPress          ; (C clear: on the print queue's indicator)
+        bcs :+
+@out:   rts
+:       jsr TaskPress           ; (C clear: on the tasks, list.s)
         bcc @end
         jsr ToolPress           ; (C clear: it was on the toolbar)
         bcc @end
@@ -262,6 +266,8 @@ MOpen:  jsr GotoFirstMenu
 MOpenTask:
         jsr GotoFirstMenu
         jmp OpenTask
+MQueue: jsr GotoFirstMenu       ; (geos > print queue: spool.s)
+        jmp QueueWin
 
 ; The clipboard menu (clip.s, overlay 3): the desktop drawn anew after
 ; each (show and save use the background screen for the scraps' data).
@@ -1344,6 +1350,9 @@ geosItems:
         .word GushItem
         .byte MENU_ACTION
         .word Gush
+        .word QueueItem         ; (the print spooler, spool.s)
+        .byte MENU_ACTION
+        .word MQueue
         .res DA_MAX * 5         ; (the accessories, GeosMenu)
 
 fileMenu:
@@ -1537,6 +1546,7 @@ GoText:         .byte "go", 0
 InfoText:       .byte "GeoUltra info", 0
 GushItem:       .byte "gush", GOTOX, 0, 0, "C=G", 0
 SettingsItem:   .byte "settings", 0
+QueueItem:      .byte "print queue", 0
 InfoItem:       .byte "info", GOTOX, 0, 0, "C=I", 0
 CopyOtherItem:  .byte "copy to other", GOTOX, 0, 0, "C=T", 0
 MoveOtherItem:  .byte "move to other", GOTOX, 0, 0, "C=M", 0

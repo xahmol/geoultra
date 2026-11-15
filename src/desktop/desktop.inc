@@ -49,6 +49,7 @@ FE_RENAME       = 10
 FE_RMDIR        = 9
 FE_RUNSYS       = 22
 FE_TASK         = 32            ; (engine.inc: the tasks, task.s)
+FE_SPOOL        = 33            ; (engine.inc: the print queue, spool.s)
 FE_SELECT       = 21
 FE_STAT         = 1
 FE_UMOUNT       = 18

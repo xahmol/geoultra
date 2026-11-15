@@ -5,7 +5,7 @@
 ; round again. Head and tail are 3-byte offsets in the header (hdr, the
 ; overlay scratch: spool.s).
 
-RING0           = $20           ; the ring's first page
+; RING0 (spool.s): the ring's first page.
 
 .ifndef RING_HEAD_ONLY          ; (module 107: only the header's routines)
 ; From: A/X = the C64 address the next Xfer (Put, Get) uses.

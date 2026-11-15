@@ -112,6 +112,7 @@ STRB            = COLB + COL_LEN
 AREA_LEN        = STRB + 256 - AREA
 
 SPOOL_FIXED     = 2             ; banks 27-28
+RING0           = $20           ; the ring's first page (spoolring.inc)
 ; The queue's header (QHEAD, REU bank 1)
 Q_MAGIC         = 0             ; "GUSP"
 Q_HEAD          = 4             ; 3 bytes: where the next record goes
@@ -990,7 +991,7 @@ FeSpool:
         bne NoQueue
         dex
         bpl @m
-        lda sub
+Known:  lda sub
         beq Status
         cmp #2
         bcc @pause
@@ -1011,12 +1012,23 @@ Save:   ldy #REU_STASH
 Done:   lda #0
         tax
         rts
-NoQueue:
-        lda #0                  ; (no queue yet)
-        sta argR0
-        sta argR0+1
-        sta argR1
-        beq Done
+NoQueue:                        ; (no queue yet, VICE: an empty one, as
+        ldx #::Q_LEN - 1        ; HeadLoad makes it)
+        lda #0
+@z:     sta qh,x
+        dex
+        bpl @z
+        ldx #3
+@k:     lda Mark,x
+        sta qh,x
+        dex
+        bpl @k
+        lda #RING0
+        sta qh + Q_HEAD + 1
+        sta qh + Q_TAIL + 1
+        ldy #REU_STASH
+        jsr HeadOp
+        jmp Known
 
 ; Status (Y = 0): see FeSpool.
 Status: lda qh + Q_PAUSED

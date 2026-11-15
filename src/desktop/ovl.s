@@ -61,6 +61,8 @@ OvlFail:
         Stub ToolDraw, 5        ; overlay 5: tooldraw.s
         Stub BigInit, 5
         Stub ClockDraw, 5
+        Stub SpoolDraw, 5       ; (spool.s: the print queue)
+        Stub QueueWin, 5
         Stub SortList, 6        ; overlay 6: sort.s
         Stub Popup, 7           ; overlay 7: ctxmenu.s
         Stub Info, 7
