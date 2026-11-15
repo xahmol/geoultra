@@ -282,6 +282,9 @@ applications call `$9030-$904D` directly.
   | `$E100-$E307` | task popup: their colours |
   | `$E400-$E57F` | per task slot the VIC registers |
   | `$E600-$E63F` | the path a new task opens (`FE_TASK`) |
+  | `$E700-$E712` | print queue: its header (spool.s `Q_*`) |
+  | `$E800-$F8FF` | print queue: four printer drivers as loaded (`DRV_SAVE`) |
+  | `$FA00-$FAFF` | print queue: the job table, 16 of 16 bytes (`JOBTAB`) |
 - **InitForIO / DoneWithIO** live in the driver: they bank the C64 Kernal
   ROM in over `$E000` (for serial printer drivers), so they and anything
   running between them must not lie at `$E000-$FFFF`. They also set the

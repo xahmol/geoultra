@@ -18,15 +18,23 @@
 ; ring of records over the spooler's banks (head, tail: byte offsets),
 ; its header in bank 1 at QHEAD. A job starts with its driver (the copy
 ; in its slot at DRV_SAVE), so the playback (part 3) needs nothing else.
-; Records: a type byte, then its data: T_DRIVER (its slot), T_INIT, T_START,
+; Records: a type byte, then its data: T_DRIVER (its slot, the job's
+; number), T_INIT, T_START,
 ; T_ROW (640 bytes), T_ROWC (640 and 80 colour bytes), T_STOP, T_SASCII,
 ; T_ASCII (the string and its zero), T_NLQ. Own code.
+;
+; Part 4 (the desktop's queue window): each job has an entry in a job
+; table (JOBTAB: its number, $80 cancelled, its pages, the program's
+; name); T_DRIVER carries the job's number; the playback skips a
+; cancelled job's records (a page it had started ended with StopPrint);
+; FE_SPOOL (module 114) gives the desktop the state, the jobs, pause,
+; resume and cancel.
 
         .include "geos.inc"
         .include "engine.inc"
         .include "hw.inc"
 
-        .import OvlCall, drvTracks, SysRAMOp, ReadFile, taskReq
+        .import OvlCall, drvTracks, SysRAMOp, ReadFile, taskReq, taskName
         .export SpoolInit, spoolExtra, spoolBase, driveLimit, SpoolLd, spOn, spDrv
 
 PRINTER         = 9             ; GEOS file type
@@ -37,6 +45,15 @@ DRV_SLOTS       = 4             ; of DRV_LEN (to $F8FF), taken in turn
 QHEAD           = $E700         ; REU bank 1: the queue's header (Q_*)
 SYS_BANK        = 1
 SPOOL_BANK      = 27
+JOBTAB          = $FA00         ; REU bank 1: the job table (spooljob.inc)
+JOB_MAX         = 16
+J_LEN           = 16
+J_SEQ           = 0             ; the job's number (entry n: job n mod 16)
+J_FLAGS         = 1             ; $80: cancelled
+J_PAGES         = 2             ; its StartPrint calls recorded
+J_NAME          = 3             ; the program's name (taskName, task.s:
+NAME_LEN        = 13            ; 12 characters and a zero; empty: the
+                                ; desktop)
 T_DRIVER        = 1             ; the queue's records
 T_INIT          = 2
 T_START         = 3
@@ -50,7 +67,7 @@ ROW_LEN         = 640
 COL_LEN         = 80
 ; The recording's state in the overlay scratch ($9F70-$9FFF, kept across
 ; modules 107 and 108; no file engine call runs meanwhile)
-hdr             = $9FD0         ; the queue's header (Q_LEN)
+hdr             = $9FC0         ; the queue's header (Q_LEN)
 entry           = $9FE0
 type            = $9FE1
 dataP           = $9FE3         ; (word) the program's r0
@@ -80,6 +97,8 @@ need            = $9F78         ; (word) module 112: the room waited for
                                 ; (not in the module: Step's module 109
                                 ; takes its place, and it comes back new)
 fits            = $9F7A         ; module 112's answer: 0 the call fits
+drvRec          = $9F7B         ; module 107: a T_DRIVER's slot and number
+jbuf            = $9F80         ; a job's entry (J_LEN; spooljob.inc)
 ; The playback's state: the first RING0 pages of the queue's bank 0
 ; (spoolring.inc), REU bank 27
 ST_DRV          = $0000         ; the program's $7900-$7F3F meanwhile
@@ -102,8 +121,14 @@ Q_OPEN          = 11            ; $80: a job being recorded
 Q_PAUSED        = 12            ; $80: playback paused
 Q_DNEXT         = 13            ; the next driver slot (module 106)
 Q_PSLOT         = 14            ; the playback's driver slot (T_DRIVER)
-Q_ERR           = 15            ; the printer's error that paused it
-Q_LEN           = 16
+Q_PJOB          = 15            ; and its job (right after: one Get)
+Q_ERR           = 16            ; the printer's error that paused it
+Q_BASE          = 17            ; the first job the desktop counts: after
+                                ; the last one played when the queue ran
+                                ; empty ("printing 2/5": job 2 of 5 since)
+Q_INPAGE        = 18            ; $80: a StartPrint played, no StopPrint yet
+Q_LEN           = 19
+        .assert hdr + Q_LEN <= entry, error, "spool.s: hdr runs into entry"
 SPOOL_MAX       = 32            ; 2 MB
 
         .segment "KEXT"
@@ -337,6 +362,7 @@ RING_LOAD       = 1
 RING_INIT       = 1
 RING_HEAD_ONLY  = 1
         .include "spoolring.inc"
+        .include "spooljob.inc"
 
 Store:  jsr OvlCall             ; (module 108: the request written)
         .byte 108, 0
@@ -393,14 +419,29 @@ Record: lda r0L                 ; the program's data and colour pointers
         bmi @call
 @job:   lda #$80
         sta hdr + Q_OPEN
+        lda hdr + Q_JOBS        ; its number and its entry: the program's
+        sta drvRec + 1          ; name, no pages yet
+        sta jbuf + J_SEQ
         inc hdr + Q_JOBS
-        lda #T_DRIVER           ; its driver: the slot it was kept in
-        sta rqType              ; (module 106)
-        lda #<spDrv
+        ldx #NAME_LEN - 1
+@nm:    lda taskName,x
+        sta jbuf + J_NAME,x
+        dex
+        bpl @nm
+        lda #0
+        sta jbuf + J_FLAGS
+        sta jbuf + J_PAGES
+        lda drvRec + 1
+        jsr JobPut
+        lda spDrv               ; its driver: the slot it was kept in
+        sta drvRec              ; (module 106)
+        lda #T_DRIVER
+        sta rqType
+        lda #<drvRec
         sta rqSrc1
-        lda #>spDrv
+        lda #>drvRec
         sta rqSrc1+1
-        lda #1
+        lda #2
         sta rqLen1
         lda #0
         sta rqLen1+1
@@ -413,7 +454,11 @@ Record: lda r0L                 ; the program's data and colour pointers
         ldx entry
         lda Types,x
         sta rqType
-        cmp #T_ROW
+        cmp #T_START            ; a page: counted in the job's entry
+        bne :+
+        jsr Page
+        lda rqType
+:       cmp #T_ROW
         bne @ascii
         lda dataP               ; the row: 640 bytes from r0
         sta rqSrc1
@@ -450,6 +495,16 @@ Record: lda r0L                 ; the program's data and colour pointers
 @z:     iny
         sty rqLen1
 @store: jmp Store
+
+; Page: the open job's pages + 1 (its entry). Destroys A, X, Y, r0-r3L.
+Page:   ldx hdr + Q_JOBS
+        dex
+        txa
+        pha
+        jsr JobGet
+        inc jbuf + J_PAGES
+        pla
+        jmp JobPut
 
 ; The entries' record types (GetDimensions, 4: never caught).
 Types:  .byte T_INIT, T_START, T_ROW, T_STOP, 0, T_ASCII, T_SASCII, T_NLQ
@@ -514,11 +569,13 @@ RING_LOAD       = 1
 Run:    jsr OvlCall             ; (module 110: the driver called; X = its
         .byte 110, 0            ; status)
 
-; Step: the record at the tail played: T_DRIVER sets the driver's slot;
-; any other is a call of the driver (module 110) with its data. A
-; StartPrint or StopPrint error pauses the queue (Q_PAUSED, Q_ERR) and
-; keeps the record. Played: the next pass asked for (taskReq $20).
-; Empty or paused: nothing (no next pass).
+Play:   jsr OvlCall             ; (module 113: a driver call's record)
+        .byte 113, 0
+
+; Step: the record at the tail played: T_DRIVER sets the driver's slot
+; and the job; any other is a driver call (module 113). Played: the next
+; pass asked for (taskReq $20). Paused: nothing (no next pass). Empty:
+; the desktop's count starts again after the last job played (Q_BASE).
 Step:   jsr HeadLoad
         bcs @idle               ; (no queue)
         bit hdr + Q_PAUSED
@@ -529,20 +586,36 @@ Step:   jsr HeadLoad
         bne @work
         dex
         bpl @cmp
+        ldx hdr + Q_PJOB
+        inx
+        cpx hdr + Q_BASE
+        beq @idle
+        stx hdr + Q_BASE
+        jmp HeadSave
 @idle:  rts
 @work:  lda #<ptype
         ldx #>ptype
         jsr From
-        jsr Get1
+        lda #1
+        ldx #0
+        jsr Get
         lda ptype
         cmp #T_DRIVER
         bne @call
-        lda #<(hdr + Q_PSLOT)
+        lda #<(hdr + Q_PSLOT)   ; its slot and job
         ldx #>(hdr + Q_PSLOT)
         jsr From
-        jsr Get1
-        jmp @done
-@call:  tax
+        lda #2
+        ldx #0
+        jsr Get
+        lda #0                  ; (no page of it started)
+        sta hdr + Q_INPAGE
+        jsr HeadSave
+        lda taskReq             ; the next pass
+        ora #$20
+        sta taskReq
+        rts
+@call:  ldx ptype               ; the driver's entry, the data's lengths
         lda Entry - T_INIT,x
         sta runEntry
         lda #0
@@ -550,7 +623,7 @@ Step:   jsr HeadLoad
         sta runLen1+1
         sta runLen2
         cpx #T_ROW
-        bcc @run
+        bcc @play
         cpx #T_ROWC + 1
         bcs @ascii
         lda #<ROW_LEN           ; a row: 640 bytes, with colours 80 more
@@ -558,41 +631,19 @@ Step:   jsr HeadLoad
         lda #>ROW_LEN
         sta runLen1+1
         cpx #T_ROWC
-        bne @run
+        bne @play
         lda #COL_LEN
         sta runLen2
-        bne @run
+        bne @play
 @ascii: cpx #T_ASCII
-        bne @run
+        bne @play
         lda #<runLen1           ; a string: its length first
         ldx #>runLen1
         jsr From
-        jsr Get1
-@run:   jsr Run
-        lda ptype               ; StartPrint, StopPrint: their status
-        cmp #T_START
-        beq :+
-        cmp #T_STOP
-        bne @done
-:       txa
-        beq @done
-        stx status              ; an error: paused, the record kept
-        jsr HeadLoad            ; (the header as it was)
-        lda #$80
-        sta hdr + Q_PAUSED
-        lda status
-        sta hdr + Q_ERR
-        jmp HeadSave
-@done:  jsr HeadSave
-        lda taskReq             ; the next pass
-        ora #$20
-        sta taskReq
-        rts
-
-; Get1: one byte from the tail to src.
-Get1:   lda #1
+        lda #1
         ldx #0
-        jmp Get
+        jsr Get
+@play:  jmp Play
 
 ; The entries by record type (T_INIT on): InitForPrint, StartPrint,
 ; PrintBuffer (twice), StopPrint, StartASCII, PrintASCII, SetNLQ.
@@ -605,9 +656,23 @@ Entry:  .byte 0, 3, 6, 6, 9, 18, 15, 21
         .segment "OVL110"
         .scope Mod110
 
-        jmp Run                 ; entry 0 (module 109)
+        jmp Run                 ; entry 0 (module 113)
+        jmp Skip                ; entry 3
 
         .include "spoolring.inc"
+
+; Skip: the record's data (runLen1 + runLen2 bytes) passed over at the
+; tail (compared, not fetched: nothing written in the C64).
+Skip:   lda runLen1
+        clc
+        adc runLen2
+        sta len
+        lda runLen1+1
+        adc #0
+        sta len+1
+        ldx #Q_TAIL
+        ldy #REU_VERIFY
+        jmp Xfer
 
 ; Run: the driver's entry runEntry called with the record's data: the
 ; program's bytes out and the job's driver and work area in (module 111);
@@ -770,11 +835,12 @@ PUT_ROOM_ONLY   = 1
 Step:   jsr OvlCall             ; (module 109: a record played)
         .byte 109, 0
 
-; Wait: A/X bytes (and a few to spare) to fit in the queue: records
-; played meanwhile (the program waits at the printer's pace, as without
-; the spooler). Not when the queue is paused (a printer error) or empty
-; and the call still larger than it. fits: 0 it fits, else not (the
-; call is then dropped whole: module 107).
+; Wait: A/X bytes (and a few to spare) to fit in the queue, and for a
+; new job (entry 0: InitForPrint) an entry in the job table (JOB_MAX - 1
+; jobs at most waiting): records played meanwhile (the program waits at
+; the printer's pace, as without the spooler). Not when the queue is
+; paused (a printer error) or empty and the call still larger than it.
+; fits: 0 it fits, else not (the call is then dropped whole: module 107).
 Wait:   clc
         adc #8
         sta need
@@ -787,20 +853,324 @@ Wait:   clc
         sta len+1
         jsr HeadLoad
         jsr Room
-        lda #0
-        bcc @end
-        bit hdr + Q_PAUSED
+        bcs @full
+        lda entry
+        bne @fit
+        lda hdr + Q_JOBS
+        sec
+        sbc hdr + Q_PJOB
+        cmp #JOB_MAX - 1
+        bcc @fit
+@full:  bit hdr + Q_PAUSED
         bmi @no
-        ldx #2                  ; empty: it never fits
-@e:     lda hdr + Q_HEAD,x
+        ldx #2                  ; empty: it fits if the room does (the
+@e:     lda hdr + Q_HEAD,x      ; jobs: all played)
         cmp hdr + Q_TAIL,x
         bne @play
         dex
         bpl @e
+        jsr Room
+        bcs @no
+@fit:   lda #0
+        beq @end
 @no:    lda #1
 @end:   sta fits
         rts
 @play:  jsr Step
         jmp @loop
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL113"
+        .scope Mod113
+
+        jmp Play                ; entry 0 (module 109)
+
+RING_LOAD       = 1
+RING_HEAD_ONLY  = 1
+        .include "spoolring.inc"
+        .include "spooljob.inc"
+
+Run:    jsr OvlCall             ; (module 110: the driver called; X = its
+        .byte 110, 0            ; status)
+Skip:   jsr OvlCall             ; (module 110: the record's data passed
+        .byte 110, 3            ; over)
+
+; Play (module 109: the header in hdr, the record's type in ptype, the
+; entry and lengths in runEntry, runLen1, runLen2): the driver called
+; with the record's data. A cancelled job's record is
+; skipped (its data passed over), and a page it had started ended
+; (StopPrint, its status ignored). A StartPrint or StopPrint error
+; pauses the queue (Q_PAUSED, Q_ERR) and keeps the record. Then the
+; next pass asked for (taskReq $20).
+Play:   lda hdr + Q_PJOB        ; a job played on after the queue ran empty
+        sec                     ; (its pages came slower than the printer):
+        sbc hdr + Q_BASE        ; counted from it again
+        bpl :+
+        lda hdr + Q_PJOB
+        sta hdr + Q_BASE
+:       jsr Cancelled
+        bcc @run
+        jsr Skip                ; cancelled: its data passed over
+        bit hdr + Q_INPAGE
+        bpl @done
+        lda #0                  ; a page started: StopPrint
+        sta hdr + Q_INPAGE
+        sta runLen1
+        sta runLen1+1
+        sta runLen2
+        lda #9
+        sta runEntry
+        jsr Run
+        jmp @done
+@run:   jsr Run
+        lda ptype               ; StartPrint, StopPrint: their status
+        ldy #$80
+        cmp #T_START
+        beq @st
+        ldy #0
+        cmp #T_STOP
+        bne @done
+@st:    txa
+        bne @err
+        sty hdr + Q_INPAGE
+@done:  jsr HeadSave
+        lda taskReq             ; the next pass
+        ora #$20
+        sta taskReq
+        rts
+@err:   stx status              ; an error: paused, the record kept
+        jsr HeadLoad            ; (the header as it was)
+        lda #$80
+        sta hdr + Q_PAUSED
+        lda status
+        sta hdr + Q_ERR
+        jmp HeadSave
+
+; Cancelled: C set when the job playing (Q_PJOB) is cancelled (its entry
+; still its own: J_SEQ). Destroys A, Y, r0-r3L.
+Cancelled:
+        lda hdr + Q_PJOB
+        jsr JobGet
+        lda jbuf + J_SEQ
+        cmp hdr + Q_PJOB
+        bne @no
+        lda jbuf + J_FLAGS
+        asl a
+        rts
+@no:    clc
+        rts
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL114"
+        .scope Mod114
+
+        jmp FeSpool             ; entry 0 (FE_SPOOL, the file engine)
+
+; FE_SPOOL (docs/FILE_ENGINE.md; the desktop's indicator and queue
+; window): Y = 0: A = the job printing, counted from Q_BASE (0: the
+; queue empty), r0L the jobs since then, r0H $80 paused, r1L the
+; printer's error that paused it. 1: pause. 2: resume (the error
+; forgotten). 3: job r0L cancelled. 4: the jobs not yet printed (the
+; one printing first; JOB_MAX at most) to r0, J_LEN bytes each (spool.s
+; J_*); A = their count. X = 0. Own buffers (the engine's work area is
+; in use, the spooler's scratch overlaps it).
+FeSpool:
+        sty sub
+        ldy #REU_FETCH
+        jsr HeadOp
+        ldx #3
+@m:     lda qh,x
+        cmp Mark,x
+        bne NoQueue
+        dex
+        bpl @m
+        lda sub
+        beq Status
+        cmp #2
+        bcc @pause
+        beq @resume
+        cmp #4
+        bcc Cancel
+        jmp List
+@pause: lda #$80
+        sta qh + Q_PAUSED
+        bne Save
+@resume:
+        lda #0
+        sta qh + Q_PAUSED
+        sta qh + Q_ERR
+        jsr Again
+Save:   ldy #REU_STASH
+        jsr HeadOp
+Done:   lda #0
+        tax
+        rts
+NoQueue:
+        lda #0                  ; (no queue yet)
+        sta argR0
+        sta argR0+1
+        sta argR1
+        beq Done
+
+; Status (Y = 0): see FeSpool.
+Status: lda qh + Q_PAUSED
+        and #$80
+        sta argR0+1
+        lda qh + Q_ERR
+        sta argR1
+        lda #0
+        sta argR0
+        jsr Empty
+        lda #0
+        bcs @out
+        lda qh + Q_JOBS         ; the jobs since Q_BASE
+        sec
+        sbc qh + Q_BASE
+        sta argR0
+        jsr First               ; the one printing: its place among them
+        sec
+        sbc qh + Q_BASE
+        clc
+        adc #1
+        cmp argR0               ; (at most all of them)
+        bcc @out
+        lda argR0
+@out:   ldx #0
+        rts
+
+; Cancel (Y = 3): job r0L's entry marked (when it is still its own); the
+; playback asked for (it passes the job over).
+Cancel: lda argR0
+        jsr JobOp0
+        lda jb + J_SEQ
+        cmp argR0
+        bne @end
+        lda jb + J_FLAGS
+        ora #$80
+        sta jb + J_FLAGS
+        ldy #REU_STASH
+        lda argR0
+        jsr JobOp
+        jsr Again
+@end:   lda #0
+        tax
+        rts
+
+; List (Y = 4): see FeSpool.
+List:   lda #0
+        sta cnt
+        jsr Empty
+        bcs @end
+        lda argR0
+        sta dst
+        lda argR0+1
+        sta dst+1
+        jsr First
+        sta seq
+@next:  lda seq
+        cmp qh + Q_JOBS
+        beq @end
+        lda cnt
+        cmp #JOB_MAX
+        bcs @end
+        lda dst
+        sta r0L
+        lda dst+1
+        sta r0H
+        ldy #REU_FETCH
+        lda seq
+        jsr JobAt
+        clc
+        lda dst
+        adc #J_LEN
+        sta dst
+        bcc :+
+        inc dst+1
+:       inc seq
+        inc cnt
+        bne @next
+@end:   lda cnt
+        ldx #0
+        rts
+
+; First: A = the first job not yet printed: the one playing, or Q_BASE
+; when that one was before it (a job not yet begun).
+First:  lda qh + Q_PJOB
+        sec
+        sbc qh + Q_BASE
+        bpl :+
+        lda qh + Q_BASE
+        rts
+:       lda qh + Q_PJOB
+        rts
+
+; Empty: C set when the queue holds no record.
+Empty:  ldx #2
+@c:     lda qh + Q_HEAD,x
+        cmp qh + Q_TAIL,x
+        bne @no
+        dex
+        bpl @c
+        sec
+        rts
+@no:    clc
+        rts
+
+; Again: the playback asked for at MainLoop's end.
+Again:  lda taskReq
+        ora #$20
+        sta taskReq
+        rts
+
+; HeadOp: Y = REU command: the header <-> qh.
+HeadOp: lda #<qh
+        sta r0L
+        lda #>qh
+        sta r0H
+        lda #<QHEAD
+        sta r1L
+        lda #>QHEAD
+        sta r1H
+        lda #Q_LEN
+        bne Sys
+
+; JobOp0 / JobOp: job A's entry <-> jb (JobOp0: fetched; JobOp: Y the
+; command). JobAt: the same into r0.
+JobOp0: ldy #REU_FETCH
+JobOp:  pha
+        lda #<jb
+        sta r0L
+        lda #>jb
+        sta r0H
+        pla
+JobAt:  and #JOB_MAX - 1
+        asl a
+        asl a
+        asl a
+        asl a
+        sta r1L
+        lda #>JOBTAB
+        sta r1H
+        lda #J_LEN
+Sys:    sta r2L
+        lda #0
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        jmp SysRAMOp
+
+Mark:   .byte "GUSP"
+sub:    .byte 0
+seq:    .byte 0
+cnt:    .byte 0
+dst:    .word 0
+qh:     .res ::Q_LEN
+jb:     .res ::J_LEN
 
         .endscope

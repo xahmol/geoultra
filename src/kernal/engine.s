@@ -135,6 +135,7 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 80, 0             ; FE_UCI (enginenet.s)
         .byte 86, 3             ; FE_POINTER (pointer.s)
         .byte 99, 0             ; FE_TASK (task.s)
+        .byte 114, 0            ; FE_SPOOL (spool.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),
@@ -274,10 +275,10 @@ Magic:  lda #<diskBlkBuf
 OvVersion:
         lda #<FE_VER
         sta argR0
-        lda #>FE_VER
-        sta argR0+1
-        ldx #0
+        ldx #>FE_VER            ; (its high byte 0: X, no error, too)
+        stx argR0+1
         rts
+        .assert >FE_VER = 0, error, "OvVersion: X = FE_VER's high byte"
 
 ; FE_PWD: r0 = a buffer of 256 bytes: the current directory, zero-ended.
 OvPwd:  lda argR0
@@ -301,20 +302,20 @@ OvPwd:  lda argR0
 ; afresh). A stream needs nothing more: FE_WRITE leaves its file whole.
 OvClose:
         cpy #$FF
-        beq @all
-        cpy #FE_HANDLES_N
-        bcs @bad
-        sty feHandle
-        jsr Free
-        ldx #0
-        rts
-@all:   ldy #FE_HANDLES_N - 1
+        bne @single
+        ldy #FE_HANDLES_N - 1
 @one:   sty feHandle
         jsr Free
         ldy feHandle
         dey
         bpl @one
-        ldx #0
+        bmi @ok                 ; (always)
+@single:
+        cpy #FE_HANDLES_N
+        bcs @bad
+        sty feHandle
+        jsr Free
+@ok:    ldx #0
         rts
 @bad:   ldx #FE_BAD_HANDLE
         rts

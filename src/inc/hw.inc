@@ -49,5 +49,6 @@ reuLen          = $DF07
 reuCtrl         = $DF0A
 REU_STASH       = $90     ; execute now, C64 -> REU
 REU_FETCH       = $91     ; execute now, REU -> C64
+REU_VERIFY      = $93     ; execute now, compare (writes nothing)
 REU_FETCH_FF00  = $81     ; execute on a write to $FF00, REU -> C64
 REU_TRIGGER     = $FF00
