@@ -19,10 +19,12 @@ from gushvice import Gush, OUT, harness, KEY_STUB  # noqa: E402
 from vicemon import RESP_CHECKPOINT  # noqa: E402
 
 PAGE_THEME, PAGE_REU = 0, 5
-GRID_ROW, GRID_CARD = 3, 12
-STEP_Y = 166
-SIZE_DN, SIZE_UP = (136 + 7, STEP_Y - 3), (196 + 7, STEP_Y - 3)
-TASKS_UP = (282 + 7, STEP_Y - 3)
+GRID_ROW, GRID_CARD = 2, 12
+STEP_Y = 156
+SIZE_DN, SIZE_UP = (140 + 7, STEP_Y - 3), (200 + 7, STEP_Y - 3)
+TASKS_UP = (286 + 7, 170 - 3)          # (the second row)
+STEP2_Y = 170
+SPOOL_DN, SPOOL_UP = (140 + 7, STEP2_Y - 3), (200 + 7, STEP2_Y - 3)
 SIDE_TOP, SIDE_ROW = 24, 16
 THEME_Y, PART_Y, STYLE_Y = 36, 54, 72
 SWATCH_X, INK_Y, PAPER_Y = 152, 83, 99
@@ -135,6 +137,15 @@ def main():
         for _ in range(4):
             press(*TASKS_UP, t=3)
         check("Tasks [+] to 8: tasks= out", settings_text(), b"[system]\r\n")
+        check("the spooler's banks 27-28 (128 KB)", (bank(27), bank(28), bank(187)), (0xEE, 0xEE, 0x11))
+        press(*SPOOL_UP, t=3)
+        press(*SPOOL_UP, t=3)
+        check("Spooler [+] twice: 512 KB (spool=512), banks 182-187 too",
+              (settings_text(), bank(181), bank(182), bank(187)), (b"[system]\r\nspool=512\r\n", 0x11, 0xEE, 0xEE))
+        g.png("settings-s6-spool")
+        press(*SPOOL_DN, t=3)
+        press(*SPOOL_DN, t=3)
+        check("Spooler [-] twice: 128 KB (spool= out)", settings_text(), b"[system]\r\n")
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

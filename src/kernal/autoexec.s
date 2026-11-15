@@ -17,7 +17,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import SysRAMOp, autoIdx, FileEngine, GetFile, OvlCall, taskSlots
+        .import SysRAMOp, autoIdx, FileEngine, GetFile, OvlCall, taskSlots, SpoolInit
 
 firstBoot       = $88C5         ; GEOS: FALSE while the boot runs auto-execs
 AUTO_LIST       = $1C00         ; REU bank 1: the list (free up to $1FFF)
@@ -83,7 +83,9 @@ AutoStart:
 :       lda #0
         sta autoIdx
         sta firstBoot
-@end:   rts
+@end:   lda spoolD1             ; the spooler's banks (spool.s; at the
+        ldx spoolD4             ; end: a nested module reloads this one's
+        jmp SpoolInit           ; bytes, count among them)
 
 ; Parse: the [system] section's tasks= to taskSlots, its autoexec=
 ; lines (keys in any case) to the list in their order, count of them (AUTO_MAX at most; a path longer
@@ -115,7 +117,7 @@ Parse:  lda #0
         bcc @auto
         ldx #TasksKey - Keys    ; "tasks=": the task slots, 1-8 (reu.s
         jsr Match               ; taskSlots, task.s; Settings' REU page)
-        bcs @skip
+        bcs @spool
         lda (r0),y
         sec
         sbc #'1'
@@ -124,6 +126,17 @@ Parse:  lda #0
         adc #1
         sta taskSlots
         bne @skip               ; (always)
+@spool: ldx #SpoolKey - Keys    ; "spool=" KB: 128, 256, 512 (3 digits),
+        jsr Match               ; 1024, 2048 (4): the spooler's banks
+        bcs @skip               ; (spool.s; Settings' REU page): its
+        lda (r0),y              ; first and fourth characters (module
+        sta spoolD1             ; 105 makes the size of them)
+        iny
+        iny
+        iny
+        lda (r0),y
+        sta spoolD4
+        jmp @skip
 @auto:  jsr Take                ; (Y at the value)
 @skip:  ldy #0                  ; the line's end, then past its LF
 @s:     lda (r0),y
@@ -135,9 +148,9 @@ Parse:  lda #0
         clc
         adc r0L
         sta r0L
-        bcc @line
+        bcc :+
         inc r0H
-        bne @line               ; (always)
+:       jmp @line
 
 ; Match: C clear when the line at r0 starts with Keys + X (any case); Y
 ; after it.
@@ -269,6 +282,9 @@ Keys:
 SysKey:         .byte "[system]", 0
 AutoKey:        .byte "autoexec=", 0
 TasksKey:       .byte "tasks=", 0
+SpoolKey:       .byte "spool=", 0
+spoolD1:        .byte 0             ; spool='s first and fourth character
+spoolD4:        .byte 0             ; (0: none, the default 128 KB)
 shift:          .byte 0
 count:          .byte 0
 inSys:          .byte 0

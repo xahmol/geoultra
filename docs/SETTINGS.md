@@ -331,7 +331,7 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   only: a real drive's ramBase means nothing; a native drive's tracks
   from FE_MOUNTINFO), the legend, the steppers (a larger size cuts the
   slots to fit); the kernal reads legacy= at the cold start (mount.s:
-  ramExpSize 8, 16, 32 or 64 banks; tasks= the task slots, read at the cold start; a slot is used only while its legacy area fits).
+  ramExpSize 8, 16, 32 or 64 banks; tasks= the task slots, read at the cold start; a slot is used only while its legacy area fits). spool= the print spooler's queue: 128, 256, 512, 1024 or 2048 KB (banks 27-28 and the rest at the top of the drives' area, as far as the mounted drives leave it free; read at the cold start).
   The file engine's REU copy of a disk image gone into is not shown
   (its state is the kernal's). Test: s6.py (VICE).
 - **S4.6, icon colours by type** (the user, 2026-11-14): five groups in

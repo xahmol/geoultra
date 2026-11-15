@@ -3,11 +3,13 @@
 ; 16 x 16 grid, one 8 x 8 cell per 64 KB bank coloured by its use
 ; (system, drives A-D, the file engine, the applications' legacy REU,
 ; free; the legacy banks not in use hatched), a legend beside it, and
-; two steppers below: the legacy REU each task's applications see
+; steppers below: the legacy REU each task's applications see
 ; (SETTINGS.INI [system] legacy=512, 1024, 2048 or 4096 KB; the kernal's
 ; mount.s reads it at the next start) and the task slots (tasks=1-8),
 ; kept within today's 4 MB legacy area (banks 192-255): size x slots at
-; most 64 banks. Own design and code.
+; most 64 banks; and the print spooler's queue (spool=128, 256, 512,
+; 1024 or 2048 KB: banks 27-28 and the rest at the top of the drives'
+; area, the kernal's spool.s; the user, 2026-11-15). Own design and code.
 
         .include "geos.inc"
         .include "engine.inc"
@@ -18,15 +20,22 @@
         .importzp vp
         .export Ov_ReuDraw, Ov_ReuPress
 
-GRID_CARD       = PAGE_CARD + 1 ; the grid: cards 12-27, rows 3-18
-GRID_ROW        = 3
+GRID_CARD       = PAGE_CARD + 1 ; the grid: cards 12-27, rows 2-17
+GRID_ROW        = 2
 LEG_CARD        = GRID_CARD + 17 ; the legend: a colour cell, its text
 LEG_X           = (LEG_CARD + 1) * 8 + 3
 SYS_END         = 31            ; banks 0-30: the system (DESIGN.md "REU map")
 ENG_FIRST       = FE_UBANK      ; 188-191: the file engine's listings
 LEG_FIRST       = 192           ; 192-255: the legacy area (4 MB)
 LEG_AREA        = 64
-STEP_Y          = 166           ; the steppers' baseline
+STEP_Y          = 156           ; the steppers' baselines: legacy (the
+STEP2_Y         = 170           ; legend's last kind right of it), then
+                                ; the spooler and the tasks (the page's
+                                ; presses end at y 171, its line at 176)
+SPOOL_BANK      = 27            ; the spooler: banks 27-28, then the top
+DRIVE_TOP       = 187           ; of the drives' area (spool.s)
+COL_SPOOL       = 14            ; light blue
+SPOOL_N         = 5             ; sizes: 128 KB to 2 MB
 COL_SYS         = 11            ; dark grey
 COL_ENGINE      = 8             ; orange
 COL_LEGACY      = 7             ; yellow
@@ -44,7 +53,7 @@ Ov_ReuDraw:
         jsr Map
         jsr Grid
         jsr Legend
-        ldx #3                  ; the four buttons
+        ldx #BUTTONS - 1        ; the buttons
 @b:     stx at
         lda BtnLo,x
         pha
@@ -62,13 +71,17 @@ Ov_ReuDraw:
         lda #<LTasks
         ldx #>LTasks
         ldy #X_LTASKS
-        jsr Text
+        jsr Text2
+        lda #<LSpool
+        ldx #>LSpool
+        ldy #X_LSPOOL
+        jsr Text2
         jmp Values
 
 ; Ov_ReuPress: a click on a stepper's [-] or [+]: the value changed
 ; (the other kept within the legacy area), written, all drawn again.
 Ov_ReuPress:
-        ldx #3
+        ldx #BUTTONS - 1
 @b:     stx at
         lda BtnLo,x
         pha
@@ -82,6 +95,20 @@ Ov_ReuPress:
         bpl @b
         rts
 @hit:   lda at
+        cmp #4                  ; the spooler's [-], [+]
+        bcc :+
+        bne @spoolUp
+        ldx spool
+        beq @end
+        dec spool
+        jmp @new
+@spoolUp:
+        ldx spool
+        cpx #SPOOL_N - 1
+        bcs @end
+        inc spool
+        jmp @new
+:       lda at
         beq @sizeDn
         cmp #1
         beq @sizeUp
@@ -171,7 +198,32 @@ ReadVals:
         bcs @end
         adc #1
         sta tasks
-@end:   jsr Fits                ; (a hand-made file beyond the area:
+@end:   lda #0                  ; spool=: 128 (or none), 256, 512, 1024,
+        sta spool               ; 2048 KB: by its first and fourth
+        jsr SpoolKey            ; characters, as the kernal (spool.s)
+        jsr IniFind
+        bcs @fit
+        ldy #0
+        lda (r2),y
+        ldx #2
+@sd:    cmp SpoolDigit,x
+        beq @sg
+        dex
+        bpl @sd
+        bmi @fit
+@sg:    ldy #3
+        lda (r2),y
+        cmp #'0'
+        bcc :+
+        cmp #'9' + 1
+        bcs :+
+        inx
+        inx
+        inx
+:       cpx #SPOOL_N
+        bcs @fit
+        stx spool
+@fit:   jsr Fits                ; (a hand-made file beyond the area:
         bcc :+                  ; the slots made to fit)
         dec tasks
         bne @end
@@ -206,8 +258,20 @@ WriteVals:
         sta r2H
         jsr IniSet
         bcs @room
-        jmp @done
+        jmp @spool
 @tasksDel:
+        jsr IniDel
+@spool: jsr SpoolKey            ; spool= (128 KB: the key out)
+        ldx spool
+        beq @spoolDel
+        lda SpoolKbLo,x
+        sta r2L
+        lda SpoolKbHi,x
+        sta r2H
+        jsr IniSet
+        bcs @room
+        jmp @done
+@spoolDel:
         jsr IniDel
 @done:  lda #1
         sta dirty
@@ -222,6 +286,10 @@ LegacyKey:
 TasksKey:
         lda #<KTasks
         ldx #>KTasks
+        bne Key                 ; (always)
+SpoolKey:
+        lda #<KSpool
+        ldx #>KSpool
 Key:    sta r1L
         stx r1H
         lda #<SSystem
@@ -255,6 +323,22 @@ Map:    jsr Used
 @set:   sta use,x
         inx
         bne @bank
+        lda #COL_SPOOL          ; the spooler: 27-28 and the rest from
+        sta use + SPOOL_BANK    ; the drives' top down (what it is set to:
+        sta use + SPOOL_BANK + 1 ; the kernal takes less where drives are)
+        ldx spool
+        lda SpoolBanks,x
+        sec
+        sbc #2
+        beq @drives
+        tay
+        ldx #DRIVE_TOP
+        lda #COL_SPOOL
+@sp:    sta use,x
+        dex
+        dey
+        bne @sp
+@drives:
         ldx #3                  ; the drives
 @drive: stx drv
         lda driveType,x         ; (REU drives only: a real drive's
@@ -456,6 +540,10 @@ Values: lda #0                  ; their places cleared
         lda #>(SIZE_PLUS_X - 2)
         sta r4H
         jsr Rectangle
+        lda #STEP2_Y - 9        ; (the tasks: the second row)
+        sta r2L
+        lda #STEP2_Y + 2
+        sta r2H
         lda #<TASKS_X
         sta r3L
         lda #>TASKS_X
@@ -480,7 +568,41 @@ Values: lda #0                  ; their places cleared
         lda #<digit
         ldx #>digit
         ldy #X_TASKS
-        ; (falls into Text)
+        jsr Text2
+        lda #0                  ; the spooler's value
+        jsr SetPattern
+        lda #STEP2_Y - 9
+        sta r2L
+        lda #STEP2_Y + 2
+        sta r2H
+        lda #<SIZE_X
+        sta r3L
+        lda #>SIZE_X
+        sta r3H
+        lda #<(SIZE_PLUS_X - 2)
+        sta r4L
+        lda #>(SIZE_PLUS_X - 2)
+        sta r4H
+        jsr Rectangle
+        ldx spool
+        lda SpoolTxtLo,x
+        pha
+        lda SpoolTxtHi,x
+        tax
+        pla
+        ldy #X_SIZE
+        ; (falls into Text2)
+
+; Text2: as Text, on the second row (STEP2_Y).
+Text2:  sta r0L
+        stx r0H
+        lda TextXLo,y
+        sta r11L
+        lda TextXHi,y
+        sta r11H
+        lda #STEP2_Y
+        sta r1H
+        jmp PutString
 
 ; Text: the text at A/X at x TextX[Y], baseline STEP_Y.
 Text:   sta r0L
@@ -496,7 +618,7 @@ Text:   sta r0L
 ; --- data
 
 LABEL_X         = GRID_CARD * 8
-SIZE_MINUS_X    = LABEL_X + 40
+SIZE_MINUS_X    = LABEL_X + 44   ; ("Spooler", the widest label)
 SIZE_X          = SIZE_MINUS_X + 16
 SIZE_PLUS_X     = SIZE_X + 44
 TASKS_LABEL_X   = SIZE_PLUS_X + 24
@@ -509,11 +631,13 @@ X_LLEG          = 0             ; (TextXLo, TextXHi)
 X_LTASKS        = 1
 X_SIZE          = 2
 X_TASKS         = 3
+X_LSPOOL        = 0             ; (the second row: the legacy one's places)
 TextXLo:        .byte <LABEL_X, <TASKS_LABEL_X, <(SIZE_X + 2), <(TASKS_X + 3)
 TextXHi:        .byte >LABEL_X, >TASKS_LABEL_X, >(SIZE_X + 2), >(TASKS_X + 3)
 
-BtnLo:  .byte <BSizeDn, <BSizeUp, <BTasksDn, <BTasksUp
-BtnHi:  .byte >BSizeDn, >BSizeUp, >BTasksDn, >BTasksUp
+BUTTONS         = 6
+BtnLo:  .byte <BSizeDn, <BSizeUp, <BTasksDn, <BTasksUp, <BSpoolDn, <BSpoolUp
+BtnHi:  .byte >BSizeDn, >BSizeUp, >BTasksDn, >BTasksUp, >BSpoolDn, >BSpoolUp
 BSizeDn:        .word SIZE_MINUS_X
                 .byte STEP_Y - 9, 14
                 .word TMinus
@@ -521,15 +645,33 @@ BSizeUp:        .word SIZE_PLUS_X
                 .byte STEP_Y - 9, 14
                 .word TPlus
 BTasksDn:       .word TASKS_MINUS_X
-                .byte STEP_Y - 9, 14
+                .byte STEP2_Y - 9, 14
                 .word TMinus
 BTasksUp:       .word TASKS_PLUS_X
-                .byte STEP_Y - 9, 14
+                .byte STEP2_Y - 9, 14
+                .word TPlus
+BSpoolDn:       .word SIZE_MINUS_X
+                .byte STEP2_Y - 9, 14
+                .word TMinus
+BSpoolUp:       .word SIZE_PLUS_X
+                .byte STEP2_Y - 9, 14
                 .word TPlus
 TMinus:         .byte "-", 0
 TPlus:          .byte "+", 0
 LLegacy:        .byte "Legacy", 0
 LTasks:         .byte "Tasks", 0
+LSpool:         .byte "Spooler", 0
+KSpool:         .byte "spool", 0
+SpoolDigit:     .byte "125"                     ; (as the kernal's spool.s)
+SpoolBanks:     .byte 2, 4, 8, 16, 32
+SpoolKbLo:      .byte 0, <V256, <V512, <V1024, <V2048
+SpoolKbHi:      .byte 0, >V256, >V512, >V1024, >V2048
+V256:           .byte "256", 0
+V512:           .byte "512", 0
+SpoolTxtLo:     .byte <T128, <T256, <T512, <T1M, <T2M
+SpoolTxtHi:     .byte >T128, >T256, >T512, >T1M, >T2M
+T128:           .byte "128 KB", 0
+T256:           .byte "256 KB", 0
 SSystem:        .byte "system", 0
 KLegacy:        .byte "legacy", 0
 KTasks:         .byte "tasks", 0
@@ -547,12 +689,13 @@ T2M:            .byte "2 MB", 0
 T4M:            .byte "4 MB", 0
 TypeBanks:      .byte 0, 3, 6, 13       ; none, 1541, 1571, 1581 (mount.s)
 DriveCol:       .byte 2, 5, 6, 4        ; A red, B green, C blue, D purple
-LEGEND_N        = 8
+LEGEND_N        = 9
 LegCol:         .byte COL_SYS << 4 | COL_SYS, $22, $55, $66, $44
                 .byte COL_ENGINE << 4 | COL_ENGINE, COL_LEGACY << 4 | COL_LEGACY
-                .byte COL_FREE << 4 | COL_FREE
-LegLo:          .byte <LSys, <LA, <LB, <LC, <LD, <LEng, <LLeg, <LFree
-LegHi:          .byte >LSys, >LA, >LB, >LC, >LD, >LEng, >LLeg, >LFree
+                .byte COL_SPOOL << 4 | COL_SPOOL, COL_FREE << 4 | COL_FREE
+LegLo:          .byte <LSys, <LA, <LB, <LC, <LD, <LEng, <LLeg, <LSpl, <LFree
+LegHi:          .byte >LSys, >LA, >LB, >LC, >LD, >LEng, >LLeg, >LSpl, >LFree
+LSpl:           .byte "spooler", 0
 LSys:           .byte "system", 0
 LA:             .byte "drive A", 0
 LB:             .byte "drive B", 0
@@ -572,6 +715,7 @@ digit:          .byte "8", 0
 
 size:           .byte 0         ; 0-3: 512 KB, 1, 2, 4 MB
 tasks:          .byte 8
+spool:          .byte 0         ; 0-4: 128, 256, 512 KB, 1, 2 MB
 at:             .byte 0
 drv:            .byte 0
 tmp:            .byte 0

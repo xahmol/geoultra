@@ -548,6 +548,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d23.py
 	$(PYTHON) tests/desktop/d24.py
 	$(PYTHON) tests/desktop/d25.py
+	$(PYTHON) tests/spool/sp1.py
 	$(PYTHON) tests/apps/geoludo.py
 	$(PYTHON) tests/apps/geowrite.py
 	$(PYTHON) tests/apps/clipboard.py
@@ -561,6 +562,7 @@ test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/hibtasku64.py build/geoultra64.crt
 	$(PYTHON) tests/apps/geoludou64.py build/geoultra64.crt
 	$(PYTHON) tests/apps/themeu64.py build/geoultra64.crt
+	$(PYTHON) tests/spool/spu64.py build/geoultra64.crt
 	$(PYTHON) tests/settings/s3cu64.py build/geoultra64.crt
 
 # Writing to a 1571 drive, on a D71 the test formats itself.

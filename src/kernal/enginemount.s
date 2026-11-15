@@ -19,7 +19,7 @@
         .include "engine.inc"
         .include "drvflags.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS, drvTracks, drvFlags
+        .import OvlCall, SysRAMOp, folderT, folderS, drvTracks, drvFlags, driveLimit
         .import natLoaded, WriteBackNow, hibState
 
 SYS_BANK        = 1
@@ -428,7 +428,7 @@ Banks0: lda #FE_FIRST_BANK
         clc
         adc mBanks
         bcs @full
-        cmp #FE_LAST_BANK + 2
+        cmp driveLimit          ; (below the spooler's banks, spool.s)
         bcs @full
         ldx #3
 @drive: cpx mSlot
