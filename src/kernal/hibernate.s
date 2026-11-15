@@ -3,9 +3,10 @@
 ;
 ; Suspend (overlay module 8, entry 0): the drives are written back first;
 ; the chip state goes into RAM variables, Snap copies all 64 KB of RAM to
-; REU bank HIB_RAM; then the file gets bank 1 (system, with a header at
-; $0400), bank HIB_RAM, bank 18 (desk accessory swap) and banks 192-199
-; (the applications' REU). HibResume (entry 3, from the cold start after
+; REU bank hibBank (the current task's, 19 + taskCur); then the file gets
+; bank 1 (system, with a header at $0400), the task banks 19 to 19 +
+; span - 1, bank 18 (desk accessory swap) and the tasks' legacy REU from
+; bank 192 (span * ramExpSize banks). HibResume (entry 3, from the cold start after
 ; the mounts): with a valid file (signature, the same kernal, the same
 ; mount table) and C= not held, the banks are loaded back, the file is
 ; deleted (a later unplanned power-off must not bring back an old state)
@@ -19,7 +20,9 @@
         .include "kcalls.inc"
 
         .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
-        .export hibState, RtcClockOvl, hibLimit, RtcCheck
+        .export hibState, RtcClockOvl, hibLimit, RtcCheck, hibBank
+        .import taskCur
+hibBank         = ramBank + 1   ; RamSetup's bank: 19 + the current task
         .import guClockFresh    ; (info.s, $C0FB)
         .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck, turboNow
@@ -29,7 +32,7 @@
 WR_VER_ERR      = $25           ; (as the disk driver: write failed)
 
 hour            = $8519         ; GEOS 2.0's time: hour, minutes, seconds
-HIB_RAM         = 19            ; REU bank of the RAM snapshot (task slot 1)
+HIB_RAM         = 19            ; task slot 0's bank (slot n: 19 + n)
 HIB_SCRATCH     = 20            ; checks at resume
 SYS_BANK        = 1
 HEADER          = $0400         ; in bank 1: signature, fingerprint
@@ -96,7 +99,7 @@ rtcMinute:      .byte $FF
 
         .segment "BFCODE"       ; $BF40 area (not after the RAM copy)
 
-; Snap: RAM -> REU bank HIB_RAM. Returns A = 0; after a resume it returns
+; Snap: RAM -> REU bank hibBank (the current task's: 19 + taskCur). Returns A = 0; after a resume it returns
 ; once more, with A = 1. Interrupts off. Destroys X.
 Snap:   tsx
         stx hibSP
@@ -123,7 +126,8 @@ RamSetup:
 @zero:  sta reuC64,x
         dex
         bpl @zero
-        lda #HIB_RAM
+ramBank:                        ; (hibBank: the operand, set by modules
+        lda #HIB_RAM            ; 8 and 9 to the current task's bank)
         sta reuAddr+2
         sty reuCmd
         lda #RAM_ALL
@@ -166,7 +170,7 @@ HibTick:
         .segment "KEXT"         ; (these bytes run on after the RAM copy:
                                 ; the same build, checked by BUILD_ID)
 
-; Resume: REU bank HIB_RAM -> RAM, then on as after Snap (never returns).
+; Resume: REU bank hibBank (module 9: the saved task's) -> RAM, then on as after Snap (never returns).
 Resume: sei
         ldy #REU_FETCH_FF00
         jsr RamSetup
@@ -187,25 +191,26 @@ Resume: sei
 HIB_SUSPEND     = 1
         .include "hibshared.inc"
 
-TaskMany:                       ; (task.s, module 98: C set with several
-        jsr OvlCall             ; tasks)
+TaskMany:                       ; (task.s, module 98: A = the slots in
+        jsr OvlCall             ; use, up to the highest used one, X =
+                                ; their legacy REU banks)
         .byte 98, 9
-TaskInit:                       ; (task.s: the table anew)
-        jsr OvlCall
-        .byte 98, 6
 
 partIdx:        .byte 0
 hibErr:         .byte 0
+hdrTask:        .byte 0         ; header + 8: the current task, the task
+hdrSpan:        .byte 0         ; banks saved (slots 0 to span - 1), the
+hdrLegacy:      .byte 0         ; legacy banks saved (span * ramExpSize)
 
 ; Suspend: X = 0, or DEV_NOT_FOUND (no Ultimate) / an error of the file.
 Suspend:
         ldx #DEV_NOT_FOUND
         lda uciPresent
-        beq @end
-        jsr TaskMany            ; (several tasks: not yet; task.s)
-        bcc @go
-@end:   rts
+        bne @go
+        rts
 @go:    jsr WriteBackNow        ; the drives' changes go to their images
+        jsr Parts               ; (after the nested calls: this module's
+                                ; bytes hold the parts from here on)
         lda CPU_PORT
         pha
         lda #RAM_IO
@@ -234,6 +239,12 @@ Suspend:
         lda #<r2
         ldx #>r2
         ldy #2
+        jsr DmaGo
+        lda #<(HEADER + 8)      ; the tasks: header + 8 to + 10
+        sta reuAddr
+        lda #<hdrTask
+        ldx #>hdrTask
+        ldy #3
         jsr DmaGo
         jsr HomeCD
         bne @fail
@@ -289,8 +300,20 @@ Resumed:
         sta CPU_PORT
         ldx #0
         stx imgFlags            ; (a disk image's copy in the REU: not
-        jsr TaskInit            ; in the file, gone; the other tasks too)
-        ldx #0
+        rts                     ; in the file, gone)
+
+; Parts: the tasks in use (module 98): the snapshot into the current
+; task's bank, the file's parts and header bytes for every slot up to
+; the highest used one and their legacy REU areas (task.s, reu.s).
+Parts:  jsr TaskMany
+        sta hdrSpan
+        stx hdrLegacy
+        jsr SetParts
+        lda taskCur
+        sta hdrTask
+        clc
+        adc #HIB_RAM
+        sta hibBank
         rts
 
 

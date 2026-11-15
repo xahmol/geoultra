@@ -851,7 +851,9 @@ Init:   ldx #TASKS_MAX * TBL_LEN - 1
         ldy #REU_STASH
         jmp TblOp
 
-; Many: C set when more than one slot is used.
+; Many: C set when more than one slot is used; A = the span, the
+; highest used slot + 1 (hibernation saves slots 0 to span - 1), X =
+; their legacy REU banks (span * ramExpSize).
 Many:   jsr Names
         ldx #0
         stx tmp
@@ -861,11 +863,22 @@ Many:   jsr Names
         lda (r0),y
         beq :+
         inc tmp
+        stx target              ; (the highest used one)
 :       inx
         cpx #TASKS_MAX
         bcc @c
+        ldx target
+        inx
+        stx target
+        lda #0                  ; X: the span's legacy banks
+@l:     clc
+        adc ramExpSize
+        dex
+        bne @l
+        tax
         lda tmp
         cmp #2
+        lda target              ; (A: the span; C as above)
         rts
 
 ; Locked: dirEntryBuf's file write-protected (X = WR_PR_ON) or open in

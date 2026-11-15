@@ -4,7 +4,7 @@
         .include "hw.inc"
         .include "kcalls.inc"
 
-        .import uciPresent, Resume, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo
+        .import uciPresent, Resume, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, hibBank
 
 HIB_RAM         = 19
 HIB_SCRATCH     = 20
@@ -45,6 +45,16 @@ HibResume:
         bne @end
         jsr CheckFile
         bne @close
+        lda BUF+$309            ; the tasks saved (header + 8 to + 10)
+        beq @close
+        cmp #9
+        bcs @close
+        ldx BUF+$30A
+        jsr SetParts
+        lda BUF+$308
+        clc
+        adc #HIB_RAM
+        sta hibBank             ; Resume: the saved task's RAM
         ldx #0
 @part:  stx partIdx
         lda #DOS_LOAD_REU

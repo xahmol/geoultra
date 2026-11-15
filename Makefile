@@ -553,6 +553,7 @@ test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/d19u64.py build/geoultra64.crt
 	$(PYTHON) tests/settings/s5u64.py build/geoultra64.crt
 	$(PYTHON) tests/desktop/tasku64.py build/geoultra64.crt
+	$(PYTHON) tests/desktop/hibtasku64.py build/geoultra64.crt
 	$(PYTHON) tests/settings/s3cu64.py build/geoultra64.crt
 
 # Writing to a 1571 drive, on a D71 the test formats itself.

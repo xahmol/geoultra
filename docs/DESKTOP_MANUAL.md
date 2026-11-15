@@ -232,7 +232,8 @@ a "*"), "new task" (the current one is kept as it is and a fresh
 desktop starts) and "close task" (the current one ends; the last one
 stays). Cursor up and down and RETURN, or a click, choose; RUN/STOP or
 a click outside closes the list. Each task keeps its own memory in the
-REU; while more than one runs, the session is not hibernated yet. A
+REU, and hibernation keeps them all: after a power cycle every task
+is back, in the one you left. A
 document open in one task is saved when you leave that task and cannot
 be opened, deleted, renamed or moved in another task until it is closed
 ("It is open in another task.").
