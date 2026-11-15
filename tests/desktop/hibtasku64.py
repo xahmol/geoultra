@@ -116,8 +116,8 @@ def main():
         u.write(MARK, b"\xBB")
         legacy = u.read(0x88C3, 1)[0]
         call(kern["HibSuspend"], t=25)
-        check("the file: system, 2 task banks, swap, 2 legacy areas",
-              size("HIBERNAT.BIN"), (1 + 2 + 1 + 2 * legacy) * 65536)
+        check("the file: system, scrap store, 2 task banks, swap, 2 legacy areas",
+              size("HIBERNAT.BIN"), (1 + 2 + 2 + 1 + 2 * legacy) * 65536)
         u.boot()
         time.sleep(25)
         check("resumed in task 1, its RAM", (kbyte("taskCur"), u.read(MARK, 1)[0]), (1, 0xBB))
@@ -138,8 +138,8 @@ def main():
         check("task 1 closed: task 0", kbyte("taskCur"), 0)
         u.write(MARK, b"\xCC")                          # one task: as before
         call(kern["HibSuspend"], t=20)
-        check("one task: system, 1 task bank, swap, 1 legacy area",
-              size("HIBERNAT.BIN"), (1 + 1 + 1 + legacy) * 65536)
+        check("one task: system, scrap store, 1 task bank, swap, 1 legacy area",
+              size("HIBERNAT.BIN"), (1 + 2 + 1 + 1 + legacy) * 65536)
         u.boot()
         time.sleep(25)
         check("resumed: task 0, its RAM", (kbyte("taskCur"), u.read(MARK, 1)[0]), (0, 0xCC))

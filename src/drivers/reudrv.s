@@ -74,7 +74,8 @@ drvFlags:       .res 4          ; mount table flags (F_DIRTY, F_READONLY)
 borderFlag:     .byte 0
 d81:            .byte 0         ; Next1581: the directory track
 locBase:        .byte 0         ; Locate: the image's first REU bank
-locSys:         .byte 0         ; Locate: $80 for a block of drive E
+locSys:         .byte 0         ; Locate: $80 a block of drive E, $40 one of
+                                ; the scrap store (sysdrive.inc)
 blkLo:          .byte 0         ; block number within the image
 blkHi:          .byte 0
 track:          .byte 0
@@ -251,15 +252,18 @@ WriteBlock:
         ldx #WR_PR_ON
         bit locSys              ; drive E: read-only
         bmi BlkEnd
+        bvs @put                ; the scrap store: on any drive
         lda drvFlags-8,y
         and #F_READONLY
         bne BlkEnd
-        jsr HeaderSwap          ; the disk's own layout on the disk
+@put:   jsr HeaderSwap          ; the disk's own layout on the disk
         ldy #REU_STASH
         jsr DmaBlock
         jsr HeaderSwap          ; the caller's buffer as it was
+        bit locSys
+        bvs @done               ; (the scrap store: no image's dirty map)
         jsr MarkDirty
-        ldx #0
+@done:  ldx #0
         beq BlkEnd
 
 ; VerWriteBlock: WriteBlock, then an REU compare.
@@ -364,7 +368,7 @@ Locate: ldy curDrive
         and #$0F
         bne @type
         ldx r1L
-        cpx #SYSDRV_TRACK + 1
+        cpx #SCRAP_TRACK + 1
         bcs @type
         ldx #DEV_NOT_FOUND
         clc
@@ -377,20 +381,23 @@ Locate: ldy curDrive
         stx locSys
         ldx r1L                 ; track
         beq BadTrack
-        cpx #SYSDRV_TRACK + 1
+        cpx #SCRAP_TRACK + 1
         bcc @own
         cmp #DRV_NATIVE
         bcc @sys
         ldx drvTracks-8,y
-        cpx #SYSDRV_TRACK + 1
+        cpx #SCRAP_TRACK + 1
         ldx r1L
         bcs @own                ; real tracks of this native drive
-@sys:   lda #SYSDRV_BANK
-        sta locBase
+@sys:   cpx #SYSDRV_TRACK + 1   ; the scrap store's tracks (writable,
+        lda #$40                ; locSys $40) or E's (read-only, $80): the
+        ldy #<(SCRAP_BANK - SCRAP_TRACK - 1)    ; bank is the track plus
+        bcc @reg                ; this (Address adds them, 8 bits)
         lda #$80
-        sta locSys
-        txa                     ; (C clear on both ways here: track -
-        sbc #SYSDRV_TRACK       ; SYSDRV_TRACK - 1, E's 256-block tracks)
+        ldy #<(SYSDRV_BANK - SYSDRV_TRACK - 1)
+@reg:   sta locSys
+        sty locBase
+        txa
         jmp SysBlock
 @own:   cmp #DRV_1581
         beq Loc1581

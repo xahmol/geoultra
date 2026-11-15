@@ -18,6 +18,9 @@ matrix, no sprites) is written to --out:
   h:FILE       run the Python FILE with v (the VICE connection), for
                debugging (breakpoints, memory)
 
+APPRUN_KEEP_REU=1: the REU image is kept and written back at the end, so a
+second run sees what the first left in the REU (the scrap store, drives).
+
 Keys arrive through keyVector from MainLoop (a one-shot appMain routine
 in GeoUltra's information block, restoring the application's appMain).
 """
@@ -94,11 +97,13 @@ def main():
                     "file in a folder, e.g. /b/Games/GeoLudo), as the desktop does")
     ap.add_argument("events", nargs="*")
     args = ap.parse_args()
-    reu_image()
+    keep = os.environ.get("APPRUN_KEEP_REU")    # 1: the REU image as the last run
+    if not (keep and os.path.exists(REU_IMAGE)):  # left it (written back on quit)
+        reu_image()
     cmd = [harness.VICE, "-default", "+sound", "-sounddev", "dummy", "-warp", "-binarymonitor",
            "-binarymonitoraddress", "127.0.0.1:%d" % PORT,
            "-cartcrt", CARTRIDGE,
-           "-reu", "-reusize", "16384", "-reuimage", REU_IMAGE, "+reuimagerw"]
+           "-reu", "-reusize", "16384", "-reuimage", REU_IMAGE, "-reuimagerw" if keep else "+reuimagerw"]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     v = Vice(port=PORT)
     try:
@@ -144,6 +149,9 @@ def main():
             addr, n, b = (int(x, 16) for x in os.environ["APPRUN_FILL"].split(","))
             v.mem_set(addr, bytes([b]) * n)
         v.mem_set(0x02F0, b"\xEE")
+        if os.environ.get("APPRUN_PREHOOK"):        # debugging: before the start
+            exec(open(os.environ["APPRUN_PREHOOK"]).read(),
+                 {"v": v, "harness": harness, "time": time, "start": start})
         v.regs_set({"PC": start})
         v.resume()
         time.sleep(args.wait)
@@ -212,7 +220,10 @@ def main():
                 args.find, v.mem_get(0x2F0, 0x2F0)[0], entry.hex()))
     finally:
         v.quit()
-        proc.kill()
+        try:                                # (KEEP: VICE writes the REU image
+            proc.wait(timeout=60 if keep else 2)    # on its way out)
+        except subprocess.TimeoutExpired:
+            proc.kill()
 
 
 if __name__ == "__main__":

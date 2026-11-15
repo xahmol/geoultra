@@ -7,4 +7,13 @@
 SYSDRV_BANK     = 4             ; banks 4-11 (the ROM mirror, banks 2-17)
 SYSDRV_TRACK    = 247
 SYSDRV_TRACKS   = 8             ; (src/sysdrive.toml tracks)
+; The scrap store (docs/DESIGN.md "Clipboard"): every program's scrap
+; files ("Text  Scrap", "Photo Scrap" ...) in REU banks SCRAP_BANK on,
+; read and written as tracks SCRAP_TRACK+1 to SYSDRV_TRACK of every drive
+; (not E's read-only way: no dirty map, also on a write-protected drive;
+; scrap.s).
+SCRAP_BANK      = 29            ; banks 29-30
+SCRAP_TRACK     = 245
+SCRAP_TRACKS    = 2
+        .assert SCRAP_TRACK + SCRAP_TRACKS = SYSDRV_TRACK, error, "sysdrive.inc: the scrap store's tracks end below E's"
         .assert SYSDRV_TRACK + SYSDRV_TRACKS = 255, error, "sysdrive.inc: E's tracks end at 255 (Locate checks no bound)"

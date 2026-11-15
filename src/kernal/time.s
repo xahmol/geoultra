@@ -30,7 +30,7 @@ cia1CtrlB       = $DC0F
 ALARM_BIT       = $04           ; CIA 1 interrupt control: TOD alarm
 sid             = $D400
 
-        .segment "KEXT"                 ; $9A80: see ARCHITECTURE.md
+        .segment "KEXT"                 ; $9A90: see ARCHITECTURE.md
 
 todFreq:        .byte 0         ; $80: 50 Hz (PAL), 0: 60 Hz
 hours:          .byte 0

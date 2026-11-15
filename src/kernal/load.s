@@ -29,6 +29,7 @@ JT_COPY         = $1000         ; its copy in REU bank 1
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
         .import taskName
+        .import ScrapFind
         .import WriteBackNow, SysFindFile, AppGate, RefusedMsg, ownDesk, FileEngine
 
 DA_BANK         = 18
@@ -58,7 +59,8 @@ sleepRtnHi:     .res MAX_SLEEP
 ; r0L, r7, r2, r3, r10L as for those. X = error.
 GetFile:
         jsr SaveArgs
-        jsr SysFindFile     ; (drive E: desk accessories)
+        jsr ScrapFind       ; (a scrap: the store, scrap.s; then SysFindFile,
+                            ; drive E: desk accessories)
         txa
         bne @end
         jsr LoadArgs

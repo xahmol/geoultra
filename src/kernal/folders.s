@@ -28,11 +28,12 @@
 
         .export folderT, folderS, ExtTable, SetGEOSDiskOvl, Dir81, Patch81, FileEngine
         .import t1581
-        .import OvlCall
+        .import OvlCall, SysFindFile
         .import DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite
         .import geosId
 
-FindFile        = $C20B         ; jump table
+FindFile        = SysFindFile   ; (as the jump table's was before the scrap
+                                ; store: a folder's name never is a scrap's)
 FILE_EXISTS     = $40           ; GeoUltra's own error codes (MakeDir,
 DIR_NOT_EMPTY   = $41           ; RemoveDir)
 INSUFF_SPACE    = 3             ; (as the disk driver)

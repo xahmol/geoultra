@@ -81,7 +81,7 @@ NewDisk = ($900C)
 GetBlock = ($9016)
 PutBlock = ($9018)
 SetGEOSDisk = ($902E)
-SaveFile
+SaveFile = ScrapSave    # the scrap store (scrap.s)
 SetGDirEntry
 BldGDirEntry
 GetFreeDirBlk = ($901E)
@@ -91,7 +91,7 @@ ReadFile
 SmallPutChar
 FollowChain
 GetFile
-FindFile = SysFindFile    # drive E fallback (sysdrive.s)
+FindFile = ScrapFind    # the scrap store (scrap.s), then SysFindFile
 CRC
 LdFile
 EnterTurbo = ($9008)
@@ -106,7 +106,7 @@ EnterDeskTop
 StartAppl
 ExitTurbo = ($9004)
 PurgeTurbo = ($9006)
-DeleteFile
+DeleteFile = ScrapDel    # the scrap store (scrap.s)
 FindFTypes = AppFTypes    # drive E's desk accessories first (sysdrive.s)
 RstrAppl
 ToBASIC

@@ -3,25 +3,26 @@
 ; cannot call the other's code.
 
 hibName:        .byte "HIBERNAT.BIN", 0
-signature:      .byte "GUHIB2"
+signature:      .byte "GUHIB3"
 ; File parts: REU bank, number of banks, file offset (in 64 KB units).
 ; The task banks and the legacy REU depend on the tasks in use: SetParts.
-partBank:       .byte SYS_BANK, HIB_RAM, 18, 192
-partCount:      .byte 1, 1, 1, 8
-partAt:         .byte 0, 1, 2, 3
-PARTS           = 4
+; Part 1: the scrap store (scrap.s, sysdrive.inc's SCRAP_BANK, 2 banks).
+partBank:       .byte SYS_BANK, 29, HIB_RAM, 18, 192
+partCount:      .byte 1, 2, 1, 1, 8
+partAt:         .byte 0, 1, 3, 4, 5
+PARTS           = 5
 
 ; SetParts: A = the task slots saved (span, 1-8), X = the legacy REU
 ; banks saved (span * ramExpSize; task.s Many): the parts' sizes and
 ; the offsets after them.
 SetParts:
-        sta partCount + 1
-        stx partCount + 3
+        sta partCount + 2
+        stx partCount + 4
         clc
-        adc #1
-        sta partAt + 2
-        adc #1
+        adc #3
         sta partAt + 3
+        adc #1
+        sta partAt + 4
         rts
 
 ; PartCmd: A = DOS_SAVE_REU / DOS_LOAD_REU for part partIdx: SEEK to its

@@ -549,6 +549,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d24.py
 	$(PYTHON) tests/apps/geoludo.py
 	$(PYTHON) tests/apps/geowrite.py
+	$(PYTHON) tests/apps/clipboard.py
 
 test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt

@@ -65,7 +65,7 @@ section 2). GeoUltra's own use of the system areas:
 | --- | --- |
 | `$4F00-$5FFF` | at boot only: the cold start (`INIT`, `build/init64.bin`: `ColdStart`, `DiskInit`, `ClockInit`; it ends in `EnterDeskTop`, the banner is gone since 2026-11-11), loaded by the boot ROM and started at `$4F00` (moved down from `$5000` on 2026-11-04 when it had grown; `$4000-$4E7F` holds mount.s's buffers); applications overwrite it later |
 | `$9000-$9A7F` | disk driver: vectors `$9000-$902F`, jump table `$9030-$904D`, REU image driver (now to about `$97EB`); planned: the **overlay slot**, rarely used kernal code fetched from the REU on demand |
-| `$9A80-$9C7F` | `KEXT`: resident kernal code that no longer fits at `$C000-$FFFF` (the clock, the file list's click and arrow routines) |
+| `$9A90-$9C7F` | `KEXT`: resident kernal code that no longer fits at `$C000-$FFFF` (the clock, the file list's click and arrow routines, the task and scrap store stubs) |
 | `$9D80-$9FFF` | the **overlay slot**: one overlay module at a time (src/kernal/overlay.s) |
 | `$9C80-$9D7F` | `dir3Head` (third BAM block of a 1581 image, as GEOS 2.0) |
 | `$BF40-$BFFF` | `BFCODE` (`build/kbf64.bin`): `PutDecimal`; GEOS 2.0's kernal starts here too, so applications leave it alone |
