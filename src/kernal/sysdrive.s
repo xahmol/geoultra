@@ -237,6 +237,8 @@ OvFindFile:
 ; part of itself for the launch. X = 0 to go on. Refused: GEOS 2.0's CONFIGURE (permanent name
 ; "Configure"), which loads its own disk drivers over $9000 and crashed
 ; GeoUltra (U64, 2026-10-30); GeoUltra Settings does its job.
+; Started (not only loaded): its name for the task list, its turbo
+; speed, the colour matrix in screencolors.
 ; r0-r15 kept (GetFHdrInfo changes r1, r7, which LdApplic still needs).
 OvAppGate:
         ldx #0
@@ -268,6 +270,14 @@ OvAppGate:
         lda #0
         sta taskName + NAME_LEN - 1
         jsr SpeedFor            ; its turbo speed (speed.s)
+        lda screencolors        ; the colour matrix in GEOS's colours, as
+        ldx #0                  ; GEOS 2.0's deskTop leaves it: a program
+@col:   sta COLOR_MATRIX,x      ; started another way (gush, a test) found
+        sta COLOR_MATRIX+$100,x ; its launcher's colour cells (the user,
+        sta COLOR_MATRIX+$200,x ; 2026-11-15: geoWrite with the desktop's
+        sta COLOR_MATRIX+$2E8,x ; cells in it)
+        inx
+        bne @col
 @go:    ldx #0
         stx sysA
         ldx #31
