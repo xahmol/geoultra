@@ -550,6 +550,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d25.py
 	$(PYTHON) tests/spool/sp1.py
 	$(PYTHON) tests/spool/sp2.py
+	$(PYTHON) tests/spool/sp3.py
 	$(PYTHON) tests/apps/geoludo.py
 	$(PYTHON) tests/apps/geowrite.py
 	$(PYTHON) tests/apps/clipboard.py

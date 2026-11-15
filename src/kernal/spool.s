@@ -26,8 +26,8 @@
         .include "engine.inc"
         .include "hw.inc"
 
-        .import OvlCall, drvTracks, SysRAMOp, ReadFile
-        .export SpoolInit, spoolExtra, spoolBase, driveLimit, SpoolLd, spOn
+        .import OvlCall, drvTracks, SysRAMOp, ReadFile, taskReq
+        .export SpoolInit, spoolExtra, spoolBase, driveLimit, SpoolLd, spOn, spDrv
 
 PRINTER         = 9             ; GEOS file type
 DRV_ADDR        = $7900
@@ -65,6 +65,27 @@ rqSrc1          = $9FF5         ; (word) the data, its length
 rqLen1          = $9FF7         ; (word)
 rqSrc2          = $9FF9         ; (word) a row's colours, their length
 rqLen2          = $9FFB
+px              = $9FFC         ; Xfer: the pointer (Q_HEAD, Q_TAIL)
+cmd             = $9FFD         ; Xfer: the REU command
+rsize           = $9FFE         ; (word) Room: the ring's pages
+; The playback's (modules 109, 110): over the recording's request (both
+; never at once)
+ptype           = rqInit        ; the record's type
+runEntry        = rqType        ; the driver's entry (offset from $7900)
+runLen1         = rqSrc1        ; (word) the data's length
+runLen2         = rqLen1        ; the colours' length
+status          = rqLen1 + 1    ; the driver's X
+; The playback's state: the first RING0 pages of the queue's bank 0
+; (spoolring.inc), REU bank 27
+ST_DRV          = $0000         ; the program's $7900-$7F3F meanwhile
+ST_WORK         = $0700         ; the driver's work area between calls
+ST_AREA         = $1000         ; the program's AREA meanwhile
+AREA            = $6000         ; C64 memory lent to the driver: its work
+WORK_LEN        = $0780         ; area (1920 bytes), the row (640), the
+ROWB            = AREA + WORK_LEN ; colours (80), a string (256)
+COLB            = ROWB + ROW_LEN
+STRB            = COLB + COL_LEN
+AREA_LEN        = STRB + 256 - AREA
 
 SPOOL_FIXED     = 2             ; banks 27-28
 ; The queue's header (QHEAD, REU bank 1)
@@ -75,6 +96,8 @@ Q_JOBS          = 10            ; jobs recorded
 Q_OPEN          = 11            ; $80: a job being recorded
 Q_PAUSED        = 12            ; $80: playback paused
 Q_DNEXT         = 13            ; the next driver slot (module 106)
+Q_PSLOT         = 14            ; the playback's driver slot (T_DRIVER)
+Q_ERR           = 15            ; the printer's error that paused it
 Q_LEN           = 16
 SPOOL_MAX       = 32            ; 2 MB
 
@@ -103,8 +126,8 @@ SpoolEnt:
         .byte 107, 0
 spEnt:          .byte 0
 spDrv:          .byte 0         ; this task's driver: its slot (module 106)
-spOn:           .byte 0         ; $80: drivers caught (off until the
-                                ; playback, part 3, exists: tests set it)
+spOn:           .byte $80       ; $80: drivers caught (0: printing as in
+                                ; GEOS 2.0, straight to the printer; tests)
 
 spoolExtra:     .byte 0                 ; banks beyond 27-28
 spoolBase:      .byte FE_LAST_BANK + 1  ; the first of them
@@ -305,13 +328,27 @@ slot:           .byte 0
 
         jmp Record              ; entry 0 (SpoolEnt)
 
-Store:  jsr OvlCall             ; (module 108: the request written; at
-        .byte 108, 0            ; Record's end: it returns to the program)
+RING_LOAD       = 1
+RING_INIT       = 1
+RING_HEAD_ONLY  = 1
+        .include "spoolring.inc"
 
-; Record: the driver's entry n = (spEnt - 2) / 3 as a request for module
-; 108 (in the scratch: rqInit for InitForPrint, the record's type, up to
-; two parts of data: the row, its colours; a string and its zero).
-Record: lda spEnt
+Store:  jsr OvlCall             ; (module 108: the request written)
+        .byte 108, 0
+
+; Record: the driver's entry n = (spEnt - 2) / 3 written by module 108:
+; a new job (InitForPrint, or none open) first gets its driver's slot
+; (T_DRIVER), then the call's record (type, up to two parts of data: the
+; row, its colours; a string). X = 0 (StartPrint, StopPrint: no error).
+Record: lda r0L                 ; the program's data and colour pointers
+        sta dataP               ; (HeadLoad's SysRAMOp uses r0-r3)
+        lda r0H
+        sta dataP+1
+        lda r2L
+        sta colP
+        lda r2H
+        sta colP+1
+        lda spEnt
         sec
         sbc #2
         ldx #$FF
@@ -319,32 +356,49 @@ Record: lda spEnt
         sec
         sbc #3
         bcs @div
+        stx entry
+        jsr HeadLoad
+        lda entry
+        beq @job                ; InitForPrint: a new job
+        bit hdr + Q_OPEN
+        bmi @call
+@job:   lda #$80
+        sta hdr + Q_OPEN
+        inc hdr + Q_JOBS
+        lda #T_DRIVER           ; its driver: the slot it was kept in
+        sta rqType              ; (module 106)
+        lda #<spDrv
+        sta rqSrc1
+        lda #>spDrv
+        sta rqSrc1+1
+        lda #1
+        sta rqLen1
         lda #0
+        sta rqLen1+1
+        sta rqLen2
+        jsr Store
+@call:  lda #0
         sta rqLen1
         sta rqLen1+1
         sta rqLen2
-        sta rqInit
-        txa
-        bne :+
-        lda #$80                ; InitForPrint: a new job
-        sta rqInit
-:       lda Types,x
+        ldx entry
+        lda Types,x
         sta rqType
         cmp #T_ROW
         bne @ascii
-        lda r0L                 ; the row: 640 bytes from r0
+        lda dataP               ; the row: 640 bytes from r0
         sta rqSrc1
-        lda r0H
+        lda dataP+1
         sta rqSrc1+1
         lda #<ROW_LEN
         sta rqLen1
         lda #>ROW_LEN
         sta rqLen1+1
-        lda r2L                 ; its colours (r2 not 0): 80 more
+        lda colP                ; its colours (r2 not 0): 80 more
         sta rqSrc2
-        lda r2H
+        lda colP+1
         sta rqSrc2+1
-        ora r2L
+        ora colP
         beq @store
         lda #T_ROWC
         sta rqType
@@ -353,10 +407,12 @@ Record: lda spEnt
         bne @store
 @ascii: cmp #T_ASCII
         bne @store
-        lda r0L                 ; the string and its zero
+        lda dataP               ; the string and its zero
         sta rqSrc1
-        lda r0H
+        sta r0L
+        lda dataP+1
         sta rqSrc1+1
+        sta r0H
         ldy #0
 @len:   lda (r0),y
         beq @z
@@ -378,31 +434,24 @@ Types:  .byte T_INIT, T_START, T_ROW, T_STOP, 0, T_ASCII, T_SASCII, T_NLQ
 
         jmp Write               ; entry 0 (module 107)
 
-        .include "spoolq.inc"
+        .include "spoolring.inc"
+        .include "spoolput.inc"
 
-; Write: module 107's request into the queue: a new job (InitForPrint,
-; or none open) first gets its driver; then the record's type and its
-; parts. X = 0 (StartPrint, StopPrint: no error); no room: the rest is
-; dropped (part 3 makes the program wait instead).
-Write:  jsr HeadLoad
-        bit rqInit
-        bmi @job
-        bit hdr + Q_OPEN
-        bmi @rec
-@job:   lda #$80
-        sta hdr + Q_OPEN
-        inc hdr + Q_JOBS
-        lda #T_DRIVER           ; its driver: the slot it was kept in
-        jsr PutType             ; (module 106)
-        lda #<spDrv
-        ldx #>spDrv
+; Write: module 107's request into the queue (its header in hdr): the
+; record's type, a string's length, its parts; the header saved. X = 0.
+; No room: the rest dropped (part 3 makes the program wait instead).
+Write:  lda rqType
+        jsr PutType
+        lda rqType              ; a string: its length first (the playback
+        cmp #T_ASCII            ; reads it so)
+        bne :+
+        lda #<rqLen1
+        ldx #>rqLen1
         jsr From
         lda #1
         ldx #0
         jsr Put
-@rec:   lda rqType
-        jsr PutType
-        lda rqSrc1
+:       lda rqSrc1
         ldx rqSrc1+1
         jsr From
         lda rqLen1
@@ -415,7 +464,262 @@ Write:  jsr HeadLoad
         ldx #0
         jsr Put
         jsr HeadSave
+        lda taskReq             ; the playback: a pass at MainLoop's end
+        ora #$20
+        sta taskReq
         ldx #0
         rts
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL109"
+        .scope Mod109
+
+        jmp Step                ; entry 0 (SpoolStep)
+
+RING_LOAD       = 1
+        .include "spoolring.inc"
+
+Run:    jsr OvlCall             ; (module 110: the driver called; X = its
+        .byte 110, 0            ; status)
+
+; Step: the record at the tail played: T_DRIVER sets the driver's slot;
+; any other is a call of the driver (module 110) with its data. A
+; StartPrint or StopPrint error pauses the queue (Q_PAUSED, Q_ERR) and
+; keeps the record. Played: the next pass asked for (taskReq $20).
+; Empty or paused: nothing (no next pass).
+Step:   jsr HeadLoad
+        bcs @idle               ; (no queue)
+        bit hdr + Q_PAUSED
+        bmi @idle
+        ldx #2
+@cmp:   lda hdr + Q_HEAD,x
+        cmp hdr + Q_TAIL,x
+        bne @work
+        dex
+        bpl @cmp
+@idle:  rts
+@work:  lda #<ptype
+        ldx #>ptype
+        jsr From
+        jsr Get1
+        lda ptype
+        cmp #T_DRIVER
+        bne @call
+        lda #<(hdr + Q_PSLOT)
+        ldx #>(hdr + Q_PSLOT)
+        jsr From
+        jsr Get1
+        jmp @done
+@call:  tax
+        lda Entry - T_INIT,x
+        sta runEntry
+        lda #0
+        sta runLen1
+        sta runLen1+1
+        sta runLen2
+        cpx #T_ROW
+        bcc @run
+        cpx #T_ROWC + 1
+        bcs @ascii
+        lda #<ROW_LEN           ; a row: 640 bytes, with colours 80 more
+        sta runLen1
+        lda #>ROW_LEN
+        sta runLen1+1
+        cpx #T_ROWC
+        bne @run
+        lda #COL_LEN
+        sta runLen2
+        bne @run
+@ascii: cpx #T_ASCII
+        bne @run
+        lda #<runLen1           ; a string: its length first
+        ldx #>runLen1
+        jsr From
+        jsr Get1
+@run:   jsr Run
+        lda ptype               ; StartPrint, StopPrint: their status
+        cmp #T_START
+        beq :+
+        cmp #T_STOP
+        bne @done
+:       txa
+        beq @done
+        stx status              ; an error: paused, the record kept
+        jsr HeadLoad            ; (the header as it was)
+        lda #$80
+        sta hdr + Q_PAUSED
+        lda status
+        sta hdr + Q_ERR
+        jmp HeadSave
+@done:  jsr HeadSave
+        lda taskReq             ; the next pass
+        ora #$20
+        sta taskReq
+        rts
+
+; Get1: one byte from the tail to src.
+Get1:   lda #1
+        ldx #0
+        jmp Get
+
+; The entries by record type (T_INIT on): InitForPrint, StartPrint,
+; PrintBuffer (twice), StopPrint, StartASCII, PrintASCII, SetNLQ.
+Entry:  .byte 0, 3, 6, 6, 9, 18, 15, 21
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL110"
+        .scope Mod110
+
+        jmp Run                 ; entry 0 (module 109)
+
+        .include "spoolring.inc"
+
+; Run: the driver's entry runEntry called with the record's data: the
+; program's bytes out and the job's driver and work area in (module 111);
+; the data (runLen1 bytes: a row, or a string) and colours (runLen2) from
+; the tail; r0 the data, r1 the work area, r2 the colours (0: none);
+; then module 111 again (the work area kept, the program's bytes back).
+; X = the driver's X.
+Run:    jsr SwapIn
+        lda runEntry            ; the data: a string, or a row
+        cmp #15
+        bne :+
+        lda #<STRB
+        ldx #>STRB
+        bne @data
+:       lda #<ROWB
+        ldx #>ROWB
+@data:  sta dataP
+        stx dataP+1
+        jsr From
+        lda runLen1
+        ldx runLen1+1
+        jsr Get
+        lda #<COLB
+        ldx #>COLB
+        jsr From
+        lda runLen2
+        ldx #0
+        jsr Get
+        lda dataP               ; the call
+        sta r0L
+        lda dataP+1
+        sta r0H
+        lda #<AREA
+        sta r1L
+        lda #>AREA
+        sta r1H
+        lda #0
+        sta r2L
+        sta r2H
+        lda runLen2
+        beq :+
+        lda #<COLB
+        sta r2L
+        lda #>COLB
+        sta r2H
+:       lda runEntry
+        sta vec
+        lda #>DRV_ADDR
+        sta vec+1
+        jsr Call
+        stx status
+        jsr SwapOut
+        ldx status
+        rts
+Call:   jmp (vec)
+SwapIn: jsr OvlCall             ; (module 111)
+        .byte 111, 0
+SwapOut:
+        jsr OvlCall
+        .byte 111, 3
+
+vec:            .word 0
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL111"
+        .scope Mod111
+
+        jmp SwapIn              ; entry 0 (module 110)
+        jmp SwapOut             ; entry 3
+
+; SwapIn: the program's driver area and AREA out to bank 27, the job's
+; driver (its slot, Q_PSLOT) to $7900, its work area into AREA.
+SwapIn: ldx #0
+        jsr Op
+        ldx #1
+        jsr Op
+        lda #<DRV_ADDR
+        sta r0L
+        lda #>DRV_ADDR
+        sta r0H
+        lda #<DRV_SAVE
+        sta r1L
+        lda #>DRV_SAVE
+        sta r1H
+        ldx hdr + Q_PSLOT
+        beq @at
+@mul:   clc
+        lda r1L
+        adc #<DRV_LEN
+        sta r1L
+        lda r1H
+        adc #>DRV_LEN
+        sta r1H
+        dex
+        bne @mul
+@at:    lda #<DRV_LEN
+        sta r2L
+        lda #>DRV_LEN
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        ldy #REU_FETCH
+        jsr SysRAMOp
+        ldx #2
+        jmp Op
+
+; SwapOut: the work area kept, the program's bytes back.
+SwapOut:
+        ldx #3
+        jsr Op
+        ldx #4
+        jsr Op
+        ldx #5
+
+; Op: transfer X of the table below (r0 C64, r1 REU in bank 27, r2 the
+; length, the command).
+Op:     lda OpC64Lo,x
+        sta r0L
+        lda OpC64Hi,x
+        sta r0H
+        lda OpReuLo,x
+        sta r1L
+        lda OpReuHi,x
+        sta r1H
+        lda OpLenLo,x
+        sta r2L
+        lda OpLenHi,x
+        sta r2H
+        lda #SPOOL_BANK
+        sta r3L
+        ldy OpCmd,x
+        jmp SysRAMOp
+OpC64Lo:        .byte <DRV_ADDR, <AREA, <AREA, <AREA, <AREA, <DRV_ADDR
+OpC64Hi:        .byte >DRV_ADDR, >AREA, >AREA, >AREA, >AREA, >DRV_ADDR
+OpReuLo:        .byte <ST_DRV, <ST_AREA, <ST_WORK, <ST_WORK, <ST_AREA, <ST_DRV
+OpReuHi:        .byte >ST_DRV, >ST_AREA, >ST_WORK, >ST_WORK, >ST_AREA, >ST_DRV
+OpLenLo:        .byte <DRV_LEN, <AREA_LEN, <WORK_LEN, <WORK_LEN, <AREA_LEN, <DRV_LEN
+OpLenHi:        .byte >DRV_LEN, >AREA_LEN, >WORK_LEN, >WORK_LEN, >AREA_LEN, >DRV_LEN
+OpCmd:          .byte REU_STASH, REU_STASH, REU_FETCH, REU_STASH, REU_FETCH, REU_FETCH
 
         .endscope

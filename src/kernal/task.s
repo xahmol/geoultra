@@ -103,8 +103,8 @@ TaskTick:
 ; task at once, FE_TASK from the desktop).
 TaskCheck:
         jsr RtcCheck            ; (then WbCheck)
-        lda taskReq
-        bpl @r
+        lda taskReq             ; ($80, $C0: the task popup; $20: the print
+        beq @r                  ; spooler's playback, spool.s)
         ldx #0
         stx taskReq
         jsr OvlCall             ; (at the routine's end: OvlCall returns
@@ -149,10 +149,20 @@ Names:  jsr OvlCall             ; (module 98: the table to TBLBUF)
         .byte 98, 3
 Draw:   jsr OvlCall             ; (module 97: the popup drawn)
         .byte 97, 0
+SpoolStep:
+        jsr OvlCall             ; (module 109: a record of the print queue
+        .byte 109, 0            ; played, spool.s)
 
 ; Popup: the screen's rows saved, the list drawn, keys and clicks until
 ; a choice or RUN/STOP; the screen given back, then the choice done.
-Popup:  and #$40                 ; FE_TASK's new task: at once (its path
+Popup:  pha                     ; the spooler's playback: a record each
+        and #$A0                ; pass ($20; after the popup's $80 too: it
+        beq :+                  ; took the bit's place)
+        jsr SpoolStep
+:       pla
+        bmi :+
+        rts                     ; (the playback only)
+:       and #$40                ; FE_TASK's new task: at once (its path
         beq @menu               ; waits at REQ for the new desktop)
         jsr Names
         jsr NewTask

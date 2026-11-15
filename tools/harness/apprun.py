@@ -18,6 +18,7 @@ matrix, no sprites) is written to --out:
   h:FILE       run the Python FILE with v (the VICE connection), for
                debugging (breakpoints, memory)
 
+APPRUN_VICE_ARGS: more VICE arguments (a printer on device 4, ...).
 APPRUN_KEEP_REU=1: the REU image is kept and written back at the end, so a
 second run sees what the first left in the REU (the scrap store, drives).
 
@@ -104,6 +105,7 @@ def main():
            "-binarymonitoraddress", "127.0.0.1:%d" % PORT,
            "-cartcrt", CARTRIDGE,
            "-reu", "-reusize", "16384", "-reuimage", REU_IMAGE, "-reuimagerw" if keep else "+reuimagerw"]
+    cmd += os.environ.get("APPRUN_VICE_ARGS", "").split()     # e.g. a printer
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     v = Vice(port=PORT)
     try:
@@ -221,7 +223,8 @@ def main():
     finally:
         v.quit()
         try:                                # (KEEP: VICE writes the REU image
-            proc.wait(timeout=60 if keep else 2)    # on its way out)
+            proc.wait(timeout=60 if keep else 10)   # on its way out; a
+                                                    # printer's file too)
         except subprocess.TimeoutExpired:
             proc.kill()
 

@@ -1,0 +1,8 @@
+[file]
+name    = "GU Logdrv"
+type    = "PRINTER"
+class   = "GU Logdrv"
+version = "V1.0"
+author  = "GeoUltra"
+info    = "A printer driver for GeoUltra's spooler tests: it logs its calls"
+load    = 0x7900
