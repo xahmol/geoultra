@@ -955,55 +955,21 @@ gfCls:          .word 0
 
         .segment "KEXT"                 ; space: see ARCHITECTURE.md
 
-; GfPress (otherPressVec): a press on a row selects its file (below the
-; last row: nothing); a second press on the same row in time is OPEN (a
-; folder entered, a file opened; as GEOS 2.0's file box, the user's
-; question 2026-11-13).
+; GfPress (otherPressVec): the file box's press, in module 100 (OvGfPress);
+; its answer ends the dialog here, outside the overlay (DbCommand and
+; RstrFrmDialogue leave through the dialog's stack, which an overlay's
+; frame must not be on).
 GfPress:
-        lda mouseData
-        bmi @end
-        jsr GfBox
-        clc
-        lda r2L
-        adc #GF_ROWS * GF_ROW - 1
-        sta r2H
-        jsr IsMseInRegion
-        beq @strip
-        sec
-        lda mouseYPos
-        sbc gfTop
-        ldx #$FF
-@div:   inx
-        sec
-        sbc #GF_ROW
-        bcs @div
-        txa
-        clc
-        adc gfFirst
-        cmp gfFound
-        bcs @end
-        ldx dblClickCount       ; the same row again in time: OPEN
-        beq @sel
-        cmp gfSel
-        beq @open
-@sel:   pha
-        jsr GfInvert
-        pla
-        sta gfSel
-        jsr GfInvert
-        lda #CLICK_COUNT
-        sta dblClickCount
-        jmp GfCopy
-@open:  lda #0
-        sta dblClickCount
-        lda #OPEN
-        jmp DbCommand
-@strip: jsr GfLetterPress       ; (below the rows: a drive letter? Its
-        lda gfDrvPick           ; answer ends the dialog here, outside the
-        beq @end                ; overlay: MegaPatch's $88-$8B)
-        sta sysDBData
+        jsr GfPressOv
+        beq @end                ; (nothing)
+        bmi @drive
+        jmp DbCommand           ; (A = OPEN)
+@drive: sta sysDBData           ; (a drive letter, $88-$8B)
         jmp RstrFrmDialogue
 @end:   rts
+GfPressOv:
+        jsr OvlCall
+        .byte 100, 0
 
 ; GfLetters, GfLetterPress: the file box's drive letters (module 87,
 ; drvlist.s; the user, 2026-11-13).
@@ -1400,5 +1366,61 @@ OvRestoreState:
         lda dbPort
         sta CPU_PORT
         plp
+        rts
+
+        .segment "OVL100"
+
+        jmp OvGfPress           ; entry 0
+
+; OvGfPress (module 100, from GfPress): a press on a row selects its file
+; (below the last row: nothing); a second press on the same row in time
+; is OPEN (a folder entered, a file opened; as GEOS 2.0's file box, the
+; user's question 2026-11-13). A = 0 (Z set), OPEN, or a drive letter's
+; answer ($88-$8B, N set): GfPress ends the dialog with it.
+OvGfPress:
+        lda mouseData
+        bmi @end
+        jsr GfBox
+        clc
+        lda r2L
+        adc #GF_ROWS * GF_ROW - 1
+        sta r2H
+        jsr IsMseInRegion
+        beq @strip
+        sec
+        lda mouseYPos
+        sbc gfTop
+        ldx #$FF
+@div:   inx
+        sec
+        sbc #GF_ROW
+        bcs @div
+        txa
+        clc
+        adc gfFirst
+        cmp gfFound
+        bcs @end
+        ldx dblClickCount       ; the same row again in time: OPEN
+        beq @sel
+        cmp gfSel
+        beq @open
+@sel:   pha
+        jsr GfInvert
+        pla
+        sta gfSel
+        jsr GfInvert
+        lda #CLICK_COUNT
+        sta dblClickCount
+        jsr GfCopy
+        lda #0
+        rts
+@open:  lda #0
+        sta dblClickCount
+        lda #OPEN
+        rts
+@strip: jsr GfLetterPress       ; (below the rows: a drive letter? Its
+        lda gfDrvPick           ; answer, MegaPatch's $88-$8B, or 0)
+        rts
+@end:   lda #0
         rts
 
