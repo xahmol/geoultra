@@ -68,13 +68,18 @@ rqLen2          = $9FFB
 px              = $9FFC         ; Xfer: the pointer (Q_HEAD, Q_TAIL)
 cmd             = $9FFD         ; Xfer: the REU command
 rsize           = $9FFE         ; (word) Room: the ring's pages
-; The playback's (modules 109, 110): over the recording's request (both
-; never at once)
-ptype           = rqInit        ; the record's type
-runEntry        = rqType        ; the driver's entry (offset from $7900)
-runLen1         = rqSrc1        ; (word) the data's length
-runLen2         = rqLen1        ; the colours' length
-status          = rqLen1 + 1    ; the driver's X
+; The playback's (modules 109, 110; apart from the recording's: a full
+; queue plays records while a call waits, module 112)
+ptype           = $9F70         ; the record's type
+runEntry        = $9F71         ; the driver's entry (offset from $7900)
+runLen1         = $9F72         ; (word) the data's length
+runLen2         = $9F74         ; the colours' length
+status          = $9F75         ; the driver's X
+rdata           = $9F76         ; (word) where the data goes
+need            = $9F78         ; (word) module 112: the room waited for
+                                ; (not in the module: Step's module 109
+                                ; takes its place, and it comes back new)
+fits            = $9F7A         ; module 112's answer: 0 the call fits
 ; The playback's state: the first RING0 pages of the queue's bank 0
 ; (spoolring.inc), REU bank 27
 ST_DRV          = $0000         ; the program's $7900-$7F3F meanwhile
@@ -335,6 +340,8 @@ RING_HEAD_ONLY  = 1
 
 Store:  jsr OvlCall             ; (module 108: the request written)
         .byte 108, 0
+Wait:   jsr OvlCall             ; (module 112: the queue played until A/X
+        .byte 112, 0            ; bytes fit)
 
 ; Record: the driver's entry n = (spEnt - 2) / 3 written by module 108:
 ; a new job (InitForPrint, or none open) first gets its driver's slot
@@ -357,7 +364,29 @@ Record: lda r0L                 ; the program's data and colour pointers
         sbc #3
         bcs @div
         stx entry
-        jsr HeadLoad
+        lda #0                  ; the room the call needs: a row (and its
+        ldx #0                  ; colours), a string, else a few bytes
+        ldy entry
+        cpy #2
+        bne @str
+        lda #<(ROW_LEN + COL_LEN)
+        ldx #>(ROW_LEN + COL_LEN)
+        bne @wait
+@str:   cpy #5
+        bne @wait
+        ldy #0
+@sl:    lda (r0),y              ; (r0: the program's string still)
+        beq @sz
+        iny
+        bne @sl
+@sz:    tya
+        ldx #0
+@wait:  jsr Wait                ; (module 112: played until it fits)
+        ldx #0
+        lda fits                ; (it does not: the call dropped whole, no
+        beq :+                  ; record without its data)
+        rts
+:       jsr HeadLoad
         lda entry
         beq @job                ; InitForPrint: a new job
         bit hdr + Q_OPEN
@@ -595,8 +624,8 @@ Run:    jsr SwapIn
         bne @data
 :       lda #<ROWB
         ldx #>ROWB
-@data:  sta dataP
-        stx dataP+1
+@data:  sta rdata
+        stx rdata+1
         jsr From
         lda runLen1
         ldx runLen1+1
@@ -607,9 +636,9 @@ Run:    jsr SwapIn
         lda runLen2
         ldx #0
         jsr Get
-        lda dataP               ; the call
+        lda rdata               ; the call
         sta r0L
-        lda dataP+1
+        lda rdata+1
         sta r0H
         lda #<AREA
         sta r1L
@@ -721,5 +750,57 @@ OpReuHi:        .byte >ST_DRV, >ST_AREA, >ST_WORK, >ST_WORK, >ST_AREA, >ST_DRV
 OpLenLo:        .byte <DRV_LEN, <AREA_LEN, <WORK_LEN, <WORK_LEN, <AREA_LEN, <DRV_LEN
 OpLenHi:        .byte >DRV_LEN, >AREA_LEN, >WORK_LEN, >WORK_LEN, >AREA_LEN, >DRV_LEN
 OpCmd:          .byte REU_STASH, REU_STASH, REU_FETCH, REU_STASH, REU_FETCH, REU_FETCH
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL112"
+        .scope Mod112
+
+        jmp Wait                ; entry 0 (module 107)
+
+RING_LOAD       = 1
+RING_INIT       = 1
+RING_HEAD_ONLY  = 1
+PUT_ROOM_ONLY   = 1
+        .include "spoolring.inc"
+        .include "spoolput.inc"
+
+Step:   jsr OvlCall             ; (module 109: a record played)
+        .byte 109, 0
+
+; Wait: A/X bytes (and a few to spare) to fit in the queue: records
+; played meanwhile (the program waits at the printer's pace, as without
+; the spooler). Not when the queue is paused (a printer error) or empty
+; and the call still larger than it. fits: 0 it fits, else not (the
+; call is then dropped whole: module 107).
+Wait:   clc
+        adc #8
+        sta need
+        txa
+        adc #0
+        sta need+1
+@loop:  lda need
+        sta len
+        lda need+1
+        sta len+1
+        jsr HeadLoad
+        jsr Room
+        lda #0
+        bcc @end
+        bit hdr + Q_PAUSED
+        bmi @no
+        ldx #2                  ; empty: it never fits
+@e:     lda hdr + Q_HEAD,x
+        cmp hdr + Q_TAIL,x
+        bne @play
+        dex
+        bpl @e
+@no:    lda #1
+@end:   sta fits
+        rts
+@play:  jsr Step
+        jmp @loop
 
         .endscope

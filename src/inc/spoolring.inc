@@ -99,12 +99,6 @@ Xfer:   stx px
         sta len+1
         jmp @chunk
 
-; Banks: A = the spooler's banks (2 + spoolExtra).
-Banks:  lda spoolExtra
-        clc
-        adc #2
-        rts
-
 ; Phys: A = a logical bank -> its REU bank.
 Phys:   cmp #2
         bcs :+
@@ -116,6 +110,12 @@ Phys:   cmp #2
         adc spoolBase
         rts
 .endif
+
+; Banks: A = the spooler's banks (2 + spoolExtra).
+Banks:  lda spoolExtra
+        clc
+        adc #2
+        rts
 
 ; HeadLoad / HeadSave: the header <-> hdr; HeadLoad (only where
 ; RING_LOAD is defined) makes an empty queue when its mark is missing

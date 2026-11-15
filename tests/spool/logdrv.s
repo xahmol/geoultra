@@ -66,14 +66,16 @@ Buffer: lda #3
         jsr Add
         iny
         bpl @c
-        lda ROWS
+        lda ROWS                ; (the first 24 rows' sums: room to $02EF)
+        cmp #24
+        bcs :+
         asl a
         tax
         lda lo
         sta SUM,x
         lda hi
         sta SUM+1,x
-        inc ROWS
+:       inc ROWS
         rts
 
 Add:    clc
@@ -83,9 +85,11 @@ Add:    clc
         inc hi
 :       rts
 
-Log:    ldx LOG
+Log:    ldx LOG                 ; (the first 60 calls' types; all counted
+        cpx #60                 ; in LOG up to 255)
+        bcs :+
         sta LOG+1,x
-        inc LOG
+:       inc LOG
         rts
 
 lo:     .byte 0

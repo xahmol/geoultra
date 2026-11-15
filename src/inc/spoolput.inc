@@ -1,5 +1,6 @@
 ; The print spooler's writing (spool.s, module 108): with spoolring.inc.
 
+.ifndef PUT_ROOM_ONLY           ; (module 112: Room alone)
 ; PutType: A = a record's type into the queue.
 PutType:
         sta type
@@ -18,6 +19,7 @@ Put:    sta len
         ldy #REU_STASH
         jmp Xfer
 @no:    rts
+.endif
 
 ; Room: C clear when len bytes (and a page to spare) fit: the ring's
 ; pages R = banks * 256 - RING0, the used ones (head - tail) mod R.
