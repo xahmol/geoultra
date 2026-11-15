@@ -10,7 +10,9 @@
 ; the mounts): with a valid file (signature, the same kernal, the same
 ; mount table) and C= not held, the banks are loaded back, the file is
 ; deleted (a later unplanned power-off must not bring back an old state)
-; and Resume copies the RAM back in one DMA. The CPU then continues in
+; and Resume copies the RAM back in one DMA. The file's parts: module
+; 115 (also the print queue: banks 27-28 and, with records in it, its
+; extra banks). The CPU then continues in
 ; Resume, whose bytes are the same in the snapshot (same kernal), takes
 ; the saved stack pointer and returns from Snap a second time, with A = 1:
 ; Suspend's resumed path restores the chips and returns to its caller.
@@ -27,7 +29,7 @@ hibBank         = ramBank + 1   ; RamSetup's bank: 19 + the current task
         .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck, turboNow
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo
-        .import imgFlags
+        .import imgFlags, spoolBase, spoolExtra, SysRAMOp
 
 WR_VER_ERR      = $25           ; (as the disk driver: write failed)
 
@@ -195,12 +197,14 @@ TaskMany:                       ; (task.s, module 98: A = the slots in
         jsr OvlCall             ; use, up to the highest used one, X =
                                 ; their legacy REU banks)
         .byte 98, 9
+PartsSave:                      ; (module 115: every part; X = 0 or
+        jsr OvlCall             ; WR_VER_ERR)
+        .byte 115, 0
+SpoolPlan:                      ; (module 115: HP + 3)
+        jsr OvlCall
+        .byte 115, 3
 
-partIdx:        .byte 0
 hibErr:         .byte 0
-hdrTask:        .byte 0         ; header + 8: the current task, the task
-hdrSpan:        .byte 0         ; banks saved (slots 0 to span - 1), the
-hdrLegacy:      .byte 0         ; legacy banks saved (span * ramExpSize)
 
 ; Suspend: X = 0, or DEV_NOT_FOUND (no Ultimate) / an error of the file.
 Suspend:
@@ -240,11 +244,11 @@ Suspend:
         ldx #>r2
         ldy #2
         jsr DmaGo
-        lda #<(HEADER + 8)      ; the tasks: header + 8 to + 10
+        lda #<(HEADER + 8)      ; the parts' sizes: header + 8 to + 12
         sta reuAddr
-        lda #<hdrTask
-        ldx #>hdrTask
-        ldy #3
+        lda #<HP
+        ldx #>HP
+        ldy #HP_LEN
         jsr DmaGo
         jsr HomeCD
         bne @fail
@@ -252,17 +256,9 @@ Suspend:
         ldx #$0A                ; write, created or overwritten
         jsr NameCmd
         bne @fail
-        ldx #0
-@part:  stx partIdx
         lda #DOS_SAVE_REU
-        jsr PartCmd
-        bne @close
-        ldx partIdx
-        inx
-        cpx #PARTS
-        bne @part
-        lda #0
-        sta hibErr
+        jsr PartsSave
+        stx hibErr              ; (this module's bytes are new after it)
 @close: lda #DOS_CLOSE
         jsr Begin
         jsr Simple
@@ -306,11 +302,11 @@ Resumed:
 ; task's bank, the file's parts and header bytes for every slot up to
 ; the highest used one and their legacy REU areas (task.s, reu.s).
 Parts:  jsr TaskMany
-        sta hdrSpan
-        stx hdrLegacy
-        jsr SetParts
+        sta HP + 1
+        stx HP + 2
+        jsr SpoolPlan
         lda taskCur
-        sta hdrTask
+        sta HP
         clc
         adc #HIB_RAM
         sta hibBank
@@ -466,5 +462,127 @@ ToBCD:  ldy #$FF
         asl
 @one:   ora #0
         rts
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL115"
+        .scope Mod115
+
+        jmp Parts               ; entry 0 (modules 8 and 9)
+        jmp Plan                ; entry 3 (module 8)
+
+        .include "hibshared.inc"
+
+SPOOL_BANK      = 27            ; the print queue (spool.s)
+QHEAD           = $E700
+Q_HEAD          = 4
+
+; Parts: A = DOS_SAVE_REU / DOS_LOAD_REU: every part that has banks (the
+; sizes from HP), each at its place in the file (the offsets follow
+; from the sizes). X = 0, or WR_VER_ERR when one failed.
+Parts:  sta cmd
+        lda HP + 1
+        sta partCount + 2
+        lda HP + 2
+        sta partCount + 4
+        lda HP + 3
+        sta partCount + 6
+        lda HP + 4
+        sta partBank + 6
+        ldx #0                  ; the offsets
+@at:    lda partAt,x
+        clc
+        adc partCount,x
+        sta partAt + 1,x
+        inx
+        cpx #PARTS - 1
+        bne @at
+        ldx #0
+@part:  stx partIdx
+        lda partCount,x
+        beq @next
+        lda cmd
+        jsr PartCmd
+        bne @fail
+@next:  ldx partIdx
+        inx
+        cpx #PARTS
+        bne @part
+        ldx #0
+        rts
+@fail:  ldx #WR_VER_ERR
+        rts
+
+; Plan: HP + 3 = the print queue's extra banks to save: all of them
+; while records are in the queue (head and tail apart), else none (its
+; banks 27-28 always: the driver's work area between calls).
+Plan:   lda #<qPos
+        sta r0L
+        lda #>qPos
+        sta r0H
+        lda #<(QHEAD + Q_HEAD)
+        sta r1L
+        lda #>(QHEAD + Q_HEAD)
+        sta r1H
+        lda #6
+        sta r2L
+        lda #0
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        ldy #REU_FETCH
+        jsr SysRAMOp
+        ldx #2
+@c:     lda qPos,x
+        cmp qPos + 3,x
+        bne @full
+        dex
+        bpl @c
+        lda #0
+        beq @set
+@full:  lda spoolExtra
+@set:   sta HP + 3
+        lda spoolBase
+        sta HP + 4
+        rts
+
+; PartCmd: A = DOS_SAVE_REU / DOS_LOAD_REU for part partIdx: SEEK to its
+; place in the file, then the transfer. Z set on "00".
+PartCmd:
+        pha
+        lda #DOS_SEEK
+        jsr Begin
+        ldy partIdx
+        lda partAt,y
+        ldx #0
+        jsr PutLong
+        jsr Simple
+        beq @move
+        pla
+        lda #1                  ; Z clear: failed
+        rts
+@move:  pla
+        jsr Begin
+        ldy partIdx
+        lda partBank,y          ; REU address: bank, 0
+        ldx #0
+        jsr PutLong
+        ldy partIdx
+        lda partCount,y         ; length: banks * 64 KB
+        ldx #0
+        jsr PutLong
+        jmp Simple
+
+; REU bank, number of banks (the task banks, the legacy REU and the
+; queue's extra banks set from HP), file offset (in 64 KB units: Parts).
+partBank:       .byte SYS_BANK, 29, HIB_RAM, 18, 192, SPOOL_BANK, 0
+partCount:      .byte 1, 2, 1, 1, 8, 2, 0
+partAt:         .byte 0, 0, 0, 0, 0, 0, 0
+PARTS           = 7
+cmd:            .byte 0
+partIdx:        .byte 0
+qPos:           .res 6          ; the queue's head, tail
 
         .endscope

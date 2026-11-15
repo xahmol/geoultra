@@ -4,53 +4,15 @@
 
 hibName:        .byte "HIBERNAT.BIN", 0
 signature:      .byte "GUHIB3"
-; File parts: REU bank, number of banks, file offset (in 64 KB units).
-; The task banks and the legacy REU depend on the tasks in use: SetParts.
-; Part 1: the scrap store (scrap.s, sysdrive.inc's SCRAP_BANK, 2 banks).
-partBank:       .byte SYS_BANK, 29, HIB_RAM, 18, 192
-partCount:      .byte 1, 2, 1, 1, 8
-partAt:         .byte 0, 1, 3, 4, 5
-PARTS           = 5
-
-; SetParts: A = the task slots saved (span, 1-8), X = the legacy REU
-; banks saved (span * ramExpSize; task.s Many): the parts' sizes and
-; the offsets after them.
-SetParts:
-        sta partCount + 2
-        stx partCount + 4
-        clc
-        adc #3
-        sta partAt + 3
-        adc #1
-        sta partAt + 4
-        rts
-
-; PartCmd: A = DOS_SAVE_REU / DOS_LOAD_REU for part partIdx: SEEK to its
-; place in the file, then the transfer. Z set on "00".
-PartCmd:
-        pha
-        lda #DOS_SEEK
-        jsr Begin
-        ldy partIdx
-        lda partAt,y
-        ldx #0
-        jsr PutLong
-        jsr Simple
-        beq @move
-        pla
-        lda #1                  ; Z clear: failed
-        rts
-@move:  pla
-        jsr Begin
-        ldy partIdx
-        lda partBank,y          ; REU address: bank, 0
-        ldx #0
-        jsr PutLong
-        ldy partIdx
-        lda partCount,y         ; length: banks * 64 KB
-        ldx #0
-        jsr PutLong
-        jmp Simple
+; The file's parts (REU banks: bank 1, the scrap store, the task banks,
+; the desk accessory swap, the legacy REU, the print queue): module 115
+; (hibernate.s), from the header bytes at HP (scratch, kept across the
+; nested calls): HP + 0 the current task, + 1 the task slots saved, + 2
+; the legacy banks saved, + 3 the print queue's extra banks saved, + 4
+; the first of them (spoolBase: at the resume the cold start has not set
+; it yet) (header + 8 to + 12 in the file).
+HP              = $9FA0
+HP_LEN          = 5
 
 ; PutLong: the 32-bit value 0, X, A, 0 (low byte first).
 PutLong:

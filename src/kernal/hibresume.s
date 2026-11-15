@@ -4,7 +4,7 @@
         .include "hw.inc"
         .include "kcalls.inc"
 
-        .import uciPresent, Resume, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, hibBank
+        .import uciPresent, Resume, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, hibBank, OvlCall
 
 HIB_RAM         = 19
 HIB_SCRATCH     = 20
@@ -45,25 +45,23 @@ HibResume:
         bne @end
         jsr CheckFile
         bne @close
-        lda BUF+$309            ; the tasks saved (header + 8 to + 10)
-        beq @close
+        lda BUF+$309            ; the tasks saved (header + 8 to + 12: the
+        beq @close              ; parts' sizes, HP)
         cmp #9
         bcs @close
-        ldx BUF+$30A
-        jsr SetParts
-        lda BUF+$308
+        ldx #HP_LEN - 1
+@hp:    lda BUF+$308,x
+        sta HP,x
+        dex
+        bpl @hp
+        lda HP
         clc
         adc #HIB_RAM
         sta hibBank             ; Resume: the saved task's RAM
-        ldx #0
-@part:  stx partIdx
-        lda #DOS_LOAD_REU
-        jsr PartCmd
+        lda #DOS_LOAD_REU       ; (module 115)
+        jsr Parts
+        txa
         bne @close
-        ldx partIdx
-        inx
-        cpx #PARTS
-        bne @part
         lda #DOS_CLOSE
         jsr Begin
         jsr Simple
@@ -75,6 +73,8 @@ HibResume:
         jsr Begin
         jsr Simple
 @end:   rts
+Parts:  jsr OvlCall             ; (module 115: every part; X = 0 or an
+        .byte 115, 0            ; error)
 
 ; CheckFile: Z set when the file's header has the signature and this
 ; kernal's fingerprint, and its mount table ($01:0100-$03FF: per drive
@@ -164,4 +164,3 @@ PageDma:
         sta reuCmd
         rts
 
-partIdx:        .byte 0

@@ -268,7 +268,7 @@ applications call `$9030-$904D` directly.
   | Address | Use |
   |---|---|
   | `$0100-$03FF` | mount table, image paths (`$0200`), home path (`$0300`) |
-  | `$0400-$0407` | hibernation header (signature, build ID, tasks) |
+  | `$0400-$040C` | hibernation header (signature, build ID; the parts: the current task, task slots, legacy banks, the print queue's extra banks and the first of them) |
   | `$0500-$0532` | hibernation: VIC and CIA 2 registers |
   | `$1000` | the jump table's copy (`RepairJumpTab`) |
   | `$1800` | `curDirHead` kept meanwhile (drive E) |
@@ -624,6 +624,14 @@ helpers both modules assemble in `src/inc/hibshared.inc`.
   `GEOULTRA/HIBERNAT.BIN` (created or overwritten) with four parts, each
   one SEEK + `SAVE_REU`: bank 1, bank 19, bank 18 (desk accessory swap),
   banks 192-199 (the applications' REU), 704 KB. Returns X = 0.
+  Since 2026-11-15 the parts are module 115's (`hibernate.s`, for
+  saving and loading alike): bank 1, the scrap store (29-30), the task
+  banks, bank 18, the tasks' legacy REU, the print queue's banks 27-28
+  (always: the driver's work area between calls) and its extra banks
+  (spool=, only while records are in the queue). Their sizes and the
+  queue's first extra bank go into the header (`$0408-$040C`), as the
+  resume runs before the cold start's SpoolInit; a part without banks
+  is left out.
 - `HibResumeOvl` (module 9) from the cold start, after `MountAll`: with
   a UCI, C= not held, the file there, its signature and build ID this
   kernal's, and its mount table (per drive type, bank, tracks; the image

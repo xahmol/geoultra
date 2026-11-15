@@ -574,6 +574,7 @@ test-desktop-u64: check-deploy all
 	$(PYTHON) tests/settings/s5u64.py build/geoultra64.crt
 	$(PYTHON) tests/desktop/tasku64.py build/geoultra64.crt
 	$(PYTHON) tests/desktop/hibtasku64.py build/geoultra64.crt
+	$(PYTHON) tests/spool/hibspoolu64.py build/geoultra64.crt
 	$(PYTHON) tests/apps/geoludou64.py build/geoultra64.crt
 	$(PYTHON) tests/apps/themeu64.py build/geoultra64.crt
 	$(PYTHON) tests/spool/spu64.py build/geoultra64.crt

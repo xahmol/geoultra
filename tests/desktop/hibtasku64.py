@@ -3,7 +3,8 @@
 src/kernal/hibernate.s, hibresume.s, task.s): task 0 marks a RAM
 byte ($0334) $AA, a new task (1) marks it $BB and suspends (HibSuspend):
 the file holds the system bank, both task banks, the swap bank and both
-legacy REU areas. After a reboot the session resumes in task 1 ($BB,
+legacy REU areas, the print queue's banks 27-28 (its queue empty: not its
+extra banks). After a reboot the session resumes in task 1 ($BB,
 two tasks in the popup); a switch to task 0 finds $AA. Then task 1
 closed and the same with the one task left. The user's
 HIBERNAT.BIN is set aside first and put back.
@@ -116,8 +117,8 @@ def main():
         u.write(MARK, b"\xBB")
         legacy = u.read(0x88C3, 1)[0]
         call(kern["HibSuspend"], t=25)
-        check("the file: system, scrap store, 2 task banks, swap, 2 legacy areas",
-              size("HIBERNAT.BIN"), (1 + 2 + 2 + 1 + 2 * legacy) * 65536)
+        check("the file: system, scrap store, 2 task banks, swap, 2 legacy areas, print queue",
+              size("HIBERNAT.BIN"), (1 + 2 + 2 + 1 + 2 * legacy + 2) * 65536)
         u.boot()
         time.sleep(25)
         check("resumed in task 1, its RAM", (kbyte("taskCur"), u.read(MARK, 1)[0]), (1, 0xBB))
@@ -138,8 +139,8 @@ def main():
         check("task 1 closed: task 0", kbyte("taskCur"), 0)
         u.write(MARK, b"\xCC")                          # one task: as before
         call(kern["HibSuspend"], t=20)
-        check("one task: system, scrap store, 1 task bank, swap, 1 legacy area",
-              size("HIBERNAT.BIN"), (1 + 2 + 1 + 1 + legacy) * 65536)
+        check("one task: system, scrap store, 1 task bank, swap, 1 legacy area, print queue",
+              size("HIBERNAT.BIN"), (1 + 2 + 1 + 1 + legacy + 2) * 65536)
         u.boot()
         time.sleep(25)
         check("resumed: task 0, its RAM", (kbyte("taskCur"), u.read(MARK, 1)[0]), (0, 0xCC))
