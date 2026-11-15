@@ -46,7 +46,8 @@ FE_REBOOT       = 28            ; written back, the C64 restarted afresh
 FE_NTP          = 29            ; the clocks from an NTP server
 FE_UCI          = 30            ; a command to the Ultimate, its reply
 FE_POINTER      = 31            ; the mouse pointer's design (pointer.s)
-FE_COUNT        = 32
+FE_TASK         = 32            ; the tasks: count, popup, new (task.s)
+FE_COUNT        = 33
 FE_VER          = $0003         ; FE_VERSION's answer (the engine's version)
 
 ; FE_COPY, FE_MOVE: flags (r2L)
@@ -77,6 +78,7 @@ FE_ULTIMATE     = $4F           ; the Ultimate's DOS refused
 FE_NO_SLOT      = $50           ; drive E needs an empty drive letter (A-D)
 FE_MOUNTED      = $51           ; a disk image gone into is mounted on A-D
 FE_IN_TASK      = $52           ; the file is open in another task (task.s)
+FE_NO_TASK      = $53           ; FE_TASK: no task slot free
 
 ; What a resolved path names (feKind, set by the walk in module 24)
 FE_P_ROOT       = 0             ; "/"

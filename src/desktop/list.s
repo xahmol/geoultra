@@ -16,12 +16,13 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, Open
+        .import FileEngine, Open, OpenTask
         .import IconUp, IconFor, TextWidth, Paint, PaintList, px0, px1, py0, py1, pcol
         .import tTitle, tIcons, tSel, tCur, tScroll, tStatus, cSel, cAccentP
         .import listL, iconCard, nameX, pathY, listTop, rowH, rows, bottom
         .import stY0, stY1, trackTop, trackBot, trackH, viewMode, MonthName
         .export ListRead, ListDraw, path, count
+        .export TaskPress, Status, taskRedraw
         .export RowY, RowBox, ry
         .export entryInfo, entryName, cur, top, sel, IsSelected, Fetch
         .export Modifiers, mods, IsDotDot, row, RowEntry, path
@@ -1381,13 +1382,18 @@ Status: lda tStatus
         lda #<stBuf
         ldx #>stBuf
         jsr StatusText
+        jsr TaskWords           ; ("N tasks" first, at the right end)
         lda freeOK              ; the free space, right-aligned
-        beq @inv
-        ldy #0
-@pre:   lda freePre,y
+        bne @free
+        tya
+        bne @draw
+        jmp @inv
+@free:  ldx #0
+@pre:   lda freePre,x
         beq :+
         sta stBuf,y
         iny
+        inx
         bne @pre
 :       lda #' '
         sta stBuf,y
@@ -1404,13 +1410,13 @@ Status: lda tStatus
         ldx #FreeWord
         jsr Words               ; "B free" ("B" alone with two panes)
         lda panes
-        beq :+
+        beq @draw
         dey
         dey
         dey
         dey
         dey
-:       lda #0
+@draw:  lda #0
         sta stBuf,y
         lda #<stBuf
         sta r0L
@@ -1431,7 +1437,13 @@ Status: lda tStatus
         lda r11H
         sbc r2H
         sta r11H
-        lda #198
+        bit taskOn              ; (the tasks: a click from there, TaskPress)
+        bpl :+
+        lda r11L
+        sta taskX
+        lda r11H
+        sta taskX+1
+:       lda #198
         sta r1H
         jsr PutString
 @inv:   lda #STATUS_Y
@@ -1440,6 +1452,61 @@ Status: lda tStatus
         sta r2H
         jsr StatusSpan
         jmp InvertRectangle
+
+; TaskWords (Status): in the pane that ends at the screen's right edge,
+; "N tasks" (FE_TASK; the user's decision of 2026-11-14) to stBuf, Y
+; after it (else Y = 0); taskOn set when it is there, taskX not shown
+; ($FFFF) until Status places it. Destroys A, X, r0-r4.
+TaskWords:
+        ldx #$FF
+        stx taskX+1
+        inx
+        stx taskOn
+        ldy #0
+        lda paneR+1
+        cmp #>SCREEN_RIGHT
+        bne @end
+        lda paneR
+        cmp #<SCREEN_RIGHT
+        bne @end
+        lda #FE_TASK
+        jsr FileEngine
+        ldy #0
+        cpx #0
+        bne @end
+        ldx #TaskWord           ; "1 task", "2 tasks"
+        cmp #1
+        beq :+
+        ldx #TasksWord
+:       stx word
+        ldx #0
+        jsr Dec16
+        ldx word
+        jsr Words
+        dec taskOn
+@end:   rts
+
+; TaskPress (desktop.s, Press): C clear when the press was on the tasks
+; (the status line from taskX): the popup asked for (FE_TASK; it opens
+; at MainLoop's end), the status line drawn again after (taskRedraw).
+TaskPress:
+        lda mouseYPos
+        cmp #STATUS_Y
+        bcc @no
+        lda mouseXPos
+        cmp taskX
+        lda mouseXPos+1
+        sbc taskX+1
+        bcc @no
+        ldy #1
+        lda #FE_TASK
+        jsr FileEngine
+        lda #$80
+        sta taskRedraw
+        clc
+        rts
+@no:    sec
+        rts
 
 ; StatusSpan: r3-r4 = the status line: the full width, or with two
 ; panes the pane's half (each pane its own), short of the middle by a
@@ -1777,6 +1844,10 @@ CommaWord = * - StatusWords
 COMMA_SKIP = CommaWord + 2      ; (its zero: an empty text, Status)
 SelectedWord = * - StatusWords
         .byte " selected", 0
+TaskWord = * - StatusWords
+        .byte " task   ", 0
+TasksWord = * - StatusWords
+        .byte " tasks   ", 0
 FreeWord = * - StatusWords
         .byte "B free", 0
 OfWord = * - StatusWords
@@ -1929,7 +2000,7 @@ RightPress:
         lda CtxDo,x
         pha
 @end:   rts
-CtxDo:  .word Open-1, Copy-1, Cut-1, Paste-1, Rename-1, Delete-1, Info-1
+CtxDo:  .word Open-1, OpenTask-1, Copy-1, Cut-1, Paste-1, Rename-1, Delete-1, Info-1
         .word FavAdd-1, NewFolder-1, CopyOther-1, MoveOther-1
         .assert (* - CtxDo) / 2 = CTX_N, error, "an action per item"
 
@@ -2112,6 +2183,11 @@ Follow: lda cur+1               ; cur < top: top = cur
 
 
         .segment "DATA"
+
+taskX:          .word $FFFF     ; the tasks' left end ($FFFF: not shown)
+taskOn:         .byte 0         ; $FF: Status shows the tasks
+taskRedraw:     .byte 0         ; $80: the status line again at the next
+                                ; tick (back from the task popup)
 
 sortPending:    .byte 0         ; 1: read, not yet sorted (SortNow)
 tmpB:           .byte 0         ; HeadBold: the column

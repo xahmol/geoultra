@@ -27,6 +27,8 @@
         .import path, entryInfo, entryName, cur, count
         .import LoadAll, Save   ; (ovl.s: overlay 4, inifile.s)
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
+        .export TaskOpen, Here, Join, work, docName
+        .import Open, TaskTake
         .export text            ; (themefile.s reads and writes a theme in it)
         .export Setup, Slot, counts, which, at, wantTheme, wantView
         .export wantToolbar, wantPanes, sortMode, deskPrefs
@@ -459,6 +461,43 @@ SidePress:
         dex
         bpl @doc
         jmp Document
+@end:   rts
+
+; TaskOpen (the desktop's start): a path left for this new task
+; (FE_TASK, OpenTask) opened as the cursor's entry would be: TaskTake
+; (overlay 2) enters its folder and leaves its name in docName; the
+; entry of that name found and opened (Open: a folder entered, a program
+; started, a document with its application). Nothing else.
+TaskOpen:
+        jsr TaskTake
+        bcs @end
+        jsr ListRead
+        jsr SideArrows
+        jsr ListDraw
+        lda #0                  ; the entry of that name
+        sta cur
+        sta cur+1
+@seek:  lda cur
+        cmp count
+        lda cur+1
+        sbc count+1
+        bcs @end                ; (not there: nothing)
+        lda cur
+        ldx cur+1
+        jsr Fetch
+        ldx #0
+@cmp:   lda entryName,x
+        cmp docName,x
+        bne @next
+        inx
+        cmp #0
+        bne @cmp
+        jsr ListDraw            ; (the cursor on it)
+        jmp Open
+@next:  inc cur
+        bne @seek
+        inc cur+1
+        bne @seek
 @end:   rts
 
 DefaultTheme:   .byte "GeoUltra", 0

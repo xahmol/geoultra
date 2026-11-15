@@ -231,7 +231,11 @@ list: each running task (its application's name; the current one with
 a "*"), "new task" (the current one is kept as it is and a fresh
 desktop starts) and "close task" (the current one ends; the last one
 stays). Cursor up and down and RETURN, or a click, choose; RUN/STOP or
-a click outside closes the list. Each task keeps its own memory in the
+a click outside closes the list. The status line shows the number of
+tasks at its right end; a click there opens the same list. "open in new
+task" (C=W, in the file menu and the context menu) opens the entry
+under the cursor in a new task: a fresh desktop that opens it there,
+while this one waits as it is. Each task keeps its own memory in the
 REU, and hibernation keeps them all: after a power cycle every task
 is back, in the one you left. A
 document open in one task is saved when you leave that task and cannot

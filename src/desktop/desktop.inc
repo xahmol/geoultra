@@ -48,6 +48,7 @@ FE_READDIR      = 3
 FE_RENAME       = 10
 FE_RMDIR        = 9
 FE_RUNSYS       = 22
+FE_TASK         = 32            ; (engine.inc: the tasks, task.s)
 FE_SELECT       = 21
 FE_STAT         = 1
 FE_UMOUNT       = 18
@@ -72,6 +73,7 @@ FE_NOT_SUPPORTED = $4E
 FE_NO_SLOT      = $50
 FE_MOUNTED      = $51
 FE_IN_TASK      = $52           ; (engine.inc: open in another task)
+FE_NO_TASK      = $53           ; (engine.inc: no task slot free)
 ERR_IMAGE       = $60           ; the desktop's own: a disk image onto A-D
 ERR_REU         = $61           ; a disk image gone into: no room in the REU
 ERR_INIMG       = $62           ; a program or document inside a disk image
@@ -146,8 +148,9 @@ ITYPE_NONE      = $FF           ; (themedef.inc: not set)
 BIG_BANK        = 6             ; the icon view's generic icons in the REU
 BIG_PAGE        = $FE           ; (tooldraw.s puts them, iconview.s reads;
                                 ; after the icon cache, iconview.s)
-CTX_N           = 11            ; the context menu's items (ctxmenu.s):
-                                ; open, copy, cut, paste, rename, delete,
+CTX_N           = 12            ; the context menu's items (ctxmenu.s):
+                                ; open, open in new task, copy, cut,
+                                ; paste, rename, delete,
                                 ; info, favourite, new folder, copy and move
                                 ; to the other pane (list.s CtxDo)
 PANE_W          = 160           ; a pane: x 0-159 or 160-319 (panes.s,

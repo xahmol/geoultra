@@ -24,7 +24,7 @@
 UpdateRecordFile = $C295        ; (jump table)
         .import GetNextChar, Rectangle, FrameRectangle, InvertRectangle
         .import PutString, SetPattern, UseSystemFont
-        .export TaskTick, TaskCheck, TaskFind, taskName, taskCur
+        .export TaskTick, TaskCheck, TaskFind, taskName, taskCur, taskReq
 
 TASK_BANK       = 19            ; slot n's RAM: REU bank 19 + n (DESIGN "REU map")
 TASKS_MAX       = 8
@@ -32,7 +32,10 @@ LEGACY_FIRST    = 192           ; (reu.s: task n's legacy area 192 + n * size)
 TABLE           = $1E00         ; REU bank 1: per slot TBL_LEN bytes: used,
 TBL_LEN         = 16            ; the name (NAME_LEN, zero-ended)
 NAME_LEN        = 13
-VICS            = $1F00         ; REU bank 1: per slot the VIC's 47 registers
+VICS            = $B400         ; REU bank 1: per slot the VIC's 47 registers
+                                ; (48 bytes each, to $B57F)
+REQ             = $B600         ; REU bank 1: the path a new task opens
+REQ_LEN         = 64            ; (FE_TASK; 0: none)
 VIC_LEN         = 47
 TBLBUF          = $9F70         ; the slot's scratch: the table's copy
                                 ; (TASKS_MAX * TBL_LEN = 128 bytes), then
@@ -51,7 +54,8 @@ BOX_W           = 20
 ROW_H           = 11
 FIRST_Y         = BOX_ROW * 8 + 22 ; the first entry's baseline
 SCREEN_SAVE     = $A000         ; REU bank 1: the popup's rows of the screen
-COLOUR_SAVE     = $AF00         ; and their colour cells
+COLOUR_SAVE     = $B100         ; and their colour cells (after the
+                                ; bitmap's BOX_ROWS * 320 bytes)
 SYS_BANK        = 1
 REU_STASH_FF00  = $80           ; execute on a write to $FF00, C64 -> REU (as hibernate.s)
 
@@ -84,15 +88,17 @@ TaskTick:
 @hib:   jmp HibTick
 
 ; TaskCheck (MainLoop, at its end, never inside a disk call): a request
-; opens the popup (module 95).
+; opens the popup (module 95; A = taskReq: $80 the popup, $C0 a new
+; task at once, FE_TASK from the desktop).
 TaskCheck:
-        bit taskReq
-        bpl @rtc
-        lda #0
-        sta taskReq
-        jsr OvlCall
-        .byte 95, 0
-@rtc:   jmp RtcCheck
+        jsr RtcCheck            ; (then WbCheck)
+        lda taskReq
+        bpl @r
+        ldx #0
+        stx taskReq
+        jsr OvlCall             ; (at the routine's end: OvlCall returns
+        .byte 95, 0             ; to TaskCheck's caller, as wanted)
+@r:     rts
 
 ; TaskFind (OpenRecordFile, vlir.s): SysFindFile, then a file another
 ; task has open refused: X = FE_IN_TASK (module 98). (The table's own
@@ -106,7 +112,8 @@ TaskFind:
         .byte 98, 15
 @r:     rts
 
-taskReq:        .byte 0         ; $80: the popup asked for (TaskTick)
+taskReq:        .byte 0         ; $80: the popup asked for (TaskTick,
+                                ; FE_TASK), $C0: a new task (FE_TASK)
 taskHeld:       .byte 0         ; $80: the keys still held
 taskCur:        .byte 0         ; this snapshot's slot
 taskSP:         .byte 0         ; its stack pointer while it is away
@@ -134,7 +141,12 @@ Draw:   jsr OvlCall             ; (module 97: the popup drawn)
 
 ; Popup: the screen's rows saved, the list drawn, keys and clicks until
 ; a choice or RUN/STOP; the screen given back, then the choice done.
-Popup:  ldx #$22                ; the drawing state kept ($22-$38: the
+Popup:  and #$40                 ; FE_TASK's new task: at once (its path
+        beq @menu               ; waits at REQ for the new desktop)
+        jsr Names
+        jsr NewTask
+        jmp GetDirHead          ; (back in this task later)
+@menu:  ldx #$22                ; the drawing state kept ($22-$38: the
 @keep:  lda $00,x               ; pattern, the font, the mode, the
         pha                     ; window)
         inx
@@ -237,6 +249,7 @@ Popup:  ldx #$22                ; the drawing state kept ($22-$38: the
         beq @done
         cmp #ITEM_NEW
         bne :+
+        jsr NoReq               ; (from the popup: nothing to open)
         jsr NewTask
         jmp @fresh
 :       cmp #ITEM_CLOSE
@@ -249,6 +262,26 @@ Popup:  ldx #$22                ; the drawing state kept ($22-$38: the
         jsr Switch
 @fresh: jmp GetDirHead          ; (back in this task: its drive's BAM read
 @done:  rts                     ; again, another task may have changed it)
+
+; NoReq: no path waiting for the new task (REQ's first byte 0).
+NoReq:  lda #0
+        sta P_TMP
+        lda #<P_TMP
+        sta r0L
+        lda #>P_TMP
+        sta r0H
+        lda #<REQ
+        sta r1L
+        lda #>REQ
+        sta r1H
+        lda #1
+        sta r2L
+        lda #0
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        ldy #REU_STASH
+        jmp SysRAMOp
 
 ; ItemUnder: A = the item under the pointer (C clear); C set: none.
 ItemUnder:
@@ -939,5 +972,137 @@ target:         .byte 0
 tmp:            .byte 0
 regs:           .res 8
 lockBuf:        .res ::TBL_LEN
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL99"
+        .scope Mod99
+
+        jmp FeTask              ; entry 0 (FE_TASK, the file engine)
+
+; FE_TASK (docs/FILE_ENGINE.md): Y = 0: A = the tasks running. 1: the
+; popup asked for (it opens at MainLoop's end, outside the engine call:
+; it would use the engine's work area). 2: a new task that opens the
+; path at r0 (the desktop's "open in new task"; FE_NO_TASK when no slot
+; is free). 3: the path waiting for this new task to r0 (REQ_LEN bytes;
+; A = its first byte, 0: none), then no longer waiting. X = 0 or the
+; error. Not through module 98: its table copy (TBLBUF) lies in the
+; engine's work area.
+FeTask: cpy #1
+        bcc Count
+        bne @new
+        lda #$80
+        sta taskReq
+        bne @ok                 ; (always)
+@new:   cpy #3
+        beq @take
+        jsr Count               ; 2: a free slot?
+        sta tmp
+        jsr Usable
+        cmp tmp
+        bcc @full
+        beq @full
+        ldy #REU_STASH          ; the path to REQ
+        jsr ReqOp
+        lda #$C0
+        sta taskReq
+@ok:    ldx #0
+        rts
+@full:  ldx #FE_NO_TASK
+        rts
+@take:  ldy #REU_FETCH
+        jsr ReqOp
+        lda #0                  ; no longer waiting
+        sta tmp
+        lda #<tmp
+        sta r0L
+        lda #>tmp
+        sta r0H
+        lda #1
+        sta r2L
+        ldy #REU_STASH
+        jsr Sys
+        lda argR0
+        sta r0L
+        lda argR0+1
+        sta r0H
+        ldy #0
+        lda (r0),y
+        ldx #0
+        rts
+
+; ReqOp: Y = REU command: the caller's r0 (REQ_LEN bytes) <-> REQ.
+ReqOp:  lda argR0
+        sta r0L
+        lda argR0+1
+        sta r0H
+        lda #REQ_LEN
+        sta r2L
+Sys:    lda #<REQ
+        sta r1L
+        lda #>REQ
+        sta r1H
+        lda #0
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        jmp SysRAMOp
+
+; Count: A = the slots in use (each entry's first byte), X = 0.
+Count:  lda #0
+        sta tmp
+        sta slot
+@s:     lda slot
+        asl a
+        asl a
+        asl a
+        asl a
+        sta r1L
+        lda #>TABLE
+        sta r1H
+        lda #<used
+        sta r0L
+        lda #>used
+        sta r0H
+        lda #1
+        sta r2L
+        lda #0
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        ldy #REU_FETCH
+        jsr SysRAMOp
+        lda used
+        beq :+
+        inc tmp
+:       inc slot
+        lda slot
+        cmp #TASKS_MAX
+        bcc @s
+        lda tmp
+        ldx #0
+        rts
+
+; Usable: A = the slots that can be used: up to taskSlots, while their
+; legacy areas fit below bank 256 (as module 96's NewTask).
+Usable: ldx #0
+        lda #LEGACY_FIRST
+@u:     cpx taskSlots
+        bcs @end
+        clc
+        adc ramExpSize
+        bcc :+
+        bne @end                ; (past bank 255)
+:       inx
+        cpx #TASKS_MAX
+        bcc @u
+@end:   txa
+        rts
+
+tmp:            .byte 0
+slot:           .byte 0
+used:           .byte 0
 
         .endscope

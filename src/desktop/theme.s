@@ -26,6 +26,7 @@
         .export Neutral, Dialog, MenuNeutral, Recover, ClockTick
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
         .export lettersDue, rootsSeen, sortDue, cIconT, cDesk, tByType
+        .import Status, taskRedraw
         .import PaneLetters
         .export lastMin, clockX, MonLo, MonHi, stripL, listR, paneR
         .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
@@ -556,7 +557,12 @@ Recover:
 ; again); a list waiting to be sorted sorted (list.s, SortNow); the
 ; clock drawn again when the minute changed.
 ClockTick:
-        lda sortDue
+        bit taskRedraw          ; (back from the task popup: the tasks'
+        bpl :+                  ; count again, list.s TaskInd)
+        lda #0
+        sta taskRedraw
+        jsr Status
+:       lda sortDue
         beq @sort
         lda #0
         sta sortDue

@@ -25,6 +25,10 @@ full = text                     ; engine call copies, moves or mounts it)
         .import Dialog
         .export Ov_Copy, Ov_Cut, Ov_Paste, Ov_Delete, Ov_Rename, Ov_NewFolder, Ov_Ask
         .export clipCount       ; (desktop.s: 0 at the start)
+        .export Ov_OpenTask, Ov_TaskTake
+        .import Here, Join, work, docName, taskRedraw
+Ov_OpenTask = OpenTask
+Ov_TaskTake = TaskTake
 Ov_Copy = Copy                  ; (overlay 2: the stubs in ovl.s)
 Ov_Cut = Cut
 Ov_Paste = Paste
@@ -506,3 +510,87 @@ clipMode:       .res 1
 clipCount:      .res 2
 n:              .res 2
 some:           .res 1
+
+        .segment "OV2"
+
+; OpenTask (C=W, the file and context menus): the entry under the
+; cursor opened in a new task: its full path to FE_TASK, which starts a
+; desktop in a free slot that opens it (side.s TaskOpen); this task
+; waits as it is. No free slot: "No room for another task.".
+OpenTask:
+        lda count
+        ora count+1
+        beq @end
+        lda cur
+        ldx cur+1
+        jsr Fetch
+        jsr Here
+        bcs @end
+        jsr Join
+        bcs @end                ; (too long: nothing)
+        lda #<work
+        sta r0L
+        lda #>work
+        sta r0H
+        ldy #2
+        lda #FE_TASK
+        jsr FileEngine
+        txa
+        beq :+
+        jmp Error
+:       lda #$80                ; (back here: the tasks' count again)
+        sta taskRedraw
+@end:   rts
+
+; TaskTake (side.s TaskOpen): the path left for this new task (FE_TASK
+; 3): its folder entered (FE_CD), its last part to docName; C clear.
+; C set: none, or its folder is gone.
+TaskTake:
+        lda #<work
+        sta r0L
+        lda #>work
+        sta r0H
+        ldy #3
+        lda #FE_TASK
+        jsr FileEngine
+        cpx #0
+        bne @no
+        cmp #0
+        beq @no
+        ldy #0                  ; the last "/": docName the name after it
+        sty last
+@ch:    lda work,y
+        beq @split
+        iny
+        cmp #'/'
+        bne @ch
+        sty last
+        jmp @ch
+@split: ldy last
+        beq @no
+        ldx #0
+@name:  lda work,y
+        sta docName,x
+        beq :+
+        iny
+        inx
+        bne @name
+:       ldy last                ; the folder: up to its "/" ("/" for "/x")
+        cpy #1
+        beq :+
+        dey
+:       lda #0
+        sta work,y
+        lda #<work
+        sta r0L
+        lda #>work
+        sta r0H
+        lda #FE_CD
+        jsr FileEngine
+        txa
+        bne @no                 ; (gone: nothing)
+        clc
+        rts
+@no:    sec
+        rts
+last:   .byte 0

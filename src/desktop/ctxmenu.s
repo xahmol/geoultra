@@ -1,7 +1,8 @@
 ; GeoUltra Desktop: the context menu and Info (overlay 7, ovl.s;
 ; docs/DESKTOP.md, "Toolbar and right-click": the user's decisions of
 ; 2026-11-11). The right mouse button (guMouse2, the 1351 driver) opens
-; a menu at the pointer: open, copy, cut, paste, rename, delete, info,
+; a menu at the pointer: open, open in new task, copy, cut, paste,
+; rename, delete, info,
 ; favourite, new folder. Popup draws it (in the menu bar's colours, a
 ; frame round it), follows the pointer (the item under it inverted) and
 ; returns the item clicked; the core does it (most actions are overlay
@@ -19,7 +20,7 @@ Ov_Popup = Popup
 Ov_Info = Info
 Ov_About = About
 
-ITEMS_N         = 11            ; (CTX_* in desktop.inc: their order)
+ITEMS_N         = 12            ; (CTX_* in desktop.inc: their order)
 ITEM_H          = 14            ; as GEOS's menus
 BOX_W           = 92
 BOX_H           = ITEMS_N * ITEM_H + 2
@@ -832,9 +833,10 @@ PowHi:  .byte >10000, >1000, >100, >10
 
 ; The menu's items (sentence case, the desktop's menus' words) in
 ; CTX_* order (desktop.inc).
-TextLo: .byte <T0, <T1, <T2, <T3, <T4, <T5, <T6, <T7, <T8, <T9, <T10
-TextHi: .byte >T0, >T1, >T2, >T3, >T4, >T5, >T6, >T7, >T8, >T9, >T10
+TextLo: .byte <T0, <TN, <T1, <T2, <T3, <T4, <T5, <T6, <T7, <T8, <T9, <T10
+TextHi: .byte >T0, >TN, >T1, >T2, >T3, >T4, >T5, >T6, >T7, >T8, >T9, >T10
 T0:     .byte "open", 0
+TN:     .byte "open in new task", 0
 T1:     .byte "copy", 0
 T2:     .byte "cut", 0
 T3:     .byte "paste", 0

@@ -508,8 +508,8 @@ Drop:   lda feFunc
 ; The functions that may write on the Ultimate (bit n of byte n / 8):
 ; FE_COPY-FE_RENAME, FE_OPEN, FE_WRITE, FE_MOUNT, FE_UMOUNT, FE_SETLONG,
 ; FE_MKIMG, FE_REBOOT, FE_UCI.
-Writers:        .byte $E0, $A7, $16, $51
-        .assert FE_COUNT = 32, error, "Writers: 32 functions"
+Writers:        .byte $E0, $A7, $16, $51, $00   ; (FE_TASK: none)
+        .assert FE_COUNT <= 40, error, "Writers: 40 functions at most"
 
 ; Valid: C clear when the image's copy is in the REU and no drive in
 ; another slot uses any of its banks (a mount may have taken them; then

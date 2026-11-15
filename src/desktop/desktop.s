@@ -19,7 +19,7 @@
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
-        .import Refresh
+        .import Refresh, TaskPress, TaskOpen, OpenTask
         .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
         .import CopyOther, MoveOther, CdPath
         .export dropReq, dropPath, sideCount, sideTops, sideLetters
@@ -92,6 +92,7 @@ Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
         jsr SideLoad            ; favourites, recent documents, the theme
         jsr Draw
         jsr HistAdd             ; (the first place in the history)
+        jsr TaskOpen            ; (a new task's path: opened, side.s)
         lda #<mainMenu
         sta r0L
         lda #>mainMenu
@@ -115,6 +116,8 @@ Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
 ; sidebar line (its drive's root; on a drive's eject icon its unmount).
 Press:  lda mouseData
         bmi @end
+        jsr TaskPress           ; (C clear: on the tasks, list.s)
+        bcc @end
         jsr ToolPress           ; (C clear: it was on the toolbar)
         bcc @end
         lda panes               ; two panes: the pane clicked made active
@@ -245,15 +248,20 @@ KeyActs:
         .byte SHORTCUT | 'f', SHORTCUT | 'i', SHORTCUT | 'a', SHORTCUT | 'g'
         .byte SHORTCUT | KEY_LEFT, SHORTCUT | KEY_RIGHT
         .byte SHORTCUT | 'p', SHORTCUT | ' ', SHORTCUT | 't', SHORTCUT | 'm'
+        .byte SHORTCUT | 'w'
 KeyActs_n = * - KeyActs
 ActDo:  .word Copy-1, Cut-1, Paste-1, Rename-1, NewFolder-1, Delete-1, Open-1
         .word FavAdd-1, Info-1, SelAll-1, Gush-1, HistBack-1, HistForward-1
         .word TwoPanes-1, PaneSwitch-1, CopyOther-1, MoveOther-1
+        .word OpenTask-1
         .assert (* - ActDo) / 2 = KeyActs_n, error, "an action per key"
 
 ; The file menu's items: the menus closed, then the action.
 MOpen:  jsr GotoFirstMenu
         jmp Open
+MOpenTask:
+        jsr GotoFirstMenu
+        jmp OpenTask
 MCopy:  jsr GotoFirstMenu
         jmp Copy
 MCut:   jsr GotoFirstMenu
@@ -899,7 +907,7 @@ DiskName:
 ; menu's right edge, by its measured width (system font). Once, at
 ; Start. Destroys A, X, Y, r0-r2.
 GEOS_R          = 99            ; the menus' right edges (their tables)
-FILE_R          = 139
+FILE_R          = 163
 VIEW_R          = 129
 SC_MARGIN       = 4             ; the key's room before the frame
 Shortcuts:
@@ -1323,12 +1331,15 @@ geosItems:
         .res DA_MAX * 5         ; (the accessories, GeosMenu)
 
 fileMenu:
-        .byte MENU_BOTTOM, MENU_BOTTOM + 12 * 14
+        .byte MENU_BOTTOM, MENU_BOTTOM + 13 * 14
         .word 30, FILE_R
-        .byte VERTICAL | UN_CONSTRAINED | 12
+        .byte VERTICAL | UN_CONSTRAINED | 13
         .word OpenItem
         .byte MENU_ACTION
         .word MOpen
+        .word TaskItem
+        .byte MENU_ACTION
+        .word MOpenTask
         .word InfoItem
         .byte MENU_ACTION
         .word MInfo
@@ -1466,6 +1477,7 @@ ScItems:
         .word MoveOtherItem
         .word AllItem
         .word OpenItem
+        .word TaskItem
         .word CopyItem
         .word CutItem
         .word PasteItem
@@ -1476,6 +1488,7 @@ ScItems:
         .word PanesItem
 ScRight:
         .byte GEOS_R - SC_MARGIN
+        .byte FILE_R - SC_MARGIN
         .byte FILE_R - SC_MARGIN
         .byte FILE_R - SC_MARGIN
         .byte FILE_R - SC_MARGIN
@@ -1511,6 +1524,7 @@ GoTexts:        .byte "back", 0, 0, 0, 0
                 .byte "top", 0, 0, 0, 0, 0
                 .byte "end", 0, 0, 0, 0, 0
 OpenItem:       .byte "open", GOTOX, 0, 0, "C=O", 0
+TaskItem:       .byte "open in new task", GOTOX, 0, 0, "C=W", 0
 CopyItem:       .byte "copy", GOTOX, 0, 0, "C=C", 0
 CutItem:        .byte "cut", GOTOX, 0, 0, "C=X", 0
 PasteItem:      .byte "paste", GOTOX, 0, 0, "C=V", 0
