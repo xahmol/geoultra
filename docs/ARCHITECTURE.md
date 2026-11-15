@@ -261,6 +261,27 @@ applications call `$9030-$904D` directly.
   Dirty maps at `$01:2000 + $2000 * slot`. `DiskInit` (cold start) sets
   `driveType` (`$80 | type`, as GEOS RAM drives), `ramBase` and `NUMDRV`
   from it, makes drive A (8) current and opens it.
+- **REU bank 1, the system bank** (2026-11-15: the task areas had been
+  put on the native BAM's working copy, found while testing GeoLudo;
+  check this map before taking room there):
+
+  | Address | Use |
+  |---|---|
+  | `$0100-$03FF` | mount table, image paths (`$0200`), home path (`$0300`) |
+  | `$0400-$0407` | hibernation header (signature, build ID, tasks) |
+  | `$0500-$0532` | hibernation: VIC and CIA 2 registers |
+  | `$1000` | the jump table's copy (`RepairJumpTab`) |
+  | `$1800` | `curDirHead` kept meanwhile (drive E) |
+  | `$1A00-$1A5F` | a disk image gone into: its path, `feInfo` |
+  | `$1C00-$1DFF` | auto-exec list (autoexec.s) |
+  | `$1E00-$1E7F` | task table (task.s) |
+  | `$2000-$9FFF` | dirty maps, `$2000` per drive A-D |
+  | `$A000-$BFFF` | native drives: the BAM's working copy (reudrv.s `NAT_WORK`, (tracks + 8) / 8 pages) |
+  | `$C000-$C78F` | the file engine: state, current directory, handles, Ultimate paths, `FE_WSAVE` |
+  | `$D000-$E03F` | task popup: the screen rows it covers (task.s) |
+  | `$E100-$E307` | task popup: their colours |
+  | `$E400-$E57F` | per task slot the VIC registers |
+  | `$E600-$E63F` | the path a new task opens (`FE_TASK`) |
 - **InitForIO / DoneWithIO** live in the driver: they bank the C64 Kernal
   ROM in over `$E000` (for serial printer drivers), so they and anything
   running between them must not lie at `$E000-$FFFF`. They also set the

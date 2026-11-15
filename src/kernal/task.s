@@ -32,9 +32,9 @@ LEGACY_FIRST    = 192           ; (reu.s: task n's legacy area 192 + n * size)
 TABLE           = $1E00         ; REU bank 1: per slot TBL_LEN bytes: used,
 TBL_LEN         = 16            ; the name (NAME_LEN, zero-ended)
 NAME_LEN        = 13
-VICS            = $B400         ; REU bank 1: per slot the VIC's 47 registers
-                                ; (48 bytes each, to $B57F)
-REQ             = $B600         ; REU bank 1: the path a new task opens
+VICS            = $E400         ; REU bank 1: per slot the VIC's 47 registers
+                                ; (48 bytes each, to $E57F)
+REQ             = $E600         ; REU bank 1: the path a new task opens
 REQ_LEN         = 64            ; (FE_TASK; 0: none)
 VIC_LEN         = 47
 TBLBUF          = $9F70         ; the slot's scratch: the table's copy
@@ -53,9 +53,11 @@ BOX_ROWS        = 13
 BOX_W           = 20
 ROW_H           = 11
 FIRST_Y         = BOX_ROW * 8 + 22 ; the first entry's baseline
-SCREEN_SAVE     = $A000         ; REU bank 1: the popup's rows of the screen
-COLOUR_SAVE     = $B100         ; and their colour cells (after the
-                                ; bitmap's BOX_ROWS * 320 bytes)
+SCREEN_SAVE     = $D000         ; REU bank 1: the popup's rows of the screen
+COLOUR_SAVE     = $E100         ; and their colour cells (after the
+                                ; bitmap's BOX_ROWS * 320 bytes); bank 1's
+                                ; map: docs/ARCHITECTURE.md ($A000-$BFFF
+                                ; is the native BAM's working copy)
 SYS_BANK        = 1
 REU_STASH_FF00  = $80           ; execute on a write to $FF00, C64 -> REU (as hibernate.s)
 

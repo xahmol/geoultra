@@ -14,7 +14,9 @@ matrix, no sprites) is written to --out:
 
   x,y,-        move the pointer          x,y,p / x,y,r   press / release
   k:TEXT       type TEXT                 k:#13           one key code
-  w:S          let it run S seconds
+  w:S          let it run S seconds       s:PNG        the screen now to PNG
+  h:FILE       run the Python FILE with v (the VICE connection), for
+               debugging (breakpoints, memory)
 
 Keys arrive through keyVector from MainLoop (a one-shot appMain routine
 in GeoUltra's information block, restoring the application's appMain).
@@ -88,6 +90,8 @@ def main():
                     "application, as [system] protection=bypass (src/kernal/bypass.s)")
     ap.add_argument("--find", help="afterwards: FindFile of this name on drive B "
                     "(stops the application; prints X)")
+    ap.add_argument("--select", help="start NAME through FE_SELECT of this path (a "
+                    "file in a folder, e.g. /b/Games/GeoLudo), as the desktop does")
     ap.add_argument("events", nargs="*")
     args = ap.parse_args()
     reu_image()
@@ -111,19 +115,26 @@ def main():
         def jsr(name):
             a = table[name]
             return [0x20, a & 0xFF, a >> 8]
-        start = harness.TRAMPOLINE
-        code = ([0x78, 0xA9, 0x30, 0x85, 0x01, 0xA9, 0x09] + jsr("SetDevice") + jsr("OpenDisk")
-                + [0xA9, 0x00, 0x85, 0x0E, 0xA9, 0x4F, 0x85, 0x0F, 0xA9, 0x00, 0x85, 0x02]
-                + jsr("GetFile") + [0x8E, 0xF0, 0x02])
-        end = start + len(code)
-        code += [0x4C, end & 0xFF, end >> 8]            # GetFile returned: X at $02F0
-        v.mem_set(start, bytes(code))
-        v.mem_set(0x4F00, args.name.encode() + b"\0")
         lbl = open(os.path.join(harness.ROOT, "build", "kernal64.lbl")).read()
 
         def label(name):
             return int(next(l.split()[1] for l in lbl.splitlines()
                             if l.endswith("." + name)), 16)
+        start = harness.TRAMPOLINE
+        code = ([0x78, 0xA9, 0x30, 0x85, 0x01, 0xA9, 0x09] + jsr("SetDevice") + jsr("OpenDisk"))
+        if args.select:                                 # FE_SELECT: its drive and folder
+            fe = label("ExtTable") + 30                 # current, its short name at $4F00
+            code += [0xA9, 0x80, 0x85, 0x02, 0xA9, 0x4F, 0x85, 0x03,
+                     0xA9, 0x00, 0x85, 0x04, 0xA9, 0x4F, 0x85, 0x05,
+                     0xA9, 21, 0x20, fe & 0xFF, fe >> 8, 0x8E, 0xF1, 0x02]
+        code += ([0xA9, 0x00, 0x85, 0x0E, 0xA9, 0x4F, 0x85, 0x0F, 0xA9, 0x00, 0x85, 0x02]
+                 + jsr("GetFile") + [0x8E, 0xF0, 0x02])
+        end = start + len(code)
+        code += [0x4C, end & 0xFF, end >> 8]            # GetFile returned: X at $02F0
+        v.mem_set(start, bytes(code))
+        v.mem_set(0x4F00, args.name.encode() + b"\0")
+        if args.select:
+            v.mem_set(0x4F80, args.select.encode() + b"\0")
         if args.serial:
             serial = int(args.serial, 16)
             v.mem_set(label("serialNumber"), bytes([serial & 0xFF, serial >> 8]))
@@ -151,6 +162,13 @@ def main():
                     v.resume()
                     time.sleep(0.25)
                     v.ping()
+            elif ev.startswith("h:"):                    # a debugging hook
+                exec(open(ev[2:]).read(), {"v": v, "harness": harness, "time": time})
+            elif ev.startswith("s:"):
+                v.resume()
+                time.sleep(0.5)
+                v.ping()
+                render(v.mem_get(0xA000, 0xBF3F), v.mem_get(0x8C00, 0x8FE7), ev[2:])
             elif ev.startswith("w:"):
                 v.resume()
                 time.sleep(float(ev[2:]))
