@@ -94,12 +94,12 @@ errLine:
         .byte 0
 ErrCodes:       .byte INSUFF_SPACE, FULL_DIRECTORY, WR_PR_ON, FILE_EXISTS, DIR_NOT_EMPTY
                 .byte FILE_NOT_FOUND, ERR_IMAGE, FE_MOUNTED, FE_NO_SLOT, ERR_REU
-                .byte ERR_INIMG
+                .byte ERR_INIMG, FE_IN_TASK
 ERRS = * - ErrCodes
 ErrLo:          .byte <ENoRoom, <EDirFull, <ELocked, <EExists, <ENotEmpty, <ENotFound, <EImage
-                .byte <EMounted, <ENoSlot, <ENoReu, <EInImg
+                .byte <EMounted, <ENoSlot, <ENoReu, <EInImg, <EInTask
 ErrHi:          .byte >ENoRoom, >EDirFull, >ELocked, >EExists, >ENotEmpty, >ENotFound, >EImage
-                .byte >EMounted, >ENoSlot, >ENoReu, >EInImg
+                .byte >EMounted, >ENoSlot, >ENoReu, >EInImg, >EInTask
 ENoRoom:        .byte "Not enough room on the drive.", 0
 EDirFull:       .byte "The directory is full.", 0
 ELocked:        .byte "The drive cannot be written to.", 0
@@ -111,5 +111,6 @@ EMounted:       .byte "It is mounted: open its drive.", 0
 ENoSlot:        .byte "It needs an empty drive A-D.", 0
 ENoReu:         .byte "Not enough free REU for it.", 0
 EInImg:         .byte "Mount the disk image to open it.", 0
+EInTask:        .byte "It is open in another task.", 0
 errText:        .byte "failed: error $"
 errCode:        .byte "00", 0

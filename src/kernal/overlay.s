@@ -13,7 +13,8 @@
 ; slot, calls the entry with A, X, Y and the flags as at the stub, then
 ; fetches the previous module back and returns to the stub's caller (the
 ; stub is entered like the routine itself), so overlay routines may call
-; others. Rules: overlay code never installs a vector into the slot
+; others. A stub is always reached by its own jsr: written inline in the
+; middle of a routine, OvlCall would return from that whole routine. Rules: overlay code never installs a vector into the slot
 ; (a callback may find another module there), and a module's own bytes
 ; (variables included) are fetched anew from the REU after every nested
 ; overlay call, so values that must survive one live outside the module.

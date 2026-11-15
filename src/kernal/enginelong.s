@@ -724,7 +724,10 @@ MakeDir:
 ; made for it (module 50) and its record. Another file of that name
 ; (short or long): FILE_EXISTS. X = 0 or the error.
 OvRename:
-        ldx #FE_NAME_MAX        ; the old short name, kept
+        jsr InTask              ; (task.s: open in another task; dirEntryBuf
+        beq :+                  ; the file's: FindName, module 27; Source,
+        rts                     ; module 29)
+:       ldx #FE_NAME_MAX        ; the old short name, kept
 @old:   lda feShort,x
         sta feOld,x
         dex
@@ -856,5 +859,11 @@ OvMkDir:
         jmp LnSet
 @done:  ldx #0
 @end:   rts
+
+
+; InTask (task.s, module 98): X = FE_IN_TASK when dirEntryBuf's file is
+; open in another task, else 0; Z as X. (A stub.)
+InTask: jsr OvlCall
+        .byte 98, 15
 
         .endscope

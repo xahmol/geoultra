@@ -18,10 +18,13 @@
         .include "hw.inc"
 
         .import OvlCall, HibTick, RtcCheck, SysRAMOp, EnterDeskTop
-        .import legacyBase, taskSlots
+        .import legacyBase, taskSlots, SysFindFile, indexTS
+        .include "kcalls.inc"
+        .include "engine.inc"
+UpdateRecordFile = $C295        ; (jump table)
         .import GetNextChar, Rectangle, FrameRectangle, InvertRectangle
         .import PutString, SetPattern, UseSystemFont
-        .export TaskTick, TaskCheck, TaskInit, TaskMany, taskName, taskCur
+        .export TaskTick, TaskCheck, TaskFind, taskName, taskCur
 
 TASK_BANK       = 19            ; slot n's RAM: REU bank 19 + n (DESIGN "REU map")
 TASKS_MAX       = 8
@@ -91,15 +94,17 @@ TaskCheck:
         .byte 95, 0
 @rtc:   jmp RtcCheck
 
-; TaskInit (the cold start; a resumed session: module 8): the table
-; anew, the current task the only one. TaskMany: C set when more than
-; one task runs (module 8: no hibernation then, yet).
-TaskInit:
+; TaskFind (OpenRecordFile, vlir.s): SysFindFile, then a file another
+; task has open refused: X = FE_IN_TASK (module 98). (The table's own
+; calls: init.s and module 8 call module 98 directly: TaskInit, entry
+; 6, the table anew; TaskMany, entry 9, C set with several tasks.)
+TaskFind:
+        jsr SysFindFile
+        txa
+        bne @r
         jsr OvlCall
-        .byte 98, 6
-TaskMany:
-        jsr OvlCall
-        .byte 98, 9
+        .byte 98, 15
+@r:     rts
 
 taskReq:        .byte 0         ; $80: the popup asked for (TaskTick)
 taskHeld:       .byte 0         ; $80: the keys still held
@@ -232,15 +237,18 @@ Popup:  ldx #$22                ; the drawing state kept ($22-$38: the
         beq @done
         cmp #ITEM_NEW
         bne :+
-        jmp NewTask
+        jsr NewTask
+        jmp @fresh
 :       cmp #ITEM_CLOSE
         bne :+
         lda taskCur
-        jmp Close
+        jsr Close
+        jmp @fresh
 :       cmp taskCur
         beq @done
-        jmp Switch
-@done:  rts
+        jsr Switch
+@fresh: jmp GetDirHead          ; (back in this task: its drive's BAM read
+@done:  rts                     ; again, another task may have changed it)
 
 ; ItemUnder: A = the item under the pointer (C clear); C set: none.
 ItemUnder:
@@ -477,8 +485,18 @@ MarkT:          .byte "*", 0
 ; Away must be called from this module directly: the stack below its
 ; pushes is what Fetch returns through.
 Switch: sta target
+        jsr Commit
         jsr Away
         jmp Fetch
+
+; Commit: an open VLIR file's changes to disk, as UpdateRecordFile (it
+; stays open, and locked for the other tasks: NameOp). Its error is
+; ignored: the switch goes on (the application sees it at its next
+; call).
+Commit: lda indexTS
+        beq @r
+        jmp UpdateRecordFile
+@r:     rts
 
 ; FetchTo (closing the current task, module 98): slot A's RAM fetched;
 ; this task is not stashed (no return).
@@ -600,7 +618,10 @@ NewTask:
         bcc @f
 @none:  rts
 @got:   stx target
+        jsr Commit
         jsr Away
+        lda #0                  ; (the new one: no file open)
+        sta indexTS
         lda base                 ; its own legacy REU area (reu.s)
         sta legacyBase
         lda target              ; the new one: used, no name
@@ -622,8 +643,16 @@ NameOp: asl a
         sta r1L
         lda #>TABLE
         sta r1H
-        lda #1
-        sta nameBuf
+        lda #1                  ; used; with a VLIR file open: $80 + its
+        ldx indexTS             ; drive, its index block in the last two
+        beq :+                  ; bytes (module 98, Locked)
+        lda curDrive
+        ora #$80
+:       sta nameBuf
+        lda indexTS
+        sta nameBuf + TBL_LEN - 2
+        lda indexTS+1
+        sta nameBuf + TBL_LEN - 1
         ldx #NAME_LEN - 1
 @c:     lda taskName,x
         sta nameBuf + 1,x
@@ -696,6 +725,10 @@ nameBuf:        .res ::TBL_LEN
         jmp Names               ; entry 3 (module 95: the table to TBLBUF)
         jmp Init                ; entry 6 (TaskInit)
         jmp Many                ; entry 9 (TaskMany)
+        jmp Locked              ; entry 12 (the file engine: locked, or
+                                ; open in another task)
+        jmp InTask              ; entry 15 (TaskFind, module 54: open in
+                                ; another task)
 
 FetchTo:
         jsr OvlCall             ; (module 96: slot A's RAM; no return)
@@ -754,7 +787,7 @@ TblOp:  lda #<TBLBUF
         sta r0L
         lda #>TBLBUF
         sta r0H
-        lda #0
+TblOp1: lda #0
         sta r2H
         lda #SYS_BANK
         sta r3L
@@ -835,7 +868,63 @@ Many:   jsr Names
         cmp #2
         rts
 
+; Locked: dirEntryBuf's file write-protected (X = WR_PR_ON) or open in
+; another task (InTask). InTask: X = FE_IN_TASK when another slot's
+; entry holds a VLIR file open on curDrive whose index block is the
+; entry's first block (NameOp); else X = 0. r0-r3 kept.
+Locked: ldx #WR_PR_ON
+        lda dirEntryBuf
+        and #$40
+        beq InTask
+        rts
+InTask: ldx #7
+@sv:    lda r0L,x
+        sta regs,x
+        dex
+        bpl @sv
+        lda #0
+        sta tmp
+@s:     lda tmp
+        cmp taskCur
+        beq @n
+        jsr EntryReu
+        lda #<lockBuf
+        sta r0L
+        lda #>lockBuf
+        sta r0H
+        lda #TBL_LEN
+        sta r2L
+        ldy #REU_FETCH
+        jsr TblOp1
+        lda lockBuf
+        bpl @n
+        and #$7F
+        cmp curDrive
+        bne @n
+        lda lockBuf + TBL_LEN - 2
+        cmp dirEntryBuf + OFF_DE_TR_SC
+        bne @n
+        lda lockBuf + TBL_LEN - 1
+        cmp dirEntryBuf + OFF_DE_TR_SC + 1
+        bne @n
+        ldx #FE_IN_TASK
+        bne @out
+@n:     inc tmp
+        lda tmp
+        cmp #TASKS_MAX
+        bcc @s
+        ldx #0
+@out:   ldy #7
+@rs:    lda regs,y
+        sta r0L,y
+        dey
+        bpl @rs
+        txa                     ; (Z as X, as after the engine's txa)
+        rts
+
 target:         .byte 0
 tmp:            .byte 0
+regs:           .res 8
+lockBuf:        .res ::TBL_LEN
 
         .endscope

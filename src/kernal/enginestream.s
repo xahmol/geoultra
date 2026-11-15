@@ -88,9 +88,8 @@ OvOpen: jsr NewHandle
         beq @ret
 @seq:   lda argR2
         beq Read
-        ldx #WR_PR_ON
-        lda dirEntryBuf
-        and #$40                ; locked
+        jsr Locked              ; (task.s: write-protected, or open in
+                                ; another task)
         bne @ret
         lda argR2
         cmp #FO_APPEND
@@ -162,6 +161,13 @@ Save:   sta feH + H_TYPE
         lda feHandle
         ldx #0
         rts
+
+
+; Locked (task.s, module 98): X = WR_PR_ON (dirEntryBuf's file
+; write-protected), FE_IN_TASK (open in another task) or 0; Z as X.
+; (A stub: OvlCall returns to its caller.)
+Locked: jsr OvlCall
+        .byte 98, 12
 
         .endscope
 

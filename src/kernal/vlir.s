@@ -15,7 +15,8 @@
         .export OpenRecordFile, CloseRecordFile, UpdateRecordFile
         .export NextRecord, PreviousRecord, PointRecord, DeleteRecord
         .export InsertRecord, AppendRecord, ReadRecord, WriteRecord
-        .import SysFindFile, ReadFile, WriteFile, FreeChain, CopyDate
+        .import TaskFind, ReadFile, WriteFile, FreeChain, CopyDate
+        .export indexTS
 
 MAX_RECORDS     = 127
 
@@ -35,7 +36,8 @@ OpenRecordFile:
         sta r6L
         lda r0H
         sta r6H
-        jsr SysFindFile         ; (drive E: fonts)
+        jsr TaskFind            ; (SysFindFile, drive E: fonts; a file
+                                ; open in another task: FE_IN_TASK)
         txa
         bne Closed
         ldx #STRUCT_MISMAT

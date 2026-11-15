@@ -76,6 +76,7 @@ FE_NOT_SUPPORTED = $4E          ; not (yet) on this kind of path
 FE_ULTIMATE     = $4F           ; the Ultimate's DOS refused
 FE_NO_SLOT      = $50           ; drive E needs an empty drive letter (A-D)
 FE_MOUNTED      = $51           ; a disk image gone into is mounted on A-D
+FE_IN_TASK      = $52           ; the file is open in another task (task.s)
 
 ; What a resolved path names (feKind, set by the walk in module 24)
 FE_P_ROOT       = 0             ; "/"

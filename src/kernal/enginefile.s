@@ -47,9 +47,8 @@ OvDelete:
         jsr IsDir
         ldx #FE_IS_FOLDER
         bcc @end
-        ldx #WR_PR_ON
-        lda dirEntryBuf
-        and #$40                ; locked
+        jsr Locked              ; (task.s: write-protected, or open in
+                                ; another task)
         bne @end
         jsr Key
         jsr NameR0
@@ -229,5 +228,12 @@ NameR0: lda #<feShort
         lda #>feShort
         sta r0H
         rts
+
+
+; Locked (task.s, module 98): X = WR_PR_ON (dirEntryBuf's file
+; write-protected), FE_IN_TASK (open in another task) or 0; Z as X.
+; (A stub: OvlCall returns to its caller.)
+Locked: jsr OvlCall
+        .byte 98, 12
 
         .endscope

@@ -5,7 +5,9 @@ it) opens the popup: the desktop, new task, close task. "new task": a
 fresh desktop in slot 1, moved to /a there; the popup again: back to
 task 0, its desktop still in /b (its own RAM); to task 1 again: /a;
 "close task" in task 1: back in task 0, the popup's list one shorter;
-with tasks=1 "new task" is refused. Each task's legacy REU area checked.
+with tasks=1 "new task" is refused. Each task's legacy REU area checked;
+a VLIR file open in task 0 cannot be deleted, renamed or opened in task 1
+until task 0 closes it.
 Keys go straight into the kernal's key queue (the popup has its own
 loop). Screens: build/harness/gush/desktop-d23*.png.
 Usage: tests/desktop/d23.py
@@ -33,7 +35,7 @@ def main():
     for line in open(os.path.join(ROOT, "build", "kernal64.lbl")):
         p = line.split()
         kern.setdefault(p[2].lstrip("."), int(p[1], 16))
-    files = []
+    files = [os.path.join(ROOT, "build", "settings", "settings.cvt")]   # a VLIR file
     for name, blocks in SIZES.items():
         path = os.path.join(OUT, name)
         open(path, "wb").write(b"x" * (254 * blocks - 10))
@@ -130,7 +132,35 @@ def main():
             v.resume()
             settle(s)
 
+        def run(code, s=4):
+            """CODE at $4F40 run from MainLoop (as call()); its result
+            byte at $4F3F."""
+            v.mem_set(0x4F3F, b"\xEE")
+            v.mem_set(0x4F40, bytes(code + [0x60]))
+            call(0x4F40, 0, s=s)
+            return v.mem_get(0x4F3F, 0x4F3F)[0]
+
+        def r0(addr):
+            return [0xA9, addr & 0xFF, 0x85, 0x02, 0xA9, addr >> 8, 0x85, 0x03]
+
+        def r1(addr):
+            return [0xA9, addr & 0xFF, 0x85, 0x04, 0xA9, addr >> 8, 0x85, 0x05]
+
+        FE = kern["ExtTable"] + 30
+        STX = [0x8E, 0x3F, 0x4F]
+        VNAME, VPATH, NEWN, BPATH = 0x4F80, 0x4FA0, 0x4FC0, 0x4FD0
+        v.mem_set(VNAME, b"GU Settings\0")
+        v.mem_set(VPATH, b"/b/GU Settings\0")
+        v.mem_set(NEWN, b"renamed\0")
+        v.mem_set(BPATH, b"/b\0")
+        cd_b = r0(VPATH) + [0xA9, 21, 0x20, FE & 0xFF, FE >> 8]    # FE_SELECT: its drive current
+        open_v = cd_b + r0(VNAME) + [0x20, 0x74, 0xC2] + STX       # OpenRecordFile
+        close_v = [0x20, 0x77, 0xC2] + STX                          # CloseRecordFile
+        delete_v = r0(VPATH) + [0xA9, 7, 0x20, FE & 0xFF, FE >> 8] + STX
+        rename_v = r0(VPATH) + r1(NEWN) + [0xA9, 10, 0x20, FE & 0xFF, FE >> 8] + STX
+
         check("task 0, the desktop in /b", (kbyte("taskCur"), here()), (0, "/b"))
+        check("task 0 opens the VLIR file", run(open_v), 0)
         popup()
         g.png("desktop-d23-popup")
         check("the popup: the desktop, new task, close task",
@@ -140,6 +170,9 @@ def main():
         check("new task: slot 1, a fresh desktop", kbyte("taskCur"), 1)
         size = v.mem_get(0x88C3, 0x88C3)[0]
         check("its own legacy REU area: 192 + size", kbyte("legacyBase"), 192 + size)
+        check("task 1: the file open in task 0: delete refused", run(delete_v), 0x52)
+        check("rename refused", run(rename_v), 0x52)
+        check("OpenRecordFile refused", run(open_v), 0x52)
         v.mem_set(0x4F00, b"/a\0")
         tick, routine = k["ClockTick"], k["Into"]
         v.mem_set(KEY_STUB, bytes([0xA9, tick & 0xFF, 0x8D, 0x9B, 0x84, 0xA9, tick >> 8, 0x8D, 0x9C, 0x84,
@@ -154,10 +187,13 @@ def main():
         key(CR, s=8)                                        # to task 0
         g.png("desktop-d23-task0")
         check("back in task 0: still /b, legacy area 192", (kbyte("taskCur"), here(), kbyte("legacyBase")), (0, "/b", 192))
+        check("task 0's file still open; closed", (kbyte("indexTS") != 0, run(close_v)), (True, 0))
         popup()
         key(KEY_DOWN)
         key(CR, s=8)                                        # to task 1
         check("to task 1 again: /a", (kbyte("taskCur"), here()), (1, "/a"))
+        check("closed in task 0: task 1 opens it", run(open_v), 0)
+        run(close_v)
         popup()
         key(KEY_DOWN)
         key(KEY_DOWN)

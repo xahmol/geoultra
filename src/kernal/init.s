@@ -11,7 +11,7 @@
         .import pointerPic, UseSystemFont, RecoverRectangle
         .import sysFlgCopy, DiskInit, ExtraColours, ClockInit
         .import MountAll, SerialFromDisk, TurboInit, SaveJumpTab, HibResumeOvl, RtcClockOvl
-        .import autoIdx, OvlCall, TaskInit
+        .import autoIdx, OvlCall
         .import PointerInit
         .export ColdStart
         .import startGush, FileEngine
@@ -215,5 +215,8 @@ gushName:
 AutoStart:
         jsr OvlCall
         .byte 92, 0
+TaskInit:                       ; (task.s, module 98: the table anew)
+        jsr OvlCall
+        .byte 98, 6
 FE_RUNSYS       = 22            ; (engine.inc)
 FE_NTP          = 29

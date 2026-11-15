@@ -161,11 +161,10 @@ Source: jsr SrcPath
         and #$07
         cmp #CBM_REL
         beq @err
-        ldx #WR_PR_ON
         lda cMove
         beq @name
-        lda cEntry
-        and #$40                ; locked
+        jsr Locked              ; (task.s: write-protected, or open in
+                                ; another task; dirEntryBuf is cEntry)
         bne @err
 @name:  lda cSrcET               ; its long name (else its short one) to
         sta lnKeyT              ; feTmp: the target's name in a folder
@@ -204,6 +203,13 @@ Named:  jsr Resolve
         rts
 @no:    txa
         rts
+
+
+; Locked (task.s, module 98): X = WR_PR_ON (dirEntryBuf's file
+; write-protected), FE_IN_TASK (open in another task) or 0; Z as X.
+; (A stub: OvlCall returns to its caller.)
+Locked: jsr OvlCall
+        .byte 98, 12
 
         .endscope
 
@@ -321,9 +327,8 @@ Exists: ldx #FE_LONG_MAX        ; (feName, feShort as the walk makes them)
 @other: lda argR2
         and #FC_OVERWRITE
         beq @fail
-        ldx #WR_PR_ON
-        lda dirEntryBuf
-        and #$40                ; locked
+        jsr Locked              ; (task.s: write-protected, or open in
+                                ; another task)
         bne @fail
         lda r1L                 ; (its key: its record dropped after)
         sta lnKeyT
@@ -358,6 +363,13 @@ SameFolder:
         rts
 @no:    sec
         rts
+
+
+; Locked (task.s, module 98): X = WR_PR_ON (dirEntryBuf's file
+; write-protected), FE_IN_TASK (open in another task) or 0; Z as X.
+; (A stub: OvlCall returns to its caller.)
+Locked: jsr OvlCall
+        .byte 98, 12
 
         .endscope
 

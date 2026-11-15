@@ -24,7 +24,7 @@
         .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck, turboNow
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo
-        .import imgFlags, TaskMany, TaskInit
+        .import imgFlags
 
 WR_VER_ERR      = $25           ; (as the disk driver: write failed)
 
@@ -186,6 +186,13 @@ Resume: sei
 
 HIB_SUSPEND     = 1
         .include "hibshared.inc"
+
+TaskMany:                       ; (task.s, module 98: C set with several
+        jsr OvlCall             ; tasks)
+        .byte 98, 9
+TaskInit:                       ; (task.s: the table anew)
+        jsr OvlCall
+        .byte 98, 6
 
 partIdx:        .byte 0
 hibErr:         .byte 0
