@@ -19,7 +19,7 @@ from vicemon import RESP_CHECKPOINT  # noqa: E402
 
 PAGE_DESKTOP, PAGE_SYSTEM = 1, 2
 SIDE_TOP, SIDE_ROW = 24, 16
-Y0, DY, X1, X2 = 16 + 20, 18, 137, 191         # pdesk.s COL1, COL2
+Y0, DY, X1, X2 = 16 + 20, 18, 130, 186         # pdesk.s COL1, COL2
 CANCEL_XY = (27 * 8 + 24, 188)
 YES_XY = (90, 110)
 
@@ -111,9 +111,9 @@ def main():
         check("a click on the option in force: no change", ini(), b"[desktop]\r\nview=icons\r\n")
         press(X1 + 3, Y0 - 3)                               # view: list again
         check("view: list again (replaced)", ini(), b"[desktop]\r\nview=list\r\n")
-        press(251 + 3, Y0 + 4 * DY - 3)                     # sort by: size
+        press(247 + 3, Y0 + 4 * DY - 3)                     # sort by: size
         check("sort by size: [desktop] sort=size", ini(), b"[desktop]\r\nview=list\r\nsort=size\r\n")
-        press(251 + 3, Y0 + 5 * DY - 3)                     # existing: skip
+        press(247 + 3, Y0 + 5 * DY - 3)                     # existing: skip
         press(X2 + 3, Y0 + 6 * DY - 3)                      # delete: at once
         check("existing files skipped, deleting at once: copy=skip, delete=now", ini(),
               b"[desktop]\r\nview=list\r\nsort=size\r\ncopy=skip\r\ndelete=now\r\n")

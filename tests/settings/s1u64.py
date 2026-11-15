@@ -26,7 +26,7 @@ TEST_INI = (b"; a test file of tests/settings/s1u64.py\r\n"
 WANT_INI = (b"; a test file of tests/settings/s1u64.py\r\n"
             b"[favourites]\r\n/usb0/geoultra\r\n\r\n"
             b"[desktop]\r\nview=list\r\nclock=12\r\n")
-Y0, DY, X1, X2 = 16 + 20, 18, 137, 191         # pdesk.s COL1, COL2
+Y0, DY, X1, X2 = 16 + 20, 18, 130, 186         # pdesk.s COL1, COL2
 SAVE_XY = (33 * 8 + 24, 188)
 OK_XY = (21 * 8 + 24, 188)
 

@@ -348,7 +348,7 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   inifile.s (PREF_PLAIN); the Theme page's part 15 "icons by type" (on,
   off as its style; the ink row with "none"; the type picker on the
   paper row; iType in the core), the palette now part 16; the Desktop
-  page's row "Icon colours". Tests: s4.py (VICE: the lines written,
+  page's row "Colours". Tests: s4.py (VICE: the lines written,
   none, off), d22.py (VICE: the colour cells, both switches), d9.py (the
   grid).
 

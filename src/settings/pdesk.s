@@ -26,12 +26,14 @@ Ov_DeskPress:
         ldx #>Rows
         jmp ChoicePress
 
-COL1            = 137           ; the options' four columns, the same in
-COL2            = 191           ; every row (the user, 2026-11-13: boxes
-COL3            = 251           ; aligned), from the system font's widths:
-COL4            = 282           ; labels to 134, each column's longest
+COL1            = 130           ; the options' four columns, the same in
+COL2            = 186           ; every row (the user, 2026-11-13: boxes
+COL3            = 247           ; aligned), from the system font's widths:
+COL4            = 280           ; labels to 124, each column's longest
                                 ; option (40, 46, 17 or 32 without a 4th,
-                                ; 26) and 11 for its box; "newer" to 318
+                                ; 26) and 11 for its box, 4-6 pixels
+                                ; between (2026-11-15: they touched);
+                                ; "newer" to 317
 Y0              = PAGE_TOP + 20 ; the rows' baselines, 18 apart
 DY              = 18
 
@@ -93,7 +95,8 @@ KSort:          .byte "sort", 0
 KCopy:          .byte "copy", 0
 KDel:           .byte "delete", 0
 KIcols:         .byte "iconcolours", 0
-LIcols:         .byte "Icon colours", 0
+LIcols:         .byte "Colours", 0  ; (the icons': "Icon colours" passed the
+                                ; labels' x 134; the user, 2026-11-15)
 TByType:        .byte "by type", 0
 VOn:            .byte "on", 0
 LCopy:          .byte "Existing", 0
