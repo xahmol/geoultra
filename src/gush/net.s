@@ -11,7 +11,7 @@
         .include "geos.inc"
         .include "gush.inc"
 
-        .import FileEngine, argc, argLo, argHi, ArgR0, Print, Say, Fail
+        .import FileEngine, argc, ArgR0, Print, Say, Fail
         .import Decimal, num, ConPut, ConNewLine, FailPath, failed
         .export Ov_CmdIfconfig := CmdIfconfig
         .export Ov_CmdWget := CmdWget

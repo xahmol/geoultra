@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Hibernation with two tasks on the U64 (docs/DESIGN.md "Task switcher",
-part 6; src/kernal/hibernate.s, hibresume.s, task.s): task 0 marks a RAM
+src/kernal/hibernate.s, hibresume.s, task.s): task 0 marks a RAM
 byte ($0334) $AA, a new task (1) marks it $BB and suspends (HibSuspend):
 the file holds the system bank, both task banks, the swap bank and both
 legacy REU areas. After a reboot the session resumes in task 1 ($BB,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The desktop's print queue in VICE (docs/DESIGN.md "Print spooler",
-part 4; src/desktop/spool.s; the user's decisions of 2026-11-15): from
+src/desktop/spool.s; the user's decisions of 2026-11-15): from
 the desktop, the queue paused (FE_SPOOL) and three jobs printed through
 tests/spool/logdrv.s (a printer driver that logs its calls, from drive
 B): the menu bar shows "print paused"; geos > print queue: three lines

@@ -16,7 +16,7 @@
         .include "hw.inc"
         .include "gush.inc"
 
-        .import Run, Parse, Fail, Say, lineBuf, lineLen, argc, argLo, argHi
+        .import Run, Parse, Say, lineBuf, lineLen, argc, argLo, argHi
         .import status, failed, VarSet, varName, depth, exitReq
         .import PipeOut, PipeIn
         .export Exec, ExecLine, breakReq, cachePage, ScriptExec

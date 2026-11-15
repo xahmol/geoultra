@@ -12,7 +12,7 @@
         .include "gush.inc"
 
         .import FileEngine, ConPut, ConNewLine, conCol, Commands
-        .import lineBuf, lineLen, linePos, prevKey, Show, InsCh
+        .import lineBuf, linePos, prevKey, Show, InsCh
         .export Ov_Complete := Complete
 
 NAME_MAX        = 61            ; FE_READDIR's name buffer

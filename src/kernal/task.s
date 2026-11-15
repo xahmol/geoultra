@@ -99,8 +99,9 @@ TaskTick:
 @hib:   jmp HibTick
 
 ; TaskCheck (MainLoop, at its end, never inside a disk call): a request
-; opens the popup (module 95; A = taskReq: $80 the popup, $C0 a new
-; task at once, FE_TASK from the desktop).
+; goes to module 95 (A = taskReq: $80 the popup, $C0 a new task at
+; once, FE_TASK from the desktop; $20 a record of the print queue
+; played, spool.s).
 TaskCheck:
         jsr RtcCheck            ; (then WbCheck)
         lda taskReq             ; ($80, $C0: the task popup; $20: the print

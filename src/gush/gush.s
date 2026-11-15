@@ -6,8 +6,8 @@
         .include "geos.inc"
         .include "gush.inc"
 
-        .import ConInit, ConPut, ConPuts, ConNewLine, ConClear, ConCursor
-        .import ConStatus, conCol, conRow
+        .import ConInit, ConPut, ConPuts, ConNewLine
+        .import ConStatus
         .import EdKey, EdPress, Prompt, VarsInit, RunRc, HistLoad
         .import OvlInit, ovlOk, Print, Fail, ArgR0, DrivesInit, Remember
         .import ApiArgc, ApiGetVar, ApiSetVar, ApiReadIn, ApiDecimal, ApiKey

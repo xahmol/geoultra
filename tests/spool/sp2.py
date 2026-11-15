@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""The print spooler recording in VICE (docs/DESIGN.md "Print spooler",
-part 2; src/kernal/spool.s): a printer driver ("Epson MX-80" from the
+"""The print spooler recording in VICE (docs/DESIGN.md "Print spooler";
+src/kernal/spool.s): a printer driver ("Epson MX-80" from the
 applications disk, GEOS_APPS_DISK, the user's own, never committed)
 loaded with GetFile (catching switched on: spOn): its entries (not GetDimensions) become `jsr
 SpoolEnt`; InitForPrint, StartPrint, two PrintBuffer rows (from the
@@ -36,7 +36,7 @@ sys_op = lbl["SysRAMOp"]
 v.ping()
 v.mem_set(0x4E00, %(drv)r + b"\0")
 v.mem_set(0x02F0, b"\xEE" * 4)
-v.mem_set(lbl["spOn"], b"\x80")                       # (catching on: part 2)
+v.mem_set(lbl["spOn"], b"\x80")                       # (catching on)
 code = ([0x78, 0xA9, 0x30, 0x85, 0x01, 0xA9, 9] + jsr("SetDevice") + jsr("OpenDisk")
         + r(0x0E, 0x4E00) + [0xA9, 0x00, 0x85, 0x02] + jsr("GetFile") + [0x8E, 0xF0, 0x02]
         + jsr(0x7900)                                             # InitForPrint

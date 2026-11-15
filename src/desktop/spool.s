@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: the print spooler's indicator and queue window
-; (docs/DESIGN.md "Print spooler", part 4; the user's decisions of
+; (docs/DESIGN.md "Print spooler"; the user's decisions of
 ; 2026-11-15: the indicator in the menu bar left of the date, as the
 ; status line has no room with two panes; the window from a click on it
 ; and from geos > print queue; a job cancelled stops at once). The
@@ -300,7 +300,7 @@ form:           .byte 0
 num:            .byte 0
 dig:            .byte 0
 lead:           .byte 0
-qText:          .res 16         ; "printing 255/255" and its zero
+qText:          .res 17         ; "printing 255/255" and its zero
 
 ; ======================================================================
 ; Overlay 5: the queue window

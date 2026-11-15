@@ -30,7 +30,7 @@ JT_COPY         = $1000         ; its copy in REU bank 1
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
         .import taskName
         .import ScrapFind, SpoolLd
-        .import WriteBackNow, SysFindFile, AppGate, RefusedMsg, ownDesk, FileEngine
+        .import WriteBackNow, AppGate, RefusedMsg, ownDesk, FileEngine
 
 DA_BANK         = 18
 MAX_SLEEP       = 20

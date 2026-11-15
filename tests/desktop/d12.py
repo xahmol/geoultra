@@ -130,7 +130,7 @@ def main():
         check("a right press: the entry under the pointer the cursor", word("cur"), 4)
         check("the menu open (overlay 7 in)", byte("curOvl"), 7)
         g.png("desktop-d12")
-        x, y = item(6)                                          # info
+        x, y = item(7)                                          # info (after open, open in new task, copy, cut, paste, rename, delete)
         left(x, y, s=5)
         check("info: the kind line", text("line2").startswith("Kind: "), True)
         check("info: the size in blocks", text("line3").endswith(" blocks"), True)
@@ -143,7 +143,7 @@ def main():
         check("the right button again: nothing on the clipboard", word("clipCount"), 0)
         right(150, row)
         check("the menu open again", in_menu(), True)
-        x, y = item(1)                                          # copy
+        x, y = item(2)                                          # copy
         left(x, y, s=4)
         in_menu(False)
         check("copy from the menu: one entry on the clipboard", word("clipCount"), 1)

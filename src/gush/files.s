@@ -8,7 +8,7 @@
         .include "geos.inc"
         .include "gush.inc"
 
-        .import ConPut, ConPuts, ConNewLine, conCol
+        .import ConPut, ConNewLine, conCol
         .import FileEngine, argc, argLo, argHi
         .import ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CopyTree, sinkOn, inHandle, ReadIn

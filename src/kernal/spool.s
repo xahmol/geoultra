@@ -1,34 +1,41 @@
 ; The print spooler (docs/DESIGN.md "Print spooler"; the user's decisions
-; of 2026-11-15). Part 1: the queue's REU banks. Banks 27-28 always; with
-; SETTINGS.INI [system] spool= (KB: 128, 256, 512, 1024, 2048; read by
-; the auto-exec module 92 at the cold start) more, at the top of the
-; drives' area (banks 31-187) as far as no mounted drive uses them there;
-; FE_MOUNT and the disk images gone into stay below (driveLimit, the
-; file engine's Banks0). The queue's logical bank n: 27 + n for n < 2,
-; spoolBase + n - 2 after.
+; of 2026-11-15). Own code.
 ;
-; Part 2: the printer driver's calls recorded. LdFile ends in SpoolLd
-; (module 106): a file of GEOS type PRINTER loaded at $7900 is kept as
-; it is in REU bank 1 (DRV_SAVE) and its entries (HG2G "Printer
-; drivers": InitForPrint $7900, StartPrint +3, PrintBuffer +6, StopPrint
-; +9, GetDimensions +12, PrintASCII +15, StartASCII +18, SetNLQ +21) but
-; GetDimensions become `jsr SpoolEnt` (the driver kept in the next of
-; DRV_SLOTS slots, spDrv its slot): module 107 records the call and
-; its data in the queue, and the program goes on at once. The queue: a
-; ring of records over the spooler's banks (head, tail: byte offsets),
-; its header in bank 1 at QHEAD. A job starts with its driver (the copy
-; in its slot at DRV_SAVE), so the playback (part 3) needs nothing else.
-; Records: a type byte, then its data: T_DRIVER (its slot, the job's
-; number), T_INIT, T_START,
+; The queue's REU banks: 27-28 always; with SETTINGS.INI [system] spool=
+; (KB: 128, 256, 512, 1024, 2048; read by the auto-exec module 92 at the
+; cold start, module 105) more, at the top of the drives' area (banks
+; 31-187) as far as no mounted drive uses them there; FE_MOUNT and the
+; disk images gone into stay below (driveLimit, the file engine's
+; Banks0). The queue's logical bank n: 27 + n for n < 2, spoolBase + n -
+; 2 after. Bank 27's first RING0 pages hold the playback's state.
+;
+; Recording: LdFile ends in SpoolLd (module 106): a file of GEOS type
+; PRINTER loaded at $7900 is kept as it is in REU bank 1 (DRV_SAVE, the
+; next of DRV_SLOTS slots, spDrv its slot) and its entries (HG2G
+; "Printer drivers": InitForPrint $7900, StartPrint +3, PrintBuffer +6,
+; StopPrint +9, GetDimensions +12, PrintASCII +15, StartASCII +18, SetNLQ
+; +21) but GetDimensions become `jsr SpoolEnt`. A call then waits only
+; while the queue has no room for it (module 112: records played
+; meanwhile), is recorded (modules 107, 108) and returns at once. The
+; queue: a ring of records over the spooler's banks (head, tail: byte
+; offsets), its header in bank 1 at QHEAD. A job (InitForPrint, or the
+; first call after none) starts with its driver's slot and number
+; (T_DRIVER), so the playback needs nothing else. Records: a type byte,
+; then its data: T_DRIVER (the slot, the job's number), T_INIT, T_START,
 ; T_ROW (640 bytes), T_ROWC (640 and 80 colour bytes), T_STOP, T_SASCII,
-; T_ASCII (the string and its zero), T_NLQ. Own code.
+; T_ASCII (a length byte, then the string and its zero), T_NLQ.
 ;
-; Part 4 (the desktop's queue window): each job has an entry in a job
-; table (JOBTAB: its number, $80 cancelled, its pages, the program's
-; name); T_DRIVER carries the job's number; the playback skips a
-; cancelled job's records (a page it had started ended with StopPrint);
-; FE_SPOOL (module 114) gives the desktop the state, the jobs, pause,
-; resume and cancel.
+; Playback: a record a pass at MainLoop's end (taskReq $20, TaskCheck;
+; module 109, then 113 for a driver call): the driver from its slot and
+; the record's data lent C64 memory (modules 110, 111), the program's
+; bytes given back after. A StartPrint or StopPrint error pauses the
+; queue.
+;
+; Jobs (the desktop's indicator and queue window): each has an entry in
+; a job table (JOBTAB: its number, $80 cancelled, its pages, the
+; program's name); the playback passes a cancelled job's records over (a
+; page it had started ended with StopPrint); FE_SPOOL (module 114) gives
+; the desktop the state, the jobs, pause, resume and cancel.
 
         .include "geos.inc"
         .include "engine.inc"
@@ -110,6 +117,8 @@ ROWB            = AREA + WORK_LEN ; colours (80), a string (256)
 COLB            = ROWB + ROW_LEN
 STRB            = COLB + COL_LEN
 AREA_LEN        = STRB + 256 - AREA
+        .assert ST_DRV + DRV_LEN <= ST_WORK && ST_WORK + WORK_LEN <= ST_AREA, error, "spool.s: the playback's state overlaps"
+        .assert ST_AREA + AREA_LEN <= RING0 * 256, error, "spool.s: the playback's state runs into the ring"
 
 SPOOL_FIXED     = 2             ; banks 27-28
 RING0           = $20           ; the ring's first page (spoolring.inc)
@@ -524,7 +533,7 @@ Types:  .byte T_INIT, T_START, T_ROW, T_STOP, 0, T_ASCII, T_SASCII, T_NLQ
 
 ; Write: module 107's request into the queue (its header in hdr): the
 ; record's type, a string's length, its parts; the header saved. X = 0.
-; No room: the rest dropped (part 3 makes the program wait instead).
+; (Module 112 made room for it; Put's own check is a defence.)
 Write:  lda rqType
         jsr PutType
         lda rqType              ; a string: its length first (the playback

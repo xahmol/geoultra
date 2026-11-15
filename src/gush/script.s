@@ -8,8 +8,8 @@
         .include "geos.inc"
         .include "gush.inc"
 
-        .import FileEngine, Run, Fail, lineBuf, argc, argLo, argHi
-        .import status, failed, VarFind, varName, Exec, ScriptExec
+        .import FileEngine, Fail, argc, argLo, argHi
+        .import failed, VarFind, varName, Exec, ScriptExec
         .export RunScript, CmdSource, ArgN, depth, exitReq, exitStatus
         .export RunRc
 

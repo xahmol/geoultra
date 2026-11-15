@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""The print spooler's playback in VICE (docs/DESIGN.md "Print spooler",
-part 3; src/kernal/spool.s): the same page (InitForPrint, StartPrint,
+"""The print spooler's playback in VICE (docs/DESIGN.md "Print spooler";
+src/kernal/spool.s): the same page (InitForPrint, StartPrint,
 two rows, StopPrint) printed twice through tests/spool/logdrv.s, a
 printer driver that logs its calls and each row's sum at $0280 (VICE's
 printer 4 does not answer GEOS drivers here): once directly (spooling

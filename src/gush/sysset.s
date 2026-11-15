@@ -4,7 +4,7 @@
         .include "geos.inc"
         .include "gush.inc"
 
-        .import FileEngine, argc, argLo, argHi
+        .import FileEngine, argc
         .import ArgR0, Print, Say, Fail, Decimal, num, ConPut
         .export Ov_CmdTurbo := CmdTurbo
         .export Ov_CmdDate := CmdDate

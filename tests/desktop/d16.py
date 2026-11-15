@@ -38,12 +38,19 @@ def main():
         v.ping()
 
     def call(routine, s=6):
+        """ROUTINE from appMain; again when it did not run (the desktop,
+        still starting, set its appMain over the stub): the stub marks
+        $02FF."""
         tick = k["ClockTick"]
-        v.mem_set(KEY_STUB, bytes([0xA9, tick & 0xFF, 0x8D, 0x9B, 0x84, 0xA9, tick >> 8, 0x8D, 0x9C,
-                                   0x84, 0x4C, routine & 0xFF, routine >> 8]))
-        v.mem_set(0x849B, bytes([KEY_STUB & 0xFF, KEY_STUB >> 8]))
-        v.resume()
-        settle(s)
+        for _ in range(5):
+            v.mem_set(0x02FF, b"\0")
+            v.mem_set(KEY_STUB, bytes([0xA9, tick & 0xFF, 0x8D, 0x9B, 0x84, 0xA9, tick >> 8, 0x8D, 0x9C,
+                                       0x84, 0xEE, 0xFF, 0x02, 0x4C, routine & 0xFF, routine >> 8]))
+            v.mem_set(0x849B, bytes([KEY_STUB & 0xFF, KEY_STUB >> 8]))
+            v.resume()
+            settle(s)
+            if v.mem_get(0x02FF, 0x02FF)[0]:
+                return
 
     def press(x, y, s=4):
         v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))
@@ -60,7 +67,12 @@ def main():
         return bytes(v.mem_get(at, at + 39)).split(b"\0")[0]
 
     try:
-        settle(5)
+        tick = k["ClockTick"]                       # the desktop up: its appMain
+        for _ in range(60):                         # (a fixed wait failed now
+            settle(0.5)                             # and then)
+            if int.from_bytes(bytes(v.mem_get(0x849B, 0x849C)), "little") == tick:
+                break
+        settle(2)
         ver = bytes(v.mem_get(0xC0E2, 0xC0E3))
         b = bytes(v.mem_get(0xC0F5, 0xC0FA))
         call(k["About"])

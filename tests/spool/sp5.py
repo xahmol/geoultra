@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The print spooler's jobs, cancel, pause and resume in VICE (docs/
-DESIGN.md "Print spooler", part 4; src/kernal/spool.s, FE_SPOOL): three
+DESIGN.md "Print spooler"; src/kernal/spool.s, FE_SPOOL): three
 jobs recorded through tests/spool/logdrv.s (a printer driver that logs
 its calls) by a program named "testprog", none played yet; FE_SPOOL's
 state (job 1 of 3) and job list (three entries: numbers 0-2, a page

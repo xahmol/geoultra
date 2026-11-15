@@ -4,9 +4,9 @@
         .include "geos.inc"
         .include "gush.inc"
 
-        .import FileEngine, Status, pwdBuf, startDrive, argc, argLo, argHi
-        .import ArgR0, PutArg, Print, Say, Fail, Decimal, num, HistSave
-        .import ConPut, ConNewLine, Options, firstArg, tracks
+        .import FileEngine, Status, pwdBuf, startDrive, argc
+        .import ArgR0, Print, Say, Fail, Decimal, num, HistSave
+        .import Options, firstArg, tracks
         .export Ov_CmdMount := CmdMount
         .export Ov_CmdUmount := CmdUmount
         .export Ov_CmdMkimg := CmdMkimg

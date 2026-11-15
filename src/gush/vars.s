@@ -8,7 +8,7 @@
         .include "geos.inc"
         .include "gush.inc"
 
-        .import FileEngine, Say, Print, ConPut, ConNewLine, Fail, argc
+        .import FileEngine, Say, ConPut, ConNewLine, Fail, argc
         .import argLo, argHi
         .export VarFind, VarSet, VarDel, VarsInit, varName, IsNameChar
         .export CmdSet, CmdUnset
