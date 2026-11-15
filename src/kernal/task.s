@@ -65,14 +65,23 @@ REU_STASH_FF00  = $80           ; execute on a write to $FF00, C64 -> REU (as hi
 
 ; TaskTick (the interrupt, before HibTick; I/O in): C= and RUN/STOP held
 ; together (one column of the matrix: RUN/STOP row bit 7, C= row bit 5)
-; set taskReq once per press. $DC00 is put back (the input driver reads
-; port 1 next frame).
+; set taskReq once per press; not while a device in port 1 holds those
+; lines low (they read low with no column selected too). $DC00 is put
+; back (the input driver reads port 1 next frame).
 TaskTick:
         lda $DC00
         pha
+        lda #$FF                ; no column: a line low now is a device in
+        sta $DC00               ; port 1, not keys (VICE's port-1 devices,
+        lda $DC01               ; a joystick or mouse there; d5.py)
+        and #$A0
+        cmp #$A0
+        bne @dev
         lda #$7F
         sta $DC00
         lda $DC01
+        .byte $2C               ; (skips the lda #$FF)
+@dev:   lda #$FF
         tax
         pla
         sta $DC00
