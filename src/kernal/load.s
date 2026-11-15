@@ -29,7 +29,7 @@ JT_COPY         = $1000         ; its copy in REU bank 1
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
         .import taskName
-        .import ScrapFind
+        .import ScrapFind, SpoolLd
         .import WriteBackNow, SysFindFile, AppGate, RefusedMsg, ownDesk, FileEngine
 
 DA_BANK         = 18
@@ -107,8 +107,8 @@ LdFile: jsr GetFHdrInfo
 @read:  lda #$FF
         sta r2L
         sta r2H
-        jmp ReadFile
-@end:   rts
+        jmp SpoolLd             ; (ReadFile, then a printer driver's
+@end:   rts                     ; entries caught: spool.s)
 
 ; LdApplic: r9 = entry, r0L / r7 / r2 / r3 as GetFile. Loads and starts
 ; the application; returns only with an error or an own load address.

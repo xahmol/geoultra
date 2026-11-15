@@ -79,8 +79,10 @@ CASES = [
     dict(name="CRC of one byte", routine="CRC", r={"r0": 0x4000, "r1": 1},
          mem={0x4000: [0x41]}, compare=["r2"]),
     get("GetFile printer driver (at its own address)", "MPS-803", 0, 0,
-        ["r7", "mem:$7900-$7DFF", "mem:$8100-$81FF", "mem:$8300-$831F"],
-        mem={0x7900: [0xEE] * 0x500}),
+        ["r7", "mem:$7918-$7DFF", "mem:$8100-$81FF", "mem:$8300-$831F"],
+        mem={0x7900: [0xEE] * 0x500}),  # ($7900-$7917: its entries, caught by
+                                         # GeoUltra's print spooler, src/kernal/
+                                         # spool.s: `jsr SpoolEnt`, by design)
     get("GetFile input driver at r7", "JOYSTICK", 1, 0x4000, ["r7", "mem:$4000-$45FF"]),
     get("GetFile application at r7 (not started)", "CONVERT", 1, 0x4000,
         ["r7", "mem:$4000-$48FF", "mem:$8100-$81FF"]),
