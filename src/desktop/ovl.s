@@ -34,6 +34,7 @@ OvlFail:
         Stub ThemeFiles, 1      ; overlay 1: themefile.s
         Stub ThemeUse, 1
         Stub PalReset, 1
+        Stub Derive, 1          ; (theme.s: the layout from the theme)
         Stub Copy, 2            ; overlay 2: actions.s, tree.s
         Stub Cut, 2
         Stub Paste, 2

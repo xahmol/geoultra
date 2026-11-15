@@ -24,7 +24,7 @@
         .export trackTop, trackBot, trackH, iconCard, nameX, sideTx, stY0, stY1
         .export Paint, px0, px1, py0, py1, pcol, PaintAll, PaintSide, PaintList
         .export Neutral, Dialog, MenuNeutral, Recover, ClockTick
-        .export TextWidth, boldOn, clockMode, viewMode, MonthName, Derive
+        .export TextWidth, boldOn, clockMode, viewMode, MonthName, Ov_Derive
         .export lettersDue, rootsSeen, sortDue, cIconT, cDesk, tByType
         .import Status, taskRedraw
         .import PaneLetters
@@ -47,9 +47,13 @@ shp:            .res 2          ; its shadow row
 
         .segment "CODE"
 
+        .segment "OV1"          ; (Derive: 380 bytes of the core, 2026-11-15)
+
+Ov_Derive = DeriveOv
 ; Derive: the layout from the record; a colour bar selection forces
 ; 8-pixel rows (9-pixel rows cross the 8 x 8 cells).
-Derive: lda tSel
+DeriveOv:                       ; (overlay 1: the core calls the stub Derive)
+        lda tSel
         cmp #ST_BAR
         bne :+
         lda #8
@@ -232,6 +236,8 @@ OnPaper:
         asl a
         ora tmp
         rts
+
+        .segment "CODE"
 
 ; ThemeName: r1 = built-in theme A's name. Destroys X.
 ThemeName:
