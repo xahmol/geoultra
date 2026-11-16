@@ -16,7 +16,10 @@ MapRegs:
         jsr BlkRegs
         lda #MAP_LEN + 4
         sta r2L
-        rts
+        dec r2H                 ; (BlkRegs set 256, r2H 1: until 2026-11-16
+        rts                     ; the length was 256 + 68, and the map's
+                                ; reads ran 256 bytes past $9FFF into the
+                                ; screen's first row)
 
 ; MapSave: mapBuf to the map block.
 MapSave:
