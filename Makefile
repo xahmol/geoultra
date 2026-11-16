@@ -572,6 +572,7 @@ test-print: all
 	$(PYTHON) tests/print/mp1.py
 	$(PYTHON) tests/print/pdfsim.py
 	$(PYTHON) tests/print/pdf1.py
+	$(PYTHON) tests/print/gwcross.py
 
 # The GEOS 2.0 deskTop with a 1581 drive A (the driver called between
 # InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).

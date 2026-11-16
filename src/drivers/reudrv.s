@@ -713,6 +713,9 @@ tNativeEnd:
 OpenDisk:                       ; (module 82, at the end of this file: the
         jsr OvlCall             ; driver's bytes are few; never called
         .byte 82, 0             ; between InitForIO and DoneWithIO)
+FolderFirst:                    ; (FirstDirBlock on a 1581 or native drive:
+        jsr OvlCall             ; module 117, folders.s)
+        .byte 117, 0
 
 ; ChkDkGEOS: r5 = directory header. isGEOS = A = $FF when it carries the
 ; GEOS signature ("GEOS format"), else 0. Destroys A, Y.
@@ -1331,17 +1334,16 @@ dtfBam: bne @t1541
         rts
 
 ; FirstDirBlock: r1 = the first directory block of the drive's type.
+; 1581 and native: the current folder's (or partition's) first block,
+; from the drive's own state (module 117, folders.s FolderFirst).
+; Destroys A, X, Y (and diskBlkBuf on a 1581 or native drive).
 FirstDirBlock:
         ldy curDrive
         lda driveType-8,y
         and #$0F
-        cmp #DRV_1581           ; 1581 and native: the current folder's
-        bcc @table              ; first block (its header's link, in
-        lda curDirHead          ; curDirHead: 40/0 -> 40/3 at the root)
-        sta r1L
-        lda curDirHead+1
-        sta r1H
-        rts
+        cmp #DRV_1581
+        bcc @table
+        jmp FolderFirst
 @table: tay
         lda dirTrack,y
         sta r1L

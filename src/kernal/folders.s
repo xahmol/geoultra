@@ -29,7 +29,7 @@
         .export folderT, folderS, ExtTable, SetGEOSDiskOvl, Dir81, Patch81, FileEngine
         .import t1581
         .import OvlCall, SysFindFile
-        .import DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite
+        .import DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite, DrvReadBuff
         .import geosId
 
 FindFile        = SysFindFile   ; (as the jump table's was before the scrap
@@ -107,6 +107,44 @@ run19:  .byte 0                 ; resident across the call from 19 to 20
 sec19:  .byte 0
 trk19:  .byte 0
 
+
+        .segment "OVL117"               ; overlay module 117: the first
+        .scope Mod117                   ; directory block
+
+        jmp First                       ; entry 0
+
+; First: r1 = the current folder's (or 1581 partition's) first
+; directory block: the link of its header block, read from the drive
+; (Dir81, folderT/folderS: the drive's own state). Until 2026-11-16 the
+; driver took the link from curDirHead, which holds the header of the
+; drive read last: an application switching drives with SetDevice alone
+; (geoWrite between its document's drive and its own, to load the
+; printer driver) searched the other drive's directory (the user's U64:
+; "reading page", a garbled printout; VICE: "reading printer driver").
+; Destroys A, X, Y, diskBlkBuf.
+First:  ldy curDrive
+        lda driveType-8,y
+        and #$0F
+        cmp #DRV_NATIVE
+        beq @native
+        jsr Dir81                       ; 1581: (40 or the partition's, 0)
+        sta r1L
+        lda #0
+        beq @hdr                        ; (always)
+@native:
+        ldx curDrive
+        lda folderT-8,x
+        sta r1L
+        lda folderS-8,x
+@hdr:   sta r1H
+        jsr DrvReadBuff                 ; its link: the first directory block
+        lda diskBlkBuf
+        sta r1L
+        lda diskBlkBuf+1
+        sta r1H
+        rts
+
+        .endscope
 
         .segment "OVL12"                ; overlay module 12: folders
         .scope Mod12
