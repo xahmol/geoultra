@@ -111,13 +111,16 @@ jbuf            = $9F80         ; a job's entry (J_LEN; spooljob.inc)
 ST_DRV          = $0000         ; the program's $7900-$7F3F meanwhile
 ST_WORK         = $0700         ; the driver's work area between calls
 ST_AREA         = $1000         ; the program's AREA meanwhile
+ST_SCR          = $0E80         ; the overlay scratch during a driver call
+SCR             = $9F70         ; (the file engine's work area: a driver
+SCR_LEN         = $A000 - SCR   ; that calls the engine, GU PDF, uses it)
 AREA            = $6000         ; C64 memory lent to the driver: its work
 WORK_LEN        = $0780         ; area (1920 bytes), the row (640), the
 ROWB            = AREA + WORK_LEN ; colours (80), a string (256)
 COLB            = ROWB + ROW_LEN
 STRB            = COLB + COL_LEN
 AREA_LEN        = STRB + 256 - AREA
-        .assert ST_DRV + DRV_LEN <= ST_WORK && ST_WORK + WORK_LEN <= ST_AREA, error, "spool.s: the playback's state overlaps"
+        .assert ST_DRV + DRV_LEN <= ST_WORK && ST_WORK + WORK_LEN <= ST_SCR && ST_SCR + SCR_LEN <= ST_AREA, error, "spool.s: the playback's state overlaps"
         .assert ST_AREA + AREA_LEN <= RING0 * 256, error, "spool.s: the playback's state runs into the ring"
 
 SPOOL_FIXED     = 2             ; banks 27-28
@@ -167,7 +170,9 @@ SpoolEnt:
 spEnt:          .byte 0
 spDrv:          .byte 0         ; this task's driver: its slot (module 106)
 spOn:           .byte $80       ; $80: drivers caught (0: printing as in
-                                ; GEOS 2.0, straight to the printer; tests)
+                                ; GEOS 2.0, straight to the printer; tests);
+                                ; $40 while the playback calls a driver
+                                ; (module 110; FE_SPOOL 5 asks)
 
 spoolExtra:     .byte 0                 ; banks beyond 27-28
 spoolBase:      .byte FE_LAST_BANK + 1  ; the first of them
@@ -711,6 +716,8 @@ Run:    jsr SwapIn
         lda runLen2
         ldx #0
         jsr Get
+        jsr Keep                ; (module 111: the scratch kept; this
+                                ; module's bytes come anew: vec after)
         lda rdata               ; the call
         sta r0L
         lda rdata+1
@@ -732,10 +739,18 @@ Run:    jsr SwapIn
         sta vec
         lda #>DRV_ADDR
         sta vec+1
+        lda spOn                ; (a driver call played: FE_SPOOL 5
+        ora #$40                ; names the job's program)
+        sta spOn
         jsr Call
-        stx status
+        txa                     ; (its X: the scratch, status's place,
+        pha                     ; comes back with SwapOut)
+        lda spOn
+        and #$FF - $40
+        sta spOn
         jsr SwapOut
-        ldx status
+        pla
+        tax
         rts
 Call:   jmp (vec)
 SwapIn: jsr OvlCall             ; (module 111)
@@ -743,6 +758,8 @@ SwapIn: jsr OvlCall             ; (module 111)
 SwapOut:
         jsr OvlCall
         .byte 111, 3
+Keep:   jsr OvlCall
+        .byte 111, 6
 
 vec:            .word 0
 
@@ -755,6 +772,7 @@ vec:            .word 0
 
         jmp SwapIn              ; entry 0 (module 110)
         jmp SwapOut             ; entry 3
+        jmp Keep                ; entry 6
 
 ; SwapIn: the program's driver area and AREA out to bank 27, the job's
 ; driver (its slot, Q_PSLOT) to $7900, its work area into AREA.
@@ -768,11 +786,21 @@ SwapIn: ldx #0
         ldx #2
         jmp Op
 
+; Keep: the overlay scratch kept until SwapOut (module 110, just before
+; the driver's call: the playback's state, the tail moved past the
+; record's data; the file engine's work area, which a driver calling the
+; engine uses: GU PDF).
+Keep:   ldx #6
+        jmp Op
+
 ; SwapOut: the driver back into its slot (its own variables last from
 ; call to call, as with a driver GEOS keeps loaded: found 2026-11-16 for
 ; GeoUltra's PDF driver; a driver keeping state in its memory lost it
-; between played calls), the work area kept, the program's bytes back.
+; between played calls), the work area kept, the program's bytes back;
+; first the scratch as it was before the call.
 SwapOut:
+        ldx #7                  ; the scratch back first (Slot reads hdr)
+        jsr Op
         jsr Slot
         ldy #REU_STASH
         jsr SysRAMOp
@@ -830,13 +858,13 @@ Op:     lda OpC64Lo,x
         sta r3L
         ldy OpCmd,x
         jmp SysRAMOp
-OpC64Lo:        .byte <DRV_ADDR, <AREA, <AREA, <AREA, <AREA, <DRV_ADDR
-OpC64Hi:        .byte >DRV_ADDR, >AREA, >AREA, >AREA, >AREA, >DRV_ADDR
-OpReuLo:        .byte <ST_DRV, <ST_AREA, <ST_WORK, <ST_WORK, <ST_AREA, <ST_DRV
-OpReuHi:        .byte >ST_DRV, >ST_AREA, >ST_WORK, >ST_WORK, >ST_AREA, >ST_DRV
-OpLenLo:        .byte <DRV_LEN, <AREA_LEN, <WORK_LEN, <WORK_LEN, <AREA_LEN, <DRV_LEN
-OpLenHi:        .byte >DRV_LEN, >AREA_LEN, >WORK_LEN, >WORK_LEN, >AREA_LEN, >DRV_LEN
-OpCmd:          .byte REU_STASH, REU_STASH, REU_FETCH, REU_STASH, REU_FETCH, REU_FETCH
+OpC64Lo:        .byte <DRV_ADDR, <AREA, <AREA, <AREA, <AREA, <DRV_ADDR, <SCR, <SCR
+OpC64Hi:        .byte >DRV_ADDR, >AREA, >AREA, >AREA, >AREA, >DRV_ADDR, >SCR, >SCR
+OpReuLo:        .byte <ST_DRV, <ST_AREA, <ST_WORK, <ST_WORK, <ST_AREA, <ST_DRV, <ST_SCR, <ST_SCR
+OpReuHi:        .byte >ST_DRV, >ST_AREA, >ST_WORK, >ST_WORK, >ST_AREA, >ST_DRV, >ST_SCR, >ST_SCR
+OpLenLo:        .byte <DRV_LEN, <AREA_LEN, <WORK_LEN, <WORK_LEN, <AREA_LEN, <DRV_LEN, <SCR_LEN, <SCR_LEN
+OpLenHi:        .byte >DRV_LEN, >AREA_LEN, >WORK_LEN, >WORK_LEN, >AREA_LEN, >DRV_LEN, >SCR_LEN, >SCR_LEN
+OpCmd:          .byte REU_STASH, REU_STASH, REU_FETCH, REU_STASH, REU_FETCH, REU_FETCH, REU_STASH, REU_FETCH
 
         .endscope
 
@@ -1000,8 +1028,11 @@ Cancelled:
 ; printer's error that paused it. 1: pause. 2: resume (the error
 ; forgotten). 3: job r0L cancelled. 4: the jobs not yet printed (the
 ; one printing first; JOB_MAX at most) to r0, J_LEN bytes each (spool.s
-; J_*); A = their count. X = 0. Own buffers (the engine's work area is
-; in use, the spooler's scratch overlaps it).
+; J_*); A = their count. 5: the name of the program that printed, to r0
+; (NAME_LEN bytes: the job's when a driver call is played, spOn $40,
+; else the task's: a printer driver's, GU PDF's file name). X = 0. Own
+; buffers (the engine's work area is in use, the spooler's scratch
+; overlaps it).
 FeSpool:
         sty sub
         ldy #REU_FETCH
@@ -1018,8 +1049,11 @@ Known:  lda sub
         bcc @pause
         beq @resume
         cmp #4
-        bcc Cancel
-        jmp List
+        beq @list
+        bcs @name
+        jmp Cancel              ; (3)
+@list:  jmp List
+@name:  jmp Name                ; (5)
 @pause: lda #$80
         sta qh + Q_PAUSED
         bne Save
@@ -1131,6 +1165,28 @@ List:   lda #0
 @end:   lda cnt
         ldx #0
         rts
+
+; Name (Y = 5): see FeSpool.
+Name:   lda #<taskName
+        ldx #>taskName
+        bit spOn
+        bvc @copy
+        lda qh + Q_PJOB
+        jsr JobOp0
+        lda #<(jb + J_NAME)
+        ldx #>(jb + J_NAME)
+@copy:  sta r1L
+        stx r1H
+        lda argR0
+        sta r2L
+        lda argR0+1
+        sta r2H
+        ldy #NAME_LEN - 1
+:       lda (r1),y
+        sta (r2),y
+        dey
+        bpl :-
+        jmp Done
 
 ; First: A = the first job not yet printed: the one playing, or Q_BASE
 ; when that one was before it (a job not yet begun).

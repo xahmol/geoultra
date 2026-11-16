@@ -3,8 +3,9 @@
 "Printing", the user's decisions of 2026-11-16; pprint.s): its name the
 ninth in the side list; the printer row with GU Epson FX-80 in force
 (no printer= yet), the note, "In use:" and the printer the desktop set
-(PrntFilename); a click on Commodore MPS: [desktop] printer=GU Commodore
-MPS in the settings' text, the row following. Screens:
+(PrntFilename); a click on MPS: [desktop] printer=GU Commodore MPS in
+the settings' text, the row following; PDF Letter: printer=GU PDF
+Letter. Screens:
 build/harness/gush/settings-s8*.png.
 Usage: tests/settings/s8.py
 """
@@ -20,7 +21,8 @@ from vicemon import RESP_CHECKPOINT  # noqa: E402
 PAGE_PRINT = 8
 SIDE_TOP, SIDE_ROW = 24, 16
 ROW_Y = 16 + 20                 # the row's baseline (PAGE_TOP + 20)
-MPS_XY = (205 + 3, ROW_Y - 3)   # Commodore MPS's box
+MPS_XY = (165 + 3, ROW_Y - 3)   # MPS's box
+PDF_XY = (247 + 3, ROW_Y - 3)   # PDF Letter's box
 
 
 def labels(path):
@@ -102,6 +104,9 @@ def main():
               b"[desktop]\r\nprinter=GU Commodore MPS\r\n")
         check("the row follows", v.mem_get(s["sel"], s["sel"])[0], 1)
         g.png("settings-s8-mps")
+        press(*PDF_XY, t=4)
+        check("PDF Letter: [desktop] printer=GU PDF Letter", settings_text(),
+              b"[desktop]\r\nprinter=GU PDF Letter\r\n")
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

@@ -1,0 +1,9 @@
+[file]
+name    = "GU PDF A4"
+type    = "PRINTER"
+class   = "GU PDF A4"
+version = "V1.0"
+author  = "GeoUltra"
+info    = "Prints into PDF files on the Ultimate: GEOULTRA/print, a file per document (A4)"
+load    = 0x7900
+icon    = "../../build/printer/pdf.icon"

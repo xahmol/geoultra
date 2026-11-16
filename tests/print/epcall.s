@@ -7,7 +7,7 @@
 ; PrintASCII of the string at TEXT, StopPrint. Results: X of StartPrint
 ; at $02F1, of StopPrint at $02F2, of GetFile at $02EF, $02F0 = $AA when done. Own code.
 ; Assembled with -D SetDevice=.. -D OpenDisk=.. -D GetFile=.. -D BANDS=..
-; -D COLSTEP=.. -D ASCII=0|1 -D SPOOLED=0|1 -D MainLoop=..
+; -D COLSTEP=.. -D ASCII=0|1 -D SPOOLED=0|1 -D MainLoop=.. [-D PAGES=n]
 
 r0L     = $02
 r0H     = $03
@@ -25,6 +25,10 @@ TEXT    = $4E80
 ptr     = $02F4
 cptr    = $02F6
 count   = $02F3
+pagesLeft = $02F8
+.ifndef PAGES
+PAGES = 1
+.endif
 
         .org $0340
         sei
@@ -42,6 +46,8 @@ count   = $02F3
         jsr GetFile
         stx $02EF
         jsr $7900               ; InitForPrint
+        lda #PAGES
+        sta pagesLeft
 .if ASCII
         jsr Work
         jsr $7915               ; SetNLQ
@@ -56,7 +62,7 @@ count   = $02F3
         jsr $790F               ; PrintASCII
         jmp Stop
 .endif
-        jsr Work
+Page:   jsr Work
         jsr $7903               ; StartPrint
         stx $02F1
         lda #<DATA
@@ -102,6 +108,10 @@ Stop:   lda #<DATA
         jsr Work
         jsr $7909               ; StopPrint
         stx $02F2
+        dec pagesLeft
+        beq :+
+        jmp Page
+:
         lda #$AA
         sta $02F0
 .if SPOOLED

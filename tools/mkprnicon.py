@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """mkprnicon.py - the file icon of GeoUltra's printer drivers (24 x 21,
 the GEOS file icon's 63 bytes), drawn here; a letter in the paper says
-which printer (E: Epson, C: Commodore).
+which printer (E: Epson, C: Commodore, P: PDF).
 
     mkprnicon.py LETTER OUT.bin
 
@@ -36,6 +36,7 @@ PRINTER = """
 LETTERS = {
     "E": ["#####", "#....", "####.", "#....", "#####"],
     "C": [".####", "#....", "#....", "#....", ".####"],
+    "P": ["####.", "#...#", "####.", "#....", "#...."],
 }
 
 

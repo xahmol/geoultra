@@ -1,11 +1,12 @@
 ; GeoUltra Settings: the Printing page (overlay 1 with the Desktop page,
 ; ovl.s; docs/SETTINGS.md, "Pages"; docs/DESIGN.md "Printing", the
-; user's decisions of 2026-11-16): the printer, one of GeoUltra's two
-; drivers on drive E, as SETTINGS.INI's [desktop] printer= (the name the
-; desktop puts into PrntFilename at its start; src/desktop/inifile.s);
-; a note that the Ultimate's printer emulation must match the driver;
-; the printer in use now (PrntFilename: also a driver of the user's own,
-; chosen in the desktop). Own design and code.
+; user's decisions of 2026-11-16): the printer, one of GeoUltra's
+; drivers on drive E (GU Epson FX-80, GU Commodore MPS, GU PDF A4, GU PDF
+; Letter), as SETTINGS.INI's [desktop] printer= (the name the desktop
+; puts into PrntFilename at its start; src/desktop/inifile.s); a note
+; that the Ultimate's printer emulation must match the first two, and
+; where PDF files go; the printer in use now (PrntFilename: also a
+; driver of the user's own, chosen in the desktop). Own design and code.
 
         .include "geos.inc"
         .include "settings.inc"
@@ -13,9 +14,10 @@
         .import ChoiceDraw, ChoicePress
         .export Ov_PrintDraw, Ov_PrintPress
 
-COL1            = 130           ; the options (the system font's widths:
-COL2            = 205           ; "Epson FX-80" 54, "Commodore MPS" 75, 11
-                                ; for the box)
+COL1            = 124           ; the options (the system font's widths:
+COL2            = 165           ; "Epson" 24, "MPS" 18, "PDF A4" 30, "PDF
+COL3            = 200           ; Letter" 42, 11 for the box, 6 between;
+COL4            = 247           ; to x 300)
 Y0              = PAGE_TOP + 20 ; the row's baseline (as the Desktop page)
 NOTE_X          = PAGE_LEFT + 2
 NOTE_Y          = Y0 + 26       ; the note's first baseline, 12 apart
@@ -73,24 +75,30 @@ Text:   sta r1H
 Rows:   .byte 1
         .byte Y0
         .word LPrinter, SDesktop, KPrinter
-        .byte 2, 0
+        .byte 4, 0
         .word COL1, TEpson, VEpson
         .word COL2, TMps, VMps
+        .word COL3, TPdfA4, VPdfA4
+        .word COL4, TPdfLet, VPdfLet
 
 NoteLo: .byte <N1, <N2, <N3
 NoteHi: .byte >N1, >N2, >N3
 NoteY:  .byte NOTE_Y, NOTE_Y + NOTE_DY, NOTE_Y + 2 * NOTE_DY
 NOTES   = * - NoteY
-N1:     .byte "The Ultimate's printer: set its emulation", 0
-N2:     .byte "in its menu (Printer settings) to match:", 0
-N3:     .byte "Epson FX-80/JX-80 or Commodore MPS.", 0
+N1:     .byte "Epson, MPS: the Ultimate's printer emulation", 0
+N2:     .byte "(its menu, Printer settings) to match.", 0
+N3:     .byte "PDF: a file in GEOULTRA/print on the Ultimate.", 0
 LInUse: .byte "In use: ", 0
 SDesktop:       .byte "desktop", 0
 KPrinter:       .byte "printer", 0
 LPrinter:       .byte "Printer", 0
-TEpson:         .byte "Epson FX-80", 0
-TMps:           .byte "Commodore MPS", 0
+TEpson:         .byte "Epson", 0
+TMps:           .byte "MPS", 0
+TPdfA4:         .byte "PDF A4", 0
+TPdfLet:        .byte "PDF Letter", 0
 VEpson:         .byte "GU Epson FX-80", 0
 VMps:           .byte "GU Commodore MPS", 0
+VPdfA4:         .byte "GU PDF A4", 0
+VPdfLet:        .byte "GU PDF Letter", 0
 
 at:     .byte 0

@@ -1,0 +1,8 @@
+[file]
+name    = "pdfa4"
+type    = "APPL_DATA"
+class   = "GU PDF data"
+version = "V1.0"
+author  = "GeoUltra"
+info    = "The PDF text GU PDF A4 writes (read by the driver)"
+load    = 0x0000

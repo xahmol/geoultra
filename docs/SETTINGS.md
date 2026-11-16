@@ -353,13 +353,14 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   grid).
 - **The Printing page** (the user, 2026-11-16; docs/DESIGN.md
   "Printing"): the ninth page, pprint.s (overlay 1 with the Desktop
-  page). A row "Printer": Epson FX-80 or Commodore MPS (GeoUltra's two
-  drivers on drive E), written as `[desktop] printer=GU Epson FX-80` or
-  `GU Commodore MPS` (the desktop puts the name into PrntFilename at
-  its start; none: GU Epson FX-80); a note that the Ultimate's printer
-  emulation must match (its menu, Printer settings); "In use:" and the
-  printer in use (PrntFilename: also a user's own driver chosen in the
-  desktop). Print to file and the network push come here later. Test:
-  s8.py (VICE, 5 checks).
+  page). A row "Printer": Epson, MPS, PDF A4, PDF Letter (GeoUltra's
+  drivers on drive E), written as `[desktop] printer=GU Epson FX-80`,
+  `GU Commodore MPS`, `GU PDF A4` or `GU PDF Letter` (the desktop puts
+  the name into PrntFilename at its start; none: GU Epson FX-80); a
+  note that the Ultimate's printer emulation must match the first two
+  (its menu, Printer settings) and where PDF files go; "In use:" and
+  the printer in use (PrntFilename: also a user's own driver chosen in
+  the desktop). The network push comes here later. Test: s8.py (VICE,
+  6 checks).
 
 Beta 1 needs S1-S6's first versions (docs/DESIGN.md, "Releases").

@@ -64,7 +64,9 @@ checkcfg: check-deploy
 # whole blocks), written to a D64 with VICE's c1541.
 SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt \
            build/settings/settings.cvt build/tools/splash.cvt build/fonts/.done \
-           build/printer/epson.cvt build/printer/mps.cvt
+           build/printer/epson.cvt build/printer/mps.cvt \
+           build/printer/pdfa4.cvt build/printer/pdfa4data.cvt \
+           build/printer/pdfletter.cvt build/printer/pdfletterdata.cvt
 
 build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	@mkdir -p build/tools
@@ -526,6 +528,23 @@ build/printer/%.icon: tools/mkprnicon.py
 	$(PYTHON) tools/mkprnicon.py $(PRNLETTER_$*) $@
 PRNLETTER_epson = E
 PRNLETTER_mps = C
+PRNLETTER_pdf = P
+
+# GU PDF A4 and GU PDF Letter: one source (pdf.s, LETTER for Letter), and
+# their scripts (pdfdata.s, assembled at 0) as the data files pdfa4 and
+# pdfletter.
+PDF_DEF_a4 =
+PDF_DEF_letter = -D LETTER
+build/printer/pdfa4.cvt build/printer/pdfletter.cvt: build/printer/pdf%.cvt: src/printer/pdf.s src/printer/pdfscript.inc src/printer/prnserial.inc src/printer/pdf%.toml src/printer/printer.cfg build/printer/pdf.icon src/inc/geos.inc
+	@mkdir -p build/printer
+	$(CA65) -I src/inc -I src/printer $(PDF_DEF_$*) -o build/printer/pdf$*.o $<
+	$(LD65) -C src/printer/printer.cfg -o build/printer/pdf$*.bin -m build/printer/pdf$*.map build/printer/pdf$*.o
+	$(PYTHON) $(GEOSAPP) src/printer/pdf$*.toml build/printer/pdf$*.bin $@
+build/printer/pdfa4data.cvt build/printer/pdfletterdata.cvt: build/printer/pdf%data.cvt: src/printer/pdfdata.s src/printer/pdfscript.inc src/printer/pdfdata.cfg src/printer/pdf%data.toml
+	@mkdir -p build/printer
+	$(CA65) -I src/inc -I src/printer $(PDF_DEF_$*) -o build/printer/pdf$*data.o $<
+	$(LD65) -C src/printer/pdfdata.cfg -o build/printer/pdf$*data.bin build/printer/pdf$*data.o
+	$(PYTHON) $(GEOSAPP) src/printer/pdf$*data.toml build/printer/pdf$*data.bin $@
 
 build/printer/%.cvt: src/printer/%.s src/printer/prnserial.inc src/printer/%.toml src/printer/printer.cfg build/printer/%.icon src/inc/geos.inc
 	@mkdir -p build/printer
@@ -550,6 +569,8 @@ test-fonts: all
 test-print: all
 	$(PYTHON) tests/print/ep1.py
 	$(PYTHON) tests/print/mp1.py
+	$(PYTHON) tests/print/pdfsim.py
+	$(PYTHON) tests/print/pdf1.py
 
 # The GEOS 2.0 deskTop with a 1581 drive A (the driver called between
 # InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).

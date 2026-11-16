@@ -1,0 +1,9 @@
+[file]
+name    = "GU PDF Letter"
+type    = "PRINTER"
+class   = "GU PDF Let"
+version = "V1.0"
+author  = "GeoUltra"
+info    = "Prints into PDF files on the Ultimate: GEOULTRA/print, a file per document (Letter)"
+load    = 0x7900
+icon    = "../../build/printer/pdf.icon"

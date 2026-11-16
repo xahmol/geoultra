@@ -142,8 +142,9 @@ def main():
         check("paused: the driver called for nothing yet", v.mem_get(0x0280, 0x0280)[0], 0)
         settle(3)
         g.png("desktop-d26-paused")
-        check("the menu bar's indicator", (v.mem_get(k["spShown"], k["spShown"])[0], text(k["qText"], 16)),
-              (1, b"print paused"))
+        shown = (v.mem_get(k["spShown"], k["spShown"])[0], text(k["qText"], 16))
+        check("the menu bar's indicator (the long form, or the short one when the date is wide)",
+              shown in ((1, b"print paused"), (1, b"paused")), True)
         call(k["MQueue"], 0, s=5)
         g.png("desktop-d26-window")
         check("the window's title", text(k["title"], 32), b"Print queue|paused")
