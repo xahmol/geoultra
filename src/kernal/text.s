@@ -257,9 +257,14 @@ DrawCell:
 @done:  rts
 
 ; One pixel row of the character: font row at r4, glyph at bit r9.
+SC_BYTE_LEN     = 8000          ; a bitmap's bytes (its end: base | $1F40)
+        .assert <SCREEN_BASE = 0 && <BACK_SCR_BASE = 0 && (>SCREEN_BASE & $1F) = 0 && (>BACK_SCR_BASE & $1F) = 0, error, "DrawRow: bitmaps on 8 KB boundaries"
 DrawRow:
         ldx r10H
         jsr GetScanLine
+        lda r5H                 ; r12 = the end of r5's bitmap ($A000 or
+        ora #>(SC_BYTE_LEN - 1) ; $6000 + 8000): a pixel past x 319 runs on
+        sta r12H                ; into the next card row, as in GEOS 2.0
         lda r11L                ; r5/r6 += x & $FFF8
         and #$F8
         sta r12L
@@ -303,10 +308,8 @@ DrawRow:
         tax
         lda bitMask,x
         sta r3L
-        lda r11L                ; r12 = x of the current pixel
+        lda #<SC_BYTE_LEN
         sta r12L
-        lda r11H
-        sta r12H
         lda #0
         sta column
         sta prevBit
@@ -353,12 +356,12 @@ DrawRow:
         txa
         eor #1
         tax
-@put:   lda r12H                ; only on screen (x < 320)
-        cmp #>SC_PIX_WIDTH
-        bcc @write
-        bne @skip
-        lda r12L
-        cmp #<SC_PIX_WIDTH
+@put:   lda r5H                 ; only within the bitmap (r5 < r12: geoWrite
+        cmp r12H                ; prints a 640-dot line as two card rows,
+        bcc @write              ; x 320-639 drawn as the next row's 0-319;
+        bne @skip               ; the user's PDF lost a character a line at
+        lda r5L                 ; x 320 until 2026-11-16, when only x < 320
+        cmp r12L                ; was drawn)
         bcs @skip
 @write: ldy #0
         txa
@@ -402,10 +405,7 @@ DrawRow:
         inc r2L
         bne @x
         inc r2H
-@x:     inc r12L
-        bne @cnt
-        inc r12H
-@cnt:   inc column
+@x:     inc column
         lda column
         cmp cellWidth
         beq @end
