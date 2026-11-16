@@ -130,10 +130,11 @@ AREA_LEN        = STRB + 256 - AREA
 
 SPOOL_FIXED     = 2             ; banks 27-28
 RING0           = $40           ; the ring's first page (spoolring.inc)
-PDF_KEEP        = $3A00         ; GU PDF's copy of $8100-$84FF over its
-PDF_KEEP_LEN    = $0400         ; file engine calls (src/printer/pdf.s)
-        .assert DRV_SAVE >= ST_AREA + AREA_LEN && DRV_SAVE + DRV_SLOTS * DRV_LEN <= PDF_KEEP, error, "spool.s: the driver slots overlap"
-        .assert PDF_KEEP + PDF_KEEP_LEN <= RING0 * 256, error, "spool.s: GU PDF's keep runs into the ring"
+ST_BUFS         = $3A00         ; GEOS's buffers during a driver call
+BUFS            = fileHeader    ; ($8100-$84FF: Keep)
+BUFS_LEN        = $0400
+        .assert DRV_SAVE >= ST_AREA + AREA_LEN && DRV_SAVE + DRV_SLOTS * DRV_LEN <= ST_BUFS, error, "spool.s: the driver slots overlap"
+        .assert ST_BUFS + BUFS_LEN <= RING0 * 256, error, "spool.s: the buffers' copy runs into the ring"
 ; The queue's header (QHEAD, REU bank 1)
 Q_MAGIC         = 0             ; "GUS2" ("GUSP" until 2026-11-16: the
                                 ; ring from page $20; such a header, from
@@ -809,8 +810,14 @@ SwapIn: ldx #0
 ; Keep: the overlay scratch kept until SwapOut (module 110, just before
 ; the driver's call: the playback's state, the tail moved past the
 ; record's data; the file engine's work area, which a driver calling the
-; engine uses: GU PDF).
+; engine uses: GU PDF), and GEOS's buffers $8100-$84FF (fileHeader,
+; curDirHead, fileTrScTab, dirEntryBuf), which the file engine uses as
+; scratch while the program keeps its open file's state there (geoWrite
+; its document's record index: after a GU PDF print "reading page" and
+; blank pages, the user's U64, 2026-11-16).
 Keep:   ldx #6
+        jsr Op
+        ldx #8
         jmp Op
 
 ; SwapOut: the driver back into its slot (its own variables last from
@@ -820,6 +827,8 @@ Keep:   ldx #6
 ; first the scratch as it was before the call.
 SwapOut:
         ldx #7                  ; the scratch back first (Slot reads hdr)
+        jsr Op
+        ldx #9                  ; GEOS's buffers back
         jsr Op
         jsr Slot
         ldy #REU_STASH
@@ -878,13 +887,13 @@ Op:     lda OpC64Lo,x
         sta r3L
         ldy OpCmd,x
         jmp SysRAMOp
-OpC64Lo:        .byte <DRV_ADDR, <AREA, <AREA, <AREA, <AREA, <DRV_ADDR, <SCR, <SCR
-OpC64Hi:        .byte >DRV_ADDR, >AREA, >AREA, >AREA, >AREA, >DRV_ADDR, >SCR, >SCR
-OpReuLo:        .byte <ST_DRV, <ST_AREA, <ST_WORK, <ST_WORK, <ST_AREA, <ST_DRV, <ST_SCR, <ST_SCR
-OpReuHi:        .byte >ST_DRV, >ST_AREA, >ST_WORK, >ST_WORK, >ST_AREA, >ST_DRV, >ST_SCR, >ST_SCR
-OpLenLo:        .byte <DRV_LEN, <AREA_LEN, <WORK_LEN, <WORK_LEN, <AREA_LEN, <DRV_LEN, <SCR_LEN, <SCR_LEN
-OpLenHi:        .byte >DRV_LEN, >AREA_LEN, >WORK_LEN, >WORK_LEN, >AREA_LEN, >DRV_LEN, >SCR_LEN, >SCR_LEN
-OpCmd:          .byte REU_STASH, REU_STASH, REU_FETCH, REU_STASH, REU_FETCH, REU_FETCH, REU_STASH, REU_FETCH
+OpC64Lo:        .byte <DRV_ADDR, <AREA, <AREA, <AREA, <AREA, <DRV_ADDR, <SCR, <SCR, <BUFS, <BUFS
+OpC64Hi:        .byte >DRV_ADDR, >AREA, >AREA, >AREA, >AREA, >DRV_ADDR, >SCR, >SCR, >BUFS, >BUFS
+OpReuLo:        .byte <ST_DRV, <ST_AREA, <ST_WORK, <ST_WORK, <ST_AREA, <ST_DRV, <ST_SCR, <ST_SCR, <ST_BUFS, <ST_BUFS
+OpReuHi:        .byte >ST_DRV, >ST_AREA, >ST_WORK, >ST_WORK, >ST_AREA, >ST_DRV, >ST_SCR, >ST_SCR, >ST_BUFS, >ST_BUFS
+OpLenLo:        .byte <DRV_LEN, <AREA_LEN, <WORK_LEN, <WORK_LEN, <AREA_LEN, <DRV_LEN, <SCR_LEN, <SCR_LEN, <BUFS_LEN, <BUFS_LEN
+OpLenHi:        .byte >DRV_LEN, >AREA_LEN, >WORK_LEN, >WORK_LEN, >AREA_LEN, >DRV_LEN, >SCR_LEN, >SCR_LEN, >BUFS_LEN, >BUFS_LEN
+OpCmd:          .byte REU_STASH, REU_STASH, REU_FETCH, REU_STASH, REU_FETCH, REU_FETCH, REU_STASH, REU_FETCH, REU_STASH, REU_FETCH
 
         .endscope
 

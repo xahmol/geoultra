@@ -46,7 +46,7 @@ def zp(n):
     return b[0] | b[1] << 8
 def string(a):
     return bytes(v.mem_get(a, a + 80)).split(b"\0")[0].decode("latin1")
-log, out = [], bytearray()
+log, out, bufs = [], bytearray(), None
 while True:
     v.events.clear()
     v.resume()
@@ -57,6 +57,8 @@ while True:
     r = v.regs_get()
     f, y = r["A"], r["Y"]
     answer = None
+    if bufs is None:                                # GEOS's buffers before the first
+        bufs = bytes(v.mem_get(0x8100, 0x84FF))    # engine call (spooled: played)
     if f == 26:                                     # FE_HOME
         v.mem_set(zp(4), b"/USB0/GEOULTRA/\0")
         answer = (0, 0)
@@ -78,10 +80,12 @@ while True:
     elif f in (13, 14, 4, 8, 33):
         log.append("engine %%d" %% f)              # (drive E, FE_SPOOL: real)
     if answer:
+        v.mem_set(0x8300, b"\xEE" * 0x100)        # (as the engine: uCmd, feName in fileTrScTab)
         v.regs_set({"PC": 0x033F, "A": answer[0], "X": answer[1]})
 v.ping()
 open(%(raw)r, "wb").write(out)
 print("PDF1 " + v.mem_get(0x2EF, 0x2F2).hex())
+print("PDF1BUFS %%s" %% (bytes(v.mem_get(0x8100, 0x84FF)) == bufs))
 for l in log:
     print("PDF1LOG " + l)
 '''
@@ -112,6 +116,7 @@ def run(tag, data, spooled):
         print(r.stderr[-600:])
     res = next((l.split()[1] for l in r.stdout.splitlines() if l.startswith("PDF1 ")), "")
     log = [l[8:] for l in r.stdout.splitlines() if l.startswith("PDF1LOG ")]
+    log.append("bufs " + next((l.split()[1] for l in r.stdout.splitlines() if l.startswith("PDF1BUFS")), ""))
     return res, log, raw
 
 
@@ -166,6 +171,8 @@ def main():
     direct = open(pdf, "rb").read()
     res, log, pdf2 = run("spooled", data, True)
     check("spooled: the same PDF", res == "00aa0000" and open(pdf2, "rb").read() == direct, res)
+    check("spooled: GEOS's buffers $8100-$84FF as the program left them, though the engine scribbled"
+          " over them (the playback keeps them: geoWrite's record index)", "bufs True" in log, log[-1:])
     print("pdf1: %s" % ("all passed" if ok else "FAILED"))
     sys.exit(0 if ok else 1)
 

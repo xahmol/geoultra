@@ -131,7 +131,6 @@ class Machine:
         while c.pc != 0xFFFF:
             if c.pc == ENTRY:
                 self.engine()
-                m[0x8100:0x8500] = [0xEE] * 0x400  # (the engine's scratch, engine.inc)
             elif c.pc == DORAMOP:
                 self.ramop()
             c.step()
@@ -173,8 +172,6 @@ def run(paper, pages, bands, media):
             m.call(0x7906, {2: DATA + b * 640, 4: WORK, 6: 0})
         xs.append(m.call(0x7909, {2: DATA, 4: WORK}))
     check("StartPrint and StopPrint X = 0", xs == [0] * (2 * pages), xs)
-    check("$8100-$84FF as the program left them (the engine's scratch kept, bank 27 $3A00)",
-          m.kept() and any(l.startswith("ramop 90 8100 1B:3A00 0400") for l in m.log))
     outs = [p for p in m.files if p.startswith("/USB0")]
     path = outs[0] if outs else ""
     check("the file: GEOULTRA/print/geoWrite-20261116-140509.pdf",

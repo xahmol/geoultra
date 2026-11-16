@@ -47,13 +47,6 @@ FE_SPOOL        = 33
 FO_READ         = 0
 FO_WRITE        = 1
 FO_APPEND       = 2
-DoRAMOp         = $C2D4         ; GEOS jump table: Y the command
-REU_STASH       = $90
-REU_FETCH       = $91
-KEEP_C64        = fileHeader    ; $8100-$84FF kept over the file engine
-KEEP_LEN        = $0400
-KEEP_BANK       = 27            ; the spooler's bank (spool.s: free from
-KEEP_REU        = $3A00         ; $3900 to the ring at $4000)
 CLOCK           = $8516         ; GEOS's year (two digits), month, day,
                                 ; hour, minutes, seconds
 
@@ -330,20 +323,11 @@ Script: asl a
 
 ; Fe: the file engine (A function, Y handle, r0-r2), the driver's zero
 ; page kept. X = its error, A its A (FE_OPEN: the handle). The engine
-; uses GEOS's buffers $8100-$84FF (fileHeader, curDirHead, fileTrScTab,
-; dirEntryBuf; engine.inc), where the printing program keeps its open
-; file's state (geoWrite its document's record index: "reading page"
-; after printing, the user's U64, 2026-11-16): they are kept in the
-; REU around the call (bank 27, KEEP_REU: the spooler's, always there).
+; uses GEOS's buffers $8100-$84FF as scratch, where the program keeps
+; its open file's state: the spooler's playback, through which every
+; StartPrint, PrintBuffer and StopPrint comes, keeps them around the
+; driver's call (spool.s module 111 Keep).
 Fe:     pha
-        tya
-        pha
-        ldy #REU_STASH
-        jsr Keep
-        pla
-        tay
-        pla
-        pha
         ldx #ZP_N - 1
 :       lda ZP_FIRST,x
         sta zpKeep,x
@@ -358,36 +342,10 @@ Fe:     pha
         sta ZP_FIRST,x
         dex
         bpl :-
-        ldy #REU_FETCH
-        jsr Keep
         ldx feX
         lda feA
         rts
 @go:    jmp (feVec)
-
-; Keep: $8100-$84FF to (Y = REU_STASH) or from (REU_FETCH) the REU,
-; r0-r3 kept. Destroys A, X, Y.
-Keep:   ldx #7
-:       lda r0,x
-        pha
-        dex
-        bpl :-
-        ldx #6
-:       lda KeepRegs,x
-        sta r0,x
-        dex
-        bpl :-
-        jsr DoRAMOp
-        ldx #0
-:       pla
-        sta r0,x
-        inx
-        cpx #8
-        bne :-
-        rts
-KeepRegs:
-        .word KEEP_C64, KEEP_REU, KEEP_LEN
-        .byte KEEP_BANK
 
 ; Open: path opened, A the mode. Carry set and X the error.
 Open:   sta r2L
