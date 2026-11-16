@@ -22,7 +22,8 @@
 ; each SECOND 7), ASCII as PETSCII; CR (the printer adds LF); SetNLQ
 ; as NLQ.
 ;
-; Device 4 on channel 7 through prnserial.inc. State between calls in
+; Device 4 on channel 7 through prnserial.inc (our own serial bus
+; routines, any KERNAL ROM). State between calls in
 ; the work buffer (r1), its count first: StopPrint's buffer may be only
 ; 640 bytes (ASCII printing).
 

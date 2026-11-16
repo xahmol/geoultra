@@ -187,13 +187,17 @@ def main():
             run(r(0x02, BAND) + r(0x04, WORK) + r(0x06, COLR if cols else 0) + jsr(0x7906))
         x = run(r(0x02, BAND) + r(0x04, WORK) + jsr(0x7909))
         check("%s: StopPrint" % driver.decode(), x == 0, "X=%02X" % x)
-        end = time.time() + 900                          # the spooler plays it
+        end = time.time() + int(os.environ.get("PRNU64_WAIT", "900"))   # the spooler plays it
+        t0 = time.time()
         while time.time() < end:
             new = sorted(set(listing(prefix)) - before)
             if new:
                 time.sleep(5)
                 break
-            time.sleep(10)
+            time.sleep(30)
+            x2, a2, rr = u.fe(33, y=0)
+            print("  %4ds: queue job %d of %d%s" % (time.time() - t0, a2, rr[0] & 0xFF,
+                  ", paused" if rr[0] & 0x8000 else ""), flush=True)
         new = sorted(set(listing(prefix)) - before)
         check("%s: a PNG page from the Ultimate's printer" % driver.decode(), len(new) == 1, new)
         return new[0] if new else None
@@ -252,7 +256,7 @@ def main():
         put(HOME + "HIBERNAT.BIN", None)                 # a fresh start, not the user's session
         setting("IEC printer", "Enabled")
         setting("Bus ID", 4)
-        setting("Output type", "PNG COLOR")
+        setting("Output type", os.environ.get("PRNU64_EPSON_TYPE", "PNG COLOR"))
         setting("Emulation", "Epson FX-80/JX-80")
         setting("Output file", OUTDIR + "prn-epson")
         clear()
@@ -278,6 +282,8 @@ def main():
                                   if 0 <= x + dx < im.width and 0 <= y + dy < im.height)
             check("the circle's edges where exact 80 dpi puts them (round, 5\" across)",
                   all(found.values()), found)
+        if os.environ.get("PRNU64_ONLY") == "epson":
+            return
         setting("Output type", "PNG B&W")
         setting("Emulation", "Commodore MPS")
         setting("Output file", OUTDIR + "prn-mps")

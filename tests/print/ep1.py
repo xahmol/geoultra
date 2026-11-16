@@ -13,8 +13,7 @@ the driver's inks (the levels and dither patterns below, the spec);
 ASCII as text, CR as CR LF, SetNLQ as ESC E, StopPrint as FF. The black
 page once more through the spooler (on in MainLoop), and once with the
 driver only on drive E (GetFile's fallback): the same bytes. No printer
-(SECOND answered with "device not present"): DEV_NOT_FOUND, the program
-goes on. The driver
+(VICE without device 4): DEV_NOT_FOUND, the program goes on. The driver
 is written onto a copy of an applications disk (GEOS_APPS_DISK, the
 user's own).
 Usage: tests/print/ep1.py
@@ -49,39 +48,21 @@ PAT_ODD = [0x00, 0x22, 0x55, 0xFF]
 
 HOOK = r'''
 import time
-from vicemon import RESP_CHECKPOINT
 v.mem_set(0x4E00, %(name)r + b"\0")
 v.mem_set(0x4E80, %(text)r + b"\0")
 v.mem_set(0x5000, %(data)r)
 v.mem_set(0x6A00, %(colr)r)
 v.mem_set(0x02F0, b"\0")
 v.mem_set(%(spon)d, bytes([%(on)d]))
-v.mem_set(0x033F, b"\x60")                  # rts: the ROM's routines skipped
 v.mem_set(0x0340, open(%(call)r, "rb").read())
 v.regs_set({"PC": 0x0340})
-ROM = {0xFFB1: "L", 0xFF93: "S", 0xFFA8: "B", 0xFFAE: "U"}
-for a in ROM:
-    v.checkpoint(a, temporary=False)
-out, bus = bytearray(), []
-while True:
-    v.events.clear()
-    v.resume()
-    try:
-        v.wait_event(RESP_CHECKPOINT, 20)  # (the run, or the spooler, done: none)
-    except Exception:
+for _ in range(240):
+    v.resume(); time.sleep(0.5); v.ping()
+    if v.mem_get(0x2F0, 0x2F0)[0] == 0xAA:
         break
-    r = v.regs_get()
-    kind = ROM.get(r["PC"])
-    if kind == "S" and %(absent)d:          # no printer: "device not present"
-        v.mem_set(0x90, b"\x80")
-    if kind == "B":
-        out.append(r["A"])
-    elif kind:
-        bus.append("%%s%%02X" %% (kind, r["A"]))
-    v.regs_set({"PC": 0x033F})
-v.ping()
-open(%(raw)r, "wb").write(out)
-print("EP1 " + v.mem_get(0x2EF, 0x2F2).hex() + " " + " ".join(bus[:6]))
+if %(on)d:                                  # spooled: the playback from MainLoop
+    v.resume(); time.sleep(30); v.ping()
+print("EP1 " + v.mem_get(0x2EF, 0x2F2).hex())
 '''
 
 
@@ -138,15 +119,15 @@ def run(tag, colour, ascii_, data, colr, spooled=False, name=b"GU Epson FX-80", 
                                  "name": name, "absent": 1 if absent else 0})
     env = dict(os.environ, GEOS_APPS_DISK=os.path.join(OUT, "apps.d64"),
                PYTHONPATH=os.path.join(ROOT, "tools", "harness"),
-               )
+               APPRUN_VICE_ARGS="" if absent else
+               "-devicebackend4 1 -busdevice4 -pr4drv raw -pr4output text -pr4txtdev 1 -prtxtdev2 " + raw)
     r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
                         "--wait", "10", "--out", os.path.join(OUT, "ep1-%s.png" % tag), "GEOWRITE",
                         "h:" + hook], env=env, capture_output=True, text=True, timeout=600)
     if r.returncode:
         print(r.stderr[-600:])
-    line = next((l for l in r.stdout.splitlines() if l.startswith("EP1")), "EP1 - -")
+    line = next((l for l in r.stdout.splitlines() if l.startswith("EP1")), "EP1 -")
     res = line.split()[1]
-    print("  %s: bus %s" % (tag, " ".join(line.split()[2:])))
     stream = open(raw, "rb").read() if os.path.exists(raw) else b""
     return res, stream
 

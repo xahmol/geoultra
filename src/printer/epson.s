@@ -23,8 +23,8 @@
 ; ASCII: the printer's own font; CR as CR LF; SetNLQ as emphasised (the
 ; FX-80 has no NLQ).
 ;
-; Each call talks to device 4 on channel 0 through prnserial.inc (the
-; C64 ROM's serial routines; Open, Put, Close). State between calls
+; Each call talks to device 4 on channel 0 through prnserial.inc (our
+; own serial bus routines, any KERNAL ROM; Open, Put, Close). State between calls
 ; lives in the work buffer (r1, which HG2G says the application keeps
 ; intact), at its start: StopPrint's buffer may be only 640 bytes (ASCII
 ; printing).
