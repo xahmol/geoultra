@@ -22,6 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 OUT = os.path.join(ROOT, "build", "harness", "print")
 WORK, DATA, NAME = 0x4000, 0x5000, b"geoWrite    "
 GUEXT, ENTRY = 0xC0E4, 0xC800          # the extension table's address and the engine
+DORAMOP = 0xC2D4
 
 
 def labels(paper="a4"):
@@ -49,8 +50,26 @@ class Machine:
         self.mem[GUEXT] = (ENTRY - 30) & 0xFF
         self.mem[GUEXT + 1] = (ENTRY - 30) >> 8
         self.mem[ENTRY] = 0x60                     # (rts: answered in Python)
+        self.mem[DORAMOP] = 0x60                   # DoRAMOp, answered in Python
+        self.reu = {}
+        self.mem[0x8100:0x8500] = [(i * 7 + 3) & 0xFF for i in range(0x400)]  # the program's
         self.mem[0x8516:0x851C] = [26, 11, 16, 14, 5, 9]    # 2026-11-16 14:05:09
         self.files, self.handles, self.log = {}, {}, []
+
+    def ramop(self):
+        m, c = self.mem, self.cpu
+        c64, reu, n, bank = self.word(2), self.word(4), self.word(6), m[8]
+        a = (bank << 16) + reu
+        if c.y == 0x90:
+            for i in range(n):
+                self.reu[a + i] = m[c64 + i]
+        elif c.y == 0x91:
+            for i in range(n):
+                m[c64 + i] = self.reu.get(a + i, 0)
+        self.log.append("ramop %02X %04X %02X:%04X %04X" % (c.y, c64, bank, reu, n))
+
+    def kept(self):
+        return list(self.mem[0x8100:0x8500]) == [(i * 7 + 3) & 0xFF for i in range(0x400)]
 
     def word(self, a):
         return self.mem[a] | self.mem[a + 1] << 8
@@ -112,6 +131,9 @@ class Machine:
         while c.pc != 0xFFFF:
             if c.pc == ENTRY:
                 self.engine()
+                m[0x8100:0x8500] = [0xEE] * 0x400  # (the engine's scratch, engine.inc)
+            elif c.pc == DORAMOP:
+                self.ramop()
             c.step()
             n += 1
             if n > limit:
@@ -151,6 +173,8 @@ def run(paper, pages, bands, media):
             m.call(0x7906, {2: DATA + b * 640, 4: WORK, 6: 0})
         xs.append(m.call(0x7909, {2: DATA, 4: WORK}))
     check("StartPrint and StopPrint X = 0", xs == [0] * (2 * pages), xs)
+    check("$8100-$84FF as the program left them (the engine's scratch kept, bank 27 $3A00)",
+          m.kept() and any(l.startswith("ramop 90 8100 1B:3A00 0400") for l in m.log))
     outs = [p for p in m.files if p.startswith("/USB0")]
     path = outs[0] if outs else ""
     check("the file: GEOULTRA/print/geoWrite-20261116-140509.pdf",

@@ -130,7 +130,10 @@ AREA_LEN        = STRB + 256 - AREA
 
 SPOOL_FIXED     = 2             ; banks 27-28
 RING0           = $40           ; the ring's first page (spoolring.inc)
-        .assert DRV_SAVE >= ST_AREA + AREA_LEN && DRV_SAVE + DRV_SLOTS * DRV_LEN <= RING0 * 256, error, "spool.s: the driver slots overlap"
+PDF_KEEP        = $3A00         ; GU PDF's copy of $8100-$84FF over its
+PDF_KEEP_LEN    = $0400         ; file engine calls (src/printer/pdf.s)
+        .assert DRV_SAVE >= ST_AREA + AREA_LEN && DRV_SAVE + DRV_SLOTS * DRV_LEN <= PDF_KEEP, error, "spool.s: the driver slots overlap"
+        .assert PDF_KEEP + PDF_KEEP_LEN <= RING0 * 256, error, "spool.s: GU PDF's keep runs into the ring"
 ; The queue's header (QHEAD, REU bank 1)
 Q_MAGIC         = 0             ; "GUS2" ("GUSP" until 2026-11-16: the
                                 ; ring from page $20; such a header, from
