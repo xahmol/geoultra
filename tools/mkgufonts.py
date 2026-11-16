@@ -49,6 +49,12 @@ FAMILIES = [
 ]
 
 
+# 9 points from Adobe's 8-pixel shapes where those have the capitals of a
+# 9-point GEOS font (6 rows: Helvetica, New Century Schoolbook; Times and
+# Courier at 8 are a row smaller: drawn by hand instead).
+PCF_MAP = {"GU Sans": "9=8", "GU School": "9=8"}
+
+
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__.strip().split("\n")[2].strip())
@@ -63,6 +69,8 @@ def main():
                 str(fid), name, sizes, target, "--info", info[:95]]
         if pcf:
             args += ["--pcf", os.path.join(SRC, "adobe75", pcf + "%02d.pcf.gz"), "--pcf-sizes", pcf_sizes]
+            if name in PCF_MAP:
+                args += ["--pcf-map", PCF_MAP[name]]
         fixfile = os.path.join(ROOT, "tools", "fonts", fix + "_fix.py")
         if os.path.exists(fixfile):
             args += ["--fix", fixfile]

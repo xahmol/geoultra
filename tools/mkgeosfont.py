@@ -333,6 +333,8 @@ def main():
     ap.add_argument("--fix", help="hand-fixed glyphs (FIXES = {size: {char: drawing}})")
     ap.add_argument("--pcf", help="bitmap font per size for the shapes (\"%%d\": the size)")
     ap.add_argument("--pcf-sizes", help="the sizes the bitmaps are used for (default: all)")
+    ap.add_argument("--pcf-map", help="sizes taken from another bitmap size, e.g. \"9=8\" "
+                    "(Adobe has no 9: its 8 has the capitals of a 9-point GEOS font)")
     ap.add_argument("--place", choices=("centre", "left"), default="centre")
     a = ap.parse_args()
     if not 0 < a.id < 1024:
@@ -349,9 +351,10 @@ def main():
     global PLACE
     PLACE = a.place
     pcf_sizes = {int(x) for x in a.pcf_sizes.split(",")} if a.pcf_sizes else None
+    pcf_map = dict(tuple(int(v) for v in x.split("=")) for x in a.pcf_map.split(",")) if a.pcf_map else {}
     for s in sizes:
-        use = a.pcf if (pcf_sizes is None or s in pcf_sizes) else None
-        rec, widths, base, clipped = render(a.font, s, fixes.get(s), load_pcf(use, s))
+        use = a.pcf if (pcf_sizes is None or s in pcf_sizes or s in pcf_map) else None
+        rec, widths, base, clipped = render(a.font, s, fixes.get(s), load_pcf(use, pcf_map.get(s, s)))
         clipped = [c for c in clipped if c not in fixes.get(s, {})]
         if clipped:
             print("  size %d: cut off (a hand fix?): %s" % (s, "".join(clipped)))
