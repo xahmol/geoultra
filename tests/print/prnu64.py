@@ -127,14 +127,23 @@ def main():
     def config(cat):
         return json.loads(u._req("GET", "%s/configs/%s" % (u.rest, urllib.parse.quote(cat))))[cat]
 
-    def bus():
-        """Firmware 3.15a applies the printer's on/off only when the IEC
-        processor is set up again (newer firmware does it at once, the
-        firmware's #1083): the SoftIEC drive switched on and off again."""
-        setting("IEC Drive", "Enabled", SOFTIEC)
-        time.sleep(1)
-        setting("IEC Drive", soft["IEC Drive"], SOFTIEC)
-        time.sleep(1)
+    def bus(on):
+        """The printer works inside the Ultimate's software IEC (its manual:
+        "IEC Drive and Printer"): with firmware 3.15a only while the SoftIEC
+        drive is on (found 2026-11-16: off, the C64 saw a device but no page
+        was ever written). On for the test, then as the user had it."""
+        setting("IEC Drive", "Enabled" if on else soft["IEC Drive"], SOFTIEC)
+        time.sleep(2)
+
+    def clear():
+        """Old test pages away (the firmware never overwrites a PNG: the
+        page would be lost)."""
+        f = ftp()
+        for n in f.nlst(OUTDIR):
+            n = n.split("/")[-1]
+            if n.startswith("prn-") and n.endswith(".png"):
+                f.delete(OUTDIR + n)
+        f.quit()
 
     def run(code, timeout=60):
         """CODE once from MainLoop (appMain), then the done flag; X at RES."""
@@ -246,7 +255,8 @@ def main():
         setting("Output type", "PNG COLOR")
         setting("Emulation", "Epson FX-80/JX-80")
         setting("Output file", OUTDIR + "prn-epson")
-        bus()
+        clear()
+        bus(True)
         u.boot(crt)
         time.sleep(15)
         img, cols = page(640, 94, "GU Epson FX-80 on the Ultimate", True)
@@ -286,7 +296,7 @@ def main():
             put(HOME + n, d)
         check("the user's files back as they were", all(get(HOME + n) == d for n, d in keep.items()), True)
         try:
-            bus()
+            bus(False)
         except OSError:
             pass
         now = config(CFG)
