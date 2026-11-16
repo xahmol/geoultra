@@ -47,7 +47,7 @@ PAT_ODD = [0x00, 0x22, 0x55, 0xFF]
 HOOK = r'''
 import time
 from vicemon import RESP_CHECKPOINT
-v.mem_set(0x4E00, b"GU Epson FX-80\0")
+v.mem_set(0x4E00, %(name)r + b"\0")
 v.mem_set(0x4E80, %(text)r + b"\0")
 v.mem_set(0x5000, %(data)r)
 v.mem_set(0x6A00, %(colr)r)
@@ -113,7 +113,7 @@ def label(name):
     raise KeyError(name)
 
 
-def run(tag, colour, ascii_, data, colr, spooled=False):
+def run(tag, colour, ascii_, data, colr, spooled=False, name=b"GU Epson FX-80"):
     call = os.path.join(OUT, "epcall-%s.bin" % tag)
     o = call[:-4] + ".o"
     jt = harness.jumptab()
@@ -124,12 +124,13 @@ def run(tag, colour, ascii_, data, colr, spooled=False):
                     "-D", "MainLoop=$%04X" % jt["MainLoop"], os.path.join(ROOT, "tests", "print", "epcall.s")],
                    check=True)
     subprocess.run(["ld65", "-t", "none", "-o", call, o], check=True)
-    raw = os.path.join(OUT, "printer-%s.raw" % tag)
+    raw = os.path.join(OUT, "printer-%s-%s.raw" % (name.decode().split()[1].lower(), tag))
     if os.path.exists(raw):
         os.remove(raw)
     hook = os.path.join(OUT, "hook-ep1-%s.py" % tag)
     open(hook, "w").write(HOOK % {"text": TEXT, "data": data, "colr": colr, "call": call, "raw": raw,
-                                 "spon": label("spOn"), "on": 0x80 if spooled else 0})
+                                 "spon": label("spOn"), "on": 0x80 if spooled else 0,
+                                 "name": name})
     env = dict(os.environ, GEOS_APPS_DISK=os.path.join(OUT, "apps.d64"),
                PYTHONPATH=os.path.join(ROOT, "tools", "harness"),
                )
@@ -145,13 +146,18 @@ def run(tag, colour, ascii_, data, colr, spooled=False):
     return res, stream
 
 
-def main():
+def disk_with(driver):
+    """A copy of the applications disk with build/printer/DRIVER.cvt on it."""
     os.makedirs(OUT, exist_ok=True)
     disk = os.path.join(OUT, "apps.d64")
     shutil.copyfile(APPS_DISK, disk)
-    subprocess.run(["make", "-s", "build/printer/epson.cvt"], cwd=ROOT, check=True)
+    subprocess.run(["make", "-s", "build/printer/%s.cvt" % driver], cwd=ROOT, check=True)
     subprocess.run([os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541"), disk, "-geoswrite",
-                    os.path.join(ROOT, "build", "printer", "epson.cvt")], check=True, capture_output=True)
+                    os.path.join(ROOT, "build", "printer", driver + ".cvt")], check=True, capture_output=True)
+
+
+def main():
+    disk_with("epson")
     rnd = random.Random(80)
     data = bytes(rnd.getrandbits(8) for _ in range(BANDS * 640))
     colr = bytes(rnd.getrandbits(8) for _ in range(BANDS * 80))

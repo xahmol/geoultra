@@ -64,7 +64,7 @@ checkcfg: check-deploy
 # whole blocks), written to a D64 with VICE's c1541.
 SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt \
            build/settings/settings.cvt build/tools/splash.cvt build/fonts/.done \
-           build/printer/epson.cvt
+           build/printer/epson.cvt build/printer/mps.cvt
 
 build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	@mkdir -p build/tools
@@ -527,9 +527,9 @@ build/printer/%.icon: tools/mkprnicon.py
 PRNLETTER_epson = E
 PRNLETTER_mps = C
 
-build/printer/%.cvt: src/printer/%.s src/printer/%.toml src/printer/printer.cfg build/printer/%.icon src/inc/geos.inc
+build/printer/%.cvt: src/printer/%.s src/printer/prnserial.inc src/printer/%.toml src/printer/printer.cfg build/printer/%.icon src/inc/geos.inc
 	@mkdir -p build/printer
-	$(CA65) -I src/inc -o build/printer/$*.o $<
+	$(CA65) -I src/inc -I src/printer -o build/printer/$*.o $<
 	$(LD65) -C src/printer/printer.cfg -o build/printer/$*.bin -m build/printer/$*.map build/printer/$*.o
 	$(PYTHON) $(GEOSAPP) src/printer/$*.toml build/printer/$*.bin $@
 
@@ -549,6 +549,7 @@ test-fonts: all
 # bytes caught at the ROM's serial routines and checked dot for dot.
 test-print: all
 	$(PYTHON) tests/print/ep1.py
+	$(PYTHON) tests/print/mp1.py
 
 # The GEOS 2.0 deskTop with a 1581 drive A (the driver called between
 # InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).

@@ -1,0 +1,9 @@
+[file]
+name    = "GU Commodore MPS"
+type    = "PRINTER"
+class   = "GU MPS"
+version = "V1.0"
+author  = "GeoUltra"
+info    = "Commodore MPS-801/803 and the Ultimate's printer (Commodore emulation): 60 dpi"
+load    = 0x7900
+icon    = "../../build/printer/mps.icon"

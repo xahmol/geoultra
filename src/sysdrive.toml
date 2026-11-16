@@ -30,7 +30,7 @@ files = ["tools:geofolder.cvt", "gush:gush.cvt", "desktop:desktop.cvt", "setting
          "fonts:gugeometric.cvt", "fonts:gubook.cvt", "fonts:gunarrow.cvt", "fonts:guschool.cvt",
          "fonts:guclassic.cvt", "fonts:guscript.cvt",
          # GeoUltra's printer drivers (docs/DESIGN.md "Printing")
-         "printer:epson.cvt"]
+         "printer:epson.cvt", "printer:mps.cvt"]
 
 [[folder]]
 path = "bin"
