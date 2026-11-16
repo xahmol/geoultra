@@ -11,7 +11,8 @@ where docs/DESIGN.md "Printing" puts it: column X at 3X/240", row R at
 round(R x 2.7)/216" (exactly 80 dpi both ways), and no other; colours as
 the driver's inks (the levels and dither patterns below, the spec);
 ASCII as text, CR as CR LF, SetNLQ as ESC E, StopPrint as FF. The black
-page once more through the spooler (on in MainLoop): the same bytes. The driver
+page once more through the spooler (on in MainLoop), and once with the
+driver only on drive E (GetFile's fallback): the same bytes. The driver
 is written onto a copy of an applications disk (GEOS_APPS_DISK, the
 user's own).
 Usage: tests/print/ep1.py
@@ -147,10 +148,13 @@ def run(tag, colour, ascii_, data, colr, spooled=False, name=b"GU Epson FX-80"):
 
 
 def disk_with(driver):
-    """A copy of the applications disk with build/printer/DRIVER.cvt on it."""
+    """A copy of the applications disk with build/printer/DRIVER.cvt on it
+    (None: without, so GetFile finds the driver on drive E)."""
     os.makedirs(OUT, exist_ok=True)
     disk = os.path.join(OUT, "apps.d64")
     shutil.copyfile(APPS_DISK, disk)
+    if driver is None:
+        return
     subprocess.run(["make", "-s", "build/printer/%s.cvt" % driver], cwd=ROOT, check=True)
     subprocess.run([os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541"), disk, "-geoswrite",
                     os.path.join(ROOT, "build", "printer", driver + ".cvt")], check=True, capture_output=True)
@@ -188,6 +192,11 @@ def main():
     res, stream = run("spooled", False, 0, data, colr, spooled=True)
     check("spooled (played from MainLoop): the same bytes as printed directly (%d)" % len(direct),
           stream == direct and res == "00aa0000", "%s, %d bytes" % (res, len(stream)))
+    disk_with(None)
+    res, stream = run("frome", False, 0, data, colr)
+    check("not on the current drive: loaded from drive E (FindFile's fallback), the same bytes",
+          stream == direct and res == "00aa0000", "%s, %d bytes" % (res, len(stream)))
+    disk_with("epson")
     res, stream = run("ascii", False, 1, data, colr)
     got = epsonstream.parse(stream)
     check("ascii: StartASCII and StopPrint X = 0", res == "00aa0000", res)

@@ -2,7 +2,8 @@
 ; 17; docs/DESIGN.md "Directories", user 2026-10-30): on a native drive
 ; inside a folder, FindFTypes for DESK_ACC or FONT adds the root's after
 ; the folder's, and the FindFile fallback (SysFindFile, sysdrive.s) looks
-; for a desk accessory or font in the root before drive E. A file in the
+; for a desk accessory, font or printer driver in the root before drive
+; E. A file in the
 ; root is on the same drive, so its track/sector pairs are valid from any
 ; folder: only the search needs the root, done by pointing curDirHead's
 ; directory link (FirstDirBlock reads it on native drives) at the root's
@@ -168,6 +169,8 @@ OvRootFind:
         cmp #DESK_ACC
         beq @found
         cmp #FONT
+        beq @found
+        cmp #PRINTER_FILE
         beq @found
         bne @e
 @back:  jsr Back

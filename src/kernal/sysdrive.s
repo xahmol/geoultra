@@ -50,8 +50,8 @@ RefusedMsg:                     ; EnterDeskTop: the refusal, if any
         jsr OvlCall
         .byte 15, 9
 
-; SysFindFile: FindFile (r6 = name), then drive E for a desk accessory or
-; a font that is not on the current drive.
+; SysFindFile: FindFile (r6 = name), then drive E for a desk accessory,
+; a font or a printer driver that is not on the current drive.
 SysFindFile:
         lda r6L
         sta sysName
@@ -196,7 +196,7 @@ Once:   jsr OvlCall             ; (module 116: E's fonts whose ID the
         .byte 116, 0            ; user's already have taken out)
 
 ; OvFindFile (FindFile failed with FILE_NOT_FOUND): the name in drive E's
-; directory; found there as a desk accessory or font, X = 0 with
+; directory; found there as a desk accessory, font or printer driver, X = 0 with
 ; dirEntryBuf, r1 and r5 as FindFile leaves them (E's tracks), else A, Y
 ; and r6 as the failed FindFile left them and X = FILE_NOT_FOUND
 ; (OpenRecordFile's Y is compared with GEOS 2.0's, tests/conformance).
@@ -223,6 +223,8 @@ OvFindFile:
         beq @end
         cmp #FONT
         beq @end
+        cmp #PRINTER_FILE       ; (GeoUltra's printer drivers live on E:
+        beq @end                ; applications load PrntFilename's)
 @not:   lda sysR6
         sta r6L
         lda sysR6+1

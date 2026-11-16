@@ -1,13 +1,15 @@
 ; A GEOS printer driver for the spooler's tests (tests/spool/sp3.py): it
 ; prints nothing; each call is logged at LOG (a count, then a type per
 ; call: 1 InitForPrint, 2 StartPrint, 3 PrintBuffer, 4 StopPrint, 5
-; PrintASCII, 6 StartASCII, 7 SetNLQ) and each row's 16-bit sum at SUM.
+; PrintASCII, 6 StartASCII, 7 SetNLQ) and each row's 16-bit sum at SUM;
+; a count of the calls kept in its own memory, copied to OWN.
 ; $0280-$02EF: memory the spooler does not lend the driver (the
 ; harness's trampoline is at $0340, its results at $02F0). Own code.
 
 r0              = $02
 LOG             = $0280
 SUM             = $02C0         ; per row: low, high
+OWN             = $02EF         ; the driver's own call count (Log)
 ROWS            = $02BF
 p               = $FB           ; (zero page the driver may use)
 
@@ -90,7 +92,11 @@ Log:    ldx LOG                 ; (the first 60 calls' types; all counted
         bcs :+
         sta LOG+1,x
 :       inc LOG
-        rts
+        inc own                 ; the calls counted in the driver's own
+        ldx own                 ; memory too, copied to OWN: the spooler
+        stx OWN                 ; must keep it between calls, as GEOS
+        rts                     ; keeps a loaded driver
 
 lo:     .byte 0
 hi:     .byte 0
+own:    .byte 0

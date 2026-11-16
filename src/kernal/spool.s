@@ -762,7 +762,30 @@ SwapIn: ldx #0
         jsr Op
         ldx #1
         jsr Op
-        lda #<DRV_ADDR
+        jsr Slot
+        ldy #REU_FETCH
+        jsr SysRAMOp
+        ldx #2
+        jmp Op
+
+; SwapOut: the driver back into its slot (its own variables last from
+; call to call, as with a driver GEOS keeps loaded: found 2026-11-16 for
+; GeoUltra's PDF driver; a driver keeping state in its memory lost it
+; between played calls), the work area kept, the program's bytes back.
+SwapOut:
+        jsr Slot
+        ldy #REU_STASH
+        jsr SysRAMOp
+        ldx #3
+        jsr Op
+        ldx #4
+        jsr Op
+        ldx #5
+        jmp Op
+
+; Slot: r0-r3 for SysRAMOp between $7900 and the job's driver slot
+; (Q_PSLOT) in bank 1.
+Slot:   lda #<DRV_ADDR
         sta r0L
         lda #>DRV_ADDR
         sta r0H
@@ -787,18 +810,7 @@ SwapIn: ldx #0
         sta r2H
         lda #SYS_BANK
         sta r3L
-        ldy #REU_FETCH
-        jsr SysRAMOp
-        ldx #2
-        jmp Op
-
-; SwapOut: the work area kept, the program's bytes back.
-SwapOut:
-        ldx #3
-        jsr Op
-        ldx #4
-        jsr Op
-        ldx #5
+        rts
 
 ; Op: transfer X of the table below (r0 C64, r1 REU in bank 27, r2 the
 ; length, the command).

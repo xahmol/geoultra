@@ -52,6 +52,7 @@ v.regs_set({"PC": start})
 v.resume(); time.sleep(%(wait)d); v.ping()
 print("SP3 start X=%%02x stop X=%%02x" %% tuple(v.mem_get(0x2F1, 0x2F2)))
 print("SP3 log " + v.mem_get(0x0280, 0x028F).hex() + " " + v.mem_get(0x02BF, 0x02C3).hex())
+print("SP3 own %%02x" %% v.mem_get(0x02EF, 0x02EF)[0])
 print("SP3 area %%s driver %%s" %% (bytes(v.mem_get(0x6000, 0x6B4F)) == mark, v.mem_get(0x7903, 0x7905).hex()))
 '''
 
@@ -69,7 +70,8 @@ def run(tag, on, wait):
     lines = [l for l in r.stdout.splitlines() if "SP3" in l]
     print("\n".join(lines))
     area = next((l for l in lines if l.startswith("SP3 area")), "")
-    return next((l.split(None, 2)[2] for l in lines if l.startswith("SP3 log")), ""), area
+    own = next((l.split()[2] for l in lines if l.startswith("SP3 own")), "")
+    return next((l.split(None, 2)[2] for l in lines if l.startswith("SP3 log")), ""), area, own
 
 
 def main():
@@ -83,8 +85,8 @@ def main():
                     os.path.join(ROOT, "tests", "spool", "logdrv.toml"), b, c], check=True, capture_output=True)
     subprocess.run([os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541"), disk, "-geoswrite", c],
                    check=True, capture_output=True)
-    direct, _ = run("direct", 0, 20)
-    spooled, area = run("spooled", 0x80, 40)
+    direct, _, own_direct = run("direct", 0, 20)
+    spooled, area, own_spooled = run("spooled", 0x80, 40)
     pattern = bytes((i * 7 + 3) & 0xFF for i in range(1280))
     sums = [sum(pattern[:640]) & 0xFFFF, sum(pattern[640:]) & 0xFFFF]   # (the driver: 16 bits)
     want = (bytes([5, 1, 2, 3, 3, 4]).hex() + "00" * 10 + " "
@@ -102,6 +104,8 @@ def main():
     check("the program's memory given back ($6000 area; its caught driver at $7900)",
           area.split()[2:4] if area else None, ["True", "driver"])
     check("the caught driver's entry kept (jsr SpoolEnt)", area.split()[-1][:2] if area else None, "20")
+    check("the driver's own memory kept from call to call (its count: 5 calls)",
+          (own_direct, own_spooled), ("05", "05"))
     print("sp3: %s" % ("all passed" if ok else "FAILED"))
     sys.exit(0 if ok else 1)
 
