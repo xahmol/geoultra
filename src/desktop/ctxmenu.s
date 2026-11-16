@@ -14,7 +14,7 @@
         .include "desktop.inc"
 
         .import MenuNeutral, Recover, Dialog, FileEngine, entryInfo, entryName
-        .import cur, count, Fetch, IsDotDot, Back
+        .import cur, count, Fetch, IsDotDot, Back, IsImage
         .export Ov_Popup, Ov_Info, Ov_About
 Ov_Popup = Popup
 Ov_Info = Info
@@ -181,10 +181,13 @@ BoxRegs:
         rts
 
 ; IsPrinter: isPrn $80 when the cursor's entry is a printer driver
-; (its "open" item reads "use as printer"), else 0.
+; (its "open" item reads "use as printer"), else 0; isImg $80 when it is
+; a disk image on the Ultimate (its "open in new task" item reads
+; "mount": opening goes into it, the user, 2026-11-16), else 0.
 IsPrinter:
         lda #0
         sta isPrn
+        sta isImg
         lda count
         ora count+1
         beq @end
@@ -192,7 +195,14 @@ IsPrinter:
         ldx cur+1
         jsr Fetch
         lda entryInfo + FI_KIND
-        cmp #K_GEOS
+        cmp #K_UFILE
+        bne @geos
+        jsr IsImage             ; (mount.s)
+        bcs @end
+        lda #$80
+        sta isImg
+        rts
+@geos:  cmp #K_GEOS
         bne @end
         lda entryInfo + FI_GTYPE
         cmp #PRINTER_FILE
@@ -220,14 +230,23 @@ ItemText:
         lda TextHi,x
         sta r0H
         txa                     ; a printer driver's "open": "use as
-        bne :+                  ; printer" (what Open does with it)
+        bne @img                ; printer" (what Open does with it)
         bit isPrn
-        bpl :+
+        bpl @put
         lda #<TPrinter
         sta r0L
         lda #>TPrinter
         sta r0H
-:       jmp PutString
+        bne @put                ; (always)
+@img:   cpx #1                  ; a disk image's "open in new task":
+        bne @put                ; "mount" (list.s TaskOrMount)
+        bit isImg
+        bpl @put
+        lda #<TMount
+        sta r0L
+        lda #>TMount
+        sta r0H
+@put:   jmp PutString
 
 ; ItemTop: A = item A's top pixel row (y0 + 1 + A * ITEM_H).
 ItemTop:
@@ -866,6 +885,7 @@ PowHi:  .byte >10000, >1000, >100, >10
 TextLo: .byte <T0, <TN, <T1, <T2, <T3, <T4, <T5, <T6, <T7, <T8, <T9, <T10
 TextHi: .byte >T0, >TN, >T1, >T2, >T3, >T4, >T5, >T6, >T7, >T8, >T9, >T10
 T0:     .byte "open", 0
+TMount: .byte "mount", 0
 TPrinter:
         .byte "use as printer", 0
 TN:     .byte "open in new task", 0
@@ -951,6 +971,7 @@ hover:  .res 1
 which:  .res 1
 bufSave:        .res 1
 isPrn:  .res 1                  ; IsPrinter: $80 a printer driver
+isImg:  .res 1                  ; IsPrinter: $80 a disk image
 tmpX:   .res 1
 tmpY:   .res 1
 numL:   .res 1

@@ -16,7 +16,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, Open, OpenTask
+        .import FileEngine, Open, OpenTask, Mount, IsImage
         .import IconUp, IconFor, TextWidth, Paint, PaintList, px0, px1, py0, py1, pcol
         .import tTitle, tIcons, tSel, tCur, tScroll, tStatus, cSel, cAccentP
         .import listL, iconCard, nameX, pathY, listTop, rowH, rows, bottom
@@ -2000,9 +2000,25 @@ RightPress:
         lda CtxDo,x
         pha
 @end:   rts
-CtxDo:  .word Open-1, OpenTask-1, Copy-1, Cut-1, Paste-1, Rename-1, Delete-1, Info-1
+CtxDo:  .word Open-1, TaskOrMount-1, Copy-1, Cut-1, Paste-1, Rename-1, Delete-1, Info-1
         .word FavAdd-1, NewFolder-1, CopyOther-1, MoveOther-1
         .assert (* - CtxDo) / 2 = CTX_N, error, "an action per item"
+
+; TaskOrMount (the context menu's second item): a disk image on the
+; Ultimate mounted on a drive (mount.s: the drive dialog), as opening
+; it goes into it (the user, 2026-11-16: no way to mount was left);
+; anything else opened in a new task (actions.s).
+TaskOrMount:
+        lda cur
+        ldx cur+1
+        jsr Fetch
+        lda entryInfo + FI_KIND
+        cmp #K_UFILE
+        bne @task
+        jsr IsImage
+        bcs @task
+        jmp Mount
+@task:  jmp OpenTask
 
 ; InList: C clear when the pointer is over the list's rows or cells
 ; (listL to the scroll strip, listTop to bottom).

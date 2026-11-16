@@ -158,7 +158,11 @@ colour is a property of an element, by name:
    eject icon (8 x 8, own drawing) at the right end of each sidebar
    drive line A-D that has an image (not drive E); a click asks
    "Unmount drive B (work.d81)?", then `FE_UMOUNT`. Errors (no room in
-   the REU, a failed write-back) in a dialog, nothing changed.
+   the REU, a failed write-back) in a dialog, nothing changed. Since disk images are gone into like folders
+   (2026-11-13), mounting is the context menu's second item: on a disk
+   image it reads "mount" instead of "open in new task" and opens the
+   drive dialog (list.s TaskOrMount, ctxmenu.s; the user, 2026-11-16:
+   no way to mount was left).
 7. **D7 look:** the element routines with their styles, the theme
    record (built-in themes, the default GeoUltra; a theme file read when
    named in `SETTINGS.INI`), icons, the clock and the status line, the
