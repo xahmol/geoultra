@@ -1,8 +1,8 @@
 # Drive E, the system drive (docs/ARCHITECTURE.md "System drive"): a
 # native (DNP) image with folders, built by tools/mkappsdnp.py from the
 # build's CVT files and relocated by tools/sysreloc.py (tracks above
-# SYSDRV_TRACK, src/inc/sysdrive.inc). Desk accessories, fonts and the
-# system's applications stay in the root (the kernal merges the root's
+# SYSDRV_TRACK, src/inc/sysdrive.inc). Desk accessories, fonts, printer
+# drivers and the system's applications stay in the root (the kernal merges the root's
 # desk accessories and fonts into every application's lists); gush's
 # external commands go to /e/bin (gush's PATH).
 [dnp]
@@ -19,6 +19,7 @@ cmds = "../build/cmds"
 desktop = "../build/desktop"
 settings = "../build/settings"
 fonts = "../build/fonts"
+printer = "../build/printer"
 
 [[folder]]
 path = ""
@@ -27,7 +28,9 @@ files = ["tools:geofolder.cvt", "gush:gush.cvt", "desktop:desktop.cvt", "setting
          # GeoUltra's own fonts (docs/DESIGN.md "Fonts", make fonts)
          "fonts:guserif.cvt", "fonts:gusans.cvt", "fonts:gusymbol.cvt", "fonts:gumono.cvt",
          "fonts:gugeometric.cvt", "fonts:gubook.cvt", "fonts:gunarrow.cvt", "fonts:guschool.cvt",
-         "fonts:guclassic.cvt", "fonts:guscript.cvt"]
+         "fonts:guclassic.cvt", "fonts:guscript.cvt",
+         # GeoUltra's printer drivers (docs/DESIGN.md "Printing")
+         "printer:epson.cvt"]
 
 [[folder]]
 path = "bin"

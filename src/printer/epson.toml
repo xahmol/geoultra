@@ -1,0 +1,9 @@
+[file]
+name    = "GU Epson FX-80"
+type    = "PRINTER"
+class   = "GU FX-80"
+version = "V1.0"
+author  = "GeoUltra"
+info    = "Epson FX-80/JX-80 and the Ultimate's printer (Epson emulation): 80 dpi, colour"
+load    = 0x7900
+icon    = "../../build/printer/epson.icon"

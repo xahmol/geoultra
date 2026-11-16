@@ -706,6 +706,21 @@ plp
 sprites/IRQs as for disk I/O, slower but driver-safe. Never call GEOS
 routines between the two: they expect their own memory configuration.
 
+**Printer drivers and the C64 ROM's serial routines** (found with
+GeoUltra's own Epson driver, 2026-11-16): a driver talks to device 4 with
+`LISTEN`/`SECOND`/`CIOUT`/`UNLSN` ($FFB1/$FF93/$FFA8/$FFAE) between
+`InitForIO` and `DoneWithIO`. The ROM's `LISTEN` first calls `$F0A4`,
+which loops until the RS-232 flags at `$02A1` (`ENABL`) are 0; under GEOS
+that byte holds whatever was there, so a driver must clear it (and put it
+back) or hang. The ROM also uses `$90` (ST), `$94`, `$95`, `$A3`-`$A5`,
+which lie in the application's zero page: save and restore them when the
+driver may run inside another program (a spooler). `ST` bit 7 after
+`SECOND` = device not present (return `DEV_NOT_FOUND`, 13, carry set from
+StartPrint/StartASCII). State between calls belongs in the work buffer
+`r1` (HG2G: kept intact by the application), at its start: StopPrint's
+`r1` may be only 640 bytes after ASCII printing. `PrintBuffer`'s `r2`
+points at 80 colour bytes (40-column format, one per card) or is 0.
+
 ---
 
 ## 17. Gotchas checklist

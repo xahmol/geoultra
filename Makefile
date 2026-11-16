@@ -40,7 +40,7 @@ REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 DEPLOYDIR = /SD/idi8b/geoultra/
 
-.PHONY: all checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -63,7 +63,8 @@ checkcfg: check-deploy
 # geos-oscar64's geosapp.py (0.1.2 or later: it pads desk accessories to
 # whole blocks), written to a D64 with VICE's c1541.
 SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt \
-           build/settings/settings.cvt build/tools/splash.cvt build/fonts/.done
+           build/settings/settings.cvt build/tools/splash.cvt build/fonts/.done \
+           build/printer/epson.cvt
 
 build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	@mkdir -p build/tools
@@ -516,6 +517,22 @@ build/uciprobe.bin: tests/engine/uciprobe.s tests/engine/uciprobe.cfg src/inc/uc
 test-sysfont: all
 	$(PYTHON) tests/drives/sysfont.py
 
+# GeoUltra's printer drivers (docs/DESIGN.md "Printing"): PRINTER files
+# for drive E, assembled at $7900 (src/printer/printer.cfg; their own
+# folder: the kernal links every file in src/drivers); their file icon
+# drawn by tools/mkprnicon.py (a letter for the printer).
+build/printer/%.icon: tools/mkprnicon.py
+	@mkdir -p build/printer
+	$(PYTHON) tools/mkprnicon.py $(PRNLETTER_$*) $@
+PRNLETTER_epson = E
+PRNLETTER_mps = C
+
+build/printer/%.cvt: src/printer/%.s src/printer/%.toml src/printer/printer.cfg build/printer/%.icon src/inc/geos.inc
+	@mkdir -p build/printer
+	$(CA65) -I src/inc -o build/printer/$*.o $<
+	$(LD65) -C src/printer/printer.cfg -o build/printer/$*.bin -m build/printer/$*.map build/printer/$*.o
+	$(PYTHON) $(GEOSAPP) src/printer/$*.toml build/printer/$*.bin $@
+
 # GeoUltra's own GEOS fonts (docs/DESIGN.md "Fonts"): build/fonts/*.cvt
 # from the copies in tools/fonts/src (TeX Gyre, Adobe 75-dpi bitmaps).
 FONTSRCS = $(wildcard tools/fonts/src/*/*) $(wildcard tools/fonts/gu*_fix.py)
@@ -527,6 +544,11 @@ build/fonts/.done: tools/mkgufonts.py tools/mkgeosfont.py $(FONTSRCS)
 test-fonts: all
 	$(PYTHON) tests/fonts/mkgeosfont_test.py
 	$(PYTHON) tests/fonts/fontlist.py
+
+# GeoUltra's printer drivers in VICE (docs/DESIGN.md "Printing"): their
+# bytes caught at the ROM's serial routines and checked dot for dot.
+test-print: all
+	$(PYTHON) tests/print/ep1.py
 
 # The GEOS 2.0 deskTop with a 1581 drive A (the driver called between
 # InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).
