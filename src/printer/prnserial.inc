@@ -14,7 +14,8 @@
 ; receivers release DATA (ready for data), pulls CLK, then 8 bits, the
 ; first bit first: DATA set (1 = released), CLK released for at least 60
 ; us (data valid), CLK pulled and DATA released; the receiver pulls DATA
-; within 1 ms (byte taken), at least 100 us between bytes. Commands under
+; within 1 ms (byte taken; we allow it about 30 s, see IecSend), at
+; least 100 us between bytes. Commands under
 ; ATN: LISTEN $20 + device, SECOND $60 + channel, UNLISTEN $3F; ATN
 ; released after the last. No EOI (a printer needs none). The C64's
 ; $DD00: bits 3-5 pull ATN, CLK, DATA (1 = pulled, through inverters),
@@ -32,6 +33,7 @@ O_ATN           = $08           ; (out: 1 pulls the line)
 O_CLK           = $10
 O_DATA          = $20
 PRN_DEV         = 4
+ACK_WAIT        = 43            ; x about 0.7 s: a byte's acknowledgement
 LISTEN          = $20 + PRN_DEV
 UNLISTEN        = $3F
 
@@ -152,10 +154,17 @@ IecSend:
         sta IEC
         dey
         bne @bit
-        ldx #200                ; the listener takes it: DATA pulled
-:       lda IEC                 ; within about 1 ms
-        bpl @took
-        dex
+        lda #ACK_WAIT           ; the listener takes it: DATA pulled
+        sta iecWait             ; (the protocol: within 1 ms; we wait
+        ldy #0                  ; about 30 s: the Ultimate's printer,
+        ldx #0                  ; firmware 3.15a, takes a byte only when
+:       lda IEC                 ; its emulation has drawn the last 256,
+        bpl @took               ; seconds for dense graphics; lost bytes
+        dex                     ; would end the page nowhere)
+        bne :-
+        dey
+        bne :-
+        dec iecWait
         bne :-
         inc iecErr              ; not taken: nothing more is sent
         rts
@@ -177,6 +186,7 @@ Work:   lda r1L
         .segment "BSS"
 iecErr: .res 1                  ; nonzero: a byte was not taken
 iecByte:.res 1
+iecWait:.res 1
 putA:   .res 1
 putX:   .res 1
 putY:   .res 1
