@@ -51,8 +51,9 @@ FAMILIES = [
 
 # 9 points from Adobe's 8-pixel shapes where those have the capitals of a
 # 9-point GEOS font (6 rows: Helvetica, New Century Schoolbook; Times and
-# Courier at 8 are a row smaller: drawn by hand instead).
-PCF_MAP = {"GU Sans": "9=8", "GU School": "9=8"}
+# Courier at 8 are a row smaller; Courier takes them anyway: its 8 has
+# exactly the 9-point cell width, 5 pixels; Times is drawn by hand).
+PCF_MAP = {"GU Sans": "9=8", "GU School": "9=8", "GU Mono": "9=8"}
 
 
 def main():

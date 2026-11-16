@@ -148,6 +148,24 @@ def load_pcf(pattern, size):
 
 
 PLACE = "centre"                                # (or "left": tests)
+VERBOSE = False                                 # (--verbose: the narrowed glyphs)
+
+
+def squeeze(cols, n):
+    """COLS (a glyph's columns, lists of 0/1) N columns narrower: first a
+    column equal to its neighbour (a two-pixel stem, a flat stretch),
+    else the inner column with the least ink. Own code."""
+    cols = [list(c) for c in cols]
+    for _ in range(n):
+        if len(cols) < 2:
+            break
+        twin = [i for i in range(len(cols) - 1) if cols[i] == cols[i + 1] and any(cols[i])]
+        if twin:
+            del cols[twin[len(twin) // 2]]
+            continue
+        inner = range(1, len(cols) - 1) if len(cols) > 2 else range(len(cols))
+        del cols[min(inner, key=lambda i: (sum(cols[i]), abs(i - len(cols) // 2)))]
+    return cols
 
 
 def render_pcf(pf, size, widths):
@@ -158,6 +176,7 @@ def render_pcf(pf, size, widths):
     tops = [-glyph(ord(c))[1][1] for c in "Hbdfhkl" if glyph(ord(c))]
     caprows = max(2, min(size, max(tops) if tops else size * 2 // 3))
     clipped = []
+    squeezed = []
     images = []
     for i, code in enumerate(range(FIRST, LAST + 1)):
         w = widths[i]
@@ -165,6 +184,13 @@ def render_pcf(pf, size, widths):
         g = glyph(code)
         if w and g and g[3] is not None:
             (dx, _), (x0, y0, x1, y1), _, im = g
+            cols = [[1 if im.getpixel((xx, yy)) else 0 for yy in range(y1 - y0)]
+                    for xx in range(x1 - x0)]
+            if len(cols) > w:                       # wider than its cell:
+                cols = squeeze(cols, len(cols) - w) # narrowed (squeeze)
+                dx -= (x1 - x0) - len(cols)
+                x1 = x0 + len(cols)
+                squeezed.append(chr(code))
             x = ((w - dx) // 2 if PLACE == "centre" else 0) + x0
             left, right = x, x + (x1 - x0)
             if right > w:
@@ -174,13 +200,15 @@ def render_pcf(pf, size, widths):
             top = caprows + y0
             for yy in range(y1 - y0):
                 for xx in range(x1 - x0):
-                    if im.getpixel((xx, yy)):
+                    if cols[xx][yy]:
                         px, py = x + xx, top + yy
                         if 0 <= px < w and 0 <= py < size:
                             cell.putpixel((px, py), 1)
                         elif chr(code) not in clipped:
                             clipped.append(chr(code))
         images.append(cell)
+    if squeezed and VERBOSE:
+        print("  size %d: narrowed by columns: %s" % (size, "".join(squeezed)))
     return images, caprows - 1, clipped
 
 
@@ -336,6 +364,7 @@ def main():
     ap.add_argument("--pcf-map", help="sizes taken from another bitmap size, e.g. \"9=8\" "
                     "(Adobe has no 9: its 8 has the capitals of a 9-point GEOS font)")
     ap.add_argument("--place", choices=("centre", "left"), default="centre")
+    ap.add_argument("--verbose", action="store_true", help="also list the narrowed glyphs")
     a = ap.parse_args()
     if not 0 < a.id < 1024:
         raise SystemExit("mkgeosfont.py: a font ID is 1-1023")
@@ -348,8 +377,9 @@ def main():
         exec(compile(open(a.fix).read(), a.fix, "exec"), scope)
         fixes = scope["FIXES"]
     records, lengths, table = {}, [], []
-    global PLACE
+    global PLACE, VERBOSE
     PLACE = a.place
+    VERBOSE = a.verbose
     pcf_sizes = {int(x) for x in a.pcf_sizes.split(",")} if a.pcf_sizes else None
     pcf_map = dict(tuple(int(v) for v in x.split("=")) for x in a.pcf_map.split(",")) if a.pcf_map else {}
     for s in sizes:
