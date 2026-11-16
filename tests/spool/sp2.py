@@ -6,7 +6,7 @@ loaded with GetFile (catching switched on: spOn): its entries (not GetDimensions
 SpoolEnt`; InitForPrint, StartPrint, two PrintBuffer rows (from the
 screen), StopPrint called: each returns at once, the queue's header
 (REU bank 1 $E700) has one job open and the records' bytes, the queue
-(bank 27, from $2000) holds T_DRIVER, its slot and job number, T_INIT, T_START, the rows as
+(bank 27, from $4000) holds T_DRIVER, its slot and job number, T_INIT, T_START, the rows as
 given, T_STOP. Through tools/harness/apprun.py (an h: hook).
 Usage: tests/spool/sp2.py
 """
@@ -45,8 +45,8 @@ code = ([0x78, 0xA9, 0x30, 0x85, 0x01, 0xA9, 9] + jsr("SetDevice") + jsr("OpenDi
         + r(0x02, 0xA280) + r(0x04, 0x5000) + r(0x06, 0) + jsr(0x7906)
         + r(0x02, 0x5800) + r(0x04, 0x5000) + jsr(0x7909) + [0x8E, 0xF2, 0x02]
         + r(0x02, 0x4F00) + r(0x04, 0xE700) + r(0x06, 16) + [0xA9, 1, 0x85, 0x08, 0xA0, 0x91] + jsr(sys_op)
-        + r(0x02, 0x4F20) + r(0x04, 0x2000) + r(0x06, 8) + [0xA9, 27, 0x85, 0x08, 0xA0, 0x91] + jsr(sys_op)
-        + r(0x02, 0x6000) + r(0x04, 0x2006) + r(0x06, 1290) + [0xA9, 27, 0x85, 0x08, 0xA0, 0x91] + jsr(sys_op))
+        + r(0x02, 0x4F20) + r(0x04, 0x4000) + r(0x06, 8) + [0xA9, 27, 0x85, 0x08, 0xA0, 0x91] + jsr(sys_op)
+        + r(0x02, 0x6000) + r(0x04, 0x4006) + r(0x06, 1290) + [0xA9, 27, 0x85, 0x08, 0xA0, 0x91] + jsr(sys_op))
 start = harness.TRAMPOLINE
 end = start + len(code)
 code += [0x4C, end & 0xFF, end >> 8]
@@ -94,9 +94,9 @@ def main():
     check("its entries caught, GetDimensions not", caught, [True] * 4 + [False] + [True] * 3)
     hdr = bytes.fromhex(out.get("header", ""))
     head = hdr[4] | hdr[5] << 8 | hdr[6] << 16 if len(hdr) > 6 else -1
-    check("the header: GUSP, one job open", (hdr[:4], hdr[10], hdr[11]) if len(hdr) > 11 else None,
-          (b"GUSP", 1, 0x80))
-    check("the head: driver (3), init, start, 2 rows (641 each), stop (the ring from $2000)", head, 0x2000 + 3 + 1 + 1 + 2 * 641 + 1)
+    check("the header: GUS2, one job open", (hdr[:4], hdr[10], hdr[11]) if len(hdr) > 11 else None,
+          (b"GUS2", 1, 0x80))
+    check("the head: driver (3), init, start, 2 rows (641 each), stop (the ring from $4000)", head, 0x4000 + 3 + 1 + 1 + 2 * 641 + 1)
     q = bytes.fromhex(out.get("queue", ""))
     check("the queue: T_DRIVER, its slot, its job (0), T_INIT, T_START, T_ROW", q[:6], bytes([1, 0, 0, 2, 3, 4]))
     check("the rows as given (the screen's)", out.get("rows"), "True")

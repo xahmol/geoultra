@@ -23,9 +23,9 @@ from feu64 import U64  # noqa: E402
 KEY_STUB = 0xC0A0
 HOME = "/USB0/GEOULTRA/"
 RUN, HDR, PAT, OUT, ZERO = 0x7F40, 0x7FE0, 0x7A00, 0x7B00, 0x7D00
-# a paused queue: "GUSP", head $00:2100, tail $00:2000, one job, paused
-HEADER = b"GUSP" + bytes([0, 0x21, 0, 0, 0x20, 0, 1, 0, 0x80, 0, 0, 0, 0, 0, 0])
-EMPTY = b"GUSP" + bytes([0, 0x20, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+# a paused queue: "GUS2", head $00:4100, tail $00:4000, one job, paused
+HEADER = b"GUS2" + bytes([0, 0x41, 0, 0, 0x40, 0, 1, 0, 0x80, 0, 0, 0, 0, 0, 0])
+EMPTY = b"GUS2" + bytes([0, 0x40, 0, 0, 0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 PATTERN = bytes((i * 11 + 7) & 0xFF for i in range(256))
 
 
@@ -125,14 +125,14 @@ def main():
         u.write(HDR, HEADER)
         u.write(PAT, PATTERN)
         u.write(ZERO, bytes(256))
-        put_ops = [op(HDR, 0xE700, 19, 1, 0x90), op(PAT, 0x2000, 256, 27, 0x90)]
+        put_ops = [op(HDR, 0xE700, 19, 1, 0x90), op(PAT, 0x4000, 256, 27, 0x90)]
         if extra:
             put_ops.append(op(PAT, 0x0100, 256, base, 0x90))
         run(put_ops)
         call(kern["HibSuspend"], t=30)
         check("the file: system, scrap store, a task bank, swap, a legacy area, the queue's banks",
               size("HIBERNAT.BIN"), (1 + 2 + 1 + 1 + legacy + 2 + extra) * 65536)
-        wipe = [op(ZERO, 0x2000, 256, 27, 0x90)]
+        wipe = [op(ZERO, 0x4000, 256, 27, 0x90)]
         if extra:
             wipe.append(op(ZERO, 0x0100, 256, base, 0x90))
         run(wipe)
@@ -140,7 +140,7 @@ def main():
         time.sleep(30)
         check("the file used once: gone", size("HIBERNAT.BIN"), None)
         u.write(OUT, bytes(512))
-        get_ops = [op(OUT + 0x200, 0xE700, 19, 1, 0x91), op(OUT, 0x2000, 256, 27, 0x91)]
+        get_ops = [op(OUT + 0x200, 0xE700, 19, 1, 0x91), op(OUT, 0x4000, 256, 27, 0x91)]
         if extra:
             get_ops.append(op(OUT + 0x100, 0x0100, 256, base, 0x91))
         run(get_ops)

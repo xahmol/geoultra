@@ -283,7 +283,7 @@ applications call `$9030-$904D` directly.
   | `$E400-$E57F` | per task slot the VIC registers |
   | `$E600-$E63F` | the path a new task opens (`FE_TASK`) |
   | `$E700-$E712` | print queue: its header (spool.s `Q_*`) |
-  | `$E800-$F8FF` | print queue: four printer drivers as loaded (`DRV_SAVE`) |
+  | `$E800-$F9FF` | free (until 2026-11-16 the printer driver slots, which did not fit: now in bank 27 at `$2000`) |
   | `$FA00-$FAFF` | print queue: the job table, 16 of 16 bytes (`JOBTAB`) |
 - **InitForIO / DoneWithIO** live in the driver: they bank the C64 Kernal
   ROM in over `$E000` (for serial printer drivers), so they and anything

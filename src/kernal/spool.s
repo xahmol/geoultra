@@ -10,7 +10,7 @@
 ; 2 after. Bank 27's first RING0 pages hold the playback's state.
 ;
 ; Recording: LdFile ends in SpoolLd (module 106): a file of GEOS type
-; PRINTER loaded at $7900 is kept as it is in REU bank 1 (DRV_SAVE, the
+; PRINTER loaded at $7900 is kept as it is in REU bank 27 (DRV_SAVE, the
 ; next of DRV_SLOTS slots, spDrv its slot) and its entries (HG2G
 ; "Printer drivers": InitForPrint $7900, StartPrint +3, PrintBuffer +6,
 ; StopPrint +9, GetDimensions +12, PrintASCII +15, StartASCII +18, SetNLQ
@@ -47,8 +47,13 @@
 PRINTER         = 9             ; GEOS file type
 DRV_ADDR        = $7900
 DRV_LEN         = $0640         ; $7900-$7F3F
-DRV_SAVE        = $E800         ; REU bank 1: drivers as loaded, DRV_SLOTS
-DRV_SLOTS       = 4             ; of DRV_LEN (to $F8FF), taken in turn
+DRV_SAVE        = $2000         ; REU bank 27 (the spooler's bank 0):
+DRV_SLOTS       = 4             ; drivers as loaded, DRV_SLOTS of DRV_LEN
+                                ; ($2000-$38FF), taken in turn. Until
+                                ; 2026-11-16 in bank 1 at $E800, where four
+                                ; did not fit: the third took the job table,
+                                ; the fourth ran into bank 2, the overlay
+                                ; modules (the user's geoWrite on the U64)
 QHEAD           = $E700         ; REU bank 1: the queue's header (Q_*)
 SYS_BANK        = 1
 SPOOL_BANK      = 27
@@ -124,9 +129,12 @@ AREA_LEN        = STRB + 256 - AREA
         .assert ST_AREA + AREA_LEN <= RING0 * 256, error, "spool.s: the playback's state runs into the ring"
 
 SPOOL_FIXED     = 2             ; banks 27-28
-RING0           = $20           ; the ring's first page (spoolring.inc)
+RING0           = $40           ; the ring's first page (spoolring.inc)
+        .assert DRV_SAVE >= ST_AREA + AREA_LEN && DRV_SAVE + DRV_SLOTS * DRV_LEN <= RING0 * 256, error, "spool.s: the driver slots overlap"
 ; The queue's header (QHEAD, REU bank 1)
-Q_MAGIC         = 0             ; "GUSP"
+Q_MAGIC         = 0             ; "GUS2" ("GUSP" until 2026-11-16: the
+                                ; ring from page $20; such a header, from
+                                ; an older hibernation, counts as none)
 Q_HEAD          = 4             ; 3 bytes: where the next record goes
 Q_TAIL          = 7             ; 3 bytes: the next record to play
 Q_JOBS          = 10            ; jobs recorded
@@ -338,7 +346,7 @@ Load:   jsr ReadFile
         sta r2L
         lda #>DRV_LEN
         sta r2H
-        lda #SYS_BANK
+        lda #SPOOL_BANK       ; (the slots: bank 27, DRV_SAVE)
         sta r3L
         ldy #REU_STASH
         jsr SysRAMOp
@@ -836,7 +844,7 @@ Slot:   lda #<DRV_ADDR
         sta r2L
         lda #>DRV_LEN
         sta r2H
-        lda #SYS_BANK
+        lda #SPOOL_BANK       ; (the slots: bank 27, DRV_SAVE)
         sta r3L
         rts
 
@@ -1254,7 +1262,7 @@ Sys:    sta r2L
         sta r3L
         jmp SysRAMOp
 
-Mark:   .byte "GUSP"
+Mark:   .byte "GUS2"
 sub:    .byte 0
 seq:    .byte 0
 cnt:    .byte 0

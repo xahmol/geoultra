@@ -151,7 +151,7 @@ HeadLoad:
         sec
 .endif
         rts
-Mark:   .byte "GUSP"
+Mark:   .byte "GUS2"
 HeadFetch:
         ldy #REU_FETCH
         .byte $2C
