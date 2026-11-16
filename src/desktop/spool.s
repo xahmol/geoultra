@@ -50,7 +50,7 @@ TITLE_STATE     = 200           ; the title's state ("paused")
         .segment "CODE"
 
 ; SpoolTick (ClockTick, appMain): once a second the queue's state
-; (FE_SPOOL 0: the job printing, the jobs, paused) to spNew; when it
+; (FE_SPOOL 0: the job printing, the jobs, paused, the job's progress) to spNew; when it
 ; differs from spState the indicator drawn again (overlay 5).
 SpoolTick:
         lda seconds
@@ -67,7 +67,9 @@ SpoolTick:
         sta spNew + 1
         lda r0H
         sta spNew + 2
-        ldx #2
+        lda r1H                 ; the job's progress (%, $FF unknown)
+        sta spNew + 3
+        ldx #3
 @c:     lda spNew,x
         cmp spState,x
         bne @draw
@@ -97,8 +99,8 @@ SpoolPress:
 
         .segment "BSS"
 
-spNew:          .res 3          ; FE_SPOOL 0: A, r0L, r0H
-spState:        .res 3          ; the one drawn
+spNew:          .res 4          ; FE_SPOOL 0: A, r0L, r0H, r1H
+spState:        .res 4          ; the one drawn
 spSec:          .res 1          ; the second last asked
 spX:            .res 2          ; the indicator's left and right edges
 spR:            .res 2
@@ -112,7 +114,7 @@ spShown:        .res 1          ; nonzero: it is there
 ; QDraw (SpoolTick: the state changed): spNew taken; the indicator
 ; drawn anew (QDraw0: as it is; tooldraw.s's ClockDraw without the
 ; clock).
-QDraw:  ldx #2
+QDraw:  ldx #3
 @c:     lda spNew,x
         sta spState,x
         dex
@@ -136,8 +138,10 @@ QDraw0: lda spShown
         jsr Rectangle
 
 ; QPut (its place already cleared: ClockDraw clears from spX): "printing
-; 2/5" (job 2 of the 5 since the queue was last empty) or "print paused",
-; right-aligned left of the clock; the short "print 2/5" or "paused" when
+; 2/5, 45%" (job 2 of the 5 since the queue was last empty, 45% of it
+; printed: the user's request, 2026-11-16; without the percentage until
+; the job's first page starts) or "print paused", right-aligned left of
+; the clock; the short "print 45%" (or "print 2/5") or "paused" when
 ; that does not fit beside the menus; nothing when the queue is empty.
 QPut:   lda #0
         sta spShown
@@ -178,19 +182,38 @@ Text:   sta form
 :       ldx #PausedW - Words
         jsr Word
         jmp Zero
-@run:   ldx #PrintW - Words     ; "printing 2/5", "print 2/5"
+@run:   ldx #PrintW - Words     ; "printing 2/5, 45%", "print 45%"
         jsr Word
+        jsr Space
         lda form
+        beq @long
+        lda spState + 3
+        cmp #101
+        bcc Pct
+@long:  lda form
         bne :+
+        dey
         ldx #IngW - Words
         jsr Word
-:       jsr Space
-        lda spState
+        jsr Space
+:       lda spState
         jsr Decimal
         lda #'/'
         jsr Char
         lda spState + 1
         jsr Decimal
+        lda form
+        bne Zero
+        lda spState + 3
+        cmp #101
+        bcs Zero
+        lda #','
+        jsr Char
+        jsr Space
+        lda spState + 3
+Pct:    jsr Decimal             ; A %
+        lda #'%'
+        jsr Char
 Zero:   lda #0
         sta (r5),y
         rts
@@ -300,7 +323,7 @@ form:           .byte 0
 num:            .byte 0
 dig:            .byte 0
 lead:           .byte 0
-qText:          .res 17         ; "printing 255/255" and its zero
+qText:          .res 24         ; "printing 255/255, 100%" and its zero
 
 ; ======================================================================
 ; Overlay 5: the queue window
@@ -321,7 +344,9 @@ QWin:   lda #0
         sta qState + 2
         lda r1L
         sta qErr
-        ldx #2                  ; the indicator too (the core's tick does
+        lda r1H
+        sta qState + 3
+        ldx #3                  ; the indicator too (the core's tick does
 @ind:   lda qState,x            ; not run while the window is open)
         sta spNew,x
         dex
@@ -550,11 +575,19 @@ Line:   txa
 :       ldx #WaitingW - Words
         lda at
         bne @state
-        ldx #PrintingW - Words
-        bit qState + 2
-        bpl @state
         ldx #PausedW - Words
+        bit qState + 2
+        bmi @state
+        ldx #PrintingW - Words
+        lda qState + 3          ; printing: its percentage when known
+        cmp #101
+        bcs @state
+        jsr Decimal
+        lda #'%'
+        jsr Char
+        jmp @end
 @state: jsr Word
+@end:
         jsr Zero
         pla
         tax
@@ -603,6 +636,10 @@ QTick:  lda seconds
         bne Again
         lda r0H
         cmp qState + 2
+        bne Again
+        lda r1H                 ; the percentage: in steps of 8 (the
+        eor qState + 3          ; window is drawn anew, not each row)
+        and #$F8
         bne Again
 @end:   rts
 
@@ -705,7 +742,7 @@ at:             .byte 0
 ent:            .byte 0
 tmp:            .byte 0
 tickSec:        .byte 0
-qState:         .res 3
+qState:         .res 4          ; FE_SPOOL 0: A, r0L, r0H, r1H
 qErr:           .byte 0
 title:          .res 32
 dlg:            .res 96

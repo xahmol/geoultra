@@ -54,6 +54,13 @@ print("SP3 start X=%%02x stop X=%%02x" %% tuple(v.mem_get(0x2F1, 0x2F2)))
 print("SP3 log " + v.mem_get(0x0280, 0x028F).hex() + " " + v.mem_get(0x02BF, 0x02C3).hex())
 print("SP3 own %%02x" %% v.mem_get(0x02EF, 0x02EF)[0])
 print("SP3 area %%s driver %%s" %% (bytes(v.mem_get(0x6000, 0x6B4F)) == mark, v.mem_get(0x7903, 0x7905).hex()))
+fetch = ([0x78] + r(0x02, 0x4F00) + r(0x04, 0xE700) + r(0x06, 22) + [0xA9, 1, 0x85, 0x08, 0xA0, 0x91]
+         + jsr(lbl["SysRAMOp"]))            # the queue's header (QHEAD, bank 1)
+fend = start + len(fetch)
+v.mem_set(start, bytes(fetch + [0x4C, fend & 0xFF, fend >> 8]))
+v.regs_set({"PC": start})
+v.resume(); time.sleep(2); v.ping()
+print("SP3 progress " + v.mem_get(0x4F13, 0x4F15).hex())
 '''
 
 
@@ -71,6 +78,8 @@ def run(tag, on, wait):
     print("\n".join(lines))
     area = next((l for l in lines if l.startswith("SP3 area")), "")
     own = next((l.split()[2] for l in lines if l.startswith("SP3 own")), "")
+    global progress
+    progress = next((l.split()[2] for l in lines if l.startswith("SP3 progress")), "")
     return next((l.split(None, 2)[2] for l in lines if l.startswith("SP3 log")), ""), area, own
 
 
@@ -101,6 +110,8 @@ def main():
 
     check("printed directly: the calls and rows' sums logged", direct, want)
     check("spooled and played: the same log", spooled, want)
+    check("the progress after the played page (FE_SPOOL 0 r1H): page 1, all 94 rows, 100%",
+          progress, "015e64")
     check("the program's memory given back ($6000 area; its caught driver at $7900)",
           area.split()[2:4] if area else None, ["True", "driver"])
     check("the caught driver's entry kept (jsr SpoolEnt)", area.split()[-1][:2] if area else None, "20")

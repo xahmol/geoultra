@@ -693,20 +693,25 @@ colour is a property of an element, by name:
     crosshair; applied at boot.
 - **The print queue (2026-11-15; docs/DESIGN.md "Print spooler",
   the user's decisions):** `src/desktop/spool.s`. The menu bar shows
-  "printing 2/5" (job 2 of the 5 since the queue was last empty) or
-  "print paused" right of the menus and left of the date (the status
-  line has no room with two panes); where that does not fit (a 12-hour
-  clock) "print 2/5" or "paused"; nothing when the queue is empty. The
+  "printing 2/5, 45%" (job 2 of the 5 since the queue was last empty,
+  45% of it printed: `FE_SPOOL` 0's r1H, from its pages and rows played;
+  without the percentage before its first page starts; the user's
+  request of 2026-11-16) or "print paused" right of the menus and left
+  of the date (the status line has no room with two panes); where that
+  does not fit (a 12-hour clock) "print 45%" (or "print 2/5") or
+  "paused"; nothing when the queue is empty. The
   core asks `FE_SPOOL` once a second (SpoolTick, from ClockTick) and
   keeps the state; overlay 5 (with the clock, whose clearing covers the
   indicator) draws it. A click on it, or geos > print queue, opens the
   queue window (x 48-271, y 24-167): the title (with "paused" or
   "printer error"), a line per job (5 at most) with its cancel button,
-  its place, the program, its pages and its state (printing or paused,
-  waiting, cancelled), then pause or resume and close. The window is
-  opened again after each button and when the queue changes while it
-  is open (its own appMain, QTick), so it follows the queue; the
-  indicator with it. Test: d26.py (VICE, 10 checks).
+  its place, the program, its pages and its state (the percentage
+  printed, or "printing" before the first page; paused, waiting,
+  cancelled), then pause or resume and close. The window is opened
+  again after each button and when the queue changes while it is open
+  (its own appMain, QTick; the percentage in steps of 8, so it is not
+  drawn anew for every row), so it follows the queue; the indicator
+  with it. Test: d26.py (VICE, 10 checks).
 - **Choosing the printer (2026-11-16; docs/DESIGN.md "Printing", the
   user's decisions):** at its start the desktop puts SETTINGS.INI's
   `[desktop] printer=` into PrntFilename ($8465, the name applications

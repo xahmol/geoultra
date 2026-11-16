@@ -151,7 +151,13 @@ Q_BASE          = 17            ; the first job the desktop counts: after
                                 ; the last one played when the queue ran
                                 ; empty ("printing 2/5": job 2 of 5 since)
 Q_INPAGE        = 18            ; $80: a StartPrint played, no StopPrint yet
-Q_LEN           = 19
+Q_PAGE          = 19            ; the playing job's pages started (0: none)
+Q_BAND          = 20            ; the page's rows played (PrintBuffer)
+Q_PCT           = 21            ; the job's progress in % ($FF: unknown)
+Q_LEN           = 22
+PCT_ROWS        = 94            ; a page's rows for the progress (GEOS's
+                                ; Epson drivers'; the MPS's 90 end at 96%,
+                                ; StopPrint makes it whole)
         .assert hdr + Q_LEN <= entry, error, "spool.s: hdr runs into entry"
 SPOOL_MAX       = 32            ; 2 MB
 
@@ -636,6 +642,9 @@ Step:   jsr HeadLoad
         jsr Get
         lda #0                  ; (no page of it started)
         sta hdr + Q_INPAGE
+        sta hdr + Q_PAGE
+        lda #$FF
+        sta hdr + Q_PCT
         jsr HeadSave
         lda taskReq             ; the next pass
         ora #$20
@@ -997,7 +1006,8 @@ Play:   lda hdr + Q_PJOB        ; a job played on after the queue ran empty
 @st:    txa
         bne @err
         sty hdr + Q_INPAGE
-@done:  jsr HeadSave
+@done:  jsr Progress
+        jsr HeadSave
         lda taskReq             ; the next pass
         ora #$20
         sta taskReq
@@ -1009,6 +1019,109 @@ Play:   lda hdr + Q_PJOB        ; a job played on after the queue ran empty
         lda status
         sta hdr + Q_ERR
         jmp HeadSave
+
+; Progress (Play, a record played): the job's progress for the desktop
+; (FE_SPOOL 0, r1H): a StartPrint starts a page (Q_PAGE, Q_BAND 0), a
+; PrintBuffer counts a row (up to PCT_ROWS), a StopPrint ends it; Q_PCT =
+; ((Q_PAGE - 1) x 100 + Q_BAND x 100 / PCT_ROWS) / the job's pages
+; (J_PAGES: those recorded so far). $FF before a page (an ASCII job).
+; Destroys A, X, Y, r0-r3L, jbuf.
+Progress:
+        lda ptype
+        cmp #T_START
+        bne @row
+        inc hdr + Q_PAGE
+        lda #0
+        beq @band               ; (always)
+@row:   cmp #T_STOP
+        beq @full
+        cmp #T_ROW
+        bcc @pct
+        cmp #T_ROWC + 1
+        bcs @pct
+        lda hdr + Q_BAND
+        cmp #PCT_ROWS
+        bcs @pct
+        adc #1
+        bcc @band               ; (always)
+@full:  lda #PCT_ROWS
+@band:  sta hdr + Q_BAND
+@pct:   lda #$FF
+        ldx hdr + Q_PAGE
+        beq @set
+        lda hdr + Q_BAND        ; the page's part: rows x 100 / PCT_ROWS
+        jsr Mul100
+        lda #PCT_ROWS
+        jsr Div
+        pha
+        ldx hdr + Q_PAGE        ; plus the pages before: x 100
+        dex
+        txa
+        jsr Mul100
+        pla
+        clc
+        adc pn
+        sta pn
+        bcc :+
+        inc pn+1
+:       lda hdr + Q_PJOB        ; over the job's pages
+        jsr JobGet
+        lda jbuf + J_PAGES
+        cmp hdr + Q_PAGE
+        bcs :+
+        lda hdr + Q_PAGE
+:       jsr Div
+@set:   sta hdr + Q_PCT
+        rts
+
+; Mul100: pn = A x 100. Destroys A, X.
+Mul100: sta pn
+        lda #0
+        sta pn+1
+        ldx #100
+        stx pm
+        sta pt
+        sta pt+1
+        ldx #7
+@bit:   lsr pm
+        bcc :+
+        clc
+        lda pt
+        adc pn
+        sta pt
+        lda pt+1
+        adc pn+1
+        sta pt+1
+:       asl pn
+        rol pn+1
+        dex
+        bne @bit
+        lda pt
+        sta pn
+        lda pt+1
+        sta pn+1
+        rts
+
+; Div: A = pn / A (the quotient's low byte; A > 0). Destroys X, pn.
+Div:    sta pm
+        lda #0
+        ldx #16
+@bit:   asl pn
+        rol pn+1
+        rol a
+        bcs @sub
+        cmp pm
+        bcc @next
+@sub:   sbc pm
+        inc pn
+@next:  dex
+        bne @bit
+        lda pn
+        rts
+
+pn:     .word 0
+pt:     .word 0
+pm:     .byte 0
 
 ; Cancelled: C set when the job playing (Q_PJOB) is cancelled (its entry
 ; still its own: J_SEQ). Destroys A, Y, r0-r3L.
@@ -1036,7 +1149,8 @@ Cancelled:
 ; FE_SPOOL (docs/FILE_ENGINE.md; the desktop's indicator and queue
 ; window): Y = 0: A = the job printing, counted from Q_BASE (0: the
 ; queue empty), r0L the jobs since then, r0H $80 paused, r1L the
-; printer's error that paused it. 1: pause. 2: resume (the error
+; printer's error that paused it, r1H the printing job's progress in %
+; ($FF: unknown; module 113 Progress). 1: pause. 2: resume (the error
 ; forgotten). 3: job r0L cancelled. 4: the jobs not yet printed (the
 ; one printing first; JOB_MAX at most) to r0, J_LEN bytes each (spool.s
 ; J_*); A = their count. 5: the name of the program that printed, to r0
@@ -1097,11 +1211,12 @@ NoQueue:                        ; (no queue yet, VICE: an empty one, as
         jmp Known
 
 ; Status (Y = 0): see FeSpool.
-Status: lda qh + Q_PAUSED
-        and #$80
+Status: lda qh + Q_PAUSED        ; ($80 or 0 only)
         sta argR0+1
         lda qh + Q_ERR
         sta argR1
+        lda qh + Q_PCT
+        sta argR1+1
         lda #0
         sta argR0
         jsr Empty
