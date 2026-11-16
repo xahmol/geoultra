@@ -105,6 +105,7 @@ StartASCII:
         ldy #W_FEED
         sta (wb),y
         jsr Open
+        bcs Ret                 ; (no printer: the error, nothing open)
         jmp Close
 
 ; StopPrint (r1 the work buffer): the page ends (FF; the feed held back

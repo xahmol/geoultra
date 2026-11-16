@@ -103,6 +103,7 @@ StartASCII:
         tay                     ; (W_COUNT)
         sta (wb),y
         jsr Open
+        bcs Ret                 ; (no printer: the error, nothing open)
         jmp Close
 
 ; StopPrint (r1 the work buffer): the rows still waiting printed (paper
@@ -137,8 +138,9 @@ PrintASCII:
         sta dat+1
 @next:  ldy #0
         lda (dat),y
-        beq Close
-        jsr Petscii
+        bne :+
+        jmp Close
+:       jsr Petscii
         jsr Put
         inc dat
         bne @next

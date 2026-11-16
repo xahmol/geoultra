@@ -720,6 +720,16 @@ StartPrint/StartASCII). State between calls belongs in the work buffer
 `r1` (HG2G: kept intact by the application), at its start: StopPrint's
 `r1` may be only 640 bytes after ASCII printing. `PrintBuffer`'s `r2`
 points at 80 colour bytes (40-column format, one per card) or is 0.
+Clear `$94` (C3PO, bit 7 = a byte buffered for the bus) and `$A3` before
+`LISTEN`: the application's own value there makes the ROM send a "buffered"
+byte first, and with no device its error path returns to a wrong address.
+After a failed `LISTEN` (ST bit 7) call `UNLSN`, then `DoneWithIO`, and
+never `UNLSN` again: after `DoneWithIO` the ROM is no longer mapped, so
+`$FFAE` is RAM. The ROM's serial routines execute `CLI`; an interrupt
+source that was pending when `InitForIO` masked it then calls the IRQ
+routine `InitForIO` installed: if that routine does not acknowledge
+(read `$DC0D`, write `$D019`), it is called again for ever (GeoUltra's
+does since 2026-11-16).
 
 ---
 

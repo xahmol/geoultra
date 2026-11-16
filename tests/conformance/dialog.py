@@ -132,5 +132,7 @@ CASES += [
           click(100, 57) + click(210, 55)),
     files("DBGETFILES starts at the name in the buffer", 9, IDLE, buf="ASCII Only"),
     files("DBGETFILES filters by permanent name", 10, IDLE, cls="Input Drvr  V1.1"),
-    files("DBGETFILES with no files of the type", 8, IDLE),
+    # (TEMPORARY: none on either disk. FONT was used until 2026-11-16:
+    # GeoUltra's fonts on drive E are listed after a drive's own on purpose)
+    files("DBGETFILES with no files of the type", 13, IDLE),
 ]

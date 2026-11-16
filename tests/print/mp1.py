@@ -79,6 +79,9 @@ def main():
     res, stream = ep1.run("spooled", False, 0, data, bytes(800), spooled=True, name=NAME)
     check("spooled (played from MainLoop): the same bytes", stream == direct and res == "00aa0000",
           "%s, %d bytes" % (res, len(stream)))
+    res, stream = ep1.run("absent", False, 0, data, bytes(800), name=NAME, absent=True)
+    check("no printer: StartPrint and StopPrint X = DEV_NOT_FOUND, the program goes on",
+          res == "00aa0d0d" and stream == b"", "%s, %d bytes" % (res, len(stream)))
     res, stream = ep1.run("ascii", False, 1, data, bytes(800), name=NAME)
     got = cbmstream.parse(stream)
     check("ascii: StartASCII and StopPrint X = 0", res == "00aa0000", res)

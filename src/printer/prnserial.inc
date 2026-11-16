@@ -18,6 +18,8 @@ SECOND          = $FF93
 CIOUT           = $FFA8
 UNLSN           = $FFAE
 STATUS          = $90
+C3PO            = $94           ; bit 7: a byte buffered for the bus ($95)
+EOI             = $A3           ; the ROM's end-of-data flag
 ENABL           = $02A1         ; RS-232 busy flags: LISTEN waits for 0
 
 PRN_DEV         = 4
@@ -38,6 +40,10 @@ Open:   ldx #ZP_N - 1           ; the ROM's zero page kept
         lda #0
         sta ENABL               ; (no RS-232 under GEOS: else LISTEN hangs)
         sta STATUS
+        sta C3PO                ; no byte buffered: the program's own value
+        sta EOI                 ; there would be sent first (bit 7), and
+                                ; with no printer the ROM's error path
+                                ; then returned to nowhere
         lda #PRN_DEV
         jsr LISTEN
         lda #PRN_SA
@@ -70,7 +76,7 @@ Done:   jsr DoneWithIO
         clc
         rts
 
-ZpAt:   .byte STATUS, $94, $95, $A3, $A4, $A5
+ZpAt:   .byte STATUS, C3PO, $95, EOI, $A4, $A5
 ZP_N    = * - ZpAt
 
 ; Put: A to the printer (CIOUT). A, X and Y kept.

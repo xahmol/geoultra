@@ -168,9 +168,12 @@ DoneWithIO:
         plp
         rts
 
-IoIrq:  pla                     ; the ROM pushed A, X, Y
-        tay
-        pla
+IoIrq:  lda cia1Icr              ; whatever is pending acknowledged (a
+        lda #$FF                ; flag set before InitForIO masked it
+        sta vicIrq              ; would else call again at once, for
+        pla                     ; ever: found 2026-11-16 with a printer
+        tay                     ; driver played by the spooler from
+        pla                     ; MainLoop); the ROM pushed A, X, Y
         tax
         pla
 IoNmi:  rti

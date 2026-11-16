@@ -12,7 +12,9 @@ round(R x 2.7)/216" (exactly 80 dpi both ways), and no other; colours as
 the driver's inks (the levels and dither patterns below, the spec);
 ASCII as text, CR as CR LF, SetNLQ as ESC E, StopPrint as FF. The black
 page once more through the spooler (on in MainLoop), and once with the
-driver only on drive E (GetFile's fallback): the same bytes. The driver
+driver only on drive E (GetFile's fallback): the same bytes. No printer
+(SECOND answered with "device not present"): DEV_NOT_FOUND, the program
+goes on. The driver
 is written onto a copy of an applications disk (GEOS_APPS_DISK, the
 user's own).
 Usage: tests/print/ep1.py
@@ -70,6 +72,8 @@ while True:
         break
     r = v.regs_get()
     kind = ROM.get(r["PC"])
+    if kind == "S" and %(absent)d:          # no printer: "device not present"
+        v.mem_set(0x90, b"\x80")
     if kind == "B":
         out.append(r["A"])
     elif kind:
@@ -114,7 +118,7 @@ def label(name):
     raise KeyError(name)
 
 
-def run(tag, colour, ascii_, data, colr, spooled=False, name=b"GU Epson FX-80"):
+def run(tag, colour, ascii_, data, colr, spooled=False, name=b"GU Epson FX-80", absent=False):
     call = os.path.join(OUT, "epcall-%s.bin" % tag)
     o = call[:-4] + ".o"
     jt = harness.jumptab()
@@ -131,7 +135,7 @@ def run(tag, colour, ascii_, data, colr, spooled=False, name=b"GU Epson FX-80"):
     hook = os.path.join(OUT, "hook-ep1-%s.py" % tag)
     open(hook, "w").write(HOOK % {"text": TEXT, "data": data, "colr": colr, "call": call, "raw": raw,
                                  "spon": label("spOn"), "on": 0x80 if spooled else 0,
-                                 "name": name})
+                                 "name": name, "absent": 1 if absent else 0})
     env = dict(os.environ, GEOS_APPS_DISK=os.path.join(OUT, "apps.d64"),
                PYTHONPATH=os.path.join(ROOT, "tools", "harness"),
                )
@@ -192,6 +196,9 @@ def main():
     res, stream = run("spooled", False, 0, data, colr, spooled=True)
     check("spooled (played from MainLoop): the same bytes as printed directly (%d)" % len(direct),
           stream == direct and res == "00aa0000", "%s, %d bytes" % (res, len(stream)))
+    res, stream = run("absent", False, 0, data, colr, absent=True)
+    check("no printer: StartPrint and StopPrint X = DEV_NOT_FOUND, nothing sent, the program goes on",
+          res == "00aa0d0d" and stream == b"", "%s, %d bytes" % (res, len(stream)))
     disk_with(None)
     res, stream = run("frome", False, 0, data, colr)
     check("not on the current drive: loaded from drive E (FindFile's fallback), the same bytes",

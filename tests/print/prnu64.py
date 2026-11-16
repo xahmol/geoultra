@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """GeoUltra's printer drivers on the U64 with the Ultimate's own IEC
-printer (docs/DESIGN.md "Printing"): a test page through GU Epson FX-80
+printer, and GU PDF A4 into GEOULTRA/print (docs/DESIGN.md "Printing";
+the PDF read back with mutool and taken away again): a test page through GU Epson FX-80
 (the printer's Epson emulation, colour PNG) and GU Commodore MPS (its
 Commodore emulation, black and white PNG), each loaded from drive E and
 printed from the desktop through the spooler (recorded a band at a time,
@@ -29,6 +30,7 @@ from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 HOME = "/USB0/GEOULTRA/"
 OUTDIR = "/Usb0/GEOULTRA/test/"
 CFG = "Printer Settings"
+SOFTIEC = "SoftIEC Drive Settings"     # (3.15a: its change reconfigures the bus)
 STUB, BAND, COLR, WORK, NAME, RES, DONE = 0x5000, 0x5200, 0x5480, 0x5500, 0x50C0, 0x50E0, 0x50FF
 FONT = os.path.join(ROOT, "tools", "fonts", "src", "texgyre", "texgyreheros-regular.otf")
 
@@ -118,9 +120,21 @@ def main():
         finally:
             f.quit()
 
-    def setting(key, value):
-        u._req("PUT", "%s/configs/%s/%s?value=%s" % (u.rest, urllib.parse.quote(CFG), urllib.parse.quote(key),
+    def setting(key, value, cat=CFG):
+        u._req("PUT", "%s/configs/%s/%s?value=%s" % (u.rest, urllib.parse.quote(cat), urllib.parse.quote(key),
                                                     urllib.parse.quote(str(value))))
+
+    def config(cat):
+        return json.loads(u._req("GET", "%s/configs/%s" % (u.rest, urllib.parse.quote(cat))))[cat]
+
+    def bus():
+        """Firmware 3.15a applies the printer's on/off only when the IEC
+        processor is set up again (newer firmware does it at once, the
+        firmware's #1083): the SoftIEC drive switched on and off again."""
+        setting("IEC Drive", "Enabled", SOFTIEC)
+        time.sleep(1)
+        setting("IEC Drive", soft["IEC Drive"], SOFTIEC)
+        time.sleep(1)
 
     def run(code, timeout=60):
         """CODE once from MainLoop (appMain), then the done flag; X at RES."""
@@ -175,7 +189,53 @@ def main():
         check("%s: a PNG page from the Ultimate's printer" % driver.decode(), len(new) == 1, new)
         return new[0] if new else None
 
-    before = json.loads(u._req("GET", "%s/configs/%s" % (u.rest, urllib.parse.quote(CFG))))[CFG]
+    def pdf_job():
+        """GU PDF A4: a page into GEOULTRA/print on the Ultimate, read
+        back (mutool), then taken away again."""
+        f = ftp()
+        try:
+            old = set(f.nlst(HOME + "print"))
+        except ftplib.error_perm:
+            old = set()
+        f.quit()
+        img, _ = page(640, 94, "GU PDF A4 on the Ultimate", False)
+        u.write(NAME, b"GU PDF A4\0")
+        x = run(r(0x0E, NAME) + [0xA9, 0, 0x85, 0x02] + jsr(jt["GetFile"]))
+        check("GU PDF A4: loaded from drive E", x == 0, "X=%02X" % x)
+        run(jsr(0x7900))
+        x = run(r(0x04, WORK) + jsr(0x7903))
+        check("GU PDF A4: StartPrint", x == 0, "X=%02X" % x)
+        for band in range(img.height // 8):
+            u.write(BAND, cards(img, band))
+            run(r(0x02, BAND) + r(0x04, WORK) + r(0x06, 0) + jsr(0x7906))
+        x = run(r(0x02, BAND) + r(0x04, WORK) + jsr(0x7909))
+        check("GU PDF A4: StopPrint", x == 0, "X=%02X" % x)
+        new = []
+        end = time.time() + 600                          # the spooler plays it
+        while time.time() < end and not new:
+            time.sleep(10)
+            f = ftp()
+            try:
+                new = sorted(set(f.nlst(HOME + "print")) - old)
+            except ftplib.error_perm:
+                new = []
+            f.quit()
+        time.sleep(15)
+        check("GU PDF A4: a PDF in GEOULTRA/print", len(new) == 1, new)
+        if new:
+            local = os.path.join(shots, "u64-" + new[0].split("/")[-1])
+            data = get(new[0] if new[0].startswith("/") else HOME + "print/" + new[0])
+            open(local, "wb").write(data or b"")
+            import subprocess
+            r2 = subprocess.run(["mutool", "info", local], capture_output=True)
+            check("GU PDF A4: mutool reads it, one page, no repair",
+                  r2.returncode == 0 and b"Pages: 1" in r2.stdout and b"repair" not in r2.stderr,
+                  r2.stderr[:200])
+            print("  " + local)
+            put(new[0] if new[0].startswith("/") else HOME + "print/" + new[0], None)
+
+    before = config(CFG)
+    soft = config(SOFTIEC)
     keep = {n: get(HOME + n) for n in ("SETTINGS.INI", "HIBERNAT.BIN")}
     shots = os.path.join(ROOT, "build", "harness", "print")
     os.makedirs(shots, exist_ok=True)
@@ -186,6 +246,7 @@ def main():
         setting("Output type", "PNG COLOR")
         setting("Emulation", "Epson FX-80/JX-80")
         setting("Output file", OUTDIR + "prn-epson")
+        bus()
         u.boot(crt)
         time.sleep(15)
         img, cols = page(640, 94, "GU Epson FX-80 on the Ultimate", True)
@@ -214,6 +275,7 @@ def main():
         png = job(b"GU Commodore MPS", img, None, "prn-mps")
         if png:
             u.ftp_get(OUTDIR + png, os.path.join(shots, "u64-" + png))
+        pdf_job()
     finally:
         for key, value in before.items():
             try:
@@ -223,8 +285,13 @@ def main():
         for n, d in keep.items():
             put(HOME + n, d)
         check("the user's files back as they were", all(get(HOME + n) == d for n, d in keep.items()), True)
-        now = json.loads(u._req("GET", "%s/configs/%s" % (u.rest, urllib.parse.quote(CFG))))[CFG]
+        try:
+            bus()
+        except OSError:
+            pass
+        now = config(CFG)
         check("the Ultimate's printer settings back", now == before, now)
+        check("its SoftIEC settings back", config(SOFTIEC) == soft, config(SOFTIEC))
         u._req("PUT", u.rest + "/machine:reboot")       # the user's session resumes
     print("prnu64: %s" % ("all passed" if ok else "FAILED"))
     sys.exit(0 if ok else 1)
