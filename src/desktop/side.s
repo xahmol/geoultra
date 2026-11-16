@@ -26,6 +26,7 @@
         .import Into, Document, Ask
         .import path, entryInfo, entryName, cur, count
         .import LoadAll, Save   ; (ovl.s: overlay 4, inifile.s)
+        .import PrnUlt          ; (ovl.s: overlay 6, prnult.s)
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
         .export TaskOpen, Here, Join, work, docName
         .import Open, TaskTake
@@ -52,6 +53,8 @@ sp:             .res 2          ; its section line ("[favourites]")
 ; Called here in turn: an overlay calls no other overlay.
 SideLoad:
         jsr LoadAll
+        jsr PrnUlt              ; (prnult.s: the Ultimate's printer set up
+                                ; for the printer LoadAll named)
         lda wantToolbar         ; (before the theme: its layout follows)
         bmi :+
         sta tbMode

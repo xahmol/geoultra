@@ -384,8 +384,9 @@ APPS_DNP := $(if $(wildcard private/apps.toml),private/geoultra-apps.dnp)
 private/geoultra-apps.dnp: private/apps.toml tools/mkappsdnp.py
 	$(PYTHON) tools/mkappsdnp.py private/apps.toml
 
-deploy: check-deploy build/geoultra64.crt
+deploy: check-deploy build/geoultra64.crt build/geoultra64.cfg
 	curl -s --ftp-create-dirs -T build/geoultra64.crt ftp://$(ULTIP1)$(DEPLOYDIR)
+	curl -s --ftp-create-dirs -T build/geoultra64.cfg ftp://$(ULTIP1)$(DEPLOYDIR)
 
 # The private applications image to the test folder, only on request: it
 # is drive C there, and a new copy replaces what was written to it (the

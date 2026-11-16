@@ -65,6 +65,7 @@ OvlFail:
         Stub SpoolDraw, 5       ; (spool.s: the print queue)
         Stub QueueWin, 5
         Stub SortList, 6        ; overlay 6: sort.s
+        Stub PrnUlt, 6          ; (prnult.s: the Ultimate's printer set up)
         Stub Popup, 7           ; overlay 7: ctxmenu.s
         Stub Info, 7
         Stub About, 7           ; (geos > GeoUltra info)

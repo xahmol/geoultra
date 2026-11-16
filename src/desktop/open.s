@@ -17,7 +17,7 @@
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
         .import cur, count, path, Redraw, RecentAdd, Mount, Leave, SideArrows
         .export Open, Up, Drive, Into, Document, Back
-        .import HistAdd, IsImage, Error, UsePrinter
+        .import HistAdd, IsImage, Error, UsePrinter, PrnUlt
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
 ST_LD_DATA      = $80
@@ -69,8 +69,9 @@ Open:   lda count               ; (an empty folder: nothing)
         cmp #DESK_ACC
         beq Program
         cmp #PRINTER_FILE       ; a printer driver: the printer from now
-        bne :+                  ; (inifile.s; as GEOS 2.0's deskTop)
-        jmp UsePrinter
+        bne :+                  ; (inifile.s; as GEOS 2.0's deskTop), the
+        jsr UsePrinter          ; Ultimate's printer set up for it
+        jmp PrnUlt              ; (prnult.s)
 :       jmp Document            ; (any other GEOS file: a document)
 @end:   rts
 @enter: lda #<entryName

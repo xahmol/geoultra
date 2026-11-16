@@ -4,9 +4,8 @@
 ; drivers on drive E (GU Epson FX-80, GU Commodore MPS, GU PDF A4, GU PDF
 ; Letter), as SETTINGS.INI's [desktop] printer= (the name the desktop
 ; puts into PrntFilename at its start; src/desktop/inifile.s); a note
-; that the Ultimate's SoftIEC drive and printer must be on and its
-; emulation must match the first two (firmware 3.15a: the printer works
-; only with the SoftIEC drive on, found 2026-11-16), and
+; that for the first two the desktop switches on the Ultimate's SoftIEC
+; drive and printer and sets the emulation (src/desktop/prnult.s), and
 ; where PDF files go; the printer in use now (PrntFilename: also a
 ; driver of the user's own, chosen in the desktop). Own design and code.
 
@@ -87,9 +86,9 @@ NoteLo: .byte <N1, <N2, <N3, <N4
 NoteHi: .byte >N1, >N2, >N3, >N4
 NoteY:  .byte NOTE_Y, NOTE_Y + NOTE_DY, NOTE_Y + 2 * NOTE_DY, NOTE_Y + 3 * NOTE_DY
 NOTES   = * - NoteY
-N1:     .byte "Epson, MPS: on the Ultimate (menu), switch on", 0
-N2:     .byte "the SoftIEC drive and the printer, emulation", 0
-N3:     .byte "FX-80/JX-80 or Commodore MPS to match.", 0
+N1:     .byte "Epson, MPS: GeoUltra switches on the", 0
+N2:     .byte "Ultimate's SoftIEC drive and printer and", 0
+N3:     .byte "sets its emulation (not saved there).", 0
 N4:     .byte "PDF: a file in GEOULTRA/print on the Ultimate.", 0
 LInUse: .byte "In use: ", 0
 SDesktop:       .byte "desktop", 0
