@@ -1,7 +1,8 @@
 ; GeoUltra Desktop: opening (docs/DESKTOP.md). Open: the
 ; cursor's entry (RETURN, a double click): a folder or drive entered
 ; (FE_CD), an application started in the desktop's place, a desk
-; accessory run (it comes back: the screen drawn again). Up (cursor
+; accessory run (it comes back: the screen drawn again), a printer
+; driver made the printer (inifile.s UsePrinter). Up (cursor
 ; left): the parent folder. Drive (a click on a sidebar line): that
 ; drive's root. Programs start as gush starts them (gush's prog.s, own
 ; code): FE_SELECT makes their drive and folder current, GetFile by the
@@ -16,7 +17,7 @@
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
         .import cur, count, path, Redraw, RecentAdd, Mount, Leave, SideArrows
         .export Open, Up, Drive, Into, Document, Back
-        .import HistAdd, IsImage, Error
+        .import HistAdd, IsImage, Error, UsePrinter
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
 ST_LD_DATA      = $80
@@ -67,7 +68,10 @@ Open:   lda count               ; (an empty folder: nothing)
         beq Program
         cmp #DESK_ACC
         beq Program
-        jmp Document            ; (any other GEOS file: a document)
+        cmp #PRINTER_FILE       ; a printer driver: the printer from now
+        bne :+                  ; (inifile.s; as GEOS 2.0's deskTop)
+        jmp UsePrinter
+:       jmp Document            ; (any other GEOS file: a document)
 @end:   rts
 @enter: lda #<entryName
         ldx #>entryName

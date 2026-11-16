@@ -6,9 +6,10 @@
 ; written as a temporary file that then takes the old one's place, its
 ; other lines kept (its section moves to the end), as gush's turbo -s
 ; does (sysset.s). Without an Ultimate (VICE) nothing is read or
-; written. The [desktop] keys: theme=, view=, clock=, toolbar=, panes=
-; (DeskRead, the *Save routines). Calls only the core (side.s's Setup, Slot, the
-; file engine). Own code.
+; written. The [desktop] keys: theme=, view=, clock=, toolbar=, panes=,
+; printer= (DeskRead, the *Save routines, UsePrinter). Calls only the
+; core (side.s's Setup, Slot, the file engine, errors.s's Error). Own
+; code.
 
         .include "geos.inc"
         .include "desktop.inc"
@@ -17,13 +18,15 @@
         .import panes, wantPanes, sortMode, deskPrefs
         .import wantTheme, wantView, wantToolbar, curName, clockMode, viewMode, tbMode
         .importzp sp
+        .import entryName, Error
         .export Ov_LoadAll, Ov_Save, Ov_ThemeSave, Ov_ViewSave, Ov_ClockSave, Ov_ToolbarSave
-        .export Ov_PanesSave, Ov_PanesKeep, Ov_SortSave
+        .export Ov_PanesSave, Ov_PanesKeep, Ov_SortSave, Ov_UsePrinter
 Ov_LoadAll = LoadAll            ; (the stubs in ovl.s, overlay 4)
 Ov_Save = Save
 Ov_ThemeSave = ThemeSave
 Ov_ViewSave = ViewSave
 Ov_ClockSave = ClockSave
+Ov_UsePrinter = UsePrinter
 Ov_ToolbarSave = ToolbarSave
 Ov_PanesSave = PanesSave
 Ov_PanesKeep = PanesKeep
@@ -425,7 +428,14 @@ Out:    lda #FE_WRITE
 ; view (VIEW_*, $FF: none), clockMode = the clock (when named). The core
 ; then uses the theme (overlay 1: an overlay calls no other).
 DeskRead:
-        lda #0
+        lda PrntFilename        ; no printer yet: GU Epson FX-80 (drive E;
+        bne :+                  ; docs/DESIGN.md "Printing"), unless
+        ldx #DEF_PRN_LEN        ; printer= names another
+@def:   lda DefPrinter,x
+        sta PrntFilename,x
+        dex
+        bpl @def
+:       lda #0
         sta wantTheme
         lda #$FF
         sta wantView
@@ -535,6 +545,19 @@ DeskRead:
         lda deskPrefs
         ora #PREF_PLAIN
         sta deskPrefs
+:       ldx #KEY_PRINTER        ; printer= (a printer driver's name, to its
+        jsr KeyVal              ; line's end): PrntFilename
+        bcs :+
+        ldy #0
+@pn:    lda (r0),y
+        cmp #' '
+        bcc @pz
+        sta PrntFilename,y
+        iny
+        cpy #16
+        bcc @pn
+@pz:    lda #0
+        sta PrntFilename,y
 :       ldx #KEY_PANE2          ; the other pane's folder, into its state
         jsr KeyVal             ; in the REU (list.s's PaneInit gave it "/"
         bcs @end                ; before this; the user, 2026-11-12: two
@@ -711,6 +734,28 @@ SortSave:
         sta r1H
         ldx #KEY_SORT
         jmp SetLine
+; UsePrinter (open.s: a printer driver opened, also from the context
+; menu's "use as printer"): entryName the printer (PrntFilename, which
+; applications load), kept as SETTINGS.INI's [desktop] printer= (when
+; it can be written), the note that it is.
+UsePrinter:
+        ldy #0
+:       lda entryName,y
+        sta PrntFilename,y
+        beq :+
+        iny
+        cpy #16
+        bcc :-
+        lda #0
+        sta PrntFilename,y
+:       lda #<PrntFilename
+        sta r1L
+        lda #>PrntFilename
+        sta r1H
+        ldx #KEY_PRINTER
+        jsr SetLine
+        ldx #ERR_PRINTER
+        jmp Error
 ClockSave:
         lda clockMode
         ldx #KEY_CLOCK
@@ -941,10 +986,11 @@ KEY_SORT        = 6
 KEY_COPY        = 7
 KEY_DEL         = 8
 KEY_ICOLS       = 9
+KEY_PRINTER     = 10
 KeyLo:  .byte <KTheme, <KView, <KClock, <KToolbar, <KPanes, <KPane2, <KSort, <KCopy, <KDel
-        .byte <KIcols
+        .byte <KIcols, <KPrinter
 KeyHi:  .byte >KTheme, >KView, >KClock, >KToolbar, >KPanes, >KPane2, >KSort, >KCopy, >KDel
-        .byte >KIcols
+        .byte >KIcols, >KPrinter
 SDesk:          .byte "desktop", 0
 STime:          .byte "time", 0
 KAdjust:        .byte "adjust", 0
@@ -958,6 +1004,9 @@ KSort:          .byte "sort", 0
 KCopy:          .byte "copy", 0
 KDel:           .byte "delete", 0
 KIcols:         .byte "iconcolours", 0
+KPrinter:       .byte "printer", 0
+DefPrinter:     .byte "GU Epson FX-80", 0
+DEF_PRN_LEN     = * - DefPrinter - 1
 First:                                  ; a value's first character
 ViewFirst:      .byte "lid", 0          ; list, icons, detailed
 ClockFirst:     .byte "21o", 0          ; 24, 12, off

@@ -46,7 +46,8 @@ NAME_SHOWN      = 26            ; Info's name: its first characters (bold,
 ; item clicked (0 to ITEMS_N - 1), NONE when it was closed without one
 ; (a click outside it, RUN/STOP, ESC or the right button again). Runs
 ; its own loop (MainLoop waits meanwhile). Destroys A, X, Y, r0-r11.
-Popup:  lda dispBufferOn         ; (drawn on the foreground only: the
+Popup:  jsr IsPrinter
+        lda dispBufferOn         ; (drawn on the foreground only: the
         sta bufSave             ; background keeps the desktop, which
         lda #ST_WR_FORE         ; Recover gives back)
         sta dispBufferOn
@@ -179,6 +180,27 @@ BoxRegs:
         sta r4H
         rts
 
+; IsPrinter: isPrn $80 when the cursor's entry is a printer driver
+; (its "open" item reads "use as printer"), else 0.
+IsPrinter:
+        lda #0
+        sta isPrn
+        lda count
+        ora count+1
+        beq @end
+        lda cur
+        ldx cur+1
+        jsr Fetch
+        lda entryInfo + FI_KIND
+        cmp #K_GEOS
+        bne @end
+        lda entryInfo + FI_GTYPE
+        cmp #PRINTER_FILE
+        bne @end
+        lda #$80
+        sta isPrn
+@end:   rts
+
 ; ItemText: item `at`'s text in its place.
 ItemText:
         lda at
@@ -197,7 +219,15 @@ ItemText:
         sta r0L
         lda TextHi,x
         sta r0H
-        jmp PutString
+        txa                     ; a printer driver's "open": "use as
+        bne :+                  ; printer" (what Open does with it)
+        bit isPrn
+        bpl :+
+        lda #<TPrinter
+        sta r0L
+        lda #>TPrinter
+        sta r0H
+:       jmp PutString
 
 ; ItemTop: A = item A's top pixel row (y0 + 1 + A * ITEM_H).
 ItemTop:
@@ -836,6 +866,8 @@ PowHi:  .byte >10000, >1000, >100, >10
 TextLo: .byte <T0, <TN, <T1, <T2, <T3, <T4, <T5, <T6, <T7, <T8, <T9, <T10
 TextHi: .byte >T0, >TN, >T1, >T2, >T3, >T4, >T5, >T6, >T7, >T8, >T9, >T10
 T0:     .byte "open", 0
+TPrinter:
+        .byte "use as printer", 0
 TN:     .byte "open in new task", 0
 T1:     .byte "copy", 0
 T2:     .byte "cut", 0
@@ -918,6 +950,7 @@ at:     .res 1
 hover:  .res 1
 which:  .res 1
 bufSave:        .res 1
+isPrn:  .res 1                  ; IsPrinter: $80 a printer driver
 tmpX:   .res 1
 tmpY:   .res 1
 numL:   .res 1

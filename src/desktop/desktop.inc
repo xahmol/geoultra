@@ -78,6 +78,7 @@ FE_NO_TASK      = $53           ; (engine.inc: no task slot free)
 ERR_IMAGE       = $60           ; the desktop's own: a disk image onto A-D
 ERR_REU         = $61           ; a disk image gone into: no room in the REU
 ERR_INIMG       = $62           ; a program or document inside a disk image
+ERR_PRINTER     = $63           ; (no error: a printer driver chosen)
                                 ; refused (tree.s, errors.s)
 
 ; Layout (docs/DESKTOP.md, "Screen"), the entry name, dialogs, modifiers

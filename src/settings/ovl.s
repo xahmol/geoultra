@@ -1,7 +1,7 @@
 ; GeoUltra Settings: overlays (docs/SETTINGS.md, "Structure"). The
 ; application is a VLIR file: record 0 the core at $0400-$4FFF, records
 ; 1 to OVL_N one page each at TRANS ($5000-$5FFF): 1 the Desktop page
-; (pdesk.s), 2 the Pointer page (pptr.s), 3 the System page (psys.s), 4 the Time page (ptime.s), 5 the Theme page (ptheme.s);
+; (pdesk.s) and the Printing page (pprint.s), 2 the Pointer page (pptr.s), 3 the System page (psys.s), 4 the Time page (ptime.s), 5 the Theme page (ptheme.s);
 ; the other pages follow in their steps. The loader and
 ; OvlGo are ovlcore.inc (shared with gush and the desktop); this file
 ; names the bank and the stubs. Own code.
@@ -26,6 +26,8 @@ OvlFail:
 
         Stub DeskDraw, 1        ; overlay 1: pdesk.s
         Stub DeskPress, 1
+        Stub PrintDraw, 1       ; (pprint.s, the Printing page)
+        Stub PrintPress, 1
         Stub PtrDraw, 2         ; overlay 2: pptr.s
         Stub PtrPress, 2
         Stub SysDraw, 3         ; overlay 3: psys.s

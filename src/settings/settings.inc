@@ -39,9 +39,9 @@ BUTTON_LINE     = 176           ; the line above the buttons (the buttons'
 BUTTON_Y        = 180           ; the buttons' top
 SCREEN_RIGHT    = 319
 PAGE_CARD       = PAGE_LEFT / 8 ; the page's first card (11: x 88)
-PAGES_N         = 8             ; Theme, Desktop, System, Time, Drives,
-                                ; REU, Pointer (PAGE_*; the user,
-                                ; 2026-11-12: Time its own page)
+PAGES_N         = 9             ; Theme, Desktop, System, Time, Drives,
+                                ; REU, Pointer, Start, Printing (PAGE_*;
+                                ; the user, 2026-11-12: Time its own page)
 PAGE_THEME      = 0
 PAGE_DESKTOP    = 1
 PAGE_SYSTEM     = 2
@@ -50,6 +50,7 @@ PAGE_DRIVES     = 4
 PAGE_REU        = 5
 PAGE_POINTER    = 6
 PAGE_START      = 7             ; auto-exec files at the cold start (pstart.s)
+PAGE_PRINT      = 8             ; the printer (pprint.s)
 
 ; The INI text (src/inc/ini.inc): SETTINGS.INI whole, at most 2048 bytes
 ; as the desktop and gush read it

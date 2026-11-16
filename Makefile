@@ -568,6 +568,7 @@ test-settings: all
 	$(PYTHON) tests/settings/s4.py
 	$(PYTHON) tests/settings/s6.py
 	$(PYTHON) tests/settings/s7.py
+	$(PYTHON) tests/settings/s8.py
 
 # GeoUltra's own desktop (docs/DESKTOP.md): VICE; test-desktop-u64 on the
 # U64 (SETTINGS.INI desktop=geoultra, made and deleted again).
@@ -593,6 +594,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d24.py
 	$(PYTHON) tests/desktop/d25.py
 	$(PYTHON) tests/desktop/d26.py
+	$(PYTHON) tests/desktop/d27.py
 	$(PYTHON) tests/spool/sp1.py
 	$(PYTHON) tests/spool/sp2.py
 	$(PYTHON) tests/spool/sp3.py

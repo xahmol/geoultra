@@ -707,6 +707,17 @@ colour is a property of an element, by name:
   opened again after each button and when the queue changes while it
   is open (its own appMain, QTick), so it follows the queue; the
   indicator with it. Test: d26.py (VICE, 10 checks).
+- **Choosing the printer (2026-11-16; docs/DESIGN.md "Printing", the
+  user's decisions):** at its start the desktop puts SETTINGS.INI's
+  `[desktop] printer=` into PrntFilename ($8465, the name applications
+  load the driver by), or GU Epson FX-80 (drive E) when none was ever
+  chosen. Opening a printer driver (a double click, RETURN) makes it the
+  printer, as GEOS 2.0's deskTop did: PrntFilename and `printer=` set,
+  a note "<name> is the printer now." (inifile.s UsePrinter, overlay
+  4); the context menu's first item reads "use as printer" for a
+  printer driver (it runs the same Open). Settings' Printing page sets
+  it too. Applications find the driver on their own drive or on drive
+  E (GetFile falls back to E). Test: d27.py (VICE, 6 checks).
 - **Next, in this order:** two
   panes (the user, 2026-11-11: after the context menu, as both are about
   moving files between places); the settings tool (the theme editor,
