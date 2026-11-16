@@ -32,7 +32,7 @@
         .export imgFlags, imgBank, imgType, imgTracks, uTouch, autoIdx
         .import taskName
 NAME_LEN        = 13            ; (task.s: taskName's length)
-        .import OvlCall, FindFTypes, FindFile
+        .import OvlCall, FindFTypes, FindFile, MoveData
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
 HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
@@ -177,12 +177,14 @@ OvFTypes:
         jsr Enter
         jsr FindFTypes
         jsr Leave
+        lda ftAll               ; (an application's list only)
+        beq @ok
         lda r7L
         cmp #DESK_ACC
-        bne @ok
-        lda ftAll
-        beq @ok
+        bne @font
         jsr EFirst
+        jmp @ok
+@font:  jsr Once                ; fonts: one entry per ID (module 116)
 @ok:    ldx #0
 @end:   ldy #0                  ; (no list pending after this search)
         sty ftCount
@@ -190,6 +192,8 @@ OvFTypes:
 
 EFirst: jsr OvlCall             ; (rootmerge.s, module 17: room)
         .byte 17, 6
+Once:   jsr OvlCall             ; (module 116: E's fonts whose ID the
+        .byte 116, 0            ; user's already have taken out)
 
 ; OvFindFile (FindFile failed with FILE_NOT_FOUND): the name in drive E's
 ; directory; found there as a desk accessory or font, X = 0 with
@@ -391,5 +395,190 @@ OvRunSys:
         sta r0L
         jmp LdApplic
 @end:   rts
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL116"
+        .scope Mod116
+
+        jmp Once                ; entry 0 (module 15, OvFTypes)
+
+        .include "sysenter.inc"
+
+GetBlock        = $C1E4         ; GEOS jump table
+FONT_ID         = $80           ; a font file's header: its ID (word)
+ENTRY           = 17            ; FindFTypes: a name and its zero
+MAXN            = 15            ; names the list can hold
+; In the overlay scratch (Enter and Leave are overlay calls: this
+; module's own bytes come back new after them; no engine call meanwhile)
+fids            = $9F70         ; the user's fonts' IDs (MAXN words)
+nUser           = $9F90         ; the user's fonts in the list
+nE              = $9F91         ; drive E's still to look at
+at              = $9F92         ; the entry looked at
+fid             = $9F93         ; (word) IdOf's answer ($FFFF: none)
+save6           = $9F95         ; (word) the caller's r6
+save7           = $9F97         ; (word) the caller's r7
+        .assert save7 + 2 <= $9FA0, error, "module 116: scratch into HP"
+
+; Once (an application's font list just got drive E's fonts: ftStart
+; the list, ftAll the names that fitted, ftLeft those left before E's
+; search, r7H after it): E's fonts whose font ID one of the user's
+; fonts in the list already has are taken out, the list closed up (the
+; user's decision 2026-11-15: one entry per ID, the user's own; e.g.
+; their LW_Roma, ID 27, hides GU Serif). r6 and r7H as if those had not
+; been found; r0-r5 destroyed (FindFTypes destroys them too).
+Once:   lda r6L
+        sta save6
+        lda r6H
+        sta save6+1
+        lda r7L
+        sta save7
+        lda r7H
+        sta save7+1
+        lda ftAll
+        sec
+        sbc ftLeft
+        sta nUser
+        beq @end
+        cmp #MAXN + 1
+        bcs @end
+        lda ftLeft
+        sec
+        sbc r7H
+        sta nE
+        beq @end
+        lda #0                  ; the user's fonts' IDs
+        sta at
+@user:  jsr IdOf
+        lda at
+        asl a
+        tax
+        lda fid
+        sta fids,x
+        lda fid+1
+        sta fids+1,x
+        inc at
+        lda at
+        cmp nUser
+        bcc @user
+@e:     jsr Enter               ; drive E's, one by one
+        jsr IdOf
+        jsr Leave
+        ldx nUser
+@cmp:   dex
+        bmi @keep
+        txa
+        asl a
+        tay
+        lda fid
+        cmp fids,y
+        bne @cmp
+        lda fid+1
+        cmp fids+1,y
+        bne @cmp
+        cmp #$FF                ; (both unknown: kept)
+        beq @keep
+        jsr Remove
+        jmp @next
+@keep:  inc at
+@next:  dec nE
+        bne @e
+@end:   lda save6
+        sta r6L
+        lda save6+1
+        sta r6H
+        lda save7
+        sta r7L
+        lda save7+1
+        sta r7H
+        rts
+
+; At: r0 = entry at of the list (ftStart + at * 17). Destroys A.
+At:     lda ftStart
+        sta r0L
+        lda ftStart+1
+        sta r0H
+        ldx at
+        beq @end
+@add:   clc
+        lda r0L
+        adc #ENTRY
+        sta r0L
+        bcc :+
+        inc r0H
+:       dex
+        bne @add
+@end:   rts
+
+; IdOf: fid = the font ID of the font named by entry at, from its header
+; block on the current drive (FindFile, GetBlock into diskBlkBuf); $FFFF
+; when it cannot be read.
+IdOf:   lda #$FF
+        sta fid
+        sta fid+1
+        jsr At
+        lda r0L
+        sta r6L
+        lda r0H
+        sta r6H
+        jsr FindFile
+        txa
+        bne @end
+        lda dirEntryBuf + OFF_GHDR_PTR
+        sta r1L
+        lda dirEntryBuf + OFF_GHDR_PTR + 1
+        sta r1H
+        lda #<diskBlkBuf
+        sta r4L
+        lda #>diskBlkBuf
+        sta r4H
+        jsr GetBlock
+        txa
+        bne @end
+        lda diskBlkBuf + FONT_ID
+        sta fid
+        lda diskBlkBuf + FONT_ID + 1
+        sta fid+1
+@end:   rts
+
+; Remove: entry at taken out, the ones after it (nE - 1 of drive E's)
+; moved up; the caller's r6 back by an entry, r7H one more.
+Remove: jsr At
+        lda r0L                 ; r1 = this entry, r0 = the next
+        sta r1L
+        clc
+        adc #ENTRY
+        sta r0L
+        lda r0H
+        sta r1H
+        adc #0
+        sta r0H
+        ldx nE                  ; length: (nE - 1) * 17
+        lda #0
+        sta r2L
+        sta r2H
+@len:   dex
+        beq @move
+        clc
+        lda r2L
+        adc #ENTRY
+        sta r2L
+        bcc @len
+        inc r2H
+        bne @len
+@move:  lda r2L
+        ora r2H
+        beq :+
+        jsr MoveData
+:       sec
+        lda save6
+        sbc #ENTRY
+        sta save6
+        bcs :+
+        dec save6+1
+:       inc save7+1
+        rts
 
         .endscope

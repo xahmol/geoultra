@@ -524,8 +524,9 @@ build/fonts/.done: tools/mkgufonts.py tools/mkgeosfont.py $(FONTSRCS)
 	$(PYTHON) tools/mkgufonts.py build/fonts
 	@touch $@
 
-test-fonts:
+test-fonts: all
 	$(PYTHON) tests/fonts/mkgeosfont_test.py
+	$(PYTHON) tests/fonts/fontlist.py
 
 # The GEOS 2.0 deskTop with a 1581 drive A (the driver called between
 # InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).

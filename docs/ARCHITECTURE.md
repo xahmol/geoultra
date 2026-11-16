@@ -565,6 +565,13 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
   drive A for "GEOULTRA SYSTEM" and asked for that disk).
   - `FindFTypes` ends in `SysFTypes`: for `DESK_ACC` and `FONT` with room
     left, it runs once more on E into the rest of the caller's buffer.
+    For an application's font list (2026-11-16) module 116 then reads
+    the font ID of each font in it (FindFile, the header block's `$80`)
+    and takes out E's fonts whose ID one of the drive's own fonts has:
+    one entry per ID, the user's (their LW_Roma, ID 27, hides GU Serif).
+    Its state is in the overlay scratch (`$9F70-$9F98`): Enter and Leave
+    are overlay calls. A place freed so stays empty (E's search already
+    stopped at the list's limit).
   - `SysFindFile`: `FindFile`, and when the name is not found, E's
     directory; a desk accessory or font found there is returned (entry
     with E's high tracks). Used by `FindFile` from the jump table
