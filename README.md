@@ -90,6 +90,26 @@ no GEOS software.
 GNU GPL v3. GEOS is a trademark of its owners; GeoUltra contains no
 Berkeley Softworks code.
 
+### Fonts
+
+GeoUltra's own GEOS fonts ("GU Serif", "GU Sans", ...; `make fonts`,
+`tools/mkgufonts.py`) are drawn from two free sources, kept in
+`tools/fonts/src` with their licences:
+
+- the TeX Gyre fonts by Bogusław Jackowski and Janusz M. Nowacki (GUST
+  e-foundry), under the GUST Font Licence (`tools/fonts/src/texgyre/`,
+  `GUST-FONT-LICENSE.txt` and the README of each family). GeoUltra's
+  fonts are changed versions (rendered as GEOS bitmap fonts, hand fixes)
+  and carry their own names;
+- the X Window System's 75-dpi bitmap fonts by Adobe Systems and Digital
+  Equipment Corporation (`tools/fonts/src/adobe75/`, their copyright and
+  permission notice in `COPYRIGHT.txt`), whose shapes are used at 10-14
+  points.
+
+Times, Helvetica, Palatino, New Century Schoolbook, ITC Avant Garde, ITC
+Bookman and ITC Zapf Chancery are trademarks of their owners; GeoUltra's
+fonts follow their metrics but are not those fonts.
+
 ## Use of AI
 
 GeoUltra is developed with AI. Xander Mol takes the decisions (what

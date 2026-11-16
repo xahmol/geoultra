@@ -40,7 +40,7 @@ REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 DEPLOYDIR = /SD/idi8b/geoultra/
 
-.PHONY: all checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -515,6 +515,17 @@ build/uciprobe.bin: tests/engine/uciprobe.s tests/engine/uciprobe.cfg src/inc/uc
 # GEOS_APPS_DISK); screens in build/harness/sysfont-*.png.
 test-sysfont: all
 	$(PYTHON) tests/drives/sysfont.py
+
+# GeoUltra's own GEOS fonts (docs/DESIGN.md "Fonts"): build/fonts/*.cvt
+# from the copies in tools/fonts/src (TeX Gyre, Adobe 75-dpi bitmaps).
+FONTSRCS = $(wildcard tools/fonts/src/*/*) $(wildcard tools/fonts/gu*_fix.py)
+fonts: build/fonts/.done
+build/fonts/.done: tools/mkgufonts.py tools/mkgeosfont.py $(FONTSRCS)
+	$(PYTHON) tools/mkgufonts.py build/fonts
+	@touch $@
+
+test-fonts:
+	$(PYTHON) tests/fonts/mkgeosfont_test.py
 
 # The GEOS 2.0 deskTop with a 1581 drive A (the driver called between
 # InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).

@@ -121,7 +121,30 @@ def load_pcf(pattern, size):
     data = open(path, "rb").read()
     if path.endswith(".gz"):
         data = gzip.decompress(data)
-    return PcfFontFile.PcfFontFile(io.BytesIO(data))
+
+    class Pcf(PcfFontFile.PcfFontFile):
+        # PIL 10's _load_encoding indexes the offsets by the character
+        # code, not by code - first column: a font whose table starts at
+        # 32 (Adobe's Symbol) came out shifted by 32. Corrected here for
+        # codes 0-255: row 0 of a 16-bit table (the ISO 10646 fonts), or
+        # the only row of an 8-bit one; own code.
+        def _load_encoding(self):
+            fp, _, i16, _ = self._getformat(PcfFontFile.PCF_BDF_ENCODINGS)
+            first_col, last_col = i16(fp.read(2)), i16(fp.read(2))
+            first_row, last_row = i16(fp.read(2)), i16(fp.read(2))
+            i16(fp.read(2))                         # (the default character)
+            cols = last_col - first_col + 1
+            n = cols * (last_row - first_row + 1)
+            offsets = [i16(fp.read(2)) for _ in range(n)]
+            encoding = [None] * 256
+            row = 0 if first_row <= 0 <= last_row else first_row
+            for code in range(first_col, min(last_col, 255) + 1):
+                off = offsets[(row - first_row) * cols + code - first_col]
+                if off != 0xFFFF:
+                    encoding[code] = off
+            return encoding
+
+    return Pcf(io.BytesIO(data))
 
 
 PLACE = "centre"                                # (or "left": tests)
