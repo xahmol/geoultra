@@ -18,11 +18,16 @@ gush = "../build/gush"
 cmds = "../build/cmds"
 desktop = "../build/desktop"
 settings = "../build/settings"
+fonts = "../build/fonts"
 
 [[folder]]
 path = ""
 files = ["tools:geofolder.cvt", "gush:gush.cvt", "desktop:desktop.cvt", "settings:settings.cvt",
-         "tools:splash.cvt"]
+         "tools:splash.cvt",
+         # GeoUltra's own fonts (docs/DESIGN.md "Fonts", make fonts)
+         "fonts:guserif.cvt", "fonts:gusans.cvt", "fonts:gusymbol.cvt", "fonts:gumono.cvt",
+         "fonts:gugeometric.cvt", "fonts:gubook.cvt", "fonts:gunarrow.cvt", "fonts:guschool.cvt",
+         "fonts:guclassic.cvt", "fonts:guscript.cvt"]
 
 [[folder]]
 path = "bin"

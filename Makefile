@@ -63,7 +63,7 @@ checkcfg: check-deploy
 # geos-oscar64's geosapp.py (0.1.2 or later: it pads desk accessories to
 # whole blocks), written to a D64 with VICE's c1541.
 SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt \
-           build/settings/settings.cvt build/tools/splash.cvt
+           build/settings/settings.cvt build/tools/splash.cvt build/fonts/.done
 
 build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	@mkdir -p build/tools
