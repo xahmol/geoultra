@@ -16,6 +16,8 @@ def parse(data):
     (x, y) dots), text (bytes printed as characters, CR as "\\r", FF as
     "\\f"), unknown, nlq (on at the end)."""
     pages, dots, text, unknown = [], set(), bytearray(), []
+    mark = 0                            # text since the last page
+
     x = y = 0
     bim = nlq = False
 
@@ -47,11 +49,13 @@ def parse(data):
             y += 21 if bim else 36
             x = 0
             text += b"\r"
-        elif b == 0x0C:
-            pages.append(dots)
+        elif b == 0x0C:                 # (an empty page: nothing, as the
+            if dots or any(c not in b"\r\f" for c in text[mark:]):   # firmware)
+                pages.append(dots)
+                text += b"\f"
+            mark = len(text)
             dots = set()
             x = y = 0
-            text += b"\f"
         elif b >= 0x20:
             bim = False
             text.append(b)

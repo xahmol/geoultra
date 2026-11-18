@@ -15,6 +15,8 @@ def parse(data):
     (a list of pages), text (the printed characters), unknown (bytes or
     commands not expected), emphasised (ESC E seen)."""
     pages, dots, text, unknown = [], {}, [], []
+    mark = 0                            # text since the last page
+
     x = y = 0
     ink = 0
     emph = False
@@ -63,11 +65,13 @@ def parse(data):
             x = 0
             text.append("\n")
             i += 1
-        elif b == 0x0C:
-            pages.append(dots)
+        elif b == 0x0C:                 # (an empty page: nothing, as the
+            if any(dots.values()) or any(c not in "\r\n\f" for c in text[mark:]):   # firmware)
+                pages.append(dots)
+                text.append("\f")
+            mark = len(text)
             dots = {}
             x = y = 0
-            text.append("\f")
             i += 1
         elif 0x20 <= b < 0x7F:
             text.append(chr(b))

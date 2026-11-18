@@ -105,7 +105,13 @@ StartASCII:
         sta (wb),y
         jsr Open
         bcs Ret                 ; (no printer: the error, nothing open)
-        jmp Close
+        lda #FF                 ; a clean page first: the Ultimate's
+        jsr Put                 ; printer writes nothing for an empty
+        jmp Close               ; page, and a page left over from a job
+                                ; that never ended (a reset, a power-off)
+                                ; comes out on its own instead of under
+                                ; this one (1541ultimate mps_printer.cc
+                                ; FormFeed; the user's U64, 2026-11-18)
 
 ; StopPrint (r1 the work buffer): the rows still waiting printed (paper
 ; under them), bit image off, FF; X as StartPrint.
