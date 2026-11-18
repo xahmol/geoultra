@@ -5,6 +5,7 @@
     gwtool.py convert IMAGE OUT [NAME ...] [--fonts]
     gwtool.py merge IMAGE OUT NEWNAME NAME [NAME ...] [--fonts] [--start=N]
     gwtool.py docx IMAGE OUT.docx NAME [NAME ...] [--page-breaks=records] [--start=N]
+    gwtool.py fromdocx IN.docx OUT NAME [--wide]
 
 IMAGE is a D64, D71, D81 or DNP (a name may carry a DNP folder,
 "Writing/Letter"). OUT is a folder (CVT files written there) or a new
@@ -19,6 +20,10 @@ document's first page number (geoWrite's header, 1 by default).
 `docx` writes the document (several: joined first, as `merge`) as a
 Word document (tools/gwdocx.py); --page-breaks=records starts each
 geoWrite page on a new Word page (else only geoWrite's own page breaks).
+`fromdocx` makes a geoWrite 2.x document NAME from a Word document
+(tools/docxgw.py) in OUT (as above); --wide: 8 inches of text width
+instead of 6. Open it once in geoWrite and choose file > update, which
+lays the pages out again.
 
 What a conversion does (geoWrite 1.x "Write Image V1.x" to 2.x, as
 geoWrite 2.1 itself converts a document when it opens one; observed by
@@ -201,6 +206,56 @@ def build(name, parts, warn):
     return GeoFile(bytes(entry), bytes(header), None, records)
 
 
+# The new document's icon (own drawing): a page with a folded corner and
+# lines of text, 24 x 21 dots.
+ICON = [
+    "  #################     ",
+    "  #              # #    ",
+    "  #              #  #   ",
+    "  #              #   #  ",
+    "  #  #########   ######  ",
+    "  #                  #  ",
+    "  #  ##############  #  ",
+    "  #                  #  ",
+    "  #  ###########     #  ",
+    "  #                  #  ",
+    "  #  ##############  #  ",
+    "  #                  #  ",
+    "  #  #############   #  ",
+    "  #                  #  ",
+    "  #  ##############  #  ",
+    "  #                  #  ",
+    "  #  ########        #  ",
+    "  #                  #  ",
+    "  #                  #  ",
+    "  ####################  ",
+    "                        ",
+]
+
+
+def new_header(head_h, foot_h, info):
+    """A geoWrite 2.x document's file header block (256 bytes)."""
+    h = bytearray(256)
+    h[1] = 0xFF
+    h[2:5] = bytes([3, 21, 0x80 + 63])
+    for y, row in enumerate(ICON):
+        row = row[:24].ljust(24)
+        for xc in range(3):
+            b = 0
+            for bit in range(8):
+                if row[xc * 8 + bit] == "#":
+                    b |= 0x80 >> bit
+            h[5 + y * 3 + xc] = b
+    h[0x44:0x4D] = bytes([0x83, 7, 1, 0, 0, 0xFF, 0xFF, 0, 0])
+    h[0x4D:0x61] = b"Write Image V2.0".ljust(20, b"\0")
+    h[0x75:0x89] = b"geoWrite    V2.1".ljust(20, b"\0")
+    h[0x89:0x92] = bytes([1, 0, 0]) + head_h.to_bytes(2, "little") + foot_h.to_bytes(2, "little") \
+        + PAGE_HEIGHT.to_bytes(2, "little")
+    t = info.encode("ascii")[:95]
+    h[0xA0:0xA0 + len(t)] = t
+    return bytes(h)
+
+
 def write_cvt(gf, path):
     """A CVT (the layout c1541 -geoswrite reads, as tools/vlircvt.py)."""
     sig = bytearray(gf.entry[:30]) + b"PRG formatted GEOS file V1.0"
@@ -294,6 +349,34 @@ def main(argv):
             pics = sum(1 for r in gf.records[PIC_FIRST:] if r not in (None, "end"))
             print("%-24s V%s  %2d page(s)%s" % (name, version(gf), len(pages(gf)),
                   ", %d picture(s)" % pics if pics else ""))
+        return
+    if cmd == "fromdocx" and len(args) == 4:
+        import docxgw
+        import datetime
+        width = 640 if "--wide" in argv else 480
+        pg, head, foot, pics, warns = docxgw.convert(args[1], width)
+        recs = list(pg) + [None] * (PIC_LAST + 1 - len(pg))
+        recs[HEADER_REC], recs[FOOTER_REC] = head, foot
+        for r, data in pics.items():
+            recs[r] = data
+        while recs and recs[-1] is None:
+            recs.pop()
+
+        def height(rec):
+            return 0 if not rec else max(1, rec.count(b"\r")) * 13
+        entry = bytearray(30)
+        entry[0] = 0x83
+        entry[3:19] = args[3].encode("latin1")[:16].ljust(16, b"\xa0")
+        entry[0x15], entry[0x16] = 1, 7
+        now = datetime.datetime.now()
+        entry[0x17:0x1C] = bytes([now.year % 100, now.month, now.day, now.hour, now.minute])
+        gf = GeoFile(bytes(entry), new_header(height(head), height(foot),
+                                              "From a Word document by GeoUltra's gwtool."), None, recs)
+        output([gf], args[2])
+        print("%s: %d pages, %d pictures%s" % (args[3], len(pg), len(pics),
+              ", header" if head else "") + (", footer" if foot else ""))
+        for w in warns:
+            print("warning: " + w)
         return
     if cmd == "docx" and len(args) >= 4:
         import gwdocx
