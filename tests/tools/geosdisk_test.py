@@ -7,7 +7,7 @@ another image, listed, extracted again (the same bytes), deleted (the
 blocks back), renamed; CVTs exchanged with VICE's c1541 both ways
 (c1541 -geoswrite of ours, ours of c1541 -geosread), the content the
 same; a DNP with a folder (mkdir, add --folder, extract, rename,
-delete). Run after `make`.
+delete); a Lynx archive packed and read back. Run after `make`.
 Usage: tests/tools/geosdisk_test.py
 """
 import os
@@ -93,6 +93,12 @@ def main():
     d = geosdisk.Disk(dnp)
     check("dnp: renamed and deleted in the folder, the blocks back (the folder's 2 kept)",
           d.blocks_free() == empty - 2 and d.find("Folder/Renamed") is None, (d.blocks_free(), empty))
+    lnx = os.path.join(OUT, "t.lnx")                    # Lynx: pack, read back
+    run("pack", lnx, *CVTS)
+    _, files = geosdisk.load(lnx)
+    check("lynx: GeoUltra's CVTs packed and read back the same",
+          [(f.header[2:], f.records) for f in files]
+          == [(read_cvt(p).header[2:], read_cvt(p).records) for p in CVTS], [f.name for f in files])
     cdisk = os.path.join(OUT, "c.d81")
     if os.path.exists(cdisk):
         os.remove(cdisk)

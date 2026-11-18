@@ -175,8 +175,10 @@ class GeoFile:
         return self.entry[3:19].split(b"\xa0")[0].decode("latin1")
 
 
-def read_cvt(path):
-    d = open(path, "rb").read()
+def read_cvt(path, d=None):
+    """A GeoFile from a CVT file (or its bytes, d; path then names it)."""
+    if d is None:
+        d = open(path, "rb").read()
     entry = d[0:30]
     if not (d[30:58].endswith(b"formatted GEOS file V1.0") or b"formatted GEOS file" in d[30:60]):
         die("%s: not a CVT file" % path)
@@ -187,11 +189,10 @@ def read_cvt(path):
     pos = 762
     records = []
     pairs = []
-    for i in range(0, 254, 2):
-        n, last = table[i], table[i + 1]
-        if n == 0 and last == 0:
-            break
-        pairs.append((n, last))
+    for i in range(0, 254, 2):                  # (an empty record: 00 FF from
+        pairs.append((table[i], table[i + 1]))  # GEOS Convert, 00 00 from others:
+    while pairs and pairs[-1][0] == 0:          # read all 127, the empty ones
+        pairs.pop()                             # at the end dropped)
     for k, (n, last) in enumerate(pairs):
         if n == 0:
             records.append(None)

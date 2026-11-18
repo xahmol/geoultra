@@ -9,6 +9,7 @@
     geosdisk.py rename IMAGE OLD NEW
     geosdisk.py mkdir IMAGE PATH
     geosdisk.py build RECIPE.toml
+    geosdisk.py pack ARCHIVE.lnx SOURCE [SOURCE ...]
 
 IMAGE: a .d64, .d71, .d81 or .dnp (CMD native, with folders: a name may
 carry its folder, "Writing/Letter"; --folder= for `add`, `mkdir` for new
@@ -43,6 +44,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mkappsdnp import Image, GeoFile, read_cvt, DNP   # noqa: E402
 from gwtool import write_cvt                      # noqa: E402
+import cbmarc                                     # noqa: E402
 
 GEOS_SIG = b"GEOS format V1.0"
 TYPES = {0: "DEL", 1: "SEQ", 2: "PRG", 3: "USR", 4: "REL", 6: "DIR"}
@@ -342,7 +344,15 @@ class Disk:
                 if e[0] & 0x07]
 
     def find(self, name):
+        """name with its folder ("Writing/Letter"); a name with "/" in it
+        itself is found as a whole first (GEOS allows "1/8 NOTES")."""
+        hit = self.find_in("", name)
+        if hit or "/" not in name or self.kind != "dnp":
+            return hit
         folder, _, base = name.rpartition("/")
+        return self.find_in(folder, base)
+
+    def find_in(self, folder, base):
         for ts, o, e in self.files(folder):
             if e[3:19].split(b"\xa0")[0].decode("latin1") == base:
                 return ts, o, e
@@ -433,8 +443,8 @@ class Disk:
         b[o:o + 30] = e
         self.put(ts, b)
 
-    def delete(self, name):
-        hit = self.find(name)
+    def delete(self, name, hit=None):
+        hit = hit or self.find(name)
         if not hit:
             die("%s: no file %r" % (self.path, name))
         ts, o, e = hit
@@ -454,25 +464,98 @@ class Disk:
         self.put(ts, b)
 
 
-def source(spec, seq):
-    """A GeoFile from a CVT, "image:name", or a plain file."""
-    if ":" in spec and not os.path.exists(spec):
-        img, name = spec.split(":", 1)
-        src = Image(img)
-        en = src.find(name)
-        if en is None:
-            die("%s: no file %r" % (img, name))
-        return src.gfile(en)
-    data = open(spec, "rb").read()
-    if data[30:60].find(b"formatted GEOS file") >= 0:
-        return read_cvt(spec)
+class MemImage(Image):
+    """mkappsdnp's Image over bytes (from .gz, .zip or a G64)."""
+
+    def __init__(self, name, data):
+        self.path = name
+        self.data = data
+        n = len(data)
+        if n in (174848, 175531):
+            self.kind, self.root = "d64", (18, 1)
+        elif n in (349696, 351062):
+            self.kind, self.root = "d71", (18, 1)
+        elif n in (819200, 822400):
+            self.kind, self.root = "d81", (40, 3)
+        elif n % 65536 == 0:
+            self.kind = "dnp"
+            self.root = tuple(self.block(1, 1)[0:2])
+        else:
+            raise ValueError("%s: not a disk image (%d bytes)" % (name, n))
+
+
+def plain(name, data, kind="P"):
+    """A GeoFile for a plain CBM file."""
     e = bytearray(30)
-    e[0] = 0x81 if seq else 0x82
-    base = os.path.splitext(os.path.basename(spec))[0]
-    e[3:19] = pad(base)
+    e[0] = 0x80 | {"D": 0, "S": 1, "P": 2, "U": 3, "R": 4}.get(kind, 2)
+    e[3:19] = pad(name)
     now = datetime.datetime.now()
     e[0x17:0x1C] = bytes([now.year % 100, now.month, now.day, now.hour, now.minute])
     return GeoFile(bytes(e), None, data, None)
+
+
+def from_bytes(name, data, kind="P"):
+    """A GeoFile: a CVT made back into its GEOS file, else a plain one."""
+    if data[30:60].find(b"formatted GEOS file") >= 0:
+        return read_cvt(name, data)
+    return plain(name, data, kind)
+
+
+def load(spec):
+    """What a path holds: ("image", MemImage) or ("files", [GeoFile]).
+    Through .gz and .zip ("x.zip:inner.d64"); a G64 as its D64; a Lynx
+    archive or a CVT as files."""
+    try:
+        data = cbmarc.read_path(spec)
+    except (OSError, ValueError) as e:
+        die(str(e))
+    base = os.path.basename(spec.split(":")[-1])
+    if cbmarc.is_g64(data):
+        data, missing = cbmarc.g64_to_d64(data)
+        if missing:
+            print("warning: %s: %d sectors not found in the GCR data" % (spec, missing))
+    if cbmarc.is_lynx(data) and data[:2] == b"\x01\x08":
+        files = []
+        for name, kind, d in cbmarc.lynx_read(data):
+            n = cbmarc.petscii_name(name)
+            if n.lower().endswith(".cvt"):
+                n = n[:-4]
+            files.append(from_bytes(n, d, kind))
+        return "files", files
+    if data[30:60].find(b"formatted GEOS file") >= 0:
+        return "files", [read_cvt(base, data)]
+    try:
+        return "image", MemImage(spec, data)
+    except ValueError as e:
+        die(str(e))
+
+
+def source(spec, seq):
+    """GeoFiles from a CVT, an archive (all its files, or "x.lnx:NAME"),
+    "image:name" (the image may be in a .gz or .zip, or a G64), or a plain
+    file."""
+    if not os.path.exists(spec) and ":" in spec:
+        where, name = spec.rsplit(":", 1)
+        kind, obj = load(where)
+        if kind == "files":
+            hit = [f for f in obj if f.name.lower() == name.lower()]
+            if not hit:
+                die("%s: no file %r" % (where, name))
+            return hit
+        en = obj.find(name)
+        if en is None:
+            die("%s: no file %r" % (where, name))
+        return [obj.gfile(en)]
+    data = open(spec, "rb").read()
+    if data[:2] == b"\x1f\x8b" or data[:4] == b"PK\x03\x04" or cbmarc.is_g64(data) \
+            or (cbmarc.is_lynx(data) and data[:2] == b"\x01\x08") \
+            or data[30:60].find(b"formatted GEOS file") >= 0:
+        kind, obj = load(spec)
+        if kind == "files":
+            return obj
+        die("%s is a disk image: name a file in it, %s:NAME" % (spec, spec))
+    base = os.path.splitext(os.path.basename(spec))[0]
+    return [plain(base, data, "S" if seq else "P")]
 
 
 def describe(e):
@@ -500,12 +583,53 @@ def main(argv):
         d.save()
         print("%s: empty GEOS disk, %d blocks free" % (path, d.blocks_free()))
         return
+    if cmd == "pack":
+        files = []
+        for spec in args[2:]:
+            for gf in source(spec, "seq" in opts):
+                name = gf.name.encode("latin1")
+                if gf.header is not None and (gf.entry[0x16] or gf.records is not None):
+                    tmp = path + ".part"
+                    write_cvt(gf, tmp)
+                    data = open(tmp, "rb").read()
+                    os.remove(tmp)
+                    files.append((name[:12] + b".CVT", "P", data))
+                else:
+                    files.append((name, TYPES.get(gf.entry[0] & 7, "PRG")[0], gf.data or b""))
+        open(path, "wb").write(cbmarc.lynx_write(files))
+        print("%s: %d files" % (path, len(files)))
+        return
     if cmd == "build":
         import mkappsdnp
         mkappsdnp.main([argv[0], path])
         return
-    if cmd in ("list", "extract") and os.path.splitext(path)[1].lower() == ".dnp":
-        img = Image(path)
+    if cmd in ("list", "extract"):
+        kind, obj = load(path)
+        if kind == "files":
+            if cmd == "list":
+                for gf in obj:
+                    e = gf.entry
+                    nm, k, blocks, geos, date = describe(e)
+                    cls = gf.header[0x4D:0x61].split(b"\0")[0].decode("latin1", "replace") if gf.header else ""
+                    size = len(gf.data) if gf.data is not None else sum(len(r) for r in gf.records if r not in (None, "end"))
+                    print("%5d  %-24s %-3s  %-17s %-20s %s" % ((size + 253) // 254, gf.name, k, geos, cls, date))
+                return
+            out = opts.get("out", ".")
+            os.makedirs(out, exist_ok=True)
+            want = set(args[2:])
+            for gf in obj:
+                if want and gf.name not in want:
+                    continue
+                if gf.header is not None and gf.entry[0x16] or gf.records is not None:
+                    p = os.path.join(out, gf.name.replace("/", "_") + ".cvt")
+                    write_cvt(gf, p)
+                else:
+                    p = os.path.join(out, gf.name.replace("/", "_") + "." + TYPES.get(gf.entry[0] & 7, "bin").lower())
+                    open(p, "wb").write(gf.data or b"")
+                print(p)
+            return
+        img = obj
+    if cmd in ("list", "extract") and img.kind == "dnp":
         entries = []
 
         def walk(start, prefix):
@@ -515,6 +639,9 @@ def main(argv):
                 if en[0] & 7 == 6:
                     walk(tuple(img.block(en[1], en[2])[0:2]), prefix + nm + "/")
         walk(None, "")
+    elif cmd in ("list", "extract"):
+        d = Disk(path, img.kind, img.data)
+        entries = [(e[3:19].split(b"\xa0")[0].decode("latin1"), e) for _, _, e in d.files()]
     else:
         d = Disk(path)
         img = Image(path)
@@ -525,7 +652,7 @@ def main(argv):
             gf = img.gfile(e) if (e[0x16] and e[0x13] and e[0] & 7 != 6) else None
             cls = gf.header[0x4D:0x61].split(b"\0")[0].decode("latin1", "replace") if gf and gf.header else ""
             print("%5d  %-24s %-3s  %-17s %-20s %s" % (blocks, name, kind, geos, cls, date))
-        dd = Disk(path)
+        dd = Disk(path, img.kind, img.data)
         print("%d blocks free%s" % (dd.blocks_free(), ", GEOS disk" if dd.border() else ", not a GEOS disk"))
         return
     if cmd == "extract":
@@ -556,14 +683,15 @@ def main(argv):
     if cmd == "add":
         folder = opts.get("folder", "").strip("/")
         for spec in args[2:]:
-            gf = source(spec, "seq" in opts)
-            full = (folder + "/" if folder else "") + gf.name
-            if d.find(full):
-                if "replace" not in opts:
-                    die("%s: %r is there already (--replace)" % (path, full))
-                d.delete(full)
-            d.add(gf, folder)
-            print("%s: %s added" % (path, gf.name))
+            for gf in source(spec, "seq" in opts):
+                full = (folder + "/" if folder else "") + gf.name
+                hit = d.find_in(folder, gf.name)
+                if hit:
+                    if "replace" not in opts:
+                        die("%s: %r is there already (--replace)" % (path, full))
+                    d.delete(full, hit)
+                d.add(gf, folder)
+                print("%s: %s added" % (path, gf.name))
         d.save()
         print("%d blocks free" % d.blocks_free())
         return
