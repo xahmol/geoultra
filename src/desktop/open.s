@@ -17,7 +17,8 @@
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
         .import cur, count, path, Redraw, RecentAdd, Mount, Leave, SideArrows
         .export Open, Up, Drive, Into, Document, Back
-        .import HistAdd, IsImage, Error, UsePrinter, PrnUlt
+        .import HistAdd, IsImage, Error, UsePrinter, PrnUlt, AppFind, AppGo
+        .export appName, appClass, docDrive
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
 ST_LD_DATA      = $80
@@ -188,8 +189,9 @@ InImage:
 ; with its application, as the deskTop passes a document: the parent's
 ; permanent name (the document's header at $75; the class is its first
 ; 12 characters) looked for among the applications of the document's
-; folder (FE_SELECT makes it current; FindFTypes with that class), then
-; in the root of each other drive A-D; started with ST_LD_DATA, r2 the
+; folder (FE_SELECT makes it current) and on each drive A-D in its root
+; and the folders right below it, the newest version taken (appfind.s,
+; overlay 6; the user, 2026-11-18); started with ST_LD_DATA, r2 the
 ; document disk's name, r3 the document's name. An application finds
 ; its document on its own drive in its own folder, or by the disk's
 ; name on another drive (geoWrite 2.1's findDocDevice, mist64/geowrite,
@@ -222,7 +224,23 @@ Document:
         lda appClass            ; (no parent named: nothing)
         beq @none
         jsr RecentAdd           ; (side.s: to the recent documents)
-        lda #<entryName         ; its drive and folder current
+        jsr Select              ; its drive and folder current
+        txa
+        beq :+
+        jmp InImage
+:       lda curDrive
+        sta docDrive
+        jsr AppFind             ; (appfind.s, overlay 6: the newest
+        bcs @none               ; version on any drive, folders too)
+        jsr Select              ; the document's drive and folder again
+        jsr AppGo               ; (the search moved them), then the
+        jmp Launch              ; winner's
+@none:  jsr Select              ; (none: as the document left them)
+        rts
+
+; Select: entryName's drive and folder current, its short name in
+; docShort (FE_SELECT). X = its error.
+Select: lda #<entryName
         sta r0L
         lda #>entryName
         sta r0H
@@ -231,43 +249,7 @@ Document:
         lda #>docShort
         sta r1H
         lda #FE_SELECT
-        jsr FileEngine
-        txa
-        beq :+
-        jmp InImage
-:       lda curDrive
-        sta docDrive
-        jsr FindApp             ; in the document's folder
-        bcc Launch
-        lda #8                  ; then the other drives' roots
-        sta drv
-@drive: lda drv
-        cmp docDrive
-        beq @next
-        tax
-        lda driveType-8,x
-        beq @next
-        txa
-        jsr SetDevice
-        lda guExtTable          ; DirRoot (a drive without folders: an
-        clc                     ; error, left: it has only its root)
-        adc #DIR_ROOT
-        sta @root+1
-        lda guExtTable+1
-        adc #0
-        sta @root+2
-@root:  jsr $FFFF
-        jsr OpenDisk
-        jsr FindApp
-        bcc Launch
-@next:  inc drv
-        lda drv
-        cmp #12
-        bcc @drive
-        lda docDrive            ; none: the document's drive current again
-        jsr SetDevice
-        jmp OpenDisk
-@none:  rts
+        jmp FileEngine
 
 ; Launch: appName (on the current drive, in its current folder) started
 ; with docShort of docDrive (an application does not come back; an error
@@ -294,26 +276,6 @@ Launch: ldx docDrive
 Back:   jsr Redraw
         jmp ReDoMenu
 
-; FindApp: an application of class appClass in the current drive's
-; current folder: its name to appName, C clear; C set when none.
-FindApp:
-        lda #<appName
-        sta r6L
-        lda #>appName
-        sta r6H
-        lda #APPLICATION
-        sta r7L
-        lda #1
-        sta r7H
-        lda #<appClass
-        sta r10L
-        lda #>appClass
-        sta r10H
-        jsr FindFTypes
-        lda r7H                 ; (0: one found)
-        cmp #1
-        rts
-
 DiskLo: .byte <DrACurDkNm, <DrBCurDkNm, <DrCCurDkNm, <DrDCurDkNm
 DiskHi: .byte >DrACurDkNm, >DrBCurDkNm, >DrCCurDkNm, >DrDCurDkNm
 
@@ -323,7 +285,6 @@ DotDot:         .byte "..", 0
 
 drivePath:      .byte "/a", 0
 docDrive:       .byte 0
-drv:            .byte 0
 
         .segment "BSS"
 

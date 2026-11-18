@@ -35,19 +35,21 @@ def labels():
 
 
 class Gush:
-    def __init__(self, name, port, files=(), extra=()):
+    def __init__(self, name, port, files=(), extra=(), disk=None):
         """A D81 with gush and FILES (paths of .cvt or plain files); EXTRA:
-        more VICE arguments."""
+        more VICE arguments. DISK: drive B is that image instead (no gush:
+        for desktop tests that start programs from drive E)."""
         os.makedirs(OUT, exist_ok=True)
         self.ok = True
-        disk = os.path.join(OUT, name + ".d81")
-        if os.path.exists(disk):
-            os.remove(disk)
-        cmd = [C1541, "-format", "gush test,gt", "d81", disk,
-               "-geoswrite", os.path.join(ROOT, "build", "gush", "gush.cvt")]
-        for f in files:
-            cmd += ["-geoswrite" if f.endswith(".cvt") else "-write", f]
-        subprocess.run(cmd, capture_output=True, check=True)
+        if disk is None:
+            disk = os.path.join(OUT, name + ".d81")
+            if os.path.exists(disk):
+                os.remove(disk)
+            cmd = [C1541, "-format", "gush test,gt", "d81", disk,
+                   "-geoswrite", os.path.join(ROOT, "build", "gush", "gush.cvt")]
+            for f in files:
+                cmd += ["-geoswrite" if f.endswith(".cvt") else "-write", f]
+            subprocess.run(cmd, capture_output=True, check=True)
         self.disk = disk
         apprun.APPS_DISK = disk
         apprun.REU_IMAGE = os.path.join(OUT, "reu-%s.bin" % name)

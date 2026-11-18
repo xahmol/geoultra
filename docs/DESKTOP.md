@@ -500,6 +500,18 @@ colour is a property of an element, by name:
   published), as a native REU drive for tests, screenshots and videos
   (MOUNTS.INI `C=`, a copy in the test folder, rebuilt and uploaded by
   `make deploy`); tests that mount use D.
+- **The newest version opens a document (the user, 2026-11-18):** a
+  double-clicked document starts the newest version of its application
+  found in the document's folder, or on any drive A-D in the root or a
+  folder right below it (appfind.s, overlay 6: FindFTypes with the
+  class, the version from the permanent name's last 4 characters; the
+  document's folder first among equals). GEOS 2.0's deskTop takes the
+  first one, on the document's disk first: an old geoWrite 1.x work disk
+  opened its documents in its own 1.x instead of geoWrite 2.1 in
+  /c/Writing, which converts them. Afterwards the document's drive and
+  folder are made current again (FE_SELECT), then the winner's (AppGo).
+  Test tests/desktop/d28.py (VICE: a 1.x work disk on A, geoWrite 2.1 in
+  /b/Writing; the user's disks, never committed).
 - **Sorting (the user, 2026-11-11):** the list sorted, folders first,
   each group by name (case-insensitive), ".." on top; replaces the
   directory order of the 2026-11-06 decision (a "disk order" choice for
