@@ -41,6 +41,7 @@ decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 | [`docs/GUSH_MANUAL.md`](docs/GUSH_MANUAL.md) | Using gush: keys, paths, command lines, control flow, scripts, commands |
 | [`docs/GUSH_COMMANDS.md`](docs/GUSH_COMMANDS.md) | Writing external gush commands: format, calling convention, the routines gush offers, building |
 | [`docs/GWTOOL_MANUAL.md`](docs/GWTOOL_MANUAL.md) | gwtool, a PC tool for geoWrite documents in disk images: list, convert geoWrite 1.x to 2.x, join several documents into one, to and from Word and Markdown |
+| [`docs/GPTOOL_MANUAL.md`](docs/GPTOOL_MANUAL.md) | gptool, a PC tool for geoPaint pictures in disk images: export to PNG, JPEG, GIF or BMP, and import pictures as geoPaint documents (black and white or in C64 colours) |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Rules for pull requests: clean-room, coding practices, tests, descriptions, use of AI |
 
 ## Related projects
