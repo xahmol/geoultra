@@ -225,3 +225,117 @@ def decode(bits, i, nbytes):
             return None
         out.append(GCR[int(q, 2)])
     return [out[2 * k] << 4 | out[2 * k + 1] for k in range(nbytes)]
+
+
+# --- Zipcode 4-pack (A. L. Peters' ZipCode; as geoBEAP II reads it) -----------
+# Files "1!name" .. "4!name" (SEQ or PRG): 1! starts with a load address
+# and the disk ID (4 bytes), the others with a load address (2). 1! holds
+# tracks 1-8, 2! 9-16, 3! 17-25, 4! 26-35. Each sector: a byte with the
+# track in bits 0-5 and the mode in bits 6-7, the sector, then: mode 0:
+# 256 bytes as they are; $40: one byte filling the sector; $80: a length
+# and a marker byte, then that many coded bytes, in which marker, count
+# (0: 256), value is a run. Format from geoBEAP II (Bo Zimmerman, Apache
+# 2.0, S_6gbZIP4: UnZ4, UnZ4128, UnZ464); own code.
+
+ZIP_TRACKS = {1: (1, 8), 2: (9, 16), 3: (17, 25), 4: (26, 35)}
+
+
+def zipcode_read(parts):
+    """A D64 from {1: bytes, 2: bytes, 3: bytes, 4: bytes}."""
+    spt = lambda t: 21 if t <= 17 else 19 if t <= 24 else 18 if t <= 30 else 17
+    d64 = bytearray(683 * 256)
+    for n in (1, 2, 3, 4):
+        data = parts[n]
+        p = 4 if n == 1 else 2
+        first, last = ZIP_TRACKS[n]
+        for t in range(first, last + 1):
+            for _ in range(spt(t)):
+                tb, s = data[p], data[p + 1]
+                p += 2
+                if tb & 0x3F != t or s >= spt(t):
+                    raise ValueError("zipcode %d!: track %d sector %d out of order" % (n, tb & 0x3F, s))
+                mode = tb & 0xC0
+                if mode == 0x40:
+                    block = bytes([data[p]]) * 256
+                    p += 1
+                elif mode == 0x80:
+                    length, marker = data[p], data[p + 1]
+                    p += 2
+                    block = bytearray()
+                    end = p + length
+                    while p < end:
+                        b = data[p]
+                        if b == marker:
+                            block += bytes([data[p + 2]]) * (data[p + 1] or 256)
+                            p += 3
+                        else:
+                            block.append(b)
+                            p += 1
+                    block = bytes(block[:256]).ljust(256, b"\0")
+                else:
+                    block = data[p:p + 256]
+                    p += 256
+                start = sum(spt(x) for x in range(1, t))
+                d64[(start + s) * 256:(start + s + 1) * 256] = block
+    return bytes(d64)
+
+
+# --- EMUTIL RLE (single and multi-file; as geoBEAP II reads it) ----------------
+# One stream over the disk's blocks in track order, no header: a code
+# below $81 is followed by that many bytes as they are; from $81, the
+# next byte repeated (code - $80) times. A multi-file set ("001-name",
+# "002-name" ...) is one stream cut into files. The disk type follows
+# from the size. Format from geoBEAP II (S_3gbRLEi: UnRLE); own code.
+
+def emutil_read(data):
+    out = bytearray()
+    p = 0
+    while p < len(data):
+        c = data[p]
+        if c < 0x81:
+            out += data[p + 1:p + 1 + c]
+            p += 1 + c
+        else:
+            out += bytes([data[p + 1]]) * (c - 0x80)
+            p += 2
+    return bytes(out)
+
+
+# --- ARK (Edward Rohr's ARK V2; as geoBEAP II reads and writes it) -------------
+# The first byte: the number of files; then 29 bytes a file: the CBM type,
+# the last block's size + 1, the name (16 bytes, $A0 padded), the
+# directory entry's bytes $15-$1B (REL record length; for GEOS files their
+# structure, GEOS type and date), REL side-sector blocks and their last
+# size, the file's blocks (2 bytes); the header filled to whole 254-byte
+# blocks; then each file's blocks of 254 bytes, its last one only what it
+# holds (as Lynx). GEOS files are inside as CVTs. Format from geoBEAP II
+# (S_9gbARK: isARK, deARK, PutEntry); own code.
+
+def is_ark(data):
+    n = data[0] if data else 0
+    if not n or len(data) < 1 + 29 * n:
+        return False
+    for k in range(n):
+        e = data[1 + 29 * k:30 + 29 * k]
+        if e[0] & 0x07 not in (1, 2, 3, 4) or not (0x20 <= e[2] <= 0xDF):
+            return False
+    return True
+
+
+def ark_read(data):
+    """[(name, type letter, data)] of an ARK archive."""
+    n = data[0]
+    head = 1 + 29 * n
+    pos = (head + BLOCK - 1) // BLOCK * BLOCK
+    out = []
+    for k in range(n):
+        e = data[1 + 29 * k:30 + 29 * k]
+        kind = "DSPUR"[e[0] & 0x07] if e[0] & 0x07 < 5 else "P"
+        name = e[2:18].rstrip(b"\xa0")
+        blocks = e[27] | e[28] << 8
+        if kind == "R":
+            blocks += e[25]                            # (side sectors follow)
+        size = (blocks - 1) * BLOCK + max(1, e[1]) - 1 if blocks else 0
+        out.append((name, kind, data[pos:pos + size]))
+        pos += blocks * BLOCK
+    return out

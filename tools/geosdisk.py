@@ -39,6 +39,7 @@ CVT writer from tools/gwtool.py.
 """
 import datetime
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -510,6 +511,17 @@ def load(spec):
     except (OSError, ValueError) as e:
         die(str(e))
     base = os.path.basename(spec.split(":")[-1])
+    folder = os.path.dirname(spec)
+    if not data:
+        die("%s: empty file" % spec)
+    if base.lower().endswith(".ark") and cbmarc.is_ark(data):
+        files = []
+        for name, kind, d in cbmarc.ark_read(data):
+            n = cbmarc.petscii_name(name)
+            if n.lower().endswith(".cvt"):
+                n = n[:-4]
+            files.append(from_bytes(n, d, kind))
+        return "files", files
     if cbmarc.is_g64(data):
         data, missing = cbmarc.g64_to_d64(data)
         if missing:
@@ -524,6 +536,34 @@ def load(spec):
         return "files", files
     if data[30:60].find(b"formatted GEOS file") >= 0:
         return "files", [read_cvt(base, data)]
+    m = re.match(r"([1-4])!(.*)$", base)
+    if m:                                       # Zipcode: 1! .. 4! together
+        parts = {}
+        for n in (1, 2, 3, 4):
+            p = os.path.join(folder, "%d!%s" % (n, m.group(2)))
+            if not os.path.exists(p):
+                die("%s: the Zipcode set lacks %s" % (spec, p))
+            parts[n] = cbmarc.read_path(p)
+        try:
+            data = cbmarc.zipcode_read(parts)
+        except (ValueError, IndexError) as e:
+            die("%s: %s" % (spec, e))
+        return "image", MemImage(spec, data)
+    m = re.match(r"(0*)1-(.*)$", base)
+    if base.lower().endswith(".rle") or (m and "." not in m.group(2)):   # EMUTIL
+        stream = data
+        if m:
+            n = 2
+            while True:
+                p = os.path.join(folder, "%0*d-%s" % (len(m.group(1)) + 1, n, m.group(2)))
+                if not os.path.exists(p):
+                    break
+                stream += cbmarc.read_path(p)
+                n += 1
+        try:
+            return "image", MemImage(spec, cbmarc.emutil_read(stream))
+        except (ValueError, IndexError) as e:
+            die("%s: not an EMUTIL image (%s)" % (spec, e))
     try:
         return "image", MemImage(spec, data)
     except ValueError as e:
