@@ -40,6 +40,7 @@ decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 | [`docs/GUSH.md`](docs/GUSH.md) | gush, the GeoUltra shell: design, commands, state of the work |
 | [`docs/GUSH_MANUAL.md`](docs/GUSH_MANUAL.md) | Using gush: keys, paths, command lines, control flow, scripts, commands |
 | [`docs/GUSH_COMMANDS.md`](docs/GUSH_COMMANDS.md) | Writing external gush commands: format, calling convention, the routines gush offers, building |
+| [`docs/GWTOOL_MANUAL.md`](docs/GWTOOL_MANUAL.md) | gwtool, a PC tool for geoWrite documents in disk images: list, convert geoWrite 1.x to 2.x, join several documents into one |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Rules for pull requests: clean-room, coding practices, tests, descriptions, use of AI |
 
 ## Related projects
