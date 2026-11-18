@@ -10,6 +10,7 @@ VICE's `c1541`.
     tools/gwtool.py list IMAGE
     tools/gwtool.py convert IMAGE OUT [NAME ...] [--fonts]
     tools/gwtool.py merge IMAGE OUT NEWNAME NAME [NAME ...] [--fonts] [--start=N]
+    tools/gwtool.py docx IMAGE OUT.docx NAME [NAME ...] [--page-breaks=records] [--start=N]
 
 - **IMAGE**: a D64, D71, D81 or DNP. On a DNP a name may include its
   folder: `Writing/Letter`.
@@ -34,6 +35,35 @@ of contents first, page numbers from 3:
     tools/gwtool.py merge "g03 geowrite.d64" bigbrother.d64 "Big Brother" \
         "Big Brother Inh." "Big Brother 0" "Big Brother 1" ... "Big Brother 18" \
         --fonts --start=3
+
+## Word (docx)
+
+`docx` writes one document (or several, joined first as by `merge`) as
+a Word document; 1.x documents are converted on the way. No packages
+are needed (tools/gwdocx.py writes the .docx itself). What is carried
+over:
+
+- **Text and paragraphs:** line breaks become paragraphs, TAB a tab,
+  geoWrite's page breaks Word page breaks. `--page-breaks=records` also
+  starts each geoWrite page on a new Word page (for documents whose
+  parts each began on a new page, as a joined one).
+- **Rulers:** left and right margin, the first line's indent, tab stops
+  (decimal ones too), alignment (left, centred, right, justified), line
+  spacing (1, 1.5, 2).
+- **Fonts and styles:** each GEOS font as a Windows font that looks
+  alike (University: Century Gothic, California: Arial, Roma: Times New
+  Roman, Cory and Commodore: Courier New, Dwinelle: Old English Text MT;
+  others by their GEOS name), the size at 0.9 times the GEOS size in
+  points (GEOS sizes are dots of 1/80 inch); bold, italic, underline,
+  outline, superscript, subscript, reverse (white on black).
+- **Page:** A4, the text area 6 or 8 inches wide as in geoWrite, centred;
+  `--start=N` the first page number.
+- **Header, footer, pictures:** as Word header and footer; pictures as
+  PNG images at 80 dpi (not yet tried on a document with pictures).
+
+Restrictions: Word lays the text out again with its own fonts, so lines
+and pages break elsewhere; characters outside ASCII that a GEOS font
+draws in place of others come out as the ASCII character.
 
 ## What a conversion changes
 

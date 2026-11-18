@@ -4,6 +4,7 @@
     gwtool.py list IMAGE
     gwtool.py convert IMAGE OUT [NAME ...] [--fonts]
     gwtool.py merge IMAGE OUT NEWNAME NAME [NAME ...] [--fonts] [--start=N]
+    gwtool.py docx IMAGE OUT.docx NAME [NAME ...] [--page-breaks=records] [--start=N]
 
 IMAGE is a D64, D71, D81 or DNP (a name may carry a DNP folder,
 "Writing/Letter"). OUT is a folder (CVT files written there) or a new
@@ -15,6 +16,9 @@ one 2.x document NEWNAME: their pages one after another (each starts on
 a new page), their pictures renumbered. --fonts adds the font files the
 documents use (by font ID) from IMAGE; --start=N sets the merged
 document's first page number (geoWrite's header, 1 by default).
+`docx` writes the document (several: joined first, as `merge`) as a
+Word document (tools/gwdocx.py); --page-breaks=records starts each
+geoWrite page on a new Word page (else only geoWrite's own page breaks).
 
 What a conversion does (geoWrite 1.x "Write Image V1.x" to 2.x, as
 geoWrite 2.1 itself converts a document when it opens one; observed by
@@ -290,6 +294,28 @@ def main(argv):
             pics = sum(1 for r in gf.records[PIC_FIRST:] if r not in (None, "end"))
             print("%-24s V%s  %2d page(s)%s" % (name, version(gf), len(pages(gf)),
                   ", %d picture(s)" % pics if pics else ""))
+        return
+    if cmd == "docx" and len(args) >= 4:
+        import gwdocx
+        img = Image(args[1])
+        docs = dict(documents(img))
+        for n in args[3:]:
+            if n not in docs:
+                die("%s: no geoWrite document of that name in %s" % (n, args[1]))
+        parts = [to_v2(n, docs[n], warn) for n in args[3:]]
+        gf = build("out", parts, warn)
+        recs = gf.records + [None] * (PIC_LAST + 1 - len(gf.records))
+        pg = [r for r in recs[:PAGES] if r]
+        names = {}
+        for f in font_files(img, fonts_of(parts)):
+            names[(f.header[0x80] | f.header[0x81] << 8)] = f.name
+        breaks = next((a[14:] for a in argv if a.startswith("--page-breaks=")), "explicit")
+        gwdocx.write(args[2], pg, recs[HEADER_REC], recs[FOOTER_REC],
+                     {r: recs[r] for r in range(PIC_FIRST, PIC_LAST + 1) if recs[r]}, names,
+                     start_page=start or 1, page_breaks=breaks)
+        print("%s: %d pages from %d document(s)" % (args[2], len(pg), len(parts)))
+        for w in warnings:
+            print("warning: " + w)
         return
     if cmd not in ("convert", "merge") or len(args) < 3 + (cmd == "merge") * 2:
         sys.exit(__doc__.strip().split("\n\n")[1])
