@@ -291,7 +291,7 @@ def main():
         setting("Output type", "PNG B&W")
         setting("Emulation", "Commodore MPS")
         setting("Output file", OUTDIR + "prn-mps")
-        img, _ = page(480, 90, "GU Commodore MPS on the Ultimate", False)
+        img, _ = page(480, 88, "GU Commodore MPS on the Ultimate", False)
         png = job(b"GU Commodore MPS", img, None, "prn-mps")
         if png:
             u.ftp_get(OUTDIR + png, os.path.join(shots, "u64-" + png))

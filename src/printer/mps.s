@@ -17,7 +17,11 @@
 ; than on an 80 dpi printer). PrintBuffer adds its 8 rows to the rows
 ; still waiting (W_PEND, per card), prints 7 at a time while 7 wait and
 ; keeps the rest (at most 6) for the next call; StopPrint prints what is
-; left. 90 card rows: 720 rows of 1/72", the Ultimate's 10" page.
+; left. 88 card rows: 704 rows of 1/72". The Ultimate's default page is
+; 60 lines of 36 pixels (10", 720 rows), but its MPS emulation starts a
+; new page once the head passes the height less the head's 27 pixels
+; (1541ultimate mps_printer.h MPS_PRINTER_MAX_MARGIN_BOTTOM), so 90 rows
+; put the last band on a second page (the U64, 2026-11-18).
 ; ASCII: channel 7 (the lower case set, which the firmware selects at
 ; each SECOND 7), ASCII as PETSCII; CR (the printer adds LF); SetNLQ
 ; as NLQ.
@@ -39,7 +43,7 @@ FF              = $0C
 DOTS            = 7             ; dots a pass
 
 CARDS           = 60            ; GetDimensions: 480 dots across
-ROWS            = 90            ; card rows: 720 dots down, 10"
+ROWS            = 88            ; card rows: 704 dots down (see above)
 COLS            = CARDS * 8
 REP_MIN         = 4             ; equal columns sent as CHR$(26) n b
 
