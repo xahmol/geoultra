@@ -51,9 +51,9 @@ TEXT_MAX        = $0C00
 SCRATCH         = $4C00         ; data replies we do not need
 TABLE           = $4D00         ; the mount table being built ($A0 bytes)
 LOG             = $4E00
-FIRST_BANK      = 31            ; drives: REU banks 31-187
-LAST_BANK       = 187           ; (188-191: the file engine's listings,
-                                ; engine.inc FE_UBANK)
+FIRST_BANK      = 31            ; drives: REU banks 31-179
+LAST_BANK       = 179           ; (180-187: the system fonts; 188-191:
+                                ; the file engine's listings, engine.inc)
 SYS_BANK        = 1
 
         .segment "INIT"

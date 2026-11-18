@@ -165,12 +165,13 @@ CPU Speed=64
 | 19-26 | Task slots, one bank each: the whole 64 KB RAM of a suspended task (its chip registers in bank 1); count configurable |
 | 27-28 | Print spooler (and with `spool=` up to 30 more at the top of the drives' area, spool.s) |
 | 29-30 | Clipboard (text scrap, photo scrap) |
-| 31-187 | Drives, handed out in 64 KB units through the allocation table |
+| 31-179 | Drives, handed out in 64 KB units through the allocation table (until 2026-11-18: 31-187) |
+| 180-187 | System fonts: GEOULTRA/FONTS.DNP, 8 tracks, read as tracks 238-245 of every drive (docs/DESIGN.md "System font folder") |
 | 188-191 | File engine: one Ultimate listing per handle (docs/FILE_ENGINE.md; until the allocation table hands out scratch banks at run time) |
 | 192-255 | Applications' legacy REU, one area of 8 banks per task slot (task n: banks 192 + 8n to 199 + 8n; their banks 0-7 as `ramExpSize` = 8 shows them; bank 0 is also MoveData's DMA scratch). `DoRAMOp` translates bank n to the current task's area, so applications never reach system banks, drives, task slots or each other's data |
 
-Fixed system part: 31 banks at the bottom and 68 at the top; 157 banks
-(about 10 MB) remain for drives. Fewer task slots or a smaller legacy size
+Fixed system part: 31 banks at the bottom and 76 at the top; 149 banks
+(about 9.3 MB) remain for drives. Fewer task slots or a smaller legacy size
 per task (settings) give the rest back to the drives.
 
 ## Drives A-D

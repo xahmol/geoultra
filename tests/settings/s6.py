@@ -137,11 +137,12 @@ def main():
         for _ in range(4):
             press(*TASKS_UP, t=3)
         check("Tasks [+] to 8: tasks= out", settings_text(), b"[system]\r\n")
-        check("the spooler's banks 27-28 (128 KB)", (bank(27), bank(28), bank(187)), (0xEE, 0xEE, 0x11))
+        check("the spooler's banks 27-28 (128 KB); 180-187 the system fonts", (bank(27), bank(28), bank(179),
+              bank(180), bank(187)), (0xEE, 0xEE, 0x11, 0xBB, 0xBB))
         press(*SPOOL_UP, t=3)
         press(*SPOOL_UP, t=3)
-        check("Spooler [+] twice: 512 KB (spool=512), banks 182-187 too",
-              (settings_text(), bank(181), bank(182), bank(187)), (b"[system]\r\nspool=512\r\n", 0x11, 0xEE, 0xEE))
+        check("Spooler [+] twice: 512 KB (spool=512), banks 174-179 too",
+              (settings_text(), bank(173), bank(174), bank(179)), (b"[system]\r\nspool=512\r\n", 0x11, 0xEE, 0xEE))
         g.png("settings-s6-spool")
         press(*SPOOL_DN, t=3)
         press(*SPOOL_DN, t=3)

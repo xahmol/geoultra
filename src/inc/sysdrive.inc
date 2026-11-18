@@ -16,4 +16,12 @@ SCRAP_BANK      = 29            ; banks 29-30
 SCRAP_TRACK     = 245
 SCRAP_TRACKS    = 2
         .assert SCRAP_TRACK + SCRAP_TRACKS = SYSDRV_TRACK, error, "sysdrive.inc: the scrap store's tracks end below E's"
+; The system fonts (docs/DESIGN.md "System font folder"): GEOULTRA/
+; FONTS.DNP, 8 tracks, loaded at the cold start into REU banks FONT_BANK
+; on and relocated there to tracks FONT_TRACK+1 to SCRAP_TRACK, read-only
+; for programs as E is (reudrv.s Locate).
+FONT_BANK       = 180           ; banks 180-187 (the drives' area ends below)
+FONT_TRACK      = 237
+FONT_TRACKS     = 8
+        .assert FONT_TRACK + FONT_TRACKS = SCRAP_TRACK, error, "sysdrive.inc: the fonts' tracks end below the scrap store's"
         .assert SYSDRV_TRACK + SYSDRV_TRACKS = 255, error, "sysdrive.inc: E's tracks end at 255 (Locate checks no bound)"

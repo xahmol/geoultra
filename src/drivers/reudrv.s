@@ -371,7 +371,7 @@ Locate: ldy curDrive
         and #$0F
         bne @type
         ldx r1L
-        cpx #SCRAP_TRACK + 1
+        cpx #FONT_TRACK + 1
         bcs @type
         ldx #DEV_NOT_FOUND
         clc
@@ -384,20 +384,23 @@ Locate: ldy curDrive
         stx locSys
         ldx r1L                 ; track
         beq BadTrack
-        cpx #SCRAP_TRACK + 1
+        cpx #FONT_TRACK + 1
         bcc @own
         cmp #DRV_NATIVE
         bcc @sys
         ldx drvTracks-8,y
-        cpx #SCRAP_TRACK + 1
+        cpx #FONT_TRACK + 1
         ldx r1L
         bcs @own                ; real tracks of this native drive
-@sys:   cpx #SYSDRV_TRACK + 1   ; the scrap store's tracks (writable,
-        lda #$40                ; locSys $40) or E's (read-only, $80): the
-        ldy #<(SCRAP_BANK - SCRAP_TRACK - 1)    ; bank is the track plus
-        bcc @reg                ; this (Address adds them, 8 bits)
-        lda #$80
-        ldy #<(SYSDRV_BANK - SYSDRV_TRACK - 1)
+@sys:   lda #$80                ; E's tracks or the system fonts' (read-
+        ldy #<(SYSDRV_BANK - SYSDRV_TRACK - 1)  ; only, locSys $80) or the
+        cpx #SYSDRV_TRACK + 1   ; scrap store's (writable, $40): the bank
+        bcs @reg                ; is the track plus this (Address adds
+        ldy #<(FONT_BANK - FONT_TRACK - 1)      ; them, 8 bits)
+        cpx #SCRAP_TRACK + 1
+        bcc @reg
+        lda #$40
+        ldy #<(SCRAP_BANK - SCRAP_TRACK - 1)
 @reg:   sta locSys
         sty locBase
         txa

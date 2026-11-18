@@ -33,7 +33,7 @@ STEP2_Y         = 170           ; legend's last kind right of it), then
                                 ; the spooler and the tasks (the page's
                                 ; presses end at y 171, its line at 176)
 SPOOL_BANK      = 27            ; the spooler: banks 27-28, then the top
-DRIVE_TOP       = 187           ; of the drives' area (spool.s)
+DRIVE_TOP       = FE_LAST_BANK  ; of the drives' area (spool.s)
 COL_SPOOL       = 14            ; light blue
 SPOOL_N         = 5             ; sizes: 128 KB to 2 MB
 COL_SYS         = 11            ; dark grey
@@ -308,6 +308,9 @@ Map:    jsr Used
         cpx #SYS_END
         bcc @set
         lda #COL_FREE
+        cpx #FE_LAST_BANK + 1
+        bcc @set
+        lda #COL_SYS            ; (180-187: the system fonts)
         cpx #ENG_FIRST
         bcc @set
         lda #COL_ENGINE

@@ -4,7 +4,7 @@
 ; The queue's REU banks: 27-28 always; with SETTINGS.INI [system] spool=
 ; (KB: 128, 256, 512, 1024, 2048; read by the auto-exec module 92 at the
 ; cold start, module 105) more, at the top of the drives' area (banks
-; 31-187) as far as no mounted drive uses them there; FE_MOUNT and the
+; 31-179) as far as no mounted drive uses them there; FE_MOUNT and the
 ; disk images gone into stay below (driveLimit, the file engine's
 ; Banks0). The queue's logical bank n: 27 + n for n < 2, spoolBase + n -
 ; 2 after. Bank 27's first RING0 pages hold the playback's state.
@@ -213,7 +213,7 @@ driveLimit:     .byte FE_LAST_BANK + 2  ; a drive's banks end below this - 1
 
 ; Init: A, X = spool='s first and fourth character: the banks wanted
 ; (128, 256, 512: 2, 4, 8; 1024, 2048: 16, 32; else 2); up to that - 2
-; at the top of the drives' area, from bank 187 down, while no REU drive
+; at the top of the drives' area, from bank 179 (FE_LAST_BANK) down, while no REU drive
 ; uses them; spoolExtra, spoolBase, driveLimit set.
 Init:   stx tmp
         ldx #2
