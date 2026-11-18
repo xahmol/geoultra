@@ -28,7 +28,8 @@
         .import LoadAll, Save   ; (ovl.s: overlay 4, inifile.s)
         .import PrnUlt          ; (ovl.s: overlay 6, prnult.s)
         .export SideLoad, SideLists, SidePress, FavAdd, RecentAdd
-        .export TaskOpen, Here, Join, work, docName
+        .export TaskOpen, Here, Join, work, docName, workLen, OpenHere
+        .import ImgPath, ImgLocal, NameImg, AfterMount, Mount
         .import Open, TaskTake
         .export text            ; (themefile.s reads and writes a theme in it)
         .export Setup, Slot, counts, which, at, wantTheme, wantView
@@ -158,6 +159,7 @@ FavAdd: jsr Here                ; the current folder
 RecentAdd:
         jsr Here
         bcs @end
+        jsr ImgPath             ; (a mounted image: its Ultimate path)
         jsr Join
         bcs @end                ; (too long: not kept)
         ldx #L_REC
@@ -447,7 +449,38 @@ SidePress:
         dey
 :       lda #0
         sta work,y
-        lda #<work
+        jmp OpenAt
+@end:   rts
+
+; OpenHere (open.s InImage: a document inside a disk image gone into,
+; whose drive slot is lent for one engine call only): the document
+; (entryName, in the current folder) opened through OpenAt.
+OpenHere:
+        jsr Here
+        ldx #PATH_LEN - 1
+@n:     lda entryName,x
+        sta docName,x
+        dex
+        bpl @n
+; OpenAt: the document docName in the folder work opened (its folder
+; shown, then open.s Document). A folder inside a disk image goes to the
+; drive the image is mounted on; an image not mounted is offered for
+; mounting (the user, 2026-11-18: recent documents of an image unmounted
+; since did nothing), then opened from its drive (imgpath.s, overlay 6).
+OpenAt: jsr ImgLocal
+        bcc @cd
+        lda #<MountQ            ; (entryName: the image, on the second line)
+        ldx #>MountQ
+        jsr Ask
+        bne @end                ; (NO)
+        lda #<work              ; its folder shown, the image mounted
+        ldx #>work
+        jsr Into
+        jsr NameImg
+        jsr Mount
+        jsr AfterMount
+        bcs @end                ; (cancelled or failed)
+@cd:    lda #<work
         sta r0L
         lda #>work
         sta r0H
@@ -518,6 +551,7 @@ FavSect:        .byte "[favourites]", 0
 RecSect:        .byte "[recent]", 0
 FavHead:        .byte "Favourites", 0
 RecHead:        .byte "Recent", 0
+MountQ:         .byte BOLDON, "Not mounted. Mount it?", PLAINTEXT, 0
 RemoveText:     .byte BOLDON, "Remove from favourites?", PLAINTEXT, 0
 
         .segment "DATA"

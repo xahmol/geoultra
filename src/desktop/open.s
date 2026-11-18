@@ -17,7 +17,7 @@
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
         .import cur, count, path, Redraw, RecentAdd, Mount, Leave, SideArrows
         .export Open, Up, Drive, Into, Document, Back
-        .import HistAdd, IsImage, Error, UsePrinter, PrnUlt, AppFind, AppGo
+        .import HistAdd, IsImage, Error, UsePrinter, PrnUlt, AppFind, AppGo, OpenHere
         .export appName, appClass, docDrive
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
@@ -181,9 +181,8 @@ Start:  jsr Leave               ; (desktop.s: the panes kept, GEOS's colours)
 InImage:
         cpx #FE_NOT_SUPPORTED
         bne @end
-        ldx #ERR_INIMG
-        jmp Error
-@end:   rts
+        jmp OpenHere            ; (side.s: offered for mounting, then
+@end:   rts                     ; opened from its drive)
 
 ; Document: entryName (a GEOS file in path that is no program) opened
 ; with its application, as the deskTop passes a document: the parent's

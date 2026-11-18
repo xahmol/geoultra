@@ -508,6 +508,20 @@ colour is a property of an element, by name:
   published), as a native REU drive for tests, screenshots and videos
   (MOUNTS.INI `C=`, a copy in the test folder, rebuilt and uploaded by
   `make deploy`); tests that mount use D.
+- **Recent documents and disk images (the user, 2026-11-18):** a
+  document on a drive with a mounted image goes into the recent list by
+  the image's Ultimate path (side.s RecentAdd, imgpath.s ImgPath), so
+  the entry outlives an unmount. Opening a document in a folder through
+  a disk image (a recent entry, or a double-click inside an image gone
+  into) goes to the drive it is mounted on, or asks "Not mounted. Mount
+  it?" and then shows the drive dialog; after the mount the document
+  opens from that drive (side.s OpenAt, imgpath.s ImgLocal and
+  AfterMount; the image's name and the rest of the path wait in side.s's
+  shared text, as an overlay keeps no bytes of its own). Test
+  tests/desktop/d29u64.py (U64). Open: geoWrite 2.1 finds a document
+  started with it only on drive A (when the disk names match) or else on
+  drive B (its findDocDevice): a document on C or D gives "opening
+  file".
 - **The newest version opens a document (the user, 2026-11-18):** a
   double-clicked document starts the newest version of its application
   found in the document's folder, or on any drive A-D in the root or a

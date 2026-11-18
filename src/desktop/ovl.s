@@ -68,6 +68,10 @@ OvlFail:
         Stub PrnUlt, 6          ; (prnult.s: the Ultimate's printer set up)
         Stub AppFind, 6         ; (appfind.s: a document's application)
         Stub AppGo, 6
+        Stub ImgPath, 6         ; (imgpath.s: paths through disk images)
+        Stub ImgLocal, 6
+        Stub NameImg, 6
+        Stub AfterMount, 6
         Stub Popup, 7           ; overlay 7: ctxmenu.s
         Stub Info, 7
         Stub About, 7           ; (geos > GeoUltra info)
