@@ -23,7 +23,7 @@
 
         .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
         .export hibState, RtcClockOvl, hibLimit, RtcCheck, hibBank
-        .import taskCur
+        .import taskCur, taskReq
 hibBank         = ramBank + 1   ; RamSetup's bank: 19 + the current task
         .import guClockFresh    ; (info.s, $C0FB)
         .import WbTick, wbPending
@@ -294,6 +294,12 @@ Resumed:
         plp
         pla
         sta CPU_PORT
+        lda taskReq             ; a print queue's next pass asked for:
+        ora #$20                ; the session may have been saved while
+        sta taskReq             ; none was asked for, and the playback
+                                ; stood still after the resume (the
+                                ; user's U64, 2026-11-18: "print 3%";
+                                ; an empty queue: the pass does nothing)
         ldx #0
         stx imgFlags            ; (a disk image's copy in the REU: not
         rts                     ; in the file, gone)
