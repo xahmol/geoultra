@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """geosdisk.py - GEOS disk images on a PC: make, list, add, extract.
 
-    geosdisk.py new IMAGE [--name=NAME] [--id=XY]
+    geosdisk.py new IMAGE [--name=NAME] [--id=XY] [--tracks=N]
     geosdisk.py list IMAGE
-    geosdisk.py add IMAGE SOURCE [SOURCE ...] [--replace] [--seq]
+    geosdisk.py add IMAGE SOURCE [SOURCE ...] [--folder=PATH] [--replace] [--seq]
     geosdisk.py extract IMAGE [NAME ...] [--out=DIR]
     geosdisk.py delete IMAGE NAME [NAME ...]
     geosdisk.py rename IMAGE OLD NEW
+    geosdisk.py mkdir IMAGE PATH
+    geosdisk.py build RECIPE.toml
 
-IMAGE: a .d64, .d71 or .d81 (all commands), a .dnp (list and extract;
-GeoUltra's own DNPs are made with tools/mkappsdnp.py). `new` makes an
+IMAGE: a .d64, .d71, .d81 or .dnp (CMD native, with folders: a name may
+carry its folder, "Writing/Letter"; --folder= for `add`, `mkdir` for new
+ones; `new` takes --tracks=N, 2-255, 8 by default). `build` makes a whole
+DNP from a recipe (the format of tools/mkappsdnp.py). `new` makes an
 empty GEOS disk: BAM, directory, a border block (the off-page directory)
 and the "GEOS format V1.0" signature, so GEOS and GeoUltra take it as a
 GEOS disk without converting it first (VICE's c1541 formats plain CBM
@@ -24,7 +28,10 @@ named after the file; --replace replaces a file of the same name.
 Formats (CBM DOS, as documented for the 1541/1571/1581; GEOS: HG2G):
 D64 35 tracks, BAM 18/0, directory from 18/1; D71 70 tracks, side 2's
 free counts at 18/0 $DD and its bitmaps in 53/0; D81 80 tracks of 40
-sectors, header 40/0, BAM 40/1 and 40/2, directory from 40/3. The GEOS
+sectors, header 40/0, BAM 40/1 and 40/2, directory from 40/3; DNP
+tracks of 256 sectors, root header 1/1 (its link: the directory), BAM
+in 1/2-1/33 (track * 32 + sector / 8, bit 7 first), a folder an entry of
+type 6 pointing to its header (as tools/mkappsdnp.py writes). The GEOS
 signature at header offset $AD, the border block's address at $AB.
 Own code (GeoUltra, 2026); image reading from tools/mkappsdnp.py, the
 CVT writer from tools/gwtool.py.
@@ -34,7 +41,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mkappsdnp import Image, GeoFile, read_cvt   # noqa: E402
+from mkappsdnp import Image, GeoFile, read_cvt, DNP   # noqa: E402
 from gwtool import write_cvt                      # noqa: E402
 
 GEOS_SIG = b"GEOS format V1.0"
@@ -63,12 +70,17 @@ class Disk:
             data = open(path, "rb").read()
             kind = {174848: "d64", 175531: "d64", 349696: "d71", 351062: "d71",
                     819200: "d81", 822400: "d81"}.get(len(data))
+            if kind is None and len(data) % 65536 == 0:
+                kind = "dnp"
             if kind is None:
-                die("%s: not a D64, D71 or D81" % path)
-            data = data[:self.SIZES[kind]]
+                die("%s: not a D64, D71, D81 or DNP" % path)
+            if kind != "dnp":
+                data = data[:self.SIZES[kind]]
         self.kind = kind
         self.data = bytearray(data)
-        if kind == "d81":
+        if kind == "dnp":
+            self.tracks, self.dirt, self.dir0 = len(data) // 65536, None, None
+        elif kind == "d81":
             self.tracks, self.dirt, self.dir0 = 80, 40, (40, 3)
         else:
             self.tracks, self.dirt, self.dir0 = (35 if kind == "d64" else 70), 18, (18, 1)
@@ -78,6 +90,8 @@ class Disk:
 
     # --- geometry -------------------------------------------------------
     def spt(self, t):
+        if self.kind == "dnp":
+            return 256
         if self.kind == "d81":
             return 40
         if t > 35:
@@ -85,6 +99,8 @@ class Disk:
         return 21 if t <= 17 else 19 if t <= 24 else 18 if t <= 30 else 17
 
     def off(self, t, s):
+        if self.kind == "dnp":
+            return ((t - 1) * 256 + s) * 256
         if self.kind == "d81":
             return ((t - 1) * 40 + s) * 256
         side = 0
@@ -101,7 +117,7 @@ class Disk:
         self.data[o:o + 256] = bytes(block).ljust(256, b"\0")
 
     def header_ts(self):
-        return (40, 0) if self.kind == "d81" else (18, 0)
+        return {"d81": (40, 0), "dnp": (1, 1)}.get(self.kind, (18, 0))
 
     # --- the BAM --------------------------------------------------------
     def read_bam(self):
@@ -110,6 +126,9 @@ class Disk:
                 self.free[(t, s)] = self.bam_bit(t, s)
 
     def bam_bit(self, t, s):
+        if self.kind == "dnp":
+            i = t * 32 + s // 8
+            return bool(self.get((1, 2 + i // 256))[i % 256] & (0x80 >> (s % 8)))
         if self.kind == "d81":
             blk = self.get((40, 1 if t <= 40 else 2))
             e = 0x10 + 6 * ((t - 1) % 40)
@@ -121,6 +140,17 @@ class Disk:
         return bool(blk[3 * (t - 36) + s // 8] & (1 << (s % 8)))
 
     def write_bam(self):
+        if self.kind == "dnp":
+            bam = bytearray()
+            for b in range(32):
+                bam += self.get((1, 2 + b))
+            for t in range(1, self.tracks + 1):
+                for s in range(256):
+                    i, bit = t * 32 + s // 8, 0x80 >> (s % 8)
+                    bam[i] = (bam[i] | bit) if self.free[(t, s)] else (bam[i] & ~bit & 0xFF)
+            for b in range(32):
+                self.put((1, 2 + b), bam[b * 256:(b + 1) * 256])
+            return
         if self.kind == "d81":
             for half in (1, 2):
                 blk = self.get((40, half))
@@ -149,12 +179,61 @@ class Disk:
         return sum(1 for (t, s), f in self.free.items() if f and t != self.dirt
                    and not (self.kind == "d71" and t == 53))
 
+    # --- folders (DNP) --------------------------------------------------
+    def folder(self, path):
+        """(header block, first directory block) of a folder ("" the root)."""
+        if self.kind != "dnp":
+            if path:
+                die("%s: folders exist on DNP images only" % self.path)
+            return self.header_ts(), self.dir0
+        ts = (1, 1)
+        for part in [p for p in path.split("/") if p]:
+            for _, _, e in self.slots((ts, tuple(self.get(ts)[0:2]))):
+                if e[0] & 7 == 6 and e[3:19].split(b"\xa0")[0].decode("latin1") == part:
+                    ts = (e[1], e[2])
+                    break
+            else:
+                die("%s: no folder %r" % (self.path, path))
+        return ts, tuple(self.get(ts)[0:2])
+
+    def mkdir(self, path):
+        parent, _, name = path.strip("/").rpartition("/")
+        phdr, _ = self.folder(parent)
+        if self.find((parent + "/" if parent else "") + name):
+            die("%s: %r is there already" % (self.path, path))
+        at, off = self.free_slot(parent)
+        header, first = self.alloc(), self.alloc()
+        ident = self.get((1, 1))[0x16:0x18]
+        h = bytearray(256)
+        h[0:2] = bytes(first)
+        h[2] = ord("H")
+        h[4:20] = pad(name)
+        h[0x14:0x16] = b"\xa0\xa0"
+        h[0x16:0x18] = ident
+        h[0x18] = 0xA0
+        h[0x19:0x1B] = b"1H"
+        h[0x1B:0x1D] = b"\xa0\xa0"
+        h[0x20:0x22] = bytes(header)
+        h[0x22:0x24] = bytes(phdr)
+        h[0x24:0x26] = bytes(at)
+        h[0x26] = off
+        self.put(header, h)
+        self.put(first, b"\x00\xff")
+        e = bytearray(30)
+        e[0] = 0x86
+        e[1:3] = bytes(header)
+        e[3:19] = pad(name)
+        e[0x1C:0x1E] = (2).to_bytes(2, "little")
+        b = self.get(at)
+        b[off:off + 30] = e
+        self.put(at, b)
+
     def alloc(self, near=None):
         """A free block, the tracks nearest the directory track first
         (data never on the directory track: that is the directory's)."""
         order = sorted((t for t in range(1, self.tracks + 1)
                         if t != self.dirt and not (self.kind == "d71" and t == 53)),
-                       key=lambda t: (abs(t - self.dirt), t))
+                       key=lambda t: (abs(t - (self.dirt or 1)), t))
         for t in order:
             for s in range(self.spt(t)):
                 if self.free[(t, s)]:
@@ -168,10 +247,16 @@ class Disk:
 
     # --- making a disk --------------------------------------------------
     @classmethod
-    def new(cls, path, name, disk_id):
+    def new(cls, path, name, disk_id, tracks=None):
         kind = os.path.splitext(path)[1].lower()[1:]
+        if kind == "dnp":
+            dnp = DNP(int(tracks or 8), name, disk_id)
+            dnp.finish()
+            d = cls(path, "dnp", bytes(dnp.data))
+            d.read_bam()
+            return d
         if kind not in cls.SIZES:
-            die("%s: give the image a .d64, .d71 or .d81 name" % path)
+            die("%s: give the image a .d64, .d71, .d81 or .dnp name" % path)
         d = cls(path, kind, bytes(cls.SIZES[kind]))
         for t in range(1, d.tracks + 1):
             for s in range(d.spt(t)):
@@ -230,39 +315,57 @@ class Disk:
             return (h[0xAB], h[0xAC])
         return None
 
-    def slots(self):
-        """(block, offset, entry) of every directory entry, used or not,
-        the border block's last."""
+    def slots(self, where=None):
+        """(block, offset, entry) of every directory entry of a folder
+        (where: (header, first block); the root by default), used or not,
+        the border block's last (the root's)."""
         out = []
-        ts, seen = self.dir0, set()
+        root = where is None
+        if root:
+            where = self.folder("")
+        ts, seen = where[1], set()
         while ts[0] and ts not in seen:
             seen.add(ts)
             b = self.get(ts)
             for e in range(8):
                 out.append((ts, 32 * e + 2, bytes(b[32 * e + 2:32 * e + 32])))
             ts = (b[0], b[1])
-        bd = self.border()
+        bd = self.border() if root else None
         if bd:
             b = self.get(bd)
             for e in range(8):
                 out.append((bd, 32 * e + 2, bytes(b[32 * e + 2:32 * e + 32])))
         return out
 
-    def files(self):
-        return [(ts, o, e) for ts, o, e in self.slots() if e[0] & 0x07]
+    def files(self, path=""):
+        return [(ts, o, e) for ts, o, e in self.slots(self.folder(path) if path else None)
+                if e[0] & 0x07]
 
     def find(self, name):
-        for ts, o, e in self.files():
-            if e[3:19].split(b"\xa0")[0].decode("latin1") == name:
+        folder, _, base = name.rpartition("/")
+        for ts, o, e in self.files(folder):
+            if e[3:19].split(b"\xa0")[0].decode("latin1") == base:
                 return ts, o, e
         return None
 
-    def free_slot(self):
+    def free_slot(self, path=""):
         bd = self.border()
-        for ts, o, e in self.slots():
+        where = self.folder(path)
+        for ts, o, e in self.slots(where if path else None):
             if e[0] == 0 and ts != bd:
                 return ts, o
-        ts = self.dir0                  # a new directory block on its track
+        ts = where[1]                   # a new directory block
+        while True:
+            b = self.get(ts)
+            if b[0] == 0:
+                break
+            ts = (b[0], b[1])
+        if self.kind == "dnp":
+            new = self.alloc()
+            b[0:2] = bytes(new)
+            self.put(ts, b)
+            self.put(new, b"\x00\xff")
+            return new, 2
         while True:
             b = self.get(ts)
             if b[0] == 0:
@@ -294,7 +397,7 @@ class Disk:
             self.release(ts)
             ts = (b[0], b[1])
 
-    def add(self, gf):
+    def add(self, gf, path=""):
         e = bytearray(gf.entry)
         blocks = 0
         if gf.header is not None and e[0x16]:
@@ -325,7 +428,7 @@ class Disk:
             blocks += n
         e[0] |= 0x80                    # closed
         e[0x1C:0x1E] = blocks.to_bytes(2, "little")
-        ts, o = self.free_slot()
+        ts, o = self.free_slot(path)
         b = self.get(ts)
         b[o:o + 30] = e
         self.put(ts, b)
@@ -393,9 +496,13 @@ def main(argv):
     if cmd == "new":
         if os.path.exists(path) and "replace" not in opts:
             die("%s exists (--replace to overwrite)" % path)
-        d = Disk.new(path, opts.get("name", "GEOS disk"), opts.get("id", "GU"))
+        d = Disk.new(path, opts.get("name", "GEOS disk"), opts.get("id", "GU"), opts.get("tracks"))
         d.save()
         print("%s: empty GEOS disk, %d blocks free" % (path, d.blocks_free()))
+        return
+    if cmd == "build":
+        import mkappsdnp
+        mkappsdnp.main([argv[0], path])
         return
     if cmd in ("list", "extract") and os.path.splitext(path)[1].lower() == ".dnp":
         img = Image(path)
@@ -418,15 +525,16 @@ def main(argv):
             gf = img.gfile(e) if (e[0x16] and e[0x13] and e[0] & 7 != 6) else None
             cls = gf.header[0x4D:0x61].split(b"\0")[0].decode("latin1", "replace") if gf and gf.header else ""
             print("%5d  %-24s %-3s  %-17s %-20s %s" % (blocks, name, kind, geos, cls, date))
-        if cmd == "list" and os.path.splitext(path)[1].lower() != ".dnp":
-            print("%d blocks free%s" % (d.blocks_free(), ", GEOS disk" if d.border() else ", not a GEOS disk"))
+        dd = Disk(path)
+        print("%d blocks free%s" % (dd.blocks_free(), ", GEOS disk" if dd.border() else ", not a GEOS disk"))
         return
     if cmd == "extract":
         out = opts.get("out", ".")
         os.makedirs(out, exist_ok=True)
         want = set(args[2:])
+        chosen = set(want)
         for name, e in entries:
-            if (want and name not in want) or e[0] & 7 == 6:
+            if (chosen and name not in chosen) or e[0] & 7 == 6:
                 continue
             gf = img.gfile(e)
             safe = name.replace("/", "_")
@@ -441,14 +549,20 @@ def main(argv):
         if want:
             die("not found: %s" % ", ".join(sorted(want)))
         return
+    if cmd == "mkdir" and len(args) == 3:
+        d.mkdir(args[2])
+        d.save()
+        return
     if cmd == "add":
+        folder = opts.get("folder", "").strip("/")
         for spec in args[2:]:
             gf = source(spec, "seq" in opts)
-            if d.find(gf.name):
+            full = (folder + "/" if folder else "") + gf.name
+            if d.find(full):
                 if "replace" not in opts:
-                    die("%s: %r is there already (--replace)" % (path, gf.name))
-                d.delete(gf.name)
-            d.add(gf)
+                    die("%s: %r is there already (--replace)" % (path, full))
+                d.delete(full)
+            d.add(gf, folder)
             print("%s: %s added" % (path, gf.name))
         d.save()
         print("%d blocks free" % d.blocks_free())
@@ -463,11 +577,13 @@ def main(argv):
         hit = d.find(args[2])
         if not hit:
             die("%s: no file %r" % (path, args[2]))
-        if d.find(args[3]):
-            die("%s: %r is there already" % (path, args[3]))
+        folder = args[2].rpartition("/")[0]
+        new = args[3].rpartition("/")[2]                # (in the same folder)
+        if d.find((folder + "/" if folder else "") + new):
+            die("%s: %r is there already" % (path, new))
         ts, o, e = hit
         b = d.get(ts)
-        b[o + 3:o + 19] = pad(args[3])
+        b[o + 3:o + 19] = pad(new)
         d.put(ts, b)
         d.save()
         return

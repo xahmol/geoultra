@@ -6,7 +6,8 @@ CVTs (GeoUltra's own: the desktop, a printer driver, gush) and from
 another image, listed, extracted again (the same bytes), deleted (the
 blocks back), renamed; CVTs exchanged with VICE's c1541 both ways
 (c1541 -geoswrite of ours, ours of c1541 -geosread), the content the
-same. Run after `make`.
+same; a DNP with a folder (mkdir, add --folder, extract, rename,
+delete). Run after `make`.
 Usage: tests/tools/geosdisk_test.py
 """
 import os
@@ -71,6 +72,27 @@ def main():
         d = geosdisk.Disk(path)
         check("%s: deleted (blocks back) and renamed" % kind,
               d.blocks_free() > before and d.find(names[1]) is None and d.find("Renamed") is not None)
+    dnp = os.path.join(OUT, "t.dnp")                    # DNP: a folder
+    if os.path.exists(dnp):
+        os.remove(dnp)
+    run("new", dnp, "--tracks=4")
+    empty = geosdisk.Disk(dnp).blocks_free()
+    run("mkdir", dnp, "Folder")
+    run("add", dnp, CVTS[0], "--folder=Folder")
+    run("add", dnp, CVTS[1])
+    listed = run("list", dnp)
+    check("dnp: a folder, a file in it and one in the root",
+          "Folder/" + names[0] in listed and names[1] in listed, listed)
+    xdir = os.path.join(OUT, "x-dnp")
+    run("extract", dnp, "Folder/" + names[0], "--out=" + xdir)
+    got = read_cvt(os.path.join(xdir, "Folder_" + names[0] + ".cvt"))
+    check("dnp: the folder's file extracted the same",
+          got.records == read_cvt(CVTS[0]).records and len(os.listdir(xdir)) == 1, os.listdir(xdir))
+    run("rename", dnp, "Folder/" + names[0], "Renamed")
+    run("delete", dnp, "Folder/Renamed", names[1])
+    d = geosdisk.Disk(dnp)
+    check("dnp: renamed and deleted in the folder, the blocks back (the folder's 2 kept)",
+          d.blocks_free() == empty - 2 and d.find("Folder/Renamed") is None, (d.blocks_free(), empty))
     cdisk = os.path.join(OUT, "c.d81")
     if os.path.exists(cdisk):
         os.remove(cdisk)
