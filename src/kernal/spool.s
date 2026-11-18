@@ -131,8 +131,14 @@ AREA_LEN        = STRB + 256 - AREA
 SPOOL_FIXED     = 2             ; banks 27-28
 RING0           = $40           ; the ring's first page (spoolring.inc)
 ST_BUFS         = $3A00         ; GEOS's buffers during a driver call
-BUFS            = fileHeader    ; ($8100-$84FF: Keep)
-BUFS_LEN        = $0400
+BUFS            = fileHeader    ; (Keep: fileHeader, curDirHead, fileTrScTab
+BUFS_LEN        = dirEntryBuf + 30 - fileHeader ; and dirEntryBuf, $8100-$841D;
+                                ; not the system variables after it,
+                                ; appMain, the vectors, curDrive: until
+                                ; 2026-11-18 the whole page $8400 was put
+                                ; back after a driver call, which turned
+                                ; appMain back and ran its routine again
+                                ; and again, the U64 test hung)
         .assert DRV_SAVE >= ST_AREA + AREA_LEN && DRV_SAVE + DRV_SLOTS * DRV_LEN <= ST_BUFS, error, "spool.s: the driver slots overlap"
         .assert ST_BUFS + BUFS_LEN <= RING0 * 256, error, "spool.s: the buffers' copy runs into the ring"
 ; The queue's header (QHEAD, REU bank 1)
@@ -810,7 +816,7 @@ SwapIn: ldx #0
 ; Keep: the overlay scratch kept until SwapOut (module 110, just before
 ; the driver's call: the playback's state, the tail moved past the
 ; record's data; the file engine's work area, which a driver calling the
-; engine uses: GU PDF), and GEOS's buffers $8100-$84FF (fileHeader,
+; engine uses: GU PDF), and GEOS's buffers $8100-$841D (fileHeader,
 ; curDirHead, fileTrScTab, dirEntryBuf), which the file engine uses as
 ; scratch while the program keeps its open file's state there (geoWrite
 ; its document's record index: after a GU PDF print "reading page" and

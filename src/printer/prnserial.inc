@@ -16,8 +16,8 @@
 ; us (data valid), CLK pulled and DATA released; the receiver pulls DATA
 ; within 1 ms (byte taken; we allow it about 30 s, see IecSend), at
 ; least 100 us between bytes. Commands under
-; ATN: LISTEN $20 + device, SECOND $60 + channel, UNLISTEN $3F; ATN
-; released after the last. No EOI (a printer needs none). The C64's
+; ATN: LISTEN $20 + device, SECOND $60 + channel, CLOSE $E0 + channel,
+; UNLISTEN $3F; ATN released after the last. No EOI (a printer needs none). The C64's
 ; $DD00: bits 3-5 pull ATN, CLK, DATA (1 = pulled, through inverters),
 ; bits 6-7 read CLK and DATA (1 = released); bits 0-2 (the VIC bank,
 ; RS-232) are kept.
@@ -36,6 +36,7 @@ PRN_DEV         = 4
 ACK_WAIT        = 43            ; x about 0.7 s: a byte's acknowledgement
 LISTEN          = $20 + PRN_DEV
 UNLISTEN        = $3F
+PRN_CLOSE       = $E0 | (PRN_SA & $0F) ; CLOSE on PRN_SA's channel
 
 ; Open: device 4 listening on PRN_SA's channel. Carry set and X =
 ; DEV_NOT_FOUND when it does not answer (the bus released again), else
@@ -60,10 +61,26 @@ Fail:   jsr IecFree
         sec
         rts
 
-; Close: UNLISTEN, the bus released, the I/O left; X 0, carry clear.
+; Close: UNLISTEN, then CLOSE on the channel (LISTEN, $E0 + channel,
+; UNLISTEN: what BASIC's CLOSE sends), the bus released, the I/O left;
+; X 0, carry clear. The CLOSE makes the Ultimate's printer take the
+; job's last bytes: in PNG mode its firmware interprets its 256-byte
+; buffer only when it is full or at an ATN addressed to the printer
+; (1541ultimate software/io/printer/iec_printer.cc: push_ctrl, ATN as
+; $FE, _push_command), not at UNLISTEN, so a page's last bytes (its FF)
+; waited for the next job, which then printed the previous page (the
+; user's U64, 2026-11-16).
 Close:  lda #UNLISTEN
         jsr IecCmd
         jsr IecFree
+        lda #LISTEN
+        jsr IecCmd
+        bcs @free               ; (gone meanwhile: nothing more)
+        lda #PRN_CLOSE
+        jsr IecSend
+        lda #UNLISTEN
+        jsr IecCmd
+@free:  jsr IecFree
         jsr DoneWithIO
         ldx #0
         clc

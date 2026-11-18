@@ -184,7 +184,11 @@ def main():
             u.write(BAND, cards(img, band))
             if cols:
                 u.write(COLR, cols[band])
-            run(r(0x02, BAND) + r(0x04, WORK) + r(0x06, COLR if cols else 0) + jsr(0x7906))
+            t1 = time.time()                    # (a full queue: the call waits for
+            run(r(0x02, BAND) + r(0x04, WORK) + r(0x06, COLR if cols else 0) + jsr(0x7906),
+                timeout=int(os.environ.get("PRNU64_BAND", "1200")))  # (minutes on the Epson)
+            if time.time() - t1 > 20:
+                print("  band %d: %ds (the queue full, played meanwhile)" % (band, time.time() - t1), flush=True)
         x = run(r(0x02, BAND) + r(0x04, WORK) + jsr(0x7909))
         check("%s: StopPrint" % driver.decode(), x == 0, "X=%02X" % x)
         end = time.time() + int(os.environ.get("PRNU64_WAIT", "900"))   # the spooler plays it
