@@ -29,7 +29,7 @@
         .export folderT, folderS, ExtTable, SetGEOSDiskOvl, Dir81, Patch81, FileEngine
         .import t1581
         .import OvlCall, SysFindFile
-        .import DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite, DrvReadBuff
+        .import DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite, DrvReadBuff, ChkDkGEOS
         .import geosId
 
 FindFile        = SysFindFile   ; (as the jump table's was before the scrap
@@ -112,6 +112,7 @@ trk19:  .byte 0
         .scope Mod117                   ; directory block
 
         jmp First                       ; entry 0
+        jmp Border                      ; entry 3 (the driver's GetBorder)
 
 ; First: r1 = the current folder's (or 1581 partition's) first
 ; directory block: the link of its header block, read from the drive
@@ -143,6 +144,57 @@ First:  ldy curDrive
         lda diskBlkBuf+1
         sta r1H
         rts
+
+
+; Border (the driver's GetBorder): r1 = the border block (the off-page
+; directory) from the drive's header block, read into diskBlkBuf (1541,
+; 1571: 18/0; 1581: the partition's 40/0; native: the current folder's
+; header); Y = 0 on a GEOS disk, $FF on another. X = error. curDirHead is
+; not touched (GEOS 2.0's GetBorder reads it through GetDirHead; GeoUltra
+; searches on in drive E after a whole directory, so a program's
+; curDirHead would change where it does not under GEOS 2.0).
+; Destroys A, r4, r5, diskBlkBuf.
+Border: ldy curDrive
+        lda driveType-8,y
+        and #$0F
+        cmp #DRV_NATIVE
+        beq @native
+        cmp #DRV_1581
+        beq @d81
+        lda #18                         ; 1541, 1571
+        bne @t0                         ; (always)
+@d81:   jsr Dir81
+@t0:    sta r1L
+        lda #0
+        beq @hdr                        ; (always)
+@native:
+        ldx curDrive
+        lda folderT-8,x
+        sta r1L
+        lda folderS-8,x
+@hdr:   sta r1H
+        jsr DrvReadBuff
+        txa
+        bne @end
+        lda #<diskBlkBuf
+        sta r5L
+        lda #>diskBlkBuf
+        sta r5H
+        jsr ChkDkGEOS
+        ldy #$FF
+        and #$FF
+        beq @ok
+        lda diskBlkBuf + OFF_OP_TR_SC
+        sta r1L
+        lda diskBlkBuf + OFF_OP_TR_SC + 1
+        sta r1H
+        ldy #0
+@ok:    lda #<curDirHead                ; (r5 as GEOS 2.0 leaves it: its
+        sta r5L                         ; GetBorder ran ChkDkGEOS on
+        lda #>curDirHead                ; curDirHead; conformance)
+        sta r5H
+        ldx #0
+@end:   rts
 
         .endscope
 

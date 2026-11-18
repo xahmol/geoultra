@@ -27,7 +27,7 @@
         .import Dir81, Patch81
         .export t1581
         .export DrvGetDirHead, DrvPutDirHead, CalcBlksFree, SetNextFree, ClearAndWrite
-        .export geosId, FindBAMBit, FreeBlock, AllocateBlock, DrvReadBuff, DrvWriteBuff
+        .export geosId, FindBAMBit, FreeBlock, AllocateBlock, DrvReadBuff, DrvWriteBuff, ChkDkGEOS
         .import natLoaded, sysActive
         .import Trap, CopyFString, GetPtrCurDkNm, Ddiv, OvlCall
 
@@ -1418,26 +1418,15 @@ NextDirEntry:
 @end:   rts
 
 ; GetBorder: r1 = the GEOS border block; Y = $FF on a non-GEOS disk.
-; Returns X = error. Destroys A, r4, r5.
+; Returns X = error. Destroys A, r4, r5, diskBlkBuf. Module 117 (folders.s
+; Border): only the drive's header block, read into diskBlkBuf;
+; curDirHead stays as it was (2026-11-18: a FindFile that ran through
+; the border block before falling back to drive E left the program
+; drive's header there, and geoWrite counted the document drive's free
+; blocks from it: "Disk near full").
 GetBorder:
-        jsr DrvGetDirHead
-        txa
-        bne @end
-        lda #<curDirHead
-        sta r5L
-        lda #>curDirHead
-        sta r5H
-        jsr ChkDkGEOS
-        ldy #$FF
-        and #$FF
-        beq @ok
-        lda curDirHead + OFF_OP_TR_SC
-        sta r1L
-        lda curDirHead + OFF_OP_TR_SC + 1
-        sta r1H
-        ldy #0
-@ok:    ldx #0
-@end:   rts
+        jsr OvlCall
+        .byte 117, 3
 
 ; --- Start-up -------------------------------------------------------------
 
