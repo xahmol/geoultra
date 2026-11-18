@@ -17,7 +17,7 @@
         .import drvFlags, drvTracks, SysRAMOp, folderT, folderS
         .import sysActive, sysType, sysCurType, sysBase, sysFlags
         .import sysTracks, sysFolderT, sysFolderS, sysSlot
-        .import uTouch, OvlCall
+        .import uTouch, OvlCall, sysShow
 
 HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
 
@@ -59,8 +59,8 @@ Slot:   ldx curDrive
         sta curType
         lda ramBase-8,x
         sta sysBase
-        lda #SYSDRV_BANK
-        sta ramBase-8,x
+        lda sysShow             ; (E's bank, or the system fonts' for
+        sta ramBase-8,x         ; their search: module 123; both 8 tracks)
         lda drvFlags-8,x
         sta sysFlags
         ora #F_READONLY

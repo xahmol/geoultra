@@ -30,10 +30,10 @@
         .export sysName, sysActive, sysType, sysCurType, sysBase, sysFlags
         .export sysTracks, sysFolderT, sysFolderS, sysSlot, ownDesk, sysActive
         .export imgFlags, imgBank, imgType, imgTracks, uTouch, autoIdx
-        .export fontsOn
+        .export fontsOn, sysShow
         .import taskName
 NAME_LEN        = 13            ; (task.s: taskName's length)
-        .import OvlCall, FindFTypes, FindFile, MoveData
+        .import OvlCall, FindFTypes, FindFile, MoveData, drvTracks
         .import GetFHdrInfo, DoDlgBox, EnterDeskTop, RootFTypes, RootFind
 
 HEAD_SAVE       = $1800         ; curDirHead's copy in REU bank 1
@@ -67,6 +67,9 @@ SysFindFile:
         .segment "KEXT"                 ; (CODE is full)
 fontsOn:        .byte 0         ; $80: the system fonts loaded (FONTS.DNP,
                                 ; banks FONT_BANK on; mount.s LoadFonts)
+sysShow:        .byte SYSDRV_BANK ; the bank module 81's Enter shows: E's,
+                                ; FONT_BANK while module 123 searches
+        .assert SYSDRV_TRACKS = FONT_TRACKS, error, "sysdrive.s: Enter shows both with E's track count"
 
 ; AppFTypes (FindFTypes through the jump table, for applications and the
 ; desktop): where the list starts and how many names fit noted for
@@ -180,6 +183,7 @@ OvFTypes:
         jsr Enter
         jsr FindFTypes
         jsr Leave
+        jsr FFTypes             ; (the system fonts after E's: module 123)
         lda ftAll               ; (an application's list only)
         beq @ok
         lda r7L
@@ -197,6 +201,10 @@ EFirst: jsr OvlCall             ; (rootmerge.s, module 17: room)
         .byte 17, 6
 Once:   jsr OvlCall             ; (module 116: E's fonts whose ID the
         .byte 116, 0            ; user's already have taken out)
+FFTypes:jsr OvlCall             ; (module 123: the system fonts' too)
+        .byte 123, 0
+FFind:  jsr OvlCall             ; (module 123: a font in the system
+        .byte 123, 3            ; fonts)
 
 ; OvFindFile (FindFile failed with FILE_NOT_FOUND): the name in drive E's
 ; directory; found there as a desk accessory, font or printer driver, X = 0 with
@@ -228,7 +236,10 @@ OvFindFile:
         beq @end
         cmp #PRINTER_FILE       ; (GeoUltra's printer drivers live on E:
         beq @end                ; applications load PrntFilename's)
-@not:   lda sysR6
+@not:   jsr FFind               ; (not on E: a system font? module 123)
+        txa
+        beq @end
+        lda sysR6
         sta r6L
         lda sysR6+1
         sta r6H
@@ -587,3 +598,85 @@ Remove: jsr At
         rts
 
         .endscope
+
+; ======================================================================
+
+        .segment "OVL123"               ; overlay module 123: the system
+        .scope Mod123                   ; fonts searched (docs/DESIGN.md
+                                        ; "System font folder")
+        jmp FTypes                      ; entry 0 (module 15, OvFTypes)
+        jmp Find                        ; entry 3 (module 15, OvFindFile)
+
+        .include "sysenter.inc"         ; Enter, Leave, Usable (module 81)
+
+; FTypes (module 15's OvFTypes, after drive E's fonts: r6 where that
+; search stopped, moved back by the name's offset, r7H the room left):
+; the system fonts' (FONTS.DNP, banks FONT_BANK) added after them, when
+; loaded and when they can be shown (Here). Destroys A, X, Y, r0-r5.
+FTypes: lda r7L
+        cmp #FONT
+        bne @end
+        lda r7H
+        beq @end
+        jsr Here
+        bcs @end
+        clc                             ; forward again by the name's
+        lda r6L                         ; offset, as module 15 does for E
+        adc #OFF_FNAME
+        sta r6L
+        bcc :+
+        inc r6H
+:       jsr Show
+        jsr FindFTypes
+        jsr Gone
+@end:   rts
+
+; Find (module 15's OvFindFile, the name not on the drive nor on E):
+; sysName in the system fonts; found as a font: X = 0 with dirEntryBuf,
+; r1 and r5 as FindFile leaves them (tracks FONT_TRACK+1 on), else X
+; not 0.
+Find:   jsr Here
+        bcs @no
+        lda sysName
+        sta r6L
+        lda sysName+1
+        sta r6H
+        jsr Show
+        jsr FindFile
+        jsr Gone
+        txa
+        bne @end
+        lda dirEntryBuf + OFF_GFILE_TYPE
+        cmp #FONT
+        beq @end
+@no:    ldx #FILE_NOT_FOUND
+@end:   rts
+
+; Here: C clear when the system fonts can be shown: loaded (fontsOn),
+; nothing shown already (Usable, module 81), and not a native drive
+; whose own tracks reach FONT_TRACK + 1 (they are its own there).
+Here:   sec
+        bit fontsOn
+        bpl @end
+        jsr Usable
+        bcs @end
+        ldx curDrive
+        lda driveType-8,x
+        and #$0F
+        cmp #DRV_NATIVE
+        bcc @end
+        lda drvTracks-8,x
+        cmp #FONT_TRACK + 1
+@end:   rts
+
+; Show / Gone: Enter / Leave with the system fonts' bank instead of E's.
+Show:   lda #FONT_BANK
+        sta sysShow
+        jmp Enter
+Gone:   jsr Leave
+        lda #SYSDRV_BANK
+        sta sysShow
+        rts
+
+        .endscope
+
