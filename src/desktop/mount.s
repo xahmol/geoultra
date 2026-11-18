@@ -322,18 +322,20 @@ EjectIcon:
         .byte %00000000
 
 ; MountIcon: the list's mount icon on a disk image's line (list.s
-; ImgIcon; the user, 2026-11-18), 8 x 8, own drawing: an arrow down onto
-; a bar, the eject icon's opposite.
+; ImgIcon; the user, 2026-11-18), 8 x 8, own drawing: a thin arrow down
+; into an open tray ("put in"), line-drawn so it cannot be taken for
+; the eject icon's solid triangle over a bar (the user: the first one,
+; an arrow onto a bar, looked the same).
 MountIcon:
         .byte $80 + 8
-        .byte %00111000
-        .byte %00111000
-        .byte %00111000
-        .byte %11111110
-        .byte %01111100
-        .byte %00111000
         .byte %00010000
+        .byte %00010000
+        .byte %01010100
+        .byte %00111000
+        .byte %10010010
+        .byte %10000010
         .byte %11111110
+        .byte %00000000
 
         .segment "OV3"
 

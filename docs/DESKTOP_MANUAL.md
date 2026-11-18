@@ -195,7 +195,8 @@ default), **one line** (the icons alone, one more row for the list) or
 
 Drives A to D hold disk images from the Ultimate (they are kept in the
 REU while mounted, and changes are written back to the image file).
-To mount an image, click the **mount icon** (an arrow down onto a bar)
+To mount an image, click the **mount icon** (a thin arrow down into an open tray; the eject icon on
+a drive's line is a solid triangle over a bar)
 at the right end of its line in the list, or choose "mount" in its
 context menu (the right mouse button); then choose the drive in the
 dialog. The eject icon on a drive's line in the sidebar unmounts it

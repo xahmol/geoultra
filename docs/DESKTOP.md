@@ -162,7 +162,7 @@ colour is a property of an element, by name:
    (2026-11-13), mounting is the context menu's second item: on a disk
    image it reads "mount" instead of "open in new task" and opens the
    drive dialog (list.s TaskOrMount, ctxmenu.s; the user, 2026-11-16:
-   no way to mount was left). A mount icon (8 x 8, an arrow onto a bar,
+   no way to mount was left). A mount icon (8 x 8, a thin arrow into an open tray,
    own drawing, mount.s MountIcon) at the right end of each disk image's
    line in the list and detailed views (list.s ImgIcon, the list's last
    card) mounts with one click (listin.s IconHit sets openReq =
