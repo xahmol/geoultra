@@ -103,7 +103,7 @@ AppFind:
 
 ; AppGo (after AppFind found one and Document made the document's drive
 ; and folder current again): the winner's drive and folder current, its
-; name in appName. Destroys A, X, Y, r0-r15.
+; name in appName; then SwapDoc. Destroys A, X, Y, r0-r15.
 AppGo:  ldx #NAME_MAX - 1
 @name:  lda bestName,x
         sta appName,x
@@ -124,6 +124,34 @@ AppGo:  ldx #NAME_MAX - 1
         lda #SET_CUR_DIR
         jsr Ext
 @open:  jsr OpenDisk
+@end:   ; (on into SwapDoc)
+
+; SwapDoc (AppGo's end): a document on drive C or D: drives B and its
+; drive swapped (FE_DRVSWAP, drvswap.s; swapped back by EnterDeskTop):
+; geoWrite 2.1 looks for a document on drive A or else on B only (the
+; user, 2026-11-18). The program's drive is current again under its
+; new letter, docDrive B.
+SwapDoc:
+        lda docDrive
+        cmp #10
+        bcc @end
+        sta r0L
+        lda #FE_DRVSWAP
+        jsr FileEngine
+        txa
+        bne @end                ; (not swapped: as it was)
+        lda curDrive            ; the program's drive under its new letter
+        cmp #9
+        bne :+
+        lda docDrive            ; (B -> the document's old letter)
+        bne @cur                ; (always)
+:       cmp docDrive
+        bne @cur
+        lda #9                  ; (the document's drive -> B)
+@cur:   jsr SetDevice
+        jsr OpenDisk
+        lda #9
+        sta docDrive
 @end:   rts
 
 ; Folders: the folders right below drive drv's root (FE_OPENDIR "/x"),

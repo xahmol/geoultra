@@ -599,6 +599,7 @@ OvEnterDeskTop:
         ldx #$FF
         txs
         jsr WriteBackNow        ; changed drives to their images first
+        jsr DrvBack             ; drive B swapped back (drvswap.s)
         jsr RepairJumpTab
         jsr InitMachine
         jsr Background
@@ -644,6 +645,12 @@ OvEnterDeskTop:
         sta r0H
         jsr DoDlgBox
         jmp @try
+
+; DrvBack: drive B and a document's drive swapped back when a program
+; started with a document ran with them swapped (module 118).
+DrvBack:
+        jsr OvlCall
+        .byte 118, 3
 
 ; TryDesk: A = drive. Starts the desktop on it if there is one; returns
 ; otherwise.

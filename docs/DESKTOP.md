@@ -518,10 +518,19 @@ colour is a property of an element, by name:
   opens from that drive (side.s OpenAt, imgpath.s ImgLocal and
   AfterMount; the image's name and the rest of the path wait in side.s's
   shared text, as an overlay keeps no bytes of its own). Test
-  tests/desktop/d29u64.py (U64). Open: geoWrite 2.1 finds a document
-  started with it only on drive A (when the disk names match) or else on
-  drive B (its findDocDevice): a document on C or D gives "opening
-  file".
+  tests/desktop/d29u64.py (U64: the document opens from D).
+- **A document on C or D (the user, 2026-11-18):** geoWrite 2.1 finds a
+  document it is started with only on drive A (equal disk names) or
+  else on drive B (its findDocDevice, mist64/geowrite): one on C or D
+  gave "opening file". When the desktop starts a program with a document
+  on C or D, it swaps drive B and that drive first (appfind.s SwapDoc,
+  FE_DRVSWAP; the kernal's drvswap.s, module 118, swaps everything that
+  makes a drive: the driver's tables, the folders, the disk names, the
+  BAM working copy's owner, the mount table entries, image paths and
+  dirty maps); EnterDeskTop swaps them back after the write-back. A task
+  switched to meanwhile sees the letters swapped. Test
+  tests/desktop/d30.py (VICE: a document on C, swapped, opened, swapped
+  back).
 - **The newest version opens a document (the user, 2026-11-18):** a
   double-clicked document starts the newest version of its application
   found in the document's folder, or on any drive A-D in the root or a

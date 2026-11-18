@@ -136,6 +136,7 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 86, 3             ; FE_POINTER (pointer.s)
         .byte 99, 0             ; FE_TASK (task.s)
         .byte 114, 0            ; FE_SPOOL (spool.s)
+        .byte 118, 0            ; FE_DRVSWAP (drvswap.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),
@@ -230,10 +231,7 @@ Setup:  jsr Magic
         bne @zero
         lda #'/'
         sta diskBlkBuf
-        lda #<diskBlkBuf
-        sta r0L
-        lda #>diskBlkBuf
-        sta r0H
+        jsr Magic               ; (r0 = diskBlkBuf; r1, r2 set below)
         lda #<FE_CWD
         sta r1L
         lda #>FE_CWD

@@ -20,6 +20,7 @@ matrix, no sprites) is written to --out:
 
 APPRUN_VICE_ARGS: more VICE arguments (a printer on device 4, ...).
 APPRUN_DRIVE_A: drive A's image instead of the oracle disk (a D81 too).
+APPRUN_DRIVE_C: an image for drive C (none by default).
 APPRUN_KEEP_REU=1: the REU image is kept and written back at the end, so a
 second run sees what the first left in the REU (the scrap store, drives).
 
@@ -52,15 +53,20 @@ def reu_image():
     """Drive A: the oracle disk at bank 31 (APPRUN_DRIVE_A: another image,
     e.g. a D81); drive B: the apps disk at 40, or after a larger A."""
     drive_a = os.environ.get("APPRUN_DRIVE_A", harness.ORACLE_DISK)
-    newest = max(os.path.getmtime(p) for p in (drive_a, APPS_DISK, __file__))
+    drive_c = os.environ.get("APPRUN_DRIVE_C", "")
+    newest = max(os.path.getmtime(p) for p in (drive_a, APPS_DISK, __file__) + ((drive_c,) if drive_c else ()))
+    src = APPS_DISK + "|" + drive_a + "|" + drive_c
     if (os.path.exists(REU_IMAGE) and os.path.getmtime(REU_IMAGE) > newest
-            and open(REU_IMAGE + ".src").read() == APPS_DISK + "|" + drive_a):
+            and open(REU_IMAGE + ".src").read() == src):
         return
-    open(REU_IMAGE + ".src", "w").write(APPS_DISK + "|" + drive_a)
+    open(REU_IMAGE + ".src", "w").write(src)
     reu = bytearray(16 << 20)
     reu[0x010100:0x010105] = b"GUMT\x01"
     bank_b = max(40, 31 + (os.path.getsize(drive_a) + 0xFFFF) // 0x10000)
-    for slot, (path, bank) in enumerate(((drive_a, 31), (APPS_DISK, bank_b))):
+    drives = [(drive_a, 31), (APPS_DISK, bank_b)]
+    if drive_c:                                 # C after B's banks
+        drives.append((drive_c, bank_b + (os.path.getsize(APPS_DISK) + 0xFFFF) // 0x10000))
+    for slot, (path, bank) in enumerate(drives):
         image = open(path, "rb").read()
         ext = os.path.splitext(path)[1].lower()
         dtype, tracks = {".d81": (3, 0), ".d71": (2, 0),

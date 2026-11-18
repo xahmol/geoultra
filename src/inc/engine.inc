@@ -49,7 +49,8 @@ FE_POINTER      = 31            ; the mouse pointer's design (pointer.s)
 FE_TASK         = 32            ; the tasks: count, popup, new (task.s)
 FE_SPOOL        = 33            ; the print queue: state, jobs, pause,
                                 ; resume, cancel (spool.s)
-FE_COUNT        = 34
+FE_DRVSWAP      = 34            ; drive B and r0L's swapped (drvswap.s)
+FE_COUNT        = 35
 FE_VER          = $0003         ; FE_VERSION's answer (the engine's version)
 
 ; FE_COPY, FE_MOVE: flags (r2L)

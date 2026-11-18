@@ -39,6 +39,7 @@ FE_HOME         = 26
 FE_MKDIR        = 8
 FE_MOUNT        = 17
 FE_MOUNTINFO    = 23
+FE_DRVSWAP      = 34            ; drive B and r0L swapped (kernal drvswap.s)
 FE_MOVE         = 6
 FE_OPEN         = 13
 FE_OPENDIR      = 2

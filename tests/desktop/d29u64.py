@@ -7,10 +7,9 @@ geoWrite 2.1 document copied from the user's GEOS64.D81 (GEOS_ORACLE81,
 never committed); RECENT.INI names it through the image's path. A click
 on the recent entry: "Not mounted. Mount it?", YES, drive D in the mount
 dialog: the image mounted on D and geoWrite runs (its first record at
-$0400; the newest geoWrite on any drive). geoWrite 2.1 itself then
-reports "opening file": it looks for a document on drive A when the
-disk names match, else always on drive B (findDocDevice in its source,
-mist64/geowrite), so a document on C or D is not found (open, 2026-11-18). The user's
+$0400; the newest geoWrite on any drive) with the document open: drive
+B and D are swapped while it runs (drvswap.s), as geoWrite 2.1 looks for
+a document on A or else B only (screen d29u64-opened.png). The user's
 SETTINGS.INI, RECENT.INI, MOUNTS.INI and HIBERNAT.BIN are set aside and
 put back (the test starts with a SETTINGS.INI of its own: one pane, the
 sidebar shown), the test image deleted; a reboot then resumes the user's
