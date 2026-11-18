@@ -19,7 +19,7 @@
         .import Error, Append, full, entryName, path   ; (errors.s, actions.s)
         .import Busy, Idle, Dialog
         .import Dialog
-        .export Ov_Mount, Ov_Eject, HasImage, EjectIcon, IsImage
+        .export Ov_Mount, Ov_Eject, HasImage, EjectIcon, IsImage, MountIcon
 Ov_Mount = Mount                ; (ovl.s: the stubs Mount and Eject)
 Ov_Eject = Eject
 
@@ -320,6 +320,20 @@ EjectIcon:
         .byte %11111110
         .byte %11111110
         .byte %00000000
+
+; MountIcon: the list's mount icon on a disk image's line (list.s
+; ImgIcon; the user, 2026-11-18), 8 x 8, own drawing: an arrow down onto
+; a bar, the eject icon's opposite.
+MountIcon:
+        .byte $80 + 8
+        .byte %00111000
+        .byte %00111000
+        .byte %00111000
+        .byte %11111110
+        .byte %01111100
+        .byte %00111000
+        .byte %00010000
+        .byte %11111110
 
         .segment "OV3"
 

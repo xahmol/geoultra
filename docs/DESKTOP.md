@@ -162,7 +162,15 @@ colour is a property of an element, by name:
    (2026-11-13), mounting is the context menu's second item: on a disk
    image it reads "mount" instead of "open in new task" and opens the
    drive dialog (list.s TaskOrMount, ctxmenu.s; the user, 2026-11-16:
-   no way to mount was left).
+   no way to mount was left). A mount icon (8 x 8, an arrow onto a bar,
+   own drawing, mount.s MountIcon) at the right end of each disk image's
+   line in the list and detailed views (list.s ImgIcon, the list's last
+   card) mounts with one click (listin.s IconHit sets openReq =
+   OPEN_MOUNT, desktop.s OpenReq calls TaskOrMount: the drive dialog)
+   and shows which files can be mounted; a click on the name still goes
+   into the image (the user, 2026-11-18). Test tests/desktop/d6u64.py
+   (U64: the icon, drive D, unmount; the user's files set aside and put
+   back).
 7. **D7 look:** the element routines with their styles, the theme
    record (built-in themes, the default GeoUltra; a theme file read when
    named in `SETTINGS.INI`), icons, the clock and the status line, the

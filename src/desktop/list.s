@@ -16,7 +16,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, Open, OpenTask, Mount, IsImage
+        .import FileEngine, Open, OpenTask, Mount, IsImage, MountIcon
         .import IconUp, IconFor, TextWidth, Paint, PaintList, px0, px1, py0, py1, pcol
         .import tTitle, tIcons, tSel, tCur, tScroll, tStatus, cSel, cAccentP
         .import listL, iconCard, nameX, pathY, listTop, rowH, rows, bottom
@@ -33,6 +33,7 @@ PANE_DIV        = 159           ; two panes: the line between them
         .export Frame, Place, SortNow, sortPending, RightPress, SwapPane
         .export PaneInit, FreeRead
         .export EntryUnder, pick, last, Modifiers, mods, ClearSel, Select, Follow
+        .export TaskOrMount, ListRCard
         .export ThumbRows, SortArrow
         .import sortMode, boldOn
         .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd
@@ -479,7 +480,8 @@ DrawRow:
         cmp #VIEW_DETAILED
         bne :+
         jsr Columns
-:       lda selNow
+:       jsr ImgIcon             ; (a disk image: the mount icon)
+        lda selNow
         beq @cursor
         jsr RowBox
         lda tSel
@@ -2003,6 +2005,31 @@ RightPress:
 CtxDo:  .word Open-1, TaskOrMount-1, Copy-1, Cut-1, Paste-1, Rename-1, Delete-1, Info-1
         .word FavAdd-1, NewFolder-1, CopyOther-1, MoveOther-1
         .assert (* - CtxDo) / 2 = CTX_N, error, "an action per item"
+
+; ImgIcon (DrawRow, the entry fetched): on a disk image's line on the
+; Ultimate, the mount icon in the list's last card (the user,
+; 2026-11-18: one click mounts it, listin.s IconHit; it also shows that
+; the image can be mounted).
+ImgIcon:
+        lda entryInfo + FI_KIND
+        cmp #K_UFILE
+        bne @end
+        jsr IsImage
+        bcs @end
+        lda #<MountIcon
+        sta r0L
+        lda #>MountIcon
+        sta r0H
+        jsr ListRCard
+        sta r1L
+        lda ry
+        sta r1H
+        lda #1
+        sta r2L
+        lda #8
+        sta r2H
+        jmp BitmapUp
+@end:   rts
 
 ; TaskOrMount (the context menu's second item): a disk image on the
 ; Ultimate mounted on a drive (mount.s: the drive dialog), as opening

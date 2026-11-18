@@ -210,3 +210,5 @@ L_FAV           = 0             ; the lists ("which")
 L_REC           = 1
 L_DESK          = 2             ; SETTINGS.INI's [desktop] lines
 WANT_LEN        = 16            ; the theme's name a [desktop] line names
+OPEN_MOUNT      = $80           ; openReq: mount the cursor's disk image
+                                ; (listin.s IconHit -> desktop.s OpenReq)

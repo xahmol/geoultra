@@ -18,7 +18,7 @@
         .import panes, active, PaneAt, dropReq, Fetch, entryInfo, IconFor, Icons
         .import dropPath, entryName, path, sideW, sideCount, sideTops, sideLetters, Setup, Slot
         .import counts
-        .import RowY, RowBox, ry, row, viewMode
+        .import RowY, RowBox, ry, row, viewMode, ListRCard, IsImage
         .export Ov_ListPress, Ov_ListKey, Ov_ListEnd, Ov_SelAll, Ov_PaneLetters
         .import lettersDue, Drive, FileEngine, rootsSeen
         .import sortMode, sortDue, SortArrow, listR
@@ -974,7 +974,17 @@ ListPress:
         bcs @done               ; (no entry there)
         sta pick
         stx pick+1
-        jsr Drag                ; (a selected entry dragged: C clear)
+        jsr IconHit             ; (a disk image's mount icon: mounted by
+        bcs :+                  ; the core, desktop.s OpenReq)
+        lda pick
+        sta cur
+        lda pick+1
+        sta cur+1
+        lda #OPEN_MOUNT
+        sta openReq
+        clc
+        rts
+:       jsr Drag                ; (a selected entry dragged: C clear)
         bcs :+
         clc
         rts
@@ -1759,3 +1769,33 @@ numL:   .byte 0                 ; PathPress
 numH:   .byte 0
 tmp:    .byte 0
 tmpH:   .byte 0
+
+        .segment "OV8"
+
+; IconHit (a press on entry pick): C clear when it is on the mount icon
+; of a disk image's line (list.s ImgIcon: the list's last card; not in
+; the icon view). Destroys A, X, Y.
+IconHit:
+        lda viewMode
+        cmp #VIEW_ICONS
+        beq @no
+        lda mouseXPos+1         ; the pointer's card
+        lsr a
+        lda mouseXPos
+        ror a
+        lsr a
+        lsr a
+        sta tmpCard
+        jsr ListRCard
+        cmp tmpCard
+        bne @no
+        lda pick
+        ldx pick+1
+        jsr Fetch
+        lda entryInfo + FI_KIND
+        cmp #K_UFILE
+        bne @no
+        jmp IsImage             ; (C clear: an image)
+@no:    sec
+        rts
+tmpCard:        .byte 0

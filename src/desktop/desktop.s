@@ -28,6 +28,7 @@
 dropPath = text + 1024           ; a drop's target folder (listin.s; text's
                                 ; start is Paste's "full"; 256 bytes)
         .export openReq
+        .import TaskOrMount
         .import Root, Home, Top, ListEnd, Up
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeName, Paint, px0, px1, py0, py1, pcol
@@ -237,13 +238,17 @@ SwapPath:
         rts
 
 ; OpenReq: the entry under the cursor opened when listin.s asked for it
-; (openReq: an overlay must not open, Open may start a program or mount).
+; (openReq: an overlay must not open, Open may start a program or mount),
+; or mounted (OPEN_MOUNT: a click on a disk image's mount icon).
 OpenReq:
         lda openReq
         beq :+
-        lda #0
-        sta openReq
-        jmp Open
+        ldx #0
+        stx openReq
+        cmp #OPEN_MOUNT         ; (listin.s IconHit: the mount icon)
+        bne @open
+        jmp TaskOrMount         ; (list.s: a disk image mounted)
+@open:  jmp Open
 :       rts
 
 KeyActs:

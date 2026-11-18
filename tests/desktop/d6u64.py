@@ -2,13 +2,16 @@
 """GeoUltra's desktop on the U64 (docs/DESKTOP.md): disk images.
 A favourite (SETTINGS.INI, made for the test and deleted again) takes the
 desktop to /usb0/geoultra/test; the cursor walks to geopub.d64 (its name
-read back through the clipboard, C=C) and RETURN opens the mount dialog;
+read back through the clipboard, C=C) and a click on the mount icon at
+the right end of its line (the user, 2026-11-18; RETURN goes into an
+image since 2026-11-13) opens the mount dialog;
 drive D's button (a free letter; C holds the system DNP for testing)
 mounts it: the list at /d, FE_MOUNTINFO's
 path, the sidebar's line for D with its eject icon. Then a click on that
 icon and YES unmount it: D gone from the sidebar. The images are test
-copies (/USB0/GEOULTRA/test); MOUNTS.INI is put back as it was at the
-end. Screens: build/harness/gush/d6u64-*.png.
+copies (/USB0/GEOULTRA/test); the user's MOUNTS.INI, SETTINGS.INI,
+RECENT.INI and HIBERNAT.BIN are set aside and put back as they were at
+the end (a reboot then resumes the user's session). Screens: build/harness/gush/d6u64-*.png.
 Usage: tests/desktop/d6u64.py [build/geoultra64.crt]
 """
 import ftplib
@@ -65,20 +68,21 @@ def main():
     ftp = ftplib.FTP(u.ip)
     ftp.login()
     names = [n.split("/")[-1] for n in ftp.nlst(HOME)]
-    if "SETTINGS.INI" in names:
-        sys.exit("d6u64.py: the stick has a SETTINGS.INI; not touched")
 
     def get(path):
         out = io.BytesIO()
         ftp.retrbinary("RETR " + path, out.write)
         return out.getvalue()
     mounts = get(HOME + "MOUNTS.INI")
+    kept = {n: get(HOME + n) for n in ("SETTINGS.INI", "RECENT.INI", "HIBERNAT.BIN") if n in names}
+    if "HIBERNAT.BIN" in kept:
+        ftp.delete(HOME + "HIBERNAT.BIN")           # a cold start, not the user's session
 
     def shot(name):
         apprun.render(u.read(0xA000, 0x1F40), u.read(0x8C00, 0x3E8), os.path.join(OUT, "d6u64-%s.png" % name))
 
     def press(x, y, s=6):
-        u.write(0x3A, bytes([x, 0, y]))
+        u.write(0x3A, bytes([x & 0xFF, x >> 8, y]))
         u.write(0x8505, b"\x00")
         u.write(0x39, bytes([u.read(0x39, 1)[0] | 0x20]))
         time.sleep(0.5)                             # (released, as a real
@@ -119,7 +123,12 @@ def main():
                 break
             key(KEY_DOWN, 2)
         check("geopub.d64 under the cursor", found, True)
-        key(CR, 8)                                      # the mount dialog
+        cur = u.read(k["cur"], 2); top = u.read(k["top"], 2)
+        rowy = u.read(k["listTop"], 1)[0] + ((cur[0] | cur[1] << 8) - (top[0] | top[1] << 8)) * u.read(k["rowH"], 1)[0]
+        lr = u.read(k["listR"], 2)
+        iconx = ((lr[0] | lr[1] << 8) >> 3) * 8 + 4
+        shot("icon")
+        press(iconx, rowy + 4, 8)                       # its mount icon: the dialog
         shot("dialog")
         press(DLG_X + 8 + 20, DLG_Y + 20 + 3 * 18 + 8, 25)   # drive D's button
         shot("mounted")
@@ -140,7 +149,13 @@ def main():
     finally:
         ftp.delete(HOME + "SETTINGS.INI")
         ftp.storbinary("STOR " + HOME + "MOUNTS.INI", io.BytesIO(mounts))
+        for n, data in kept.items():
+            ftp.storbinary("STOR " + HOME + n, io.BytesIO(data))
+        back = all(get(HOME + n) == data for n, data in kept.items()) and get(HOME + "MOUNTS.INI") == mounts
+        check("the user's files back as they were", back, True)
         ftp.quit()
+        if "HIBERNAT.BIN" in kept:
+            u.boot(crt)                                 # (resumes the user's session)
     sys.exit(0 if ok else 1)
 
 
