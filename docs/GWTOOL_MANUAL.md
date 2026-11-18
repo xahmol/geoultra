@@ -1,9 +1,10 @@
 # gwtool: geoWrite documents on a PC
 
 `tools/gwtool.py` reads geoWrite documents from a disk image on a PC and
-writes geoWrite 2.x documents: it converts geoWrite 1.x documents, and it
-joins several documents into one. Python 3; writing a D64 or D81 uses
-VICE's `c1541`.
+writes geoWrite 2.x documents: it converts geoWrite 1.x documents, joins
+several documents into one, and exchanges documents with Word and
+Markdown both ways. Python 3; writing a D64 or D81 uses VICE's `c1541`;
+pictures from Word or Markdown need Pillow.
 
 ## Commands
 
@@ -11,6 +12,9 @@ VICE's `c1541`.
     tools/gwtool.py convert IMAGE OUT [NAME ...] [--fonts]
     tools/gwtool.py merge IMAGE OUT NEWNAME NAME [NAME ...] [--fonts] [--start=N]
     tools/gwtool.py docx IMAGE OUT.docx NAME [NAME ...] [--page-breaks=records] [--start=N]
+    tools/gwtool.py fromdocx IN.docx OUT NAME [--wide]
+    tools/gwtool.py md IMAGE OUT.md NAME [NAME ...] [--page-breaks=records]
+    tools/gwtool.py frommd IN.md OUT NAME [--wide] [--font=NAME]
 
 - **IMAGE**: a D64, D71, D81 or DNP. On a DNP a name may include its
   folder: `Writing/Letter`.
@@ -64,6 +68,85 @@ over:
 Restrictions: Word lays the text out again with its own fonts, so lines
 and pages break elsewhere; characters outside ASCII that a GEOS font
 draws in place of others come out as the ASCII character.
+
+## From Word (fromdocx)
+
+`fromdocx` makes a new geoWrite 2.1 document NAME from a Word document
+(tools/docxgw.py). Word's styles are followed (document defaults, the
+paragraph and character styles, the theme's fonts, numbering):
+
+- **Fonts:** each Word font becomes one of GeoUltra's own font families
+  on drive E (Times, Cambria, Georgia: GU Serif; Courier, Consolas: GU
+  Mono; Arial, Calibri and most others: GU Sans; ...), at the nearest
+  size it has (9 to 24 dots, 1.11 times Word's points); bold, italic,
+  underline, outline, superscript and subscript.
+- **Paragraphs:** margins, first line, up to 8 tab stops (left and
+  decimal), alignment, line spacing 1, 1.5 or 2; space after a paragraph
+  as an empty line; list items with "- " or their number; a table row as
+  one line with its cells at tab stops; page breaks.
+- **Pictures:** dithered to black and white at 80 dpi, at most the text
+  width. **Header and footer:** their text.
+- **Text:** ASCII; accented letters lose their accents, typographic
+  quotes and dashes become plain ones, anything else "?" (counted in a
+  warning).
+- `--wide`: 8 inches of text instead of 6.
+
+geoWrite keeps one page per record and lays pages out again itself:
+open the new document once and choose file > update.
+
+Example:
+
+    tools/gwtool.py fromdocx letter.docx letter.d64 "Letter"
+
+## Markdown (md, frommd)
+
+`md` writes a document (several: joined first, as `merge`) as Markdown
+(tools/gwmd.py); `frommd` makes a new geoWrite 2.1 document from a
+Markdown text (tools/mdgw.py), laid out as `fromdocx` does.
+
+From geoWrite to Markdown:
+
+- **Headings:** a paragraph wholly in a size larger than the body text
+  (the size most of the text has) is a heading: the largest size `#`,
+  the next `##`, and so on.
+- **Styles:** bold `**`, italic `*`, underline `<u>`, superscript and
+  subscript `<sup>` `<sub>`; text in a fixed-width font (GU Mono,
+  Commodore, Cory) as `code`, whole paragraphs of it as a code block.
+- **Lists and tables:** paragraphs starting with "- " or "1. " stay list
+  items; two or more lines in a row with the same number of tabs become
+  a table, the first line its header.
+- **Pictures:** PNG files at 80 dpi in a folder next to the Markdown
+  file (`OUT_files/picture1.png`), linked with `![...]`.
+- **Page breaks:** `<!-- pagebreak -->` (invisible when the Markdown is
+  shown); `--page-breaks=records` adds one at every geoWrite page.
+- **Header and footer:** as comments at the start and the end.
+- Fonts, sizes (other than headings), alignment, margins and tab
+  positions have no Markdown form and are not written.
+
+From Markdown to geoWrite:
+
+- `#` to `######` and underlined headings (`===`, `---`): bold GU Sans
+  24, 18 and 14 dots for levels 1 to 3, 12 below; the body GU Sans 12
+  (`--font=NAME` sets another family by a Word font name, e.g.
+  `--font=Times` for GU Serif).
+- Paragraphs (lines joined; two spaces or `\` at a line's end is a line
+  break); `**bold**`, `*italic*`, `` `code` ``, `<u>`, `<sup>`, `<sub>`;
+  links as their text with the address in brackets.
+- Lists (`-`, `*`, `+`, `1.`), also nested and with `[ ]` / `[x]`; block
+  quotes (indented, italic); code blocks (fenced or indented, GU Mono);
+  tables (cells at tab stops, the header bold); a rule as a centred
+  "* * *".
+- Pictures `![text](file.png)` next to the Markdown file; addresses on
+  the web are not fetched.
+- Page breaks: `<!-- pagebreak -->`, `\pagebreak` or `\newpage` on a
+  line of their own.
+- Strike-through (`~~`) has no GEOS style and is dropped; other HTML
+  tags are left out; a YAML front matter block is skipped.
+
+Examples:
+
+    tools/gwtool.py md bigbrother.d64 bigbrother.md "Big Brother"
+    tools/gwtool.py frommd README.md readme.d64 "ReadMe" --font=Times
 
 ## What a conversion changes
 

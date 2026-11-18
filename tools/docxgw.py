@@ -426,12 +426,12 @@ def estimate(pieces, ruler_bytes, spacing):
     return lines * size * 1.25 * (1, 1.5, 2)[spacing]
 
 
-def convert(path, width=480):
-    """(pages, header, footer, pictures {record: data}, warnings)."""
-    rd = Reader(path, width)
-    doc = ET.fromstring(rd.z.read("word/document.xml"))
-    body = doc.find(W + "body")
-    items = list(rd.blocks(body))
+def paginate(items, width, warnings):
+    """Reader items (("para", (ruler, spacing, pieces, after)),
+    ("pagebreak", None), ("pic", (wc, h, rec))) as geoWrite page records:
+    (pages, pictures {record: data}, text), text(pieces) giving a
+    paragraph's bytes (NewCardSets where the font changes). Shared by the
+    Word and the Markdown reader (mdgw.py)."""
     pages, pics = [], {}
     state = {"ruler": None, "card": None, "page": bytearray(), "height": 0}
 
@@ -465,7 +465,7 @@ def convert(path, width=480):
         if kind == "pic":
             wc, h, rec = data
             if len(pics) >= PIC_LAST - PIC_FIRST + 1:
-                rd.warnings.append("more than 63 pictures: the rest left out")
+                warnings.append("more than 63 pictures: the rest left out")
                 continue
             r = PIC_FIRST + len(pics)
             pics[r] = rec
@@ -492,8 +492,17 @@ def convert(path, width=480):
     if state["page"]:
         pages.append(bytes(state["page"]))
     if len(pages) > PAGES:
-        rd.warnings.append("more than 61 pages: the rest left out")
+        warnings.append("more than 61 pages: the rest left out")
         pages = pages[:PAGES]
+    return pages, pics, text
+
+
+def convert(path, width=480):
+    """(pages, header, footer, pictures {record: data}, warnings)."""
+    rd = Reader(path, width)
+    doc = ET.fromstring(rd.z.read("word/document.xml"))
+    body = doc.find(W + "body")
+    pages, pics, text = paginate(list(rd.blocks(body)), width, rd.warnings)
 
     def side(kind):
         sect = body.find(W + "sectPr")

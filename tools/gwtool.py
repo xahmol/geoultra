@@ -6,6 +6,8 @@
     gwtool.py merge IMAGE OUT NEWNAME NAME [NAME ...] [--fonts] [--start=N]
     gwtool.py docx IMAGE OUT.docx NAME [NAME ...] [--page-breaks=records] [--start=N]
     gwtool.py fromdocx IN.docx OUT NAME [--wide]
+    gwtool.py md IMAGE OUT.md NAME [NAME ...] [--page-breaks=records]
+    gwtool.py frommd IN.md OUT NAME [--wide] [--font=NAME]
 
 IMAGE is a D64, D71, D81 or DNP (a name may carry a DNP folder,
 "Writing/Letter"). OUT is a folder (CVT files written there) or a new
@@ -23,7 +25,11 @@ geoWrite page on a new Word page (else only geoWrite's own page breaks).
 `fromdocx` makes a geoWrite 2.x document NAME from a Word document
 (tools/docxgw.py) in OUT (as above); --wide: 8 inches of text width
 instead of 6. Open it once in geoWrite and choose file > update, which
-lays the pages out again.
+lays the pages out again. `md` and `frommd` do the same with Markdown
+(tools/gwmd.py, tools/mdgw.py): `md` writes pictures as PNG files in a
+folder beside OUT.md; `frommd` reads pictures named in the Markdown from
+beside IN.md; --font=NAME sets the body font by a Word font name (as
+`fromdocx` maps them: "Times" gives GU Serif; GU Sans by default).
 
 What a conversion does (geoWrite 1.x "Write Image V1.x" to 2.x, as
 geoWrite 2.1 itself converts a document when it opens one; observed by
@@ -317,6 +323,29 @@ def font_files(img, ids):
     return out
 
 
+def save_new(out, name, pg, head, foot, pics, info):
+    """A new geoWrite 2.1 document NAME from page records (fromdocx,
+    frommd) into OUT (output: a folder of CVTs or a new image)."""
+    import datetime
+    recs = list(pg) + [None] * (PIC_LAST + 1 - len(pg))
+    recs[HEADER_REC], recs[FOOTER_REC] = head, foot
+    for r, data in pics.items():
+        recs[r] = data                      # (all 127 kept: EMPTY)
+
+    def height(rec):
+        return 0 if not rec else max(1, rec.count(b"\r")) * 13
+    entry = bytearray(30)
+    entry[0] = 0x83
+    entry[3:19] = name.encode("latin1")[:16].ljust(16, b"\xa0")
+    entry[0x15], entry[0x16] = 1, 7
+    now = datetime.datetime.now()
+    entry[0x17:0x1C] = bytes([now.year % 100, now.month, now.day, now.hour, now.minute])
+    gf = GeoFile(bytes(entry), new_header(height(head), height(foot), info), None, recs)
+    output([gf], out)
+    print("%s: %d pages, %d pictures%s" % (name, len(pg), len(pics),
+          ", header" if head else "") + (", footer" if foot else ""))
+
+
 def output(files, out):
     """files (GeoFiles) to a folder of CVTs, or into a new D64/D81."""
     ext = os.path.splitext(out)[1].lower()
@@ -357,28 +386,38 @@ def main(argv):
         return
     if cmd == "fromdocx" and len(args) == 4:
         import docxgw
-        import datetime
         width = 640 if "--wide" in argv else 480
         pg, head, foot, pics, warns = docxgw.convert(args[1], width)
-        recs = list(pg) + [None] * (PIC_LAST + 1 - len(pg))
-        recs[HEADER_REC], recs[FOOTER_REC] = head, foot
-        for r, data in pics.items():
-            recs[r] = data                  # (all 127 kept: EMPTY)
-
-        def height(rec):
-            return 0 if not rec else max(1, rec.count(b"\r")) * 13
-        entry = bytearray(30)
-        entry[0] = 0x83
-        entry[3:19] = args[3].encode("latin1")[:16].ljust(16, b"\xa0")
-        entry[0x15], entry[0x16] = 1, 7
-        now = datetime.datetime.now()
-        entry[0x17:0x1C] = bytes([now.year % 100, now.month, now.day, now.hour, now.minute])
-        gf = GeoFile(bytes(entry), new_header(height(head), height(foot),
-                                              "From a Word document by GeoUltra's gwtool."), None, recs)
-        output([gf], args[2])
-        print("%s: %d pages, %d pictures%s" % (args[3], len(pg), len(pics),
-              ", header" if head else "") + (", footer" if foot else ""))
+        save_new(args[2], args[3], pg, head, foot, pics, "From a Word document by GeoUltra's gwtool.")
         for w in warns:
+            print("warning: " + w)
+        return
+    if cmd == "frommd" and len(args) == 4:
+        import mdgw
+        width = 640 if "--wide" in argv else 480
+        name = next((a[7:] for a in argv if a.startswith("--font=")), mdgw.SANS)
+        pg, head, foot, pics, warns = mdgw.convert(args[1], width, name)
+        save_new(args[2], args[3], pg, head, foot, pics, "From a Markdown text by GeoUltra's gwtool.")
+        for w in warns:
+            print("warning: " + w)
+        return
+    if cmd == "md" and len(args) >= 4:
+        import gwmd
+        img = Image(args[1])
+        docs = dict(documents(img))
+        for n in args[3:]:
+            if n not in docs:
+                die("%s: no geoWrite document of that name in %s" % (n, args[1]))
+        parts = [to_v2(n, docs[n], warn) for n in args[3:]]
+        gf = build("out", parts, warn)
+        recs = gf.records + [None] * (PIC_LAST + 1 - len(gf.records))
+        pg = [r for r in recs[:PAGES] if r]
+        breaks = next((a[14:] for a in argv if a.startswith("--page-breaks=")), "explicit")
+        n = gwmd.write(args[2], pg, recs[HEADER_REC], recs[FOOTER_REC],
+                       {r: recs[r] for r in range(PIC_FIRST, PIC_LAST + 1) if recs[r]},
+                       page_breaks=breaks, title=", ".join(args[3:]))
+        print("%s: %d pages from %d document(s), %d picture(s)" % (args[2], len(pg), len(parts), n))
+        for w in warnings:
             print("warning: " + w)
         return
     if cmd == "docx" and len(args) >= 4:
