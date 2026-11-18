@@ -30,19 +30,38 @@ From top to bottom:
 - **The status line** at the bottom: how many entries there are, how
   many are selected, and the free space on the drive.
 
-The list is sorted: ".." (the folder above) first, then folders and
-drives, then files, each group by name; upper and lower case are the
-same for the order. (Folders with more than 384 entries keep the order
-they have on disk.)
+## Sorting
 
-The small arrow at the right end of the path line turns the order
-round (with two panes it is the first of the letters): pointing down,
-the order is as chosen (names A to Z, the newest or the largest
-first); pointing up, it is reversed. Folders and ".." stay first. In
-the detailed view, a click on "Size" or "Date" sorts by that column, a
-second click reverses it, and a third goes back to names; the column
-the list is sorted by is shown in bold. The order is kept in
-SETTINGS.INI (`sort=`, with a "-" in front when reversed).
+The list is sorted: ".." (the folder above) first, then folders and
+drives, then files, each group in the chosen order; upper and lower
+case are the same for the order. (Folders with more than 384 entries
+keep the order they have on disk.) There are three orders: by **name**
+(A to Z, the default), by **date** (newest first) and by **size**
+(largest first), each also reversed.
+
+**By size or date, and back to names (detailed view):** the "Size" and
+"Date" headings on the path line are buttons. Each click on a heading
+takes one step in this cycle:
+
+1. first click: sorted by that column;
+2. second click: the same, reversed;
+3. third click: back to names.
+
+The heading the list is sorted by is shown in **bold**; when neither is
+bold, the list is sorted by name. So, to go back to names: click the
+bold heading until neither heading is bold (twice from the plain order,
+once from the reversed one). There is no "Name" heading to click.
+
+**Reversing:** the small arrow at the right end of the path line (with
+two panes, the first of the letters) turns the current order round:
+pointing down, the order as chosen; pointing up, reversed. Folders and
+".." stay first either way. It works in every view.
+
+**In Settings:** the Desktop page also chooses name, date or size (the
+plain order, not reversed).
+
+The order is kept in SETTINGS.INI (`[desktop] sort=name`, `date` or
+`size`, with a "-" in front when reversed, `sort=-date`).
 
 ## Views
 
@@ -176,8 +195,10 @@ default), **one line** (the icons alone, one more row for the list) or
 
 Drives A to D hold disk images from the Ultimate (they are kept in the
 REU while mounted, and changes are written back to the image file).
-Mount an image from the context menu or the toolbar: choose the drive in
-the dialog. The eject icon on a drive's line in the sidebar unmounts it
+To mount an image, click the **mount icon** (an arrow down onto a bar)
+at the right end of its line in the list, or choose "mount" in its
+context menu (the right mouse button); then choose the drive in the
+dialog. The eject icon on a drive's line in the sidebar unmounts it
 (after writing it back). Which images are mounted at the start is in
 `GEOULTRA/MOUNTS.INI` (`A=/USB0/path/image.d81`, one line per drive).
 
@@ -192,9 +213,30 @@ image file straight away. `..` leaves it again. It needs:
   DNP one per track), beside the mounted drives;
 - the image **not mounted**: a mounted one is opened through its drive.
 
-Programs and documents inside an image cannot be started or opened
-from there ("Mount the disk image to open it."): mount it, or copy them
-to a drive first.
+A document inside an image that is not mounted cannot be opened from
+there: the desktop asks "Not mounted. Mount it?"; YES shows the drive
+dialog, and after mounting the document opens from that drive. The
+same question comes for a document in the **Recent** list whose image
+has been unmounted since (documents on mounted images are remembered
+by the image's path on the Ultimate). Programs inside an image are
+started after mounting it, or copied to a drive first.
+
+## Opening documents
+
+A double click on a document starts the program it was made with,
+with the document open. When several versions of that program are
+found, the **newest** is started (geoWrite 2.1 rather than a geoWrite
+1.x on an old work disk; geoWrite 2.1 then offers to convert an older
+document). The desktop looks in the document's folder, then on each
+drive A-D in its root folder and the folders directly below it (so
+`/c/Writing` is found, a folder inside that one is not).
+
+Some programs, geoWrite 2.1 among them, only find a document they are
+started with on drive A or B. For a document on C or D, the desktop
+therefore swaps drive B and the document's drive while the program
+runs (the document's drive is B, B's drive is C or D) and swaps them
+back when the program ends. Inside the program the letters are swapped;
+a task switched to meanwhile sees them swapped too.
 
 ## Drives: what works where
 
