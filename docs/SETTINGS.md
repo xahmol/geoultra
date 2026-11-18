@@ -326,7 +326,7 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   4 MB legacy area (banks 192-255): SETTINGS.INI [system] legacy= (the
   size per task) and tasks= (the slots), used by the kernal at boot;
   the steppers keep size x slots within it (512 KB x 8, 1 MB x 4, 2 MB
-  x 2, 4 MB x 1); the drives' area stays banks 31-187 for now.
+  x 2, 4 MB x 1); the drives' area stays banks 31-179 (180-187: the system fonts).
   **S6 done (2026-11-14):** preu.s (overlay 6): the grid (REU drives
   only: a real drive's ramBase means nothing; a native drive's tracks
   from FE_MOUNTINFO), the legend, the steppers (a larger size cuts the

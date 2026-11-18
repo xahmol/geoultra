@@ -524,7 +524,7 @@ Ultimate side (long FAT names both ways, case-insensitive paths).
   CVT, a folder, a missing file).
 - **E4, mounting (2026-11-05):** `FE_MOUNT`, `FE_UMOUNT`,
   `FE_MOUNTINFO` (modules 65-70, enginemount.s). Free banks are found
-  from the other drives' (first fit in banks 31-187); the image is loaded
+  from the other drives' (first fit in banks 31-179); the image is loaded
   with `LOAD_REU`; the mount table entry, path and dirty map are set as
   the boot sets them, so the write-back and the next boot treat the drive
   alike. `FE_UMOUNT` calls the write-back first; it uses the overlay

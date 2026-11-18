@@ -292,7 +292,7 @@ mIdx            = feInfo + 6    ; FE_MKIMG: a track or block being made
 mWant           = feInfo + 7    ; FE_MOUNT ",tracks=N": the size wanted (0)
 mFile           = feInfo + 8    ; a native image's own tracks
 mResz           = feInfo + 9    ; F_RESIZED | F_DIRTY when mounted at another size
-FE_FIRST_BANK   = 31            ; drives: REU banks 31-187 (mount.s)
+FE_FIRST_BANK   = 31            ; drives: REU banks 31-179 (mount.s)
 FE_LAST_BANK    = 179           ; (180-187: the system fonts, sysdrive.inc FONT_BANK;
                                 ; mount.s LAST_BANK the same)
 FE_WSAVE        = $C700         ; REU bank 1: the work area while the

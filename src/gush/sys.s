@@ -369,7 +369,7 @@ LastDot:
 
 Kinds:  .byte "dddd", "678n", "411p"    ; d64, d71, d81, dnp by column
 
-; free: the REU's banks for drives (31-187): each drive's, in all, free.
+; free: the REU's banks for drives (31-179): each drive's, in all, free.
 CmdFree:
         lda #0
         sta drive
@@ -443,7 +443,7 @@ Banks:  .byte " banks (64 KB each)", 0
 Drives: .byte "drives: ", 0
 Of:     .byte " of 157 banks used, ", 0
 FreeText:.byte " free", 0
-DRIVE_BANKS     = 157           ; banks 31-187 (docs/DESIGN.md, REU map)
+DRIVE_BANKS     = 149           ; banks 31-179 (docs/DESIGN.md, REU map)
 
 ; reboot: every drive written back, GeoUltra started afresh (the
 ; hibernated session dropped). Back only when that failed.
