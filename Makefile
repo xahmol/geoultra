@@ -385,8 +385,8 @@ private/geoultra-apps.dnp: private/apps.toml tools/mkappsdnp.py
 	$(PYTHON) tools/mkappsdnp.py private/apps.toml
 
 deploy: check-deploy build/geoultra64.crt build/geoultra64.cfg
-	curl -s --ftp-create-dirs -T build/geoultra64.crt ftp://$(ULTIP1)$(DEPLOYDIR)
-	curl -s --ftp-create-dirs -T build/geoultra64.cfg ftp://$(ULTIP1)$(DEPLOYDIR)
+	curl -sS --max-time 120 --ftp-create-dirs -T build/geoultra64.crt ftp://$(ULTIP1)$(DEPLOYDIR)
+	curl -sS --max-time 60 --ftp-create-dirs -T build/geoultra64.cfg ftp://$(ULTIP1)$(DEPLOYDIR)
 
 # The private applications image to the test folder, only on request: it
 # is drive C there, and a new copy replaces what was written to it (the
@@ -395,8 +395,8 @@ deploy-apps: check-deploy $(APPS_DNP)
 	$(if $(APPS_DNP),curl -s -T $(APPS_DNP) ftp://$(ULTIP1)/USB0/GEOULTRA/test/geoultra-apps.dnp)
 
 check-deploy:
-	@curl -s --connect-timeout 3 $(REST)/info >/dev/null 2>&1 || \
-		(echo "ERROR: Cannot reach the Ultimate at $(ULTIP1) -- check ULTIP1 in .env" && false)
+	@curl -s --connect-timeout 3 --max-time 5 $(REST)/info >/dev/null 2>&1 || \
+		(echo "ERROR: The Ultimate at $(ULTIP1) does not answer (ULTIP1 in .env; a network stuck after long use: reboot it)" && false)
 
 # Results: $C000 block, see the comments at the top of both sources.
 smoke-u64: check-deploy smoke
