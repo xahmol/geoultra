@@ -190,9 +190,12 @@ def read_cvt(path, d=None):
     records = []
     pairs = []
     for i in range(0, 254, 2):                  # (an empty record: 00 FF from
-        pairs.append((table[i], table[i + 1]))  # GEOS Convert, 00 00 from others:
-    while pairs and pairs[-1][0] == 0:          # read all 127, the empty ones
-        pairs.pop()                             # at the end dropped)
+        pairs.append((table[i], table[i + 1]))  # GEOS Convert, 00 00 from others
+    while pairs and pairs[-1] == (0, 0):        # in the middle: read all 127;
+        pairs.pop()                             # only 00 00 at the end dropped,
+                                                # trailing 00 FF kept: a geoWrite
+                                                # document needs them, gwtool.py
+                                                # EMPTY)
     for k, (n, last) in enumerate(pairs):
         if n == 0:
             records.append(None)

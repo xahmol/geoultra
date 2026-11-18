@@ -64,6 +64,12 @@ BLOCK = 254
 ESC_GRAPHICS, ESC_RULER, ESC_NEWCARDSET = 0x10, 0x11, 0x17
 V1_RULER, V2_RULER = 20, 27
 PAGES, HEADER_REC, FOOTER_REC, PIC_FIRST, PIC_LAST = 61, 61, 62, 64, 126
+# EMPTY: a document's index has all 127 entries, the unused ones 00 FF
+# (an empty record), never 00 00 (no record: GEOS counts usedRecords up to
+# the first one, and PointRecord past it gives INV_RECORD). geoWrite 2.x
+# reads its header and footer records (61, 62) at once: with 00 00 there
+# it stopped with "Error 1:08 reading page", or filled the gap with empty
+# pages (the user's U64, 2026-11-18).
 PAGE_HEIGHT = 752
 CLASS_AT, VERSION_AT = 0x4D, 0x4D + 12         # "Write Image " and "V1.0"
 FONT = 8                                        # GEOS file type
@@ -195,8 +201,7 @@ def build(name, parts, warn):
     first = parts[0]
     for r, data in zip((HEADER_REC, FOOTER_REC), first[2]):
         records[r] = data
-    while records and records[-1] is None:
-        records.pop()
+    # (all 127 kept, unused ones written 00 FF: see EMPTY)
     header = bytearray(first[4])
     entry = bytearray(30)
     entry[0] = 0x83                                     # USR, closed
@@ -358,9 +363,7 @@ def main(argv):
         recs = list(pg) + [None] * (PIC_LAST + 1 - len(pg))
         recs[HEADER_REC], recs[FOOTER_REC] = head, foot
         for r, data in pics.items():
-            recs[r] = data
-        while recs and recs[-1] is None:
-            recs.pop()
+            recs[r] = data                  # (all 127 kept: EMPTY)
 
         def height(rec):
             return 0 if not rec else max(1, rec.count(b"\r")) * 13

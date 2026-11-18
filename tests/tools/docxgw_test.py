@@ -7,7 +7,9 @@ list (numbering.xml), a table, accents and typographic quotes, a right
 tab, a page break and a picture (PNG). Checks the geoWrite records: the
 fonts and sizes (GU Sans at 12 for 11 points, 18 bold for the 16-point
 heading), the list prefixes, the table row with tabs, the ASCII text,
-the page break, the picture record and its graphics escape. No VICE.
+the page break, the picture record and its graphics escape; through
+gwtool into an image, no index entry 00 00 (geoWrite 2.x needs all 127).
+No VICE.
 Usage: tests/tools/docxgw_test.py
 """
 import io
@@ -111,6 +113,19 @@ def main():
     check("its graphics escape in the text", bytes([0x10, 20, 80, 0, 64]) in text)
     check("every page starts with a ruler and a font", all(pg[0] == 0x11 and pg[27] == 0x17 for pg in pages))
     check("no warnings", not warns, warns)
+    img = os.path.join(OUT, "wordtest.d64")                # through gwtool into an image:
+    if os.path.exists(img):                                 # every one of the 127 index
+        os.remove(img)                                      # entries used or 00 FF, none
+    import subprocess                                       # 00 00 (gwtool.py EMPTY:
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gwtool.py"), "fromdocx", path, img,  # geoWrite
+                    "Word test"], check=True, capture_output=True)                                    # 2.x: 1:08)
+    from mkappsdnp import Image
+    im = Image(img)
+    en = im.find("Word test")
+    idx = im.block(en[1], en[2])
+    pairs = [(idx[2 + 2 * k], idx[3 + 2 * k]) for k in range(127)]
+    check("gwtool fromdocx: all 127 index entries exist (none 00 00)", (0, 0) not in pairs,
+          [k for k, x in enumerate(pairs) if x == (0, 0)][:5])
     print("docxgw_test: %s" % ("all passed" if ok else "FAILED"))
     sys.exit(0 if ok else 1)
 
