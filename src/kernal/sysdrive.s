@@ -30,6 +30,7 @@
         .export sysName, sysActive, sysType, sysCurType, sysBase, sysFlags
         .export sysTracks, sysFolderT, sysFolderS, sysSlot, ownDesk, sysActive
         .export imgFlags, imgBank, imgType, imgTracks, uTouch, autoIdx
+        .export fontsOn
         .import taskName
 NAME_LEN        = 13            ; (task.s: taskName's length)
         .import OvlCall, FindFTypes, FindFile, MoveData
@@ -64,6 +65,8 @@ SysFindFile:
 @e:     jmp RootFind            ; the root folder, then drive E
 
         .segment "KEXT"                 ; (CODE is full)
+fontsOn:        .byte 0         ; $80: the system fonts loaded (FONTS.DNP,
+                                ; banks FONT_BANK on; mount.s LoadFonts)
 
 ; AppFTypes (FindFTypes through the jump table, for applications and the
 ; desktop): where the list starts and how many names fit noted for

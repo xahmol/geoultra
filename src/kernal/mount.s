@@ -24,6 +24,7 @@
         .include "hw.inc"
         .include "drvflags.inc"
         .include "kcalls.inc"
+        .include "sysdrive.inc"
 
         .export MountAll, SerialFromDisk, TurboInit, PointerInit
         .export startGush
@@ -32,7 +33,7 @@
         .import bypassOn
 .endif
         .import uciPresent, wbPending, serialNumber, hibLimit, SetDevice, FindFile
-        .import GetFHdrInfo
+        .import GetFHdrInfo, fontsOn
 
 UCI_ID          = $C9
 TARGET_DOS      = $01
@@ -117,6 +118,7 @@ MountAll:
         jsr FindHome            ; always: the write-back needs the home path
         bcs @end
         jsr ReadSettings        ; (in the home folder)
+        jsr LoadFonts           ; (there too; TEXT free until ReadList)
         jsr KeepDirty
         bcs @kept
         jsr ReadList
@@ -128,6 +130,33 @@ MountAll:
 @kept:  lda #1                  ; write the kept changes back soon
         sta wbPending
         rts
+
+; The system fonts' buffers and variables in TEXT (free until ReadList).
+DBUF            = TEXT          ; a directory block
+IBUF            = TEXT + $100   ; a VLIR index
+CBUF            = TEXT + $200   ; a chain's block
+FV              = TEXT + $300
+fdCmd           = FV            ; (fontblk.inc)
+fTracks         = FV + 1        ; FONTS.DNP's tracks
+fKeep           = FV + 2
+ft              = FV + 3
+fs              = FV + 4
+ct              = FV + 5
+cs              = FV + 6
+cnt             = FV + 7        ; (2 bytes)
+ent             = FV + 9
+rec             = FV + 10
+dirT            = FV + 11
+dirS            = FV + 12
+nextT           = FV + 13
+nextS           = FV + 14
+bordT           = FV + 15
+bordS           = FV + 16
+
+; LoadFonts: GEOULTRA/FONTS.DNP into the REU (module 121, below).
+LoadFonts:
+        jsr OvlCall
+        .byte 121, 0
 
 ; --- The REU mount table --------------------------------------------------
 
@@ -1649,3 +1678,274 @@ SerialFromDisk:
 
 bootName:       .byte "GEOBOOT", 0
 bootPerm:       .byte "GeoBoot     V1.0"
+
+; ======================================================================
+; The system fonts at the cold start (docs/DESIGN.md "System font
+; folder"): overlay modules 121 and 122 (INIT is full). They call back
+; into INIT (OpenFile, ImageSize, LoadReu, CloseFile), still there then.
+; Their variables live in TEXT (FV, fontvars below): a module's own
+; bytes are fetched anew after the other's call.
+
+        .segment "OVL121"
+        .scope Mod121
+
+        jmp Load                        ; entry 0 (LoadFonts)
+        jmp Reloc                       ; entry 3 (tests/fonts/f1reloc.py)
+
+        .include "fontblk.inc"
+
+Entries:                                ; (module 122: DBUF's entries)
+        jsr OvlCall
+        .byte 122, 0
+
+; Load (MountAll's LoadFonts, in the home folder before the drives):
+; GEOULTRA/FONTS.DNP into banks FONT_BANK on and relocated there
+; (Reloc), fontsOn $80. Absent, larger than FONT_TRACKS tracks or
+; damaged: no system fonts (fontsOn 0).
+Load:   lda #0
+        sta fontsOn
+        ldx #0
+@name:  lda fontsName,x
+        sta path,x
+        beq @named
+        inx
+        bne @name
+@named: stx pathLen
+        lda #$01
+        jsr OpenFile
+        bne @end
+        lda #DRV_NATIVE
+        sta type
+        jsr ImageSize           ; tracks (FILE_INFO)
+        lda tracks
+        beq @close
+        cmp #FONT_TRACKS + 1
+        bcs @close
+        sta fTracks
+        lda nextBank            ; LoadReu loads to nextBank
+        sta fKeep
+        lda #FONT_BANK
+        sta nextBank
+        jsr LoadReu
+        php
+        lda fKeep
+        sta nextBank
+        plp
+        bne @close
+        jsr Reloc
+        bcs @close
+        lda #$80
+        sta fontsOn
+@close: jsr CloseFile
+@end:   rts
+
+fontsName:      .byte "FONTS.DNP", 0
+
+; Reloc: every track/sector reference of FONTS.DNP in banks FONT_BANK on
+; moved up by FONT_TRACK, so its files load from any drive as tracks
+; FONT_TRACK+1 on (reudrv.s Locate), as tools/sysreloc.py does for drive
+; E at build time: the root header 1/1 (its directory link, its own
+; block, the parent fields, the border block), then each block of the
+; root directory and the border block (their files and entries: module
+; 122). Folders (type 6) are left as they are and not searched. C set
+; when a reference lies outside the image (damaged: no system fonts).
+; Own code, after sysreloc.py.
+Reloc:  lda #1
+        ldx #1
+        ldy #>DBUF
+        jsr FGet
+        lda DBUF
+        sta dirT
+        lda DBUF+1
+        sta dirS
+        lda DBUF+$AB
+        sta bordT
+        lda DBUF+$AC
+        sta bordS
+        ldx #4
+@hdr:   ldy hdrFields,x
+        lda #>DBUF
+        jsr FMove
+        dex
+        bpl @hdr
+        lda #1
+        ldx #1
+        ldy #>DBUF
+        jsr FPut
+@dir:   lda dirT                ; the directory chain: each block's
+        beq @border             ; entries, then its link
+        ldx dirS
+        jsr FCheck
+        bcs @bad
+        ldy #>DBUF
+        jsr FGet
+        lda DBUF
+        sta nextT
+        lda DBUF+1
+        sta nextS
+        jsr Entries
+        bcs @bad
+        ldy #0
+        lda #>DBUF
+        jsr FMove
+        lda dirT
+        ldx dirS
+        ldy #>DBUF
+        jsr FPut
+        lda nextT
+        sta dirT
+        lda nextS
+        sta dirS
+        jmp @dir
+@border:
+        lda bordT               ; the off-page directory block
+        beq @done
+        ldx bordS
+        jsr FCheck
+        bcs @bad
+        ldy #>DBUF
+        jsr FGet
+        jsr Entries
+        bcs @bad
+        lda bordT
+        ldx bordS
+        ldy #>DBUF
+        jsr FPut
+@done:  clc
+@bad:   rts
+
+hdrFields:      .byte 0, $20, $22, $24, $AB
+
+        .endscope
+
+        .segment "OVL122"
+        .scope Mod122
+
+        jmp Entries                     ; entry 0 (module 121)
+
+        .include "fontblk.inc"
+
+; Entries: the 8 entries of DBUF: each file's chains moved, then its
+; entry's start and header addresses. C set: a reference out of range.
+Entries:
+        lda #2
+        sta ent
+@one:   ldx ent
+        lda DBUF,x
+        and #$07
+        beq @next               ; (empty)
+        cmp #6
+        beq @next               ; (a folder: left as it is)
+        lda DBUF+1,x
+        sta ft
+        lda DBUF+2,x
+        sta fs
+        lda DBUF+$16,x          ; GEOS and VLIR: the index's records
+        beq @seq
+        lda DBUF+$15,x
+        cmp #1
+        bne @seq
+        jsr Vlir
+        jmp @moved
+@seq:   lda ft
+        ldx fs
+        jsr Chain
+@moved: bcs @end
+        ldy ent                 ; (the start track: the entry's byte 1)
+        iny
+        lda #>DBUF
+        jsr FMove
+        ldx ent
+        lda DBUF+$16,x
+        beq @next               ; (not GEOS: no header)
+        txa
+        clc
+        adc #$13
+        tay
+        lda #>DBUF
+        jsr FMove               ; (header track)
+@next:  lda ent                 ; (entries at 2, 34 ... 226: the
+        clc                     ; eighth's + 32 carries)
+        adc #32
+        sta ent
+        bcc @one
+        clc
+@end:   rts
+
+; Vlir: the index block ft/fs: each record's chain moved, then the
+; index's own entries. C set: out of range.
+Vlir:   lda ft
+        ldx fs
+        jsr FCheck
+        bcs @end
+        ldy #>IBUF
+        jsr FGet
+        lda #2
+        sta rec
+@rec:   ldx rec
+        lda IBUF,x
+        beq @next               ; (0/0 none, 0/$FF empty)
+        pha
+        lda IBUF+1,x
+        tax
+        pla
+        jsr Chain
+        bcs @end
+        ldy rec
+        lda #>IBUF
+        jsr FMove
+@next:  lda rec                 ; (entries at 2 ... 254)
+        clc
+        adc #2
+        sta rec
+        bne @rec
+        lda ft
+        ldx fs
+        ldy #>IBUF
+        jsr FPut
+        clc
+@end:   rts
+
+; Chain: A/X = a chain's first block: each block's link moved (read
+; before it changes). C set: a block out of range, or more blocks than
+; the image holds (a loop).
+Chain:  sta ct
+        stx cs
+        lda #0
+        sta cnt
+        sta cnt+1
+@blk:   lda ct
+        beq @end                ; (the chain's end)
+        ldx cs
+        jsr FCheck
+        bcs @bad
+        ldy #>CBUF
+        jsr FGet
+        lda CBUF
+        pha
+        lda CBUF+1
+        pha
+        ldy #0
+        lda #>CBUF
+        jsr FMove
+        lda ct
+        ldx cs
+        ldy #>CBUF
+        jsr FPut
+        pla
+        sta cs
+        pla
+        sta ct
+        inc cnt
+        bne @blk
+        inc cnt+1
+        lda cnt+1
+        cmp #FONT_TRACKS
+        bcc @blk
+@bad:   sec
+        rts
+@end:   clc
+        rts
+
+        .endscope
+        .segment "INIT"
