@@ -213,7 +213,14 @@ power-on).
   `/e` the engine shows E in an **empty** slot (user, 2026-11-06: a slot
   the same command also uses as its own drive would mix the two up) and
   the dispatcher puts the slot back at the call's end (overlay module
-  81, sysenter.s); with A-D all in use, `/e` answers `FE_NO_SLOT` ($50).
+  81, sysenter.s). With A-D all in use (2026-11-18, the user's U64: GU
+  PDF could not read its script, the print queue paused on $50), a
+  function that touches one path only (`FE_STAT`, `FE_OPENDIR`,
+  `FE_READDIR`, `FE_CLOSE`, `FE_OPEN`, `FE_READ`) borrows a slot: D, or C
+  when the caller's drive is D; its values are kept and put back at the
+  call's end, as for FindFile (module 119, sysenter.s; test
+  tests/engine/e5noslot.py). Every other function still answers
+  `FE_NO_SLOT` ($50).
   Handles opened on E (listings, read streams) keep the slot's device
   with bit 7 set and show E there again on each later call (`HDrive`).
   E is a native image with folders (`/e/bin`: gush's commands). Writing

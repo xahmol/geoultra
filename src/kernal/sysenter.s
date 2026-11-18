@@ -185,9 +185,9 @@ FreeSlot:
         inx
         cpx #4
         bcc @slot
-        ldx #FE_NO_SLOT
-        rts
-@got:   txa
+        jsr OvlCall             ; (none empty: one borrowed, module 119
+        .byte 119, 0            ; Pick; OvlCall returns to FreeSlot's
+@got:   txa                     ; caller, overlay.s)
         clc
         adc #8
         ldx #0
@@ -213,13 +213,19 @@ ShowE:  pha
         jmp GetDirHead
 @new:   tay
         lda driveType-8,y
-        bne @taken
-        jsr Slot
+        beq :+
+        jsr BorrowOk            ; (an occupied slot: module 119)
+        bcs @taken
+:       jsr Slot
         lda #$C0                ; (bit 6: shown by the engine)
         sta sysActive
         jmp GetDirHead
 @taken: ldx #FE_NO_SLOT
         rts
+
+BorrowOk:                       ; (Y not needed after: Slot works from
+        jsr OvlCall             ; curDrive)
+        .byte 119, 3
 
 ; HideE (the engine's end): the slot back when the engine showed E or a
 ; disk image (written back first, module 89 Leave). A function that
@@ -293,5 +299,49 @@ ImgShow:
 ImgDrop:
         jsr OvlCall
         .byte 90, 3
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL119"               ; overlay module 119: drive E in
+        .scope Mod119                   ; an occupied slot
+
+        jmp Pick                        ; entry 0 (FreeSlot)
+        jmp Ok                          ; entry 3 (ShowE)
+
+; Pick (FreeSlot, no slot A-D empty): a slot to borrow for drive E when
+; the engine function may (Ok): D, or C when the caller's drive is D;
+; A = the device, X = 0. Else X = FE_NO_SLOT. The slot's values are kept
+; and put back at the call's end (Slot, SlotBack: as Enter borrows the
+; current slot for FindFile). The user's U64, 2026-11-18: with all four
+; drives in use GU PDF could not read its script on drive E ("printer
+; error" $50, the queue paused).
+Pick:   jsr Ok
+        bcs @no
+        lda #11
+        cmp saveDrive
+        bne :+
+        lda #10
+:       ldx #0
+        rts
+@no:    ldx #FE_NO_SLOT
+        rts
+
+; Ok: C clear when the engine function in hand touches one path only
+; (stat, a folder's listing, open, read, close: FE_STAT-FE_CLOSE,
+; FE_OPEN, FE_READ), so the borrowed slot's own drive is not part of it;
+; drive E is read-only meanwhile. C set for every other function.
+Ok:     lda feFunc
+        cmp #FE_CLOSE + 1
+        bcc @yes                        ; (1-4: stat, opendir, readdir,
+        cmp #FE_OPEN                    ;  close)
+        beq @yes
+        cmp #FE_READ
+        beq @yes
+        sec
+        rts
+@yes:   clc
+        rts
 
         .endscope

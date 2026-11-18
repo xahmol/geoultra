@@ -610,6 +610,9 @@ Run:    jsr OvlCall             ; (module 110: the driver called; X = its
 
 Play:   jsr OvlCall             ; (module 113: a driver call's record)
         .byte 113, 0
+Unpause:
+        jsr OvlCall             ; (module 113: a paused queue's tail job
+        .byte 113, 3            ; cancelled? then on)
 
 ; Step: the record at the tail played: T_DRIVER sets the driver's slot
 ; and the job; any other is a driver call (module 113). Played: the next
@@ -617,8 +620,11 @@ Play:   jsr OvlCall             ; (module 113: a driver call's record)
 ; the desktop's count starts again after the last job played (Q_BASE).
 Step:   jsr HeadLoad
         bcs @idle               ; (no queue)
-        bit hdr + Q_PAUSED
-        bmi @idle
+        bit hdr + Q_PAUSED      ; paused: only when the job at the tail
+        bpl :+                  ; was cancelled meanwhile does it go on
+        jsr Unpause             ; (module 113; the user's U64, 2026-11-18:
+        bcs @idle               ; cancel seemed to do nothing, and new
+:                               ; jobs found the queue paused and full)
         ldx #2
 @cmp:   lda hdr + Q_HEAD,x
         cmp hdr + Q_TAIL,x
@@ -647,11 +653,9 @@ Step:   jsr HeadLoad
         lda #2
         ldx #0
         jsr Get
-        lda #0                  ; (no page of it started)
-        sta hdr + Q_INPAGE
+        lda #0                  ; (no page of it started; Q_PCT follows
+        sta hdr + Q_INPAGE      ; with its first record, module 113)
         sta hdr + Q_PAGE
-        lda #$FF
-        sta hdr + Q_PCT
         jsr HeadSave
         lda taskReq             ; the next pass
         ora #$20
@@ -972,6 +976,7 @@ Wait:   clc
         .scope Mod113
 
         jmp Play                ; entry 0 (module 109)
+        jmp Unpause             ; entry 3
 
 RING_LOAD       = 1
 RING_HEAD_ONLY  = 1
@@ -1034,6 +1039,24 @@ Play:   lda hdr + Q_PJOB        ; a job played on after the queue ran empty
         lda status
         sta hdr + Q_ERR
         jmp HeadSave
+
+; Unpause (module 109, the queue paused): when a printer error paused it
+; (Q_ERR; a pause by hand stays) and the job playing (Q_PJOB) was
+; cancelled, the pause and its error lifted (Play then passes the
+; job over): C clear; else C set (still paused). Destroys A, X, Y, r0-r3L.
+Unpause:
+        lda hdr + Q_ERR         ; (a pause by hand stays: only a
+        beq @still              ; printer error's is lifted)
+        jsr Cancelled
+        bcc @still
+        lda #0
+        sta hdr + Q_PAUSED
+        sta hdr + Q_ERR
+        jsr HeadSave
+        clc
+        rts
+@still: sec
+        rts
 
 ; Progress (Play, a record played): the job's progress for the desktop
 ; (FE_SPOOL 0, r1H): a StartPrint starts a page (Q_PAGE, Q_BAND 0), a
