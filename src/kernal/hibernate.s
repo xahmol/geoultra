@@ -22,7 +22,7 @@
         .include "kcalls.inc"
 
         .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
-        .export hibState, RtcClockOvl, hibLimit, RtcCheck, hibBank
+        .export hibState, RtcClockOvl, hibLimit, RtcCheck, hibBank, hibIdle
         .import taskCur, taskReq
 hibBank         = ramBank + 1   ; RamSetup's bank: 19 + the current task
         .import guClockFresh    ; (info.s, $C0FB)

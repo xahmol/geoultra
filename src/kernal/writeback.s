@@ -20,6 +20,7 @@
 
         .export WriteBackNow, Begin, Put, Simple, cmdLen, dmaCmd, DmaGo, status
         .import OvlCall, uciPresent, wbPending, wbDelay, drvTracks, drvFlags, hibState, HibSuspend
+        .import hibIdle
         .export FreeNativeOvl, NativeOvl, NatBamOvl, NatSureOvl, Ovl1571, natLoaded
 
 path            = $9F70         ; the slot's scratch area (overlay.s; the
@@ -152,10 +153,20 @@ WriteBack:
         sta CPU_PORT
         bit hibState            ; a quiet moment after changes: the
         bvc @end                ; session saved too (HibTick)
-        lda #0
+        jsr SpBusy              ; not while the print queue plays: a
+        bcs @later              ; resume would print those pages again
+        lda #0                  ; (the user's U64, 2026-11-18); later
         sta hibState
         jmp HibSuspend
+@later: lda #$80                ; changed, counted again: saved 30 s
+        sta hibState            ; after the queue ran empty
+        lda #0
+        sta hibIdle
+        sta hibIdle+1
 @end:   rts
+
+SpBusy: jsr OvlCall             ; (module 120, spool.s: C set while
+        .byte 120, 0            ; the queue plays)
 
 ; Drive: write drive slot back.
 Drive:  jsr FetchPath

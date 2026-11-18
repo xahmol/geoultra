@@ -408,10 +408,14 @@ Store:  jsr OvlCall             ; (module 108: the request written)
 Wait:   jsr OvlCall             ; (module 112: the queue played until A/X
         .byte 112, 0            ; bytes fit)
 
+PAGE_NEED       = 94 * (ROW_LEN + 1)    ; a page of rows without colours
+        .assert PAGE_NEED < $10000, error, "spool.s: PAGE_NEED in A/X"
+
 ; Record: the driver's entry n = (spEnt - 2) / 3 written by module 108:
 ; a new job (InitForPrint, or none open) first gets its driver's slot
 ; (T_DRIVER), then the call's record (type, up to two parts of data: the
-; row, its colours; a string). X = 0 (StartPrint, StopPrint: no error).
+; row, its colours; a string). X = 0 (StartPrint, StopPrint: no error),
+; or DEV_NOT_FOUND when the call did not fit a paused queue (dropped).
 Record: lda r0L                 ; the program's data and colour pointers
         sta dataP               ; (HeadLoad's SysRAMOp uses r0-r3)
         lda r0H
@@ -432,7 +436,12 @@ Record: lda r0L                 ; the program's data and colour pointers
         lda #0                  ; the room the call needs: a row (and its
         ldx #0                  ; colours), a string, else a few bytes
         ldy entry
-        cpy #2
+        cpy #1                  ; StartPrint: room for a whole page of rows
+        bne @row                ; first (paused: else DEV_NOT_FOUND, so the
+        lda #<PAGE_NEED         ; program stops with its own message rather
+        ldx #>PAGE_NEED         ; than its rows being dropped one by one)
+        bne @wait
+@row:   cpy #2
         bne @str
         lda #<(ROW_LEN + COL_LEN)
         ldx #>(ROW_LEN + COL_LEN)
@@ -449,9 +458,10 @@ Record: lda r0L                 ; the program's data and colour pointers
 @wait:  jsr Wait                ; (module 112: played until it fits)
         ldx #0
         lda fits                ; (it does not: the call dropped whole, no
-        beq :+                  ; record without its data)
-        rts
-:       jsr HeadLoad
+        beq :+                  ; record without its data; the program
+        ldx #DEV_NOT_FOUND      ; told, as without a printer: StartPrint's
+        rts                     ; X, so a print into a paused, full queue
+:       jsr HeadLoad            ; no longer vanishes; the user, 2026-11-18)
         lda entry
         beq @job                ; InitForPrint: a new job
         bit hdr + Q_OPEN
@@ -1425,5 +1435,58 @@ cnt:    .byte 0
 dst:    .word 0
 qh:     .res ::Q_LEN
 jb:     .res ::J_LEN
+
+        .endscope
+
+; ======================================================================
+
+        .segment "OVL120"               ; overlay module 120: is the print
+        .scope Mod120                   ; queue playing?
+
+        jmp Busy                        ; entry 0 (writeback.s, a save due)
+
+; Busy: C set while the queue plays (records in it, not paused). An
+; automatic hibernation then waits (writeback.s): a snapshot taken
+; mid-print, resumed after the print had ended, played the rest again
+; (pages twice, a PDF with wrong offsets; the user's U64, 2026-11-18). A
+; paused queue does not play, so it may be saved. Destroys A, X, Y,
+; r0-r3L.
+Busy:   lda #<qh
+        sta r0L
+        lda #>qh
+        sta r0H
+        lda #<QHEAD
+        sta r1L
+        lda #>QHEAD
+        sta r1H
+        lda #Q_LEN
+        sta r2L
+        lda #0
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        ldy #REU_FETCH
+        jsr SysRAMOp
+        ldx #3                          ; no queue (no mark): not playing
+@mark:  lda qh,x
+        cmp Mark,x
+        bne @no
+        dex
+        bpl @mark
+        bit qh + Q_PAUSED
+        bmi @no
+        ldx #2
+@c:     lda qh + Q_HEAD,x
+        cmp qh + Q_TAIL,x
+        bne @yes
+        dex
+        bpl @c
+@no:    clc
+        rts
+@yes:   sec
+        rts
+
+Mark:   .byte "GUS2"
+qh:     .res ::Q_LEN
 
         .endscope
