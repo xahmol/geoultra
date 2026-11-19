@@ -9,7 +9,7 @@
 
         .export Measure, Combo, Token, Next, StateInit, nch, lineH, lineB, ended, first, recEnd
         .export curFid, curStyle, comboFid, comboFidH, comboStyle, nCombo, COMBO_MAX
-        .import Width, Height, Base
+        .import Width, Height, Base, SlotAX, UseSlot
 
 COMBO_MAX       = 64
 
@@ -86,9 +86,11 @@ StateInit:
         sta curStyle
         jsr Combo
         stx curCombo
-        rts
+        lda comboSlot,x
+        jmp UseSlot
 
-; TakeFont: the NewCardSet at tp as curFid, curStyle, curCombo.
+; TakeFont: the NewCardSet at tp as curFid, curStyle, curCombo (its
+; font's slot in use).
 ; Destroys A, X, Y.
 TakeFont:
         ldy #1
@@ -102,10 +104,12 @@ TakeFont:
         sta curStyle
         jsr Combo
         stx curCombo
-        rts
+        lda comboSlot,x
+        jmp UseSlot
 
-; Combo: X = the combination of curFid and curStyle (added when new;
-; COMBO_MAX at most: the last one is used again). Destroys A, Y.
+; Combo: X = the combination of curFid and curStyle (added when new,
+; with its font's slot; COMBO_MAX at most: the last one is used again).
+; Destroys A, Y.
 Combo:  ldx #0
 @find:  cpx nCombo
         beq @add
@@ -130,6 +134,19 @@ Combo:  ldx #0
         sta comboFidH,x
         lda curStyle
         sta comboStyle,x
+        txa
+        pha
+        lda curFid
+        ldy curFid + 1
+        tya
+        tax
+        lda curFid
+        jsr SlotAX
+        sta tmp
+        pla
+        tax
+        lda tmp
+        sta comboSlot,x
         inc nCombo
 @end:   rts
 
@@ -297,7 +314,9 @@ Restore:
         sta rp
         lda sRp + 1
         sta rp + 1
-        rts
+        ldx curCombo
+        lda comboSlot,x
+        jmp UseSlot
 
 ; TakeRuler: rp = the ruler at tp.
 TakeRuler:
@@ -377,10 +396,10 @@ TabTo:  lda rp + 1
 @dec:   jsr DecWidth            ; x = max(x, pos - width)
         lda pos
         sec
-        sbc tmp
+        sbc decW
         sta tmp
         lda pos + 1
-        sbc tmp + 1
+        sbc decW + 1
         sta tmp + 1
         bcc @end                ; (below 0: x stays)
         lda tmp
@@ -394,9 +413,9 @@ TabTo:  lda rp + 1
         sta curX + 1
         rts
 
-; DecWidth: tmp = the width of the characters from tp to the next full
-; stop or the first other token (fonts followed). tp, the font and the
-; style are left as they were.
+; DecWidth: decW = the width of the characters from tp to the next full
+; stop or the first other token (fonts followed; its own variable:
+; UseSlot uses tmp). tp, the font and the style are left as they were.
 DecWidth:
         lda tp
         pha
@@ -405,14 +424,21 @@ DecWidth:
         lda curStyle
         pha
         lda #0
-        sta tmp
-        sta tmp + 1
+        sta decW
+        sta decW + 1
 @loop:  jsr Token
         cmp #T_FONT
         bne :+
-        ldy #3
+        ldy #3                  ; its style and font
         lda (tp),y
         sta curStyle
+        ldy #2
+        lda (tp),y
+        tax
+        dey
+        lda (tp),y
+        jsr SlotAX
+        jsr UseSlot
         lda #T_FONT
         jsr Next
         jmp @loop
@@ -424,10 +450,10 @@ DecWidth:
         ldx curStyle
         jsr Width
         clc
-        adc tmp
-        sta tmp
+        adc decW
+        sta decW
         bcc :+
-        inc tmp + 1
+        inc decW + 1
 :       lda #T_CHAR
         jsr Next
         jmp @loop
@@ -437,7 +463,9 @@ DecWidth:
         sta tp + 1
         pla
         sta tp
-        rts
+        ldx curCombo            ; (the font in force again)
+        lda comboSlot,x
+        jmp UseSlot
 
 ; Finish: the line's height and baseline (the largest of its
 ; characters' combinations, or the one in force when it has none; with
@@ -488,12 +516,17 @@ Finish: lda #0
         clc
         adc base
         sta lineB
+        ldx curCombo            ; (the font in force in use again)
+        lda comboSlot,x
+        jsr UseSlot
         jmp Align
 
 ; Metrics: hi, base = the larger of them and combination Y's height and
 ; baseline. Keeps X.
 Metrics:
         stx keepX
+        lda comboSlot,y         ; (the combination's font)
+        jsr UseSlot
         ldx comboStyle,y
         jsr Height
         cmp hi
@@ -708,6 +741,7 @@ nCombo: .res 1
 comboFid: .res COMBO_MAX
 comboFidH: .res COMBO_MAX
 comboStyle: .res COMBO_MAX
+comboSlot: .res COMBO_MAX
 tokC:   .res 1
 keepX:  .res 1
 nextX:  .res 1
@@ -735,4 +769,5 @@ per:    .res 2
 more:   .res 1
 acc:    .res 2
 nGaps:  .res 1
+decW:   .res 2
 gapNo:  .res 1

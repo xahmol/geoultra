@@ -10,7 +10,11 @@ answers the file engine's calls for the Ultimate's paths at its entry
 and keeps what is written; gwtool ps writes the same document (A4) and
 the two must be the same. Files: build/harness/print/psc64-c64.ps,
 psc64-pc.ps; the screen psc64.png.
-Usage: tests/print/psc64.py [DOCUMENT.cvt]
+--doc=features: tests/print/psref.py's test document instead (GU
+Serif, Sans and Mono at 10-24 points, from drive E; a header and a
+footer; the alignments and spacings), compared with `gwtool ps
+--bitmap` (step P2: the fonts from their bitmaps; real text is P3).
+Usage: tests/print/psc64.py [DOCUMENT.cvt] [--doc=features]
 """
 import os
 import subprocess
@@ -29,14 +33,11 @@ entry = (ext[0] | ext[1] << 8) + 30
 v.mem_set(0x033F, b"\x60")                  # rts: the answered calls
 v.checkpoint(entry, temporary=False)
 import time
-def click(x, y):                            # (as apprun's x,y,p and r)
-    v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))
-    for data in (0x00, 0x80):
-        v.mem_set(0x8505, bytes([data]))
-        v.mem_set(0x39, bytes([v.mem_get(0x39, 0x39)[0] | 0x20]))
-        v.resume()
-        time.sleep(0.5)
-        v.ping()
+def click(x, y):                            # (as apprun's x,y,p: only the press,
+    v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))   # which GEOS's icons act on;
+    v.mem_set(0x8505, b"\x00")                    # the loop below runs it, so
+    v.mem_set(0x39, bytes([v.mem_get(0x39, 0x39)[0] | 0x20]))   # the first
+                                            # engine call is caught, not passed over)
 click(220, 44)                              # Open in the file box
 def zp(n):
     b = v.mem_get(n, n + 1)
@@ -86,7 +87,14 @@ for l in log:
 
 
 def main():
-    doc = sys.argv[1] if len(sys.argv) > 1 else DOC
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    feat = "--doc=features" in sys.argv
+    if feat:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import psref
+        doc = psref.features_doc()
+    else:
+        doc = args[0] if args else DOC
     os.makedirs(OUT, exist_ok=True)
     subprocess.run(["make", "-s", "build/psw/psw.cvt", "all"], cwd=ROOT, check=True, capture_output=True)
     disk = os.path.join(OUT, "psc64.d81")
@@ -116,7 +124,7 @@ def main():
             name = l[5:].rsplit(" ", 1)[0].rsplit("/", 1)[-1][:-3]
     pc = os.path.join(OUT, "psc64-pc.ps")
     subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gwtool.py"), "ps", disk, pc,
-                    name or "GeoUTools UK"], check=True, capture_output=True)
+                    name or "GeoUTools UK"] + (["--bitmap"] if feat else []), check=True, capture_output=True)
     a = open(raw, "rb").read() if os.path.exists(raw) else b""
     b = open(pc, "rb").read()
     same = a == b

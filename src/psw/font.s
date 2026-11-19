@@ -1,35 +1,418 @@
-; GU PostScript: font metrics and glyph cells (tools/gwps.py Font). The
-; font image (HG2G "Fonts": baseline offset, set width, height, the
-; index table of characters 32-127 and its end, the bit rows) is kept
-; in FONTBUF; step P1 has GeoUltra's system font there for every font ID
-; (as gwps draws a font it does not find), step P2 loads the others.
-; Own code.
+; GU PostScript: fonts (tools/gwps.py Fonts and Font). Each font ID (a
+; family and a size) the document uses gets a slot: its 96 widths
+; (FONTW), height and baseline, and the name of its file (FONTNAMES),
+; found as geoWrite finds fonts: FindFTypes over the FONT files (on
+; GeoUltra also drive E's GU fonts and the installed ones), the ID in
+; each file's header at $80, the size's record. Slot 0 is GeoUltra's
+; system font: for IDs 0 and 128 (BSW, BSW128) and for any font not
+; found (as gwps draws it). The glyphs' bits come from a font image in
+; FONTBUF (LoadImage), only while the prolog is written. Own code.
 
         .include "psw.inc"
 
-        .export FontInit, Width, Height, Base, GlyphSetup, GlyphBits, glyphW, widths, fHeight, fBase
+        .export FontInit, FindFont, SlotAX, UseSlot, LoadImage, Width, Height, Base
+        .export GlyphSetup, GlyphBits, glyphW, fHeight, fBase, curSlot
         .import PutHex
+
+FindFTypes      = $C23B
+FindFile        = $C20B
+GetFHdrInfo     = $C229
+dirEntryBuf     = $8400
+FONT            = 8             ; GEOS file type
+r6L = $0E
+r6H = $0F
+r9L = $14
+r9H = $15
+LIST_MAX        = 15            ; font files FindFTypes lists
+
+        .segment "ZEROPAGE"
+
+wp:     .res 2                  ; the slot in use's widths
+lp:     .res 2                  ; a name in the font list
 
         .segment "CODE"
 
-; FontInit: the system font copied to FONTBUF (it lies in the RAM under
-; the I/O area: read with all RAM in view, interrupts off) and its
-; widths, height and baseline taken. Destroys A, X, Y, op, gp.
+; FontInit: slot 0 = the system font (its widths, height, baseline);
+; no other slots yet. Destroys A, X, Y.
 FontInit:
         jsr UseSystemFont
-        lda baselineOffset      ; the image's header (8 bytes)
-        sta FONTBUF
+        lda curHeight
+        sta slotH
+        lda baselineOffset
+        sta slotB
+        lda #$FF                ; (an ID no font has)
+        sta slotFid
+        sta slotFidH
+        lda curIndexTable
+        sta op
+        lda curIndexTable + 1
+        sta op + 1
+        php                     ; (the system font lies under the I/O area)
+        sei
+        lda CPU_PORT
+        pha
+        lda #$30
+        sta CPU_PORT
+        ldx #0                  ; widths: offset[c + 1] - offset[c]
+        ldy #0
+:       iny
+        iny
+        lda (op),y
+        dey
+        dey
+        sec
+        sbc (op),y
+        sta FONTW,x
+        iny
+        iny
+        inx
+        cpx #96
+        bcc :-
+        pla
+        sta CPU_PORT
+        plp
+        lda #1
+        sta nSlot
+        lda #$FF
+        sta loaded              ; (no image in FONTBUF)
+        lda #0
+        jmp UseSlot
+
+; FindFont: a slot for the font ID A/X (lo/hi) unless it has one: its
+; file looked for (FindFTypes, the header's ID = the ID's family), its
+; size's record read into FONTBUF for the widths, height and baseline.
+; Not found (or no slot left): nothing, SlotOf then gives the system
+; font. No record file may be open. Destroys all.
+FindFont:
+        sta fid
+        stx fid + 1
+        jsr SlotOf
+        cmp #0
+        bne @end                ; (it has one)
+        jsr System
+        bcs @end                ; (the system font's IDs)
+        lda nSlot
+        cmp #FONT_SLOTS
+        bcs @end
+        jsr Family              ; fam = fid >> 6
+        jsr Look                ; its file's name in name
+        bcs @end
+        jsr Read                ; its size's record into FONTBUF
+        bcs @end
+        ldx nSlot               ; the slot: ID, metrics, name
+        lda fid
+        sta slotFid,x
+        lda fid + 1
+        sta slotFidH,x
+        lda FONTBUF + 3
+        sta slotH,x
+        lda FONTBUF
+        sta slotB,x
+        txa
+        jsr Widths
+        ldx nSlot
+        jsr NamePtr
+        ldy #16
+:       lda name,y
+        sta (op),y
+        dey
+        bpl :-
+        lda nSlot
+        sta loaded
+        inc nSlot
+@end:   rts
+
+; System: C set when fid is the system font's (family 0 or 128).
+System: lda fid + 1
+        and #$DF
+        bne @no
+        lda fid
+        and #$C0
+        bne @no
+        sec
+        rts
+@no:    clc
+        rts
+
+; Family: fam = fid >> 6.
+Family: lda fid
+        sta fam
+        lda fid + 1
+        sta fam + 1
+        ldy #6
+:       lsr fam + 1
+        ror fam
+        dey
+        bne :-
+        rts
+
+; Look: name = the FONT file whose header holds fam (at $80), among the
+; FONT files FindFTypes lists. C set: none.
+Look:   lda #0                  ; the list, cleared
+        tay
+:       sta FONTLIST,y
+        sta FONTLIST + $100,y
+        iny
+        bne :-
+        lda #<FONTLIST
+        sta r6L
+        lda #>FONTLIST
+        sta r6H
+        lda #FONT
+        sta r7L
+        lda #LIST_MAX
+        sta r7H
+        lda #0
+        sta r10L
+        sta r10H
+        jsr FindFTypes
+        txa
+        bne @none
+        lda #<FONTLIST
+        sta lp
+        lda #>FONTLIST
+        sta lp + 1
+        lda #LIST_MAX
+        sta left
+@each:  ldy #0
+        lda (lp),y
+        beq @none
+        lda lp
+        sta r6L
+        lda lp + 1
+        sta r6H
+        jsr FindFile
+        txa
+        bne @next
+        lda #<dirEntryBuf
+        sta r9L
+        lda #>dirEntryBuf
+        sta r9H
+        jsr GetFHdrInfo
+        txa
+        bne @next
+        lda fileHeader + $80
+        cmp fam
+        bne @next
+        lda fileHeader + $81
+        cmp fam + 1
+        bne @next
+        ldy #16                 ; found: its name
+:       lda (lp),y
+        sta name,y
+        dey
+        bpl :-
+        lda #0
+        sta name + 16
+        clc
+        rts
+@next:  lda lp
+        clc
+        adc #17
+        sta lp
+        bcc :+
+        inc lp + 1
+:       dec left
+        bne @each
+@none:  sec
+        rts
+
+; Read: record (fid & 63, the size) of the font file `name` into
+; FONTBUF. C set: not there.
+Read:   lda #<name
+        sta r0L
+        lda #>name
+        sta r0H
+        jsr OpenRecordFile
+        txa
+        bne @no
+        lda fid
+        and #63
+        jsr PointRecord
+        txa
+        bne @close
+        lda #<FONTBUF
+        sta r7L
+        lda #>FONTBUF
+        sta r7H
+        lda #<FONT_MAX
+        sta r2L
+        lda #>FONT_MAX
+        sta r2H
+        jsr ReadRecord
+        txa
+        bne @close
+        lda r7L                 ; (empty: r7 unchanged)
+        cmp #<FONTBUF
+        bne :+
+        lda r7H
+        cmp #>FONTBUF
+        beq @close
+:       jsr CloseRecordFile
+        clc
+        rts
+@close: jsr CloseRecordFile
+@no:    sec
+        rts
+
+; Widths: slot A's 96 widths from the image in FONTBUF (its index table:
+; offset[c + 1] - offset[c]; a width is under 256).
+Widths: jsr WPtr                ; gp = the slot's widths
+        lda FONTBUF + 4         ; op = the index table
+        clc
+        adc #<FONTBUF
+        sta op
+        lda FONTBUF + 5
+        adc #>FONTBUF
+        sta op + 1
+        ldx #0                  ; X = the character - 32
+@w:     txa
+        asl a
+        tay
+        iny
+        iny
+        lda (op),y
+        dey
+        dey
+        sec
+        sbc (op),y
+        pha
+        txa
+        tay
+        pla
+        sta (gp),y
+        inx
+        cpx #96
+        bcc @w
+        rts
+
+; SlotAX: A = the slot of the font ID A/X (lo/hi). SlotOf: of fid (0:
+; the system font, or not found). Keep X, Y.
+SlotAX: sta fid
+        stx fid + 1
+SlotOf: stx keep
+        ldx nSlot
+@find:  dex
+        beq @sys
+        lda slotFid,x
+        cmp fid
+        bne @find
+        lda slotFidH,x
+        cmp fid + 1
+        bne @find
+        txa
+        ldx keep
+        rts
+@sys:   lda #0
+        ldx keep
+        rts
+
+; UseSlot: slot A in use: its widths (wp), height and baseline. Keeps X,
+; Y.
+UseSlot:
+        stx keep
+        sty keepY
+        sta curSlot
+        tax
+        lda slotH,x
+        sta fHeight
+        lda slotB,x
         sta fBase
+        txa
+        jsr WPtr
+        lda gp
+        sta wp
+        lda gp + 1
+        sta wp + 1
+        ldx keep
+        ldy keepY
+        rts
+
+; WPtr: gp = slot A's widths (FONTW + A * 96). Keeps X.
+WPtr:   sta tmp
+        lda #0
+        sta tmp + 1
+        ldy #5                  ; A * 32
+:       asl tmp
+        rol tmp + 1
+        dey
+        bne :-
+        lda tmp                 ; * 3
+        asl a
+        sta gp
+        lda tmp + 1
+        rol a
+        sta gp + 1
+        lda gp
+        clc
+        adc tmp
+        sta gp
+        lda gp + 1
+        adc tmp + 1
+        sta gp + 1
+        lda gp
+        clc
+        adc #<FONTW
+        sta gp
+        lda gp + 1
+        adc #>FONTW
+        sta gp + 1
+        rts
+
+; NamePtr: op = slot X's file name (FONTNAMES + X * 17). Keeps X.
+NamePtr:
+        lda #<FONTNAMES
+        sta op
+        lda #>FONTNAMES
+        sta op + 1
+        txa
+        beq @end
+        tay
+@add:   lda op
+        clc
+        adc #17
+        sta op
+        bcc :+
+        inc op + 1
+:       dey
+        bne @add
+@end:   rts
+
+; LoadImage: slot A's font image in FONTBUF (slot 0: the system font,
+; copied from under the I/O area; others: their file's record), unless
+; it is there already. No record file may be open. Destroys A, X, Y.
+LoadImage:
+        cmp loaded
+        beq @end
+        sta loaded
+        cmp #0
+        beq System0
+        tax
+        jsr NamePtr
+        ldy #16
+:       lda (op),y
+        sta name,y
+        dey
+        bpl :-
+        ldx loaded
+        lda slotFid,x
+        sta fid
+        jsr Read
+@end:   rts
+
+; System0: the system font as a font record in FONTBUF: header, index
+; table (97 words), bits (height rows of set width bytes).
+System0:
+        jsr UseSystemFont
+        lda baselineOffset
+        sta FONTBUF
         lda curSetWidth
         sta FONTBUF + 1
-        sta setW
         lda curSetWidth + 1
         sta FONTBUF + 2
-        sta setW + 1
         lda curHeight
         sta FONTBUF + 3
-        sta fHeight
-        lda #8                  ; the index table at 8, the bits at 8 + 194
+        lda #8
         sta FONTBUF + 4
         lda #0
         sta FONTBUF + 5
@@ -42,7 +425,7 @@ FontInit:
         pha
         lda #$30
         sta CPU_PORT
-        lda curIndexTable       ; the index table: 97 words
+        lda curIndexTable
         sta op
         lda curIndexTable + 1
         sta op + 1
@@ -52,7 +435,7 @@ FontInit:
         dey
         cpy #$FF
         bne :-
-        lda cardDataPntr        ; the bits: height x set width bytes
+        lda cardDataPntr
         sta op
         lda cardDataPntr + 1
         sta op + 1
@@ -60,22 +443,22 @@ FontInit:
         sta gp
         lda #>(FONTBUF + 8 + 194)
         sta gp + 1
-        ldx fHeight
+        ldx curHeight
 @row:   ldy #0
 :       lda (op),y
         sta (gp),y
         iny
-        cpy setW                ; (the system font's rows are under 256)
+        cpy curSetWidth         ; (the system font's rows are under 256)
         bne :-
         lda op
         clc
-        adc setW
+        adc curSetWidth
         sta op
         bcc :+
         inc op + 1
 :       lda gp
         clc
-        adc setW
+        adc curSetWidth
         sta gp
         bcc :+
         inc gp + 1
@@ -84,27 +467,16 @@ FontInit:
         pla
         sta CPU_PORT
         plp
-        ldx #0                  ; the widths: offset[c + 1] - offset[c]
-:       txa
-        asl a
-        tay
-        lda FONTBUF + 8 + 2,y
-        sec
-        sbc FONTBUF + 8,y
-        sta widths,x
-        inx
-        cpx #96
-        bcc :-
         rts
 
-; Width: A = the width of character A (32-127) in style X (GetRealSize:
-; bold +1, outline +2). Keeps X, Y.
-Width:  stx keep
+; Width: A = the width of character A (32-127) in the slot in use, style
+; X (GetRealSize: bold +1, outline +2). Keeps X, Y.
+Width:  sty keepY
         sec
         sbc #32
-        tax
-        lda widths,x
-        ldx keep
+        tay
+        lda (wp),y
+        ldy keepY
         pha
         txa
         and #BOLD
@@ -123,7 +495,7 @@ Width:  stx keep
 :       pla
         rts
 
-; Height, Base: A = the font's height and baseline offset in style X
+; Height, Base: A = the slot's height and baseline offset in style X
 ; (outline 2 more). Keep X, Y.
 Height: lda fHeight
         jmp Plus2
@@ -140,13 +512,14 @@ Plus2:  pha
         rts
 
 ; GlyphSetup: character A's cell in style X (CELL_STYLES; a space without
-; reverse) as hex digits, row by row, each row padded to whole bytes, as
-; gwps's Font.cell and type3_def: bold makes each column the font's bit
-; or the one before (the cell one wider); the underline row (baseline +
-; 1) is the line only, over the cell but its last column (all of it when
-; bold); reverse inverts the cell; outline adds two blank columns (drawn
-; plain, as GeoUltra's kernal). GlyphSetup: glyphW = the cell's width
-; with them; GlyphBits then writes the rows. Destroy A, X, Y, op.
+; reverse) in the image in FONTBUF (the slot in use loaded), as gwps's
+; Font.cell: bold makes each column the font's bit or the one before
+; (the cell one wider); the underline row (baseline + 1) is the line
+; only, over the cell but its last column (all of it when bold); reverse
+; inverts the cell; outline adds two blank columns (drawn plain, as
+; GeoUltra's kernal). glyphW = the cell's width with them; GlyphBits
+; then writes the rows as hex, each padded to whole bytes. Destroy A,
+; X, Y, op.
 GlyphSetup:
         sta code
         cmp #' '
@@ -171,21 +544,36 @@ GlyphSetup:
         beq :+
         inc glyphW
         inc glyphW
-:       lda code                ; the glyph's first bit: offset[code - 32]
+:       lda FONTBUF + 4         ; the index table
+        clc
+        adc #<FONTBUF
+        sta op
+        lda FONTBUF + 5
+        adc #>FONTBUF
+        sta op + 1
+        lda code                ; the glyph's first bit: offset[code - 32]
         sec
         sbc #32
         asl a
         tay
-        lda FONTBUF + 8,y
+        lda (op),y
         sta first
-        lda FONTBUF + 8 + 1,y
+        iny
+        lda (op),y
         sta first + 1
+        lda FONTBUF + 1
+        sta setW
+        lda FONTBUF + 2
+        sta setW + 1
         rts
 
 GlyphBits:
-        lda #<(FONTBUF + 8 + 194)
+        lda FONTBUF + 6         ; the bits
+        clc
+        adc #<FONTBUF
         sta op
-        lda #>(FONTBUF + 8 + 194)
+        lda FONTBUF + 7
+        adc #>FONTBUF
         sta op + 1
         lda #0
         sta row
@@ -272,7 +660,7 @@ GlyphBits:
         jmp @row
 :       rts
 
-; Shift: bit into the byte being made; a full byte written as hex.
+; Shift: pix into the byte being made; a full byte written as hex.
 Shift:  lda pix
         lsr a
         rol acc
@@ -330,11 +718,22 @@ Mask:   .byte $80, $40, $20, $10, $08, $04, $02, $01
 
         .segment "BSS"
 
-widths: .res 96
+nSlot:  .res 1
+curSlot: .res 1
+loaded: .res 1                  ; the slot whose image is in FONTBUF
+slotFid: .res FONT_SLOTS
+slotFidH: .res FONT_SLOTS
+slotH:  .res FONT_SLOTS
+slotB:  .res FONT_SLOTS
+fid:    .res 2
+fam:    .res 2
+name:   .res 17
+left:   .res 1
 fHeight: .res 1
 fBase:  .res 1
 setW:   .res 2
 keep:   .res 1
+keepY:  .res 1
 code:   .res 1
 style:  .res 1
 glyphW0: .res 1

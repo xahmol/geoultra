@@ -106,8 +106,9 @@ PAGE_MAX        = $1B60
 HEADBUF         = $4760         ; the header record
 FOOTBUF         = $4960         ; the footer record
 HF_MAX          = $0200
-FONTBUF         = $4B60         ; a font image (the system font's copy)
-FONT_MAX        = $0800
+FONT_SLOTS      = 16            ; fonts (ID and size) a document uses
+FONTW           = $4B60         ; each slot's 96 widths (characters 32-127)
+FONTNAMES       = FONTW + FONT_SLOTS * 96       ; each slot's file name (17)
 OUTBUF          = $5360         ; the output's buffer, written when full
 OUT_MAX         = $0100
 LINE_MAX        = 255           ; characters a line keeps (one byte index)
@@ -119,6 +120,10 @@ CHK             = $5860
 PICBUF          = $6000         ; a picture record (compacted): the background
 PIC_MAX         = $1F40         ; screen's place, unused (dialogs draw on the
                                 ; foreground only, dispBufferOn)
+FONTBUF         = $6000         ; a font image, while the prolog is written
+FONT_MAX        = $1F40         ; (the pictures come later: the same place)
+FONTLIST        = PAGEBUF       ; FindFTypes' names, while fonts are looked
+                                ; for (the document is closed then)
 
 ; --- Zero page ($80-$FA: the application's, docs/GEOSLIB_MANUAL.md)
 tp              = $80           ; word: the token pointer in a record

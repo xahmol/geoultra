@@ -9,7 +9,7 @@
         .include "psw.inc"
 
         .export docName, paperW, paperH
-        .import FontInit, Prescan, Prolog, Pages, OutOpen, OutClose, outErr
+        .import FontInit, Prescan, Prolog, Pages, OutOpen, OutClose, outErr, FindFonts
         .import docWidth, hdrFlags, headH, footH, pageH, docV20
         .import __BSS_RUN__, __BSS_SIZE__
 
@@ -135,11 +135,7 @@ Write:  lda #<docName
         txa
         bne @read
         jsr Header
-        lda #<docName
-        sta r0L
-        lda #>docName
-        sta r0H
-        jsr OpenRecordFile
+        jsr Open
         txa
         bne @read
         jsr FontInit
@@ -155,26 +151,38 @@ Write:  lda #<docName
         sta paperH + 1
         lda #^84189
         sta paperH + 2
-        jsr Prescan
+        jsr Prescan             ; the first pass, then the document closed:
+        jsr CloseRecordFile     ; the fonts' files are record files too
+        jsr FindFonts           ; (one open at a time)
         jsr OutOpen
         txa
         bne @out
-        jsr Prolog
+        jsr Prolog              ; (the fonts' images read for the glyphs)
+        jsr Open                ; the document again for the pages
+        txa
+        bne @read2
         jsr Pages
+        jsr CloseRecordFile
         jsr OutClose
         txa
         bne @out
-        jsr CloseRecordFile
         lda #0
         sta status
         rts
-@out:   jsr CloseRecordFile
-        lda #MSG_OUT
-        sta status
-        rts
+@read2: jsr OutClose
 @read:  lda #MSG_READ
         sta status
         rts
+@out:   lda #MSG_OUT
+        sta status
+        rts
+
+; Open: the document's record file opened. X = 0 or the error.
+Open:   lda #<docName
+        sta r0L
+        lda #>docName
+        sta r0H
+        jmp OpenRecordFile
 
 ; Header: from the file header (fileHeader, as on disk): docV20 ("Write
 ; Image V2.0": printed as a 480-dot page), hdrFlags ($8B: $80 a title

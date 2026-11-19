@@ -7,15 +7,17 @@
 
         .include "psw.inc"
 
-        .export Prescan, Prolog, Pages, ReadRec, Down
+        .export Prescan, Prolog, Pages, ReadRec, Down, FindFonts
         .export docWidth, nPages, hdrFlags, headH, footH, pageH, docV20, top, dry
         .import Measure, Token, Next, StateInit, nch, lineH, lineB, ended, first, recEnd
         .import curFid, curStyle, comboFid, comboFidH, comboStyle
         .import PutC, PutI, PutZ, PutDec, PutHund, PutSp
         .import GlyphSetup, GlyphBits, glyphW, fHeight, fBase, docName, paperW, paperH
+        .import FindFont, SlotAX, UseSlot, LoadImage
         .import Picture
 
 KEY_MAX         = 32
+FID_MAX         = 16            ; font IDs the first pass keeps
 
         .segment "CODE"
 
@@ -69,6 +71,7 @@ SizeHi: .byte >PAGE_MAX, >HF_MAX, >HF_MAX
 Prescan:
         lda #0
         sta nKey
+        sta nFid
         sta nPages
         sta hasHead
         sta hasFoot
@@ -143,6 +146,7 @@ MarkRec:
         iny
         lda (tp),y
         sta curStyle
+        jsr KeepFid
         lda #T_FONT
         jsr Next
         jmp @loop
@@ -158,6 +162,47 @@ MarkRec:
         lda #T_CHAR
 @other: jsr Next
         jmp @loop
+@end:   rts
+
+; KeepFid: curFid in the list of font IDs the document uses (FindFonts
+; then looks for their files), unless it is there or the list is full.
+KeepFid:
+        ldx #0
+@each:  cpx nFid
+        beq @add
+        lda fidLo,x
+        cmp curFid
+        bne :+
+        lda fidHi,x
+        cmp curFid + 1
+        beq @end
+:       inx
+        bne @each
+@add:   cpx #FID_MAX
+        bcs @end
+        lda curFid
+        sta fidLo,x
+        lda curFid + 1
+        sta fidHi,x
+        inc nFid
+@end:   rts
+
+; FindFonts: a slot for each font ID the first pass found (font.s
+; FindFont; the record file closed). Destroys all.
+FindFonts:
+        lda #0
+        sta fidAt
+@each:  ldx fidAt
+        cpx nFid
+        bcs @end
+        lda fidLo,x
+        pha
+        lda fidHi,x
+        tax
+        pla
+        jsr FindFont
+        inc fidAt
+        bne @each
 @end:   rts
 
 ; KeyOf: X = the Type 3 font of the font ID A/X (lo/hi) in style Y (the
@@ -481,7 +526,18 @@ Points: jsr Load3
 
 ; Type3: key `key`'s Type 3 font (gwps type3_def): its name, then each
 ; marked glyph ("Encoding c /gc put", "Glyphs /gc [w b h <hex>] put").
-Type3:  lda #'/'
+Type3:  ldx key                 ; its font's image in FONTBUF
+        lda keyFid,x
+        pha
+        lda keyFidH,x
+        tax
+        pla
+        jsr SlotAX
+        pha
+        jsr LoadImage
+        pla
+        jsr UseSlot
+        lda #'/'
         jsr PutC
         jsr Name
         jsr PutI
@@ -873,6 +929,10 @@ which:  .res 1
 recNo:  .res 1
 pageNo: .res 1
 nKey:   .res 1
+nFid:   .res 1
+fidAt:  .res 1
+fidLo:  .res FID_MAX
+fidHi:  .res FID_MAX
 key:    .res 1
 kFid:   .res 2
 kStyle: .res 1
