@@ -1,5 +1,5 @@
 """mdgw.py - a Markdown text as a geoWrite 2.1 document, for gwtool.py's
-`frommd` command (docs/GWTOOL_MANUAL.md, "From Markdown"; the user's
+`frommd` command (docs/TOOLS_MANUAL.md, "From Markdown"; the user's
 request of 2026-11-18). Needs Pillow only for pictures.
 
 The Markdown is read line by line (CommonMark and GitHub's tables, the

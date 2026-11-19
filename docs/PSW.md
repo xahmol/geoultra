@@ -89,4 +89,4 @@ written, then a picture record, in the background screen's place
   on the manual, the file read back over FTP and compared with `gwtool
   ps`'s; the user's files put back.
 - `tests/print/psref.py`: `gwtool ps` against geoWrite's own printout,
-  dot for dot (docs/GWTOOL_MANUAL.md, "PostScript").
+  dot for dot (docs/TOOLS_MANUAL.md, "PostScript").

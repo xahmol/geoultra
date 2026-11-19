@@ -1,4 +1,84 @@
-# gwtool: geoWrite documents on a PC
+---
+title: GeoUltra PC tools
+subtitle: geosdisk, gwtool, gptool, mkappsdnp, mkgeosfont
+---
+
+# About these tools
+
+GeoUltra comes with a few programs for a PC (Windows, macOS, Linux) that
+help with GEOS files outside the C64: making and filling disk images,
+exchanging geoWrite documents with Word, Markdown and PostScript,
+turning geoPaint pictures into PNG and back, building an applications
+image, and making GEOS fonts. They are in the repository's `tools/`
+folder; the other scripts there are part of GeoUltra's build.
+
+**What you need:** Python 3.11 or later. **Pillow** (`pip install
+pillow`) for pictures (gptool, pictures in gwtool, mkgeosfont).
+gwtool and gptool write a new D64 or D81 with VICE's **c1541** (from the
+PATH, or `~/.local/opt/vice-3.10/bin`); geosdisk needs no other
+programs. **ghostscript** (`ps2pdf`) turns PostScript into PDF.
+
+Run them from the repository's folder:
+
+    python3 tools/geosdisk.py list apps.d81
+
+Common to all of them:
+
+- **Disk images**: D64, D71, D81 and DNP (CMD native, with folders: a
+  name may carry its folder, `Writing/Letter`).
+- **CVT**: GEOS Convert's format, one file holding a whole GEOS file.
+  The Ultimate keeps GEOS files in this form, and GeoUltra converts
+  them when you copy them to a drive.
+- **Names** are as in the image's directory: case matters. Put names
+  with spaces in quotes.
+
+# geosdisk: GEOS disk images
+
+    tools/geosdisk.py new IMAGE [--name=NAME] [--id=XY] [--tracks=N]
+    tools/geosdisk.py list IMAGE
+    tools/geosdisk.py add IMAGE SOURCE [SOURCE ...] [--folder=PATH] [--replace] [--seq]
+    tools/geosdisk.py extract IMAGE [NAME ...] [--out=DIR]
+    tools/geosdisk.py delete IMAGE NAME [NAME ...]
+    tools/geosdisk.py rename IMAGE OLD NEW
+    tools/geosdisk.py mkdir IMAGE PATH
+    tools/geosdisk.py build RECIPE.toml
+    tools/geosdisk.py pack ARCHIVE.lnx SOURCE [SOURCE ...]
+
+- **new** makes an empty GEOS disk image of the type its name ends in
+  (`.d64`, `.d71`, `.d81`, `.dnp`; a DNP has `--tracks=N` tracks of 64
+  KB, 2-255, 8 by default). It is a GEOS disk at once: GEOS and
+  GeoUltra need not convert it first.
+- **list** shows every file with its GEOS type, structure, class, date
+  and size.
+- **add** puts files onto an image: a CVT file; a file from another
+  image (`other.d81:Name`, `apps.dnp:Writing/geoWrite`); every file of
+  a Lynx archive (`.lnx`, or one file of it, `x.lnx:NAME`); or a plain
+  file (as a PRG, `--seq` as a SEQ), named after the file.
+  `--folder=PATH` puts them into a folder of a DNP; `--replace`
+  replaces a file of the same name.
+- **extract** writes GEOS files as CVT files and plain ones as `.prg` or
+  `.seq` (all files when no name is given) into `--out=DIR` (the
+  current folder by default).
+- **delete**, **rename**, **mkdir** (a folder on a DNP).
+- **build** makes a whole DNP from a recipe (the format of mkappsdnp,
+  below).
+- **pack** writes files into a Lynx archive (GEOS files as CVTs inside
+  it), as GEOS archives on the internet are often kept.
+
+Images may also be read from a **G64** (a GCR disk image: read as its
+D64) and from inside **.gz** and **.zip** files (`x.zip:inner.d64`).
+
+Examples:
+
+    tools/geosdisk.py new FONTS.DNP --tracks=8 --name="System fonts"
+    tools/geosdisk.py add FONTS.DNP "fonts/English/Roma.cvt" "fonts/English/Mykonos.cvt"
+    tools/geosdisk.py add work.d81 "GeoCalc.d64:GEOCALC" geowrite.cvt
+    tools/geosdisk.py extract archive.zip:apps.d64 --out=apps
+
+The first two make GeoUltra's system font image (docs/GEOULTRA_MANUAL.md,
+"System fonts"): copy `FONTS.DNP` into `GEOULTRA` on the stick.
+
+# gwtool: geoWrite documents
 
 `tools/gwtool.py` reads geoWrite documents from a disk image on a PC and
 writes geoWrite 2.x documents: it converts geoWrite 1.x documents, joins
@@ -239,3 +319,136 @@ Format and Pagination", pagetable.com; how geoWrite measures a line
 (for `ps`): the same article, behaviour only. The 1.x differences: observed by
 comparing a document before and after geoWrite 2.1 converted it. Own
 code; the image reading is tools/mkappsdnp.py's.
+
+# gptool: geoPaint pictures
+
+`tools/gptool.py` turns geoPaint documents in a disk image into picture
+files (PNG, JPEG, GIF, BMP: any format Pillow writes), and pictures into
+geoPaint documents. Python 3 with Pillow; writing a D64 or D81 uses
+VICE's `c1541`, as `gwtool` does.
+
+## Commands
+
+    tools/gptool.py list IMAGE
+    tools/gptool.py export IMAGE NAME OUT.png [--mono] [--crop] [--scale=N]
+    tools/gptool.py import IN.png OUT NAME [--colour] [--no-dither] [--fit]
+                           [--ink=N] [--paper=N] [--threshold=N]
+
+- **IMAGE**: a D64, D71, D81 or DNP; on a DNP a name may include its
+  folder (`Art/Logo`).
+- **OUT** (import): a new `.d64` or `.d81` image, or a folder that gets a
+  CVT file.
+- **list** shows each geoPaint document and how many of its 45 strips
+  (two card rows each) hold something.
+- **export** writes the whole page, 640 x 720 pixels, in the C64's
+  colours: each 8 x 8 card in its own foreground and background colour
+  (VICE's palette). `--mono`: black on white. `--crop`: only the drawing,
+  without the empty page around it. `--scale=N`: N times larger, pixels
+  kept sharp.
+- **import** makes a geoPaint document from a picture, at the top left
+  of the page. A picture larger than the page is scaled down to fit;
+  `--fit` also enlarges a smaller one to fill the page (proportions
+  kept).
+  - Black and white (the default): Floyd-Steinberg dithering for photos;
+    `--no-dither` with `--threshold=N` (0-255, 128 by default) for line
+    art. `--ink=N` and `--paper=N` set the two colours (C64 colour
+    numbers: 0 black, 1 white, 2 red, 6 blue, 11 dark grey, 15 light grey
+    ...).
+  - `--colour`: each 8 x 8 card gets the two of the 16 C64 colours that
+    fit its pixels best, each pixel the nearer of the two. As on the C64
+    itself a card has only two colours, so photos show blocks where
+    colours meet; drawings with large areas of colour come out best.
+
+Examples:
+
+    tools/gptool.py export geos.d81 "GEOSMP.PIC" geosmp.png --crop --scale=2
+    tools/gptool.py import logo.png art.d64 "Logo" --colour
+    tools/gptool.py import photo.jpg art.d64 "Photo" --fit
+
+## The format
+
+From HG2G, appendix F ("geoPaint"): a VLIR file of 45 records, each two
+card rows of the 80 x 90 card page: 2 x 80 cards of 8 bytes, 8 zero
+bytes, and 160 colour bytes (foreground in the high nibble, background
+in the low), compressed as one stream: a command of 0-63 takes that many
+bytes as they are, 65-127 repeats the next 8 bytes (a card) command - 64
+times, 129-255 repeats the next byte command - 128 times. An empty
+record is a blank strip. Documents gptool writes have the class "Paint
+Image V1.1" (geoPaint 2.0's) and all 127 record entries (the unused ones
+empty, as GEOS expects).
+
+## Checked
+
+- Four documents from the GDOS64 and MegaPatch disks exported correctly,
+  and every strip of them compressed again by gptool decompresses to
+  the same bytes (`tests/tools/gptool_test.py`).
+- A picture imported in colour opens in geoPaint 2.0 (VICE, 2026-11-18).
+- Pixels survive import and export unchanged (black and white without
+  dithering), and a coloured square comes back in its colours.
+
+# mkappsdnp: an applications image
+
+    tools/mkappsdnp.py MANIFEST.toml
+
+Builds one DNP image with folders from your own GEOS disks: for example
+all your applications, sorted into folders, on one drive. The manifest
+names the sources (disk images, or folders of CVT files) and which files
+go into which folder. The manifest and the image are yours; keep them
+outside the repository.
+
+```
+[dnp]
+out = "my-apps.dnp"            # relative to the manifest
+name = "My applications"       # disk name, at most 16 characters
+id = "MA"
+tracks = 48                    # 64 KB each; 0: as small as fits (+25%)
+strict = false                 # true: a missing file stops the build
+
+[sources]                      # name = image or folder of CVTs
+geos = "~/geos/GEOS64.D81"
+calc = "~/geos/GeoCalc.d64"
+
+[[folder]]
+path = ""                      # "" is the root
+files = ["geos:GEOWRITE", "geos:GEOPAINT"]
+
+[[folder]]
+path = "Office"                # "A/B": nested
+files = ["calc:GEOCALC"]
+all = ["calc"]                 # optional: every file of these sources
+```
+
+A file is `source:name`: the name as in the directory, with
+`Folder/Name` for a folder inside a DNP source; for a folder source, the
+CVT file's name. Files not found are reported, and the build goes on
+(unless `strict`). `geosdisk.py build` takes the same manifest.
+
+# mkgeosfont: GEOS fonts from outline fonts
+
+    tools/mkgeosfont.py FONT.otf ID NAME SIZES OUT.cvt [--info TEXT] [--fix FILE] [--pcf PATTERN]
+
+Renders an OpenType or TrueType font into a GEOS font file (a CVT), as
+GeoUltra's own GU fonts are made. Check the font's licence before you
+share the result.
+
+- **ID**: the GEOS font ID (0-1023; pick one no other font of yours
+  uses). **NAME**: the font's name in menus. **SIZES**: the point sizes,
+  comma-separated (`10,12,14,18,24`; a GEOS point is a pixel at 80 dots
+  an inch, the font's height in rows).
+- The glyphs are rendered without anti-aliasing; the widths follow the
+  outline font's design, so documents break lines as with its
+  original.
+- `--info TEXT`: the text in the font file's info box.
+- `--fix FILE`: hand-drawn glyphs for small sizes, where rendering loses
+  strokes: a Python file with `FIXES = {size: {char: drawing}}`, each
+  drawing the glyph's rows (`#` ink, `.` paper).
+- `--pcf PATTERN`: take the shapes from a bitmap font (PCF) per size
+  (`%d` the size), the widths from the outline font.
+
+Example:
+
+    tools/mkgeosfont.py MyFont.otf 600 "My Font" 10,12,14,18 myfont.cvt
+
+Add the CVT to `GEOULTRA/fonts` on the stick, and GeoUltra installs it
+as a system font at its next start; or put it on an image with
+`geosdisk.py add`.

@@ -1,5 +1,5 @@
 """gwps.py - a geoWrite 2.x document as PostScript, for gwtool.py's `ps`
-command (docs/GWTOOL_MANUAL.md, "PostScript"; docs/DESIGN.md "PostScript
+command (docs/TOOLS_MANUAL.md, "PostScript"; docs/DESIGN.md "PostScript
 writer": the user's decisions of 2026-11-15 and 2026-11-19). It is the
 reference for the C64 writer: both lay a page out as geoWrite does, and
 tests/print compare them with geoWrite's own printout. No packages

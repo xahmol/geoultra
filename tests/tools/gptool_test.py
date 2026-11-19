@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/gptool.py (docs/GPTOOL_MANUAL.md): the geoPaint compression both
+"""tools/gptool.py (docs/TOOLS_MANUAL.md): the geoPaint compression both
 ways (random strips, and runs of bytes and of cards, decompressed back
 the same; within the format's limits); a picture with shapes in black
 and white imported into a D64 as a geoPaint document, listed, exported

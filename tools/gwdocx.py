@@ -1,5 +1,5 @@
 """gwdocx.py - a geoWrite 2.x document as a Word document (.docx), for
-gwtool.py's `docx` command (docs/GWTOOL_MANUAL.md, "Word"; the user's
+gwtool.py's `docx` command (docs/TOOLS_MANUAL.md, "Word"; the user's
 request of 2026-11-18). No packages needed: the .docx (Office Open XML,
 ECMA-376) is written as its few XML parts in a ZIP file, the pictures as
 PNG files (own writer, zlib).

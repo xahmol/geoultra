@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/geosdisk.py (docs/GWTOOL_MANUAL.md; the user's request of
+"""tools/geosdisk.py (docs/TOOLS_MANUAL.md; the user's request of
 2026-11-18): new GEOS disks in D64, D71 and D81 (free blocks as c1541
 counts them, the GEOS signature and a border block), files added from
 CVTs (GeoUltra's own: the desktop, a printer driver, gush) and from

@@ -1,5 +1,5 @@
 """docxgw.py - a Word document (.docx) as a geoWrite 2.1 document, for
-gwtool.py's `fromdocx` command (docs/GWTOOL_MANUAL.md, "From Word"; the
+gwtool.py's `fromdocx` command (docs/TOOLS_MANUAL.md, "From Word"; the
 user's request of 2026-11-18). Needs Pillow only for pictures.
 
 The .docx (Office Open XML, ECMA-376) is read with the standard library:

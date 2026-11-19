@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """tools/docxgw.py on a Word document made here the way Word writes one
-(docs/GWTOOL_MANUAL.md, "From Word"): the font through the theme
+(docs/TOOLS_MANUAL.md, "From Word"): the font through the theme
 (minorHAnsi, Calibri), sizes and paragraph spacing in docDefaults and the
 Normal style, a heading style based on Normal, a numbered and a bulleted
 list (numbering.xml), a table, accents and typographic quotes, a right

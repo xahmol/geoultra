@@ -40,7 +40,7 @@ REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 DEPLOYDIR = /SD/idi8b/geoultra/
 
-.PHONY: all checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all docs checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
 
@@ -413,6 +413,18 @@ private/geoultra-apps.dnp: private/apps.toml tools/mkappsdnp.py
 deploy: check-deploy build/geoultra64.crt build/geoultra64.cfg
 	curl -sS --max-time 120 --ftp-create-dirs -T build/geoultra64.crt ftp://$(ULTIP1)$(DEPLOYDIR)
 	curl -sS --max-time 60 --ftp-create-dirs -T build/geoultra64.cfg ftp://$(ULTIP1)$(DEPLOYDIR)
+
+# The PDFs of the README and the user documents (pandoc with XeLaTeX;
+# ~/.claude/makefile_conventions.md); committed, so they ship in releases.
+DOCPDFS = README.pdf docs/GEOULTRA_MANUAL.pdf docs/TOOLS_MANUAL.pdf
+docs: $(DOCPDFS)
+
+%.pdf: %.md pandoc-defaults.yaml pandoc-header.tex
+	@if which pandoc >/dev/null 2>&1; then \
+		pandoc --defaults=pandoc-defaults.yaml $< -o $@; \
+	else \
+		echo "WARNING: pandoc not found -- $@ not updated (install: sudo apt install pandoc texlive-xetex)"; \
+	fi
 
 # The private applications image to the test folder, only on request: it
 # is drive C there, and a new copy replaces what was written to it (the

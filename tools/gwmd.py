@@ -1,5 +1,5 @@
 """gwmd.py - a geoWrite 2.x document as Markdown, for gwtool.py's `md`
-command (docs/GWTOOL_MANUAL.md, "Markdown"; the user's request of
+command (docs/TOOLS_MANUAL.md, "Markdown"; the user's request of
 2026-11-18). No packages needed: pictures are written as PNG files by
 gwdocx.py's own writer.
 
