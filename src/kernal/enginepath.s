@@ -12,8 +12,9 @@
         .include "hw.inc"
         .include "kcalls.inc"
         .include "engine.inc"
+        .include "sysdrive.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
+        .import OvlCall, SysRAMOp, folderT, folderS, FindFile, fontsOn, sysShow
 
         .segment "OVL23"
         .scope Mod23
@@ -245,6 +246,8 @@ Top:    ldy #1
         lda fePath+1            ; one letter: a drive
         cmp #'e'
         beq @later
+        cmp #'f'                ; /f: the system fonts (FONTS.DNP), shown
+        beq @fonts              ; as E is, read-only (module 125, HideE)
         sec
         sbc #'a'
         cmp #4
@@ -267,6 +270,10 @@ Top:    ldy #1
         jsr OpenDisk
         cpx #1                  ; (C set on an error)
         rts
+@fonts: bit fontsOn              ; (not loaded: no such drive)
+        bpl @nf
+        lda #FONT_BANK
+        sta sysShow
 @later: jsr FreeSlot            ; drive E: shown in an empty slot for
         cpx #0                  ; this call (module 81, sysenter.s; the
         bne @eNo                ; dispatcher hides it again), its root
