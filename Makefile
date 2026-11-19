@@ -90,7 +90,18 @@ PSWOBJS = $(patsubst src/psw/%.s,build/psw/%.o,$(PSWSRCS))
 
 build/psw/%.o: src/psw/%.s src/psw/psw.inc
 	@mkdir -p build/psw
-	$(CA65) -g -I src/psw -o $@ $<
+	$(CA65) -g -I src/psw -I build/gen -o $@ $<
+
+# Its options box's buttons, drawn like the system icons.
+build/gen/pswicons.inc: tools/mkicons.py tools/fonts/system9.py
+	@mkdir -p build/gen
+	$(PYTHON) tools/mkicons.py --icon build/gen/pswa4.inc IconA4 "A4"
+	$(PYTHON) tools/mkicons.py --icon build/gen/pswletter.inc IconLetter "Letter"
+	$(PYTHON) tools/mkicons.py --icon build/gen/pswreal.inc IconReal "Real"
+	$(PYTHON) tools/mkicons.py --icon build/gen/pswc64.inc IconC64 "C64"
+	cat build/gen/pswa4.inc build/gen/pswletter.inc build/gen/pswreal.inc build/gen/pswc64.inc > $@
+
+build/psw/options.o: build/gen/pswicons.inc
 
 build/psw/psw.bin: $(PSWOBJS) src/psw/psw.cfg
 	$(LD65) -C src/psw/psw.cfg -m build/psw/psw.map -Ln build/psw/psw.lbl -o $@ $(PSWOBJS)

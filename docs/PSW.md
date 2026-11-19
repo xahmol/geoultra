@@ -6,22 +6,29 @@ as geoWrite lays them out, so lines and pages break where they break in
 geoWrite. `ps2pdf` on a PC makes a PDF of it, and any PostScript printer
 prints it. Decisions and plan: docs/DESIGN.md, "PostScript writer".
 
-**State (2026-11-19): steps P1-P4 of six.** It writes documents in any
+**State (2026-11-19): steps P1-P5 of six.** It writes documents in any
 bitmap font (the system fonts, GeoUltra's GU fonts, the user's fonts:
 found as geoWrite finds them) with bold, underline, reverse and
 outline, tab stops, all alignments and line spacings, pictures, header
 and footer, on A4. The LW and GU fonts (IDs 27-37) become the
 printer's own fonts as real text: Times, Helvetica, Courier, Avant
 Garde, Bookman, Helvetica Narrow, New Century Schoolbook, Palatino,
-Zapf Chancery, Symbol, Zapf Dingbats (`realtext.s`). Next: the options
-box (paper, look) and the ways to start it (desktop, gush).
+Zapf Chancery, Symbol, Zapf Dingbats (`realtext.s`). Next: the ways to
+start it with a document (the desktop, gush) and its place on drive E.
 
 ## Use
 
 Start GU PostScript (drive E, once installed there) and choose a
 geoWrite document in its file box; or start it with a document (the
-desktop's "make PostScript" and a gush command follow in step P6). When
-it is done it says where the file is.
+desktop's "make PostScript" and a gush command follow in step P6). A
+short box then asks for the paper (**A4** or **Letter**) and the look:
+**Real** (the LW and GU fonts as the printer's own fonts: sharp at any
+size, the text searchable in a PDF) or **C64** (every font from its
+bitmaps, exactly as on the C64's printer). The line above the buttons
+says what is chosen; **OK** writes the file, **Cancel** leaves. The box
+starts with Settings' choice (Printing page: "Paper", "PS look"; in
+`SETTINGS.INI` `[print] paper=letter` and `pslook=c64`; A4 and real text
+without them). When it is done it says where the file is.
 
 ## How it works
 
@@ -53,7 +60,7 @@ open at a time, so the document is closed after the first pass while
 the fonts are looked for and their images read for the Type 3 glyphs,
 and opened again for the pages.
 
-Memory: the application at `$0400`, the page record at `$2C00` (7 KB),
+Memory: the application at `$0400`, the page record at `$2D00` (7 KB),
 header and footer, the fonts' widths and names, the output buffer, the
 line's characters and the variables up to `$5FFF`; a font image while the prolog is
 written, then a picture record, in the background screen's place
@@ -66,6 +73,7 @@ written, then a picture record, in the background screen's place
   test; its file must be the same as `gwtool ps`'s, byte for byte.
   `--doc=features`: psref.py's test document (GU fonts at 10-24
   points, header and footer, alignments, spacings, decimal tabs)
-  against `gwtool ps`, with real text.
+  against `gwtool ps`, with real text. `--letter`, `--c64` click those
+  in the options box (gwtool ps `--letter`, `--bitmap`).
 - `tests/print/psref.py`: `gwtool ps` against geoWrite's own printout,
   dot for dot (docs/GWTOOL_MANUAL.md, "PostScript").

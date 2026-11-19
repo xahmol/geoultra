@@ -100,24 +100,26 @@ CELL_STYLES     = BOLD | UNDERLINE | REVERSE | OUTLINE   ; what a glyph cell sho
 LEADING         = 2             ; dots under each line (gwps LEADING)
 PIC_DOWN        = 2             ; a picture 2 rows up into the line above
 
-; --- Memory ($0400 the application; buffers above it)
-PAGEBUF         = $2C00         ; a page record (geoWrite: 7000 bytes at most)
+; --- Memory ($0400 the application; buffers above it, each after the
+; one before; the variables up to $5FFF: psw.cfg's APP and VARS agree)
+PAGEBUF         = $2D00         ; a page record (geoWrite: 7000 bytes at most)
 PAGE_MAX        = $1B60
-HEADBUF         = $4760         ; the header record
-FOOTBUF         = $4960         ; the footer record
+HEADBUF         = PAGEBUF + PAGE_MAX    ; the header record
 HF_MAX          = $0200
+FOOTBUF         = HEADBUF + HF_MAX      ; the footer record
 FONT_SLOTS      = 16            ; fonts (ID and size) a document uses
-FONTW           = $4B60         ; each slot's 96 widths (characters 32-127)
+FONTW           = FOOTBUF + HF_MAX      ; each slot's 96 widths (32-127)
 FONTNAMES       = FONTW + FONT_SLOTS * 96       ; each slot's file name (17)
-OUTBUF          = $5360         ; the output's buffer, written when full
+OUTBUF          = FONTNAMES + FONT_SLOTS * 17   ; the output, written when full
 OUT_MAX         = $0100
 LINE_MAX        = 255           ; characters a line keeps (one byte index)
-CHX_LO          = $5460         ; per character of the line being laid out:
-CHX_HI          = $5560         ; x, width, code, its combination (font and
-CHW             = $5660         ; style), and where it was in the page
-CHC             = $5760
-CHK             = $5860
-VARS_AT         = $5960         ; the variables (BSS, psw.cfg) to $5FFF
+CHX_LO          = OUTBUF + OUT_MAX      ; per character of the line being
+CHX_HI          = CHX_LO + $100         ; laid out: x, width, code, its
+CHW             = CHX_HI + $100         ; combination (font and style)
+CHC             = CHW + $100
+CHK             = CHC + $100
+VARS_AT         = CHK + $100    ; the variables (BSS, psw.cfg) to $5FFF
+        .assert VARS_AT <= $5970, error, "psw.inc: the buffers reach psw.cfg's VARS"
 PICBUF          = $6000         ; a picture record (compacted): the background
 PIC_MAX         = $1F40         ; screen's place, unused (dialogs draw on the
                                 ; foreground only, dispBufferOn)

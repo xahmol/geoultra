@@ -7,7 +7,8 @@ ninth in the side list; the printer row with GU Epson FX-80 in force
 the settings' text, the row following; PDF Letter: printer=GU PDF
 Letter; the timing row's "fast" and the fonts row's "system only":
 [print] fastbus=on, [system] diskfonts=hide; back to "standard" and
-"all": the keys taken out. Screens:
+"all": the keys taken out; Letter and C64 look: [print] paper=letter,
+pslook=c64 (GU PostScript's defaults). Screens:
 build/harness/gush/settings-s8*.png.
 Usage: tests/settings/s8.py
 """
@@ -23,10 +24,10 @@ from vicemon import RESP_CHECKPOINT  # noqa: E402
 PAGE_PRINT = 8
 SIDE_TOP, SIDE_ROW = 24, 16
 ROW_Y = 16 + 20                 # the row's baseline (PAGE_TOP + 20)
-MPS_XY = (165 + 3, ROW_Y - 3)   # MPS's box
-PDF_XY = (247 + 3, ROW_Y - 3)   # PDF Letter's box
-FAST_XY = (200 + 3, ROW_Y + 14 - 3)     # the timing row's "fast"
-SYSONLY_XY = (200 + 3, ROW_Y + 28 - 3)  # the fonts row's "system only"
+MPS_XY = (173 + 3, ROW_Y - 3)   # MPS's box
+PDF_XY = (255 + 3, ROW_Y - 3)   # PDF Letter's box
+FAST_XY = (208 + 3, ROW_Y + 14 - 3)     # the timing row's "fast"
+SYSONLY_XY = (208 + 3, ROW_Y + 28 - 3)  # the fonts row's "system only"
 
 
 def labels(path):
@@ -116,10 +117,15 @@ def main():
         g.png("settings-s8-keys")
         check("fast timing, system fonts only: fastbus=on, diskfonts=hide", settings_text(),
               b"[desktop]\r\nprinter=GU PDF Letter\r\n[print]\r\nfastbus=on\r\n[system]\r\ndiskfonts=hide\r\n")
-        press(124 + 3, ROW_Y + 14 - 3, t=4)                 # standard again: the key taken out
-        press(124 + 3, ROW_Y + 28 - 3, t=4)                 # all fonts again
+        press(132 + 3, ROW_Y + 14 - 3, t=4)                 # standard again: the key taken out
+        press(132 + 3, ROW_Y + 28 - 3, t=4)                 # all fonts again
         check("standard, all: the keys taken out", b"fastbus" in settings_text() or b"diskfonts" in settings_text(),
               False)
+        press(208 + 3, ROW_Y + 42 - 3, t=4)                 # Letter
+        press(208 + 3, ROW_Y + 56 - 3, t=4)                 # C64 look
+        g.png("settings-s8-ps")
+        check("GU PostScript: [print] paper=letter, pslook=c64",
+              b"paper=letter\r\n" in settings_text() and b"pslook=c64\r\n" in settings_text(), True)
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

@@ -414,9 +414,10 @@ red, green and blue with - and +; you see it at once; "none" goes back
 to the Ultimate's own palette. Save or OK writes the theme file. The
 pages Drives and REU follow; their plan is in docs/SETTINGS.md.
 
-Two keys are on Settings' Printing page ("Timing: standard / fast",
-"Fonts: all / system only"); in `SETTINGS.INI` they are (read at the
-next start):
+Four keys are on Settings' Printing page ("Timing: standard / fast",
+"Fonts: all / system only", and GU PostScript's "Paper: A4 / Letter"
+and "PS look: real text / C64 look", docs/PSW.md); in `SETTINGS.INI`
+the first two are (read at the next start):
 
 ```
 [system]

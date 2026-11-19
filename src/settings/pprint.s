@@ -7,7 +7,10 @@
 ; that for the first two the desktop switches on the Ultimate's SoftIEC
 ; drive and printer and sets the emulation (src/desktop/prnult.s), and
 ; where PDF files go; the printer in use now (PrntFilename: also a
-; driver of the user's own, chosen in the desktop). Own design and code.
+; driver of the user's own, chosen in the desktop). Since 2026-11-16/19
+; also: the serial timing ([print] fastbus=), the disks' fonts ([system]
+; diskfonts=), GU PostScript's paper and look ([print] paper=,
+; pslook=: its options box's defaults). Own design and code.
 
         .include "geos.inc"
         .include "settings.inc"
@@ -15,16 +18,17 @@
         .import ChoiceDraw, ChoicePress
         .export Ov_PrintDraw, Ov_PrintPress
 
-COL1            = 124           ; the options (the system font's widths:
-COL2            = 165           ; "Epson" 24, "MPS" 18, "PDF A4" 30, "PDF
-COL3            = 200           ; Letter" 42, 11 for the box, 6 between;
-COL4            = 247           ; to x 300)
+COL1            = 132           ; the options (the system font's widths:
+COL2            = 173           ; "Epson" 24, "MPS" 18, "PDF A4" 30, "PDF
+COL3            = 208           ; Letter" 42, 11 for the box, 6 between;
+COL4            = 255           ; to x 308; from 132: the label "PS look")
 Y0              = PAGE_TOP + 20 ; the row's baseline (as the Desktop page)
 NOTE_X          = PAGE_LEFT + 2
 DY              = 14            ; the rows' distance (as the Desktop page)
-NOTE_Y          = Y0 + 2 * DY + 26 ; the note's first baseline, 12 apart
+NOTE_Y          = Y0 + 4 * DY + 18 ; the note's first baseline, 12 apart
 NOTE_DY         = 12
-USE_Y           = NOTE_Y + 6 * NOTE_DY
+USE_Y           = NOTE_Y + 5 * NOTE_DY  ; (right after the notes: above the
+                                        ; buttons with five rows, 2026-11-19)
 
         .segment "OV1"
 
@@ -74,7 +78,7 @@ Text:   sta r1H
         sta r11H
         jmp PutString
 
-Rows:   .byte 3
+Rows:   .byte 5
         .byte Y0
         .word LPrinter, SDesktop, KPrinter
         .byte 4, 0
@@ -92,6 +96,16 @@ Rows:   .byte 3
         .byte 2, 0                      ; docs/DESKTOP_MANUAL.md "System
         .word COL1, TAll, 0             ; fonts")
         .word COL3, TSysOnly, VHide
+        .byte Y0 + 3 * DY               ; GU PostScript's paper (src/psw
+        .word LPaper, SPrint, KPaper    ; options.s: its box's default)
+        .byte 2, 0
+        .word COL1, TA4, 0
+        .word COL3, TLetter, VLetter
+        .byte Y0 + 4 * DY               ; and its look: the LW and GU fonts
+        .word LLook, SPrint, KLook      ; as real text, or every font from
+        .byte 2, 0                      ; its bitmaps
+        .word COL1, TRealText, 0
+        .word COL3, TC64Look, VC64
 
 NoteLo: .byte <N1, <N2, <N3, <N4, <N5
 NoteHi: .byte >N1, >N2, >N3, >N4, >N5
@@ -101,9 +115,19 @@ NOTES   = * - NoteY
 N1:     .byte "Epson, MPS: GeoUltra switches on the", 0
 N2:     .byte "Ultimate's SoftIEC drive and printer and", 0
 N3:     .byte "sets its emulation (not saved there).", 0
-N4:     .byte "PDF: a file in GEOULTRA/print on the Ultimate.", 0
+N4:     .byte "PDF, PostScript: files in GEOULTRA/print.", 0
 N5:     .byte "Timing and fonts: from the next start.", 0
 LInUse: .byte "In use: ", 0
+LPaper:         .byte "Paper", 0
+LLook:          .byte "PS look", 0
+KPaper:         .byte "paper", 0
+KLook:          .byte "pslook", 0
+TA4:            .byte "A4", 0
+TLetter:        .byte "Letter", 0
+TRealText:      .byte "real text", 0
+TC64Look:       .byte "C64 look", 0
+VLetter:        .byte "letter", 0
+VC64:           .byte "c64", 0
 LTiming:        .byte "Timing", 0
 LFonts:         .byte "Fonts", 0
 SPrint:         .byte "print", 0

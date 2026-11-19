@@ -11,7 +11,7 @@
         .export docName, paperW, paperH
         .import FontInit, Prescan, Prolog, Pages, OutOpen, OutClose, outErr, FindFonts
         .import docWidth, hdrFlags, headH, footH, pageH, docV20
-        .import __BSS_RUN__, __BSS_SIZE__, real
+        .import __BSS_RUN__, __BSS_SIZE__, real, Defaults, Options
 
 FindFile        = $C20B
 GetFHdrInfo     = $C229
@@ -40,11 +40,12 @@ Start:  lda r0L                 ; (before ClearBss: options is in BSS)
         jsr ClearBss
         pla
         sta options
-        lda #$80                ; real text (step P5: the options box)
-        sta real
         lda #ST_WR_FORE         ; (the background screen's memory is the
         sta dispBufferOn        ; picture buffer)
+        jsr Defaults            ; paper and look from SETTINGS.INI
         jsr Choose
+        bcs @quit
+        jsr Options             ; the box: paper, look; OK or Cancel
         bcs @quit
         jsr Write
         jsr Report
@@ -141,18 +142,6 @@ Write:  lda #<docName
         txa
         bne @read
         jsr FontInit
-        lda #<59528             ; A4 (step P5: Letter, the options box)
-        sta paperW
-        lda #>59528
-        sta paperW + 1
-        lda #^59528
-        sta paperW + 2
-        lda #<84189
-        sta paperH
-        lda #>84189
-        sta paperH + 1
-        lda #^84189
-        sta paperH + 2
         jsr Prescan             ; the first pass, then the document closed:
         jsr CloseRecordFile     ; the fonts' files are record files too
         jsr FindFonts           ; (one open at a time)

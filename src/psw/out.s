@@ -5,7 +5,7 @@
         .include "psw.inc"
 
         .export OutOpen, OutClose, PutC, PutI, PutZ, PutDec, PutDecN, PutHund, PutHex
-        .export PutSp, PutNL, FileEngine, outErr
+        .export PutSp, PutNL, FileEngine, outErr, EngineInit
         .import docName
 
         .segment "CODE"
@@ -14,13 +14,7 @@
 ; <home>print/<docName>.ps opened for writing. X = 0 or the error;
 ; outErr = X.
 OutOpen:
-        lda guExtTable          ; the engine's entry
-        clc
-        adc #FE_ENTRY
-        sta feVec
-        lda guExtTable+1
-        adc #0
-        sta feVec+1
+        jsr EngineInit
         lda #<path
         sta r1L
         lda #>path
@@ -82,6 +76,17 @@ OutOpen:
         lda #0
         sta outLen
 @end:   stx outErr
+        rts
+
+; EngineInit: feVec = the file engine's entry (guExtTable + FE_ENTRY).
+EngineInit:
+        lda guExtTable
+        clc
+        adc #FE_ENTRY
+        sta feVec
+        lda guExtTable+1
+        adc #0
+        sta feVec+1
         rts
 
 ; Fat: A as a FAT file name allows it (\ / : * ? " < > | to "_").

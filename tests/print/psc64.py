@@ -14,7 +14,10 @@ psc64-pc.ps; the screen psc64.png.
 Serif, Sans and Mono at 10-24 points, from drive E; a header and a
 footer; the alignments and spacings; the GU fonts as real text, IDs
 27-37: step P3), compared with gwtool ps.
-Usage: tests/print/psc64.py [DOCUMENT.cvt] [--doc=features]
+The application's options box: OK (A4, real text: the defaults without
+a SETTINGS.INI); --letter clicks Letter, --c64 clicks C64 look first
+(gwtool ps then --letter, --bitmap).
+Usage: tests/print/psc64.py [DOCUMENT.cvt] [--doc=features] [--letter] [--c64]
 """
 import os
 import subprocess
@@ -33,12 +36,27 @@ entry = (ext[0] | ext[1] << 8) + 30
 v.mem_set(0x033F, b"\x60")                  # rts: the answered calls
 v.checkpoint(entry, temporary=False)
 import time
-def click(x, y):                            # (as apprun's x,y,p: only the press,
-    v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))   # which GEOS's icons act on;
-    v.mem_set(0x8505, b"\x00")                    # the loop below runs it, so
-    v.mem_set(0x39, bytes([v.mem_get(0x39, 0x39)[0] | 0x20]))   # the first
-                                            # engine call is caught, not passed over)
-click(220, 44)                              # Open in the file box
+def press(x, y):                            # a press (GEOS's icons act on it)
+    v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))
+    v.mem_set(0x8505, b"\x00")
+    v.mem_set(0x39, bytes([v.mem_get(0x39, 0x39)[0] | 0x20]))
+def run(t):
+    v.resume()
+    time.sleep(t)
+    v.ping()
+def release():
+    v.mem_set(0x8505, b"\x80")
+    v.mem_set(0x39, bytes([v.mem_get(0x39, 0x39)[0] | 0x20]))
+    run(0.5)
+press(220, 44)                              # Open in the file box
+run(1.5)
+release()
+for x, y in %(clicks)r:                     # the options box's buttons
+    press(x, y)
+    run(0.7)
+    release()
+press(220, 84)                              # its OK: run by the loop below, so
+                                            # the first engine call is caught
 def zp(n):
     b = v.mem_get(n, n + 1)
     return b[0] | b[1] << 8
@@ -107,7 +125,12 @@ def main():
     if os.path.exists(raw):
         os.remove(raw)
     hook = os.path.join(OUT, "hook-psc64.py")
-    open(hook, "w").write(HOOK % {"raw": raw, "handle": HANDLE})
+    clicks = []
+    if "--letter" in sys.argv:
+        clicks.append((150, 84))            # Letter (A4 at 90, OK at 220)
+    if "--c64" in sys.argv:
+        clicks.append((150, 104))           # C64 look (real text at 90)
+    open(hook, "w").write(HOOK % {"raw": raw, "handle": HANDLE, "clicks": clicks})
     env = dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness"))
     r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
                         "--wait", "8", "--out", os.path.join(OUT, "psc64.png"), "GU PostScript",
@@ -124,7 +147,8 @@ def main():
             name = l[5:].rsplit(" ", 1)[0].rsplit("/", 1)[-1][:-3]
     pc = os.path.join(OUT, "psc64-pc.ps")
     subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gwtool.py"), "ps", disk, pc,
-                    name or "GeoUTools UK"], check=True, capture_output=True)
+                    name or "GeoUTools UK"] + (["--letter"] if "--letter" in sys.argv else [])
+                   + (["--bitmap"] if "--c64" in sys.argv else []), check=True, capture_output=True)
     a = open(raw, "rb").read() if os.path.exists(raw) else b""
     b = open(pc, "rb").read()
     same = a == b

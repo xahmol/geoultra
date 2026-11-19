@@ -365,7 +365,11 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   timing) and "Fonts" all or system only (`[system] diskfonts=hide`:
   the disks' fonts left out of programs' font lists; docs/DESIGN.md
   "System font folder", step F5); both read at the next start, which a
-  note says. The network push comes here later. Test: s8.py (VICE,
+  note says. Two more since the same day: "Paper" A4 or Letter (`[print]
+  paper=letter`) and "PS look" real text or C64 look (`[print]
+  pslook=c64`), GU PostScript's defaults for its options box
+  (docs/PSW.md); the option columns moved 8 dots right for the label
+  "PS look". The network push comes here later. Test: s8.py (VICE,
   8 checks).
 
 Beta 1 needs S1-S6's first versions (docs/DESIGN.md, "Releases").
