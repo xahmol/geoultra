@@ -22,6 +22,7 @@
         .export Ov_SerDraw, Ov_SerPress
 
 GetSerialNumber = $C196         ; GEOS jump table
+GetBlock        = $C1E4
 
         .segment "ZEROPAGE"
 
@@ -46,6 +47,8 @@ Ov_SerDraw:
         lda #B_ADD
         jsr BtnDraw
         lda #B_REMOVE
+        jsr BtnDraw
+        lda #B_DISK
         jsr BtnDraw
         ldx #0                  ; the disclaimer
 :       stx at
@@ -80,6 +83,10 @@ Ov_SerPress:
         jsr BtnOn
         bcs :+
         jmp Remove
+:       lda #B_DISK
+        jsr BtnOn
+        bcs :+
+        jmp FromDisk
 :       jsr OnList
         bcs :+
         rts
@@ -453,6 +460,137 @@ Remove: lda sel
         jmp Changed
 @end:   rts
 
+; FromDisk (step S4): the serial of a GEOS boot disk on drives A-D (the
+; first with GEOS 2.0's GEOBOOT, read as the kernal reads it at the cold
+; start: mount.s SerialFromDisk, its file's 83rd block at offset 183),
+; then the class asked: [serials] class=that number. None: a note.
+FromDisk:
+        lda curDrive
+        sta home
+        ldx #8
+@drive: stx drv
+        lda driveType - 8,x
+        beq @next
+        txa
+        jsr SetDevice
+        jsr OpenDisk
+        txa
+        bne @next
+        jsr BootSerial
+        bcc @found
+@next:  ldx drv
+        inx
+        cpx #12
+        bcc @drive
+        jsr Home                ; none
+        lda #<NoBootDlg
+        ldx #>NoBootDlg
+        jmp Plain
+@found: jsr Home
+        lda found + 1           ; input: its four digits (for IniSet)
+        jsr HexByte
+        stx num
+        sta num + 1
+        lda found
+        jsr HexByte
+        stx num + 2
+        sta num + 3
+        lda drv                 ; the question names the drive and number
+        clc
+        adc #'A' - 8
+        sta askDrv
+        ldy #3
+:       lda num,y
+        sta askNum,y
+        dey
+        bpl :-
+        lda #0
+        sta input
+        lda #<AskDiskT
+        ldx #>AskDiskT
+        ldy #12
+        jsr Ask
+        bcs @end
+        ldy #12
+:       lda input,y
+        sta key,y
+        dey
+        bpl :-
+        ldy #3
+:       lda num,y
+        sta input,y
+        dey
+        bpl :-
+        lda #0
+        sta input + 4
+        jsr KeyApp
+        lda #<input
+        sta r2L
+        lda #>input
+        sta r2H
+        jsr IniSet
+        bcs @full
+        jmp Changed
+@full:  jmp NoRoom
+@end:   jmp DrawPage
+
+; Home: Settings' own drive current and open again.
+Home:   lda home
+        jsr SetDevice
+        jmp OpenDisk
+
+; BootSerial: C clear and found = the serial when the open disk has GEOS
+; 2.0's GEOBOOT ("GeoBoot     V1.0") with a number at block 82's 183.
+BootSerial:
+        lda #<BootName
+        sta r6L
+        lda #>BootName
+        sta r6H
+        jsr FindFile
+        txa
+        bne @no
+        lda #<dirEntryBuf
+        sta r9L
+        lda #>dirEntryBuf
+        sta r9H
+        jsr GetFHdrInfo         ; (r1: the first data block)
+        txa
+        bne @no
+        ldx #15
+:       lda fileHeader + O_GHFNAME,x
+        cmp BootPerm,x
+        bne @no
+        dex
+        bpl :-
+        lda #82
+        sta walk
+@block: lda #<diskBlkBuf
+        sta r4L
+        lda #>diskBlkBuf
+        sta r4H
+        jsr GetBlock
+        txa
+        bne @no
+        lda walk
+        beq @got
+        dec walk
+        lda diskBlkBuf          ; (shorter than that: not this one)
+        beq @no
+        sta r1L
+        lda diskBlkBuf + 1
+        sta r1H
+        jmp @block
+@got:   lda diskBlkBuf + 183
+        sta found
+        lda diskBlkBuf + 184
+        sta found + 1
+        ora found
+        beq @no
+        clc
+        rts
+@no:    sec
+        rts
+
 ; KeyApp: r0, r1 = [serials] key.
 KeyApp: lda #<SSerials
         sta r0L
@@ -695,6 +833,7 @@ KEY_MAX         = 16
 BTN_X           = LIST_R + 6
 B_ADD           = 0
 B_REMOVE        = 1
+B_DISK          = 2
 DISC_Y          = LIST_TOP + LIST_ROWS * ROW_H + 12
 DISC_N          = 2
         .assert DISC_Y + 10 <= PAGE_BOTTOM, error, "pser.s: the disclaimer below the page"
@@ -713,11 +852,14 @@ Rows:   .byte 2
         .word COL2, TOn, VBypass
 BtnDefs:
         .word BTN_X
-        .byte LIST_TOP + 1, 46
+        .byte LIST_TOP + 1, 56
         .word AddB
         .word BTN_X
-        .byte LIST_TOP + 17, 46
+        .byte LIST_TOP + 17, 56
         .word RemoveB
+        .word BTN_X
+        .byte LIST_TOP + 33, 56
+        .word DiskB
 
 DiscLo: .byte <Disc1, <Disc2
 DiscHi: .byte >Disc1, >Disc2
@@ -766,6 +908,21 @@ SECT_LEN        = * - SectT
 KSerial:        .byte "serial", 0
 KProt:          .byte "protection", 0
 AddB:           .byte "add", 0
+DiskB:          .byte "from disk", 0
+BootName:       .byte "GEOBOOT", 0
+BootPerm:       .byte "GeoBoot     V1.0"
+AskDiskT:       .byte BOLDON, "Serial "
+askNum:         .byte "XXXX from drive "
+askDrv:         .byte "A; class:", PLAINTEXT, 0
+NoBootDlg:      .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word NoBoot1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word NoBoot2
+                .byte OK, DBI_X_2, DBI_Y_2
+                .byte 0
+NoBoot1:        .byte BOLDON, "No GEOS boot disk", PLAINTEXT, 0
+NoBoot2:        .byte "(GEOBOOT) on drives A-D.", 0
 RemoveB:        .byte "remove", 0
 AskSerT:        .byte BOLDON, "Serial number (4 hex digits):", PLAINTEXT, 0
 AskClsT:        .byte BOLDON, "The application's class:", PLAINTEXT, 0
@@ -778,6 +935,11 @@ at:             .byte 0
 tmp:            .res 2
 wasOn:          .byte 0
 askLen:         .byte 0
+home:           .byte 8
+drv:            .byte 8
+walk:           .byte 0
+found:          .res 2
+num:            .res 4
 fixedVal:       .res 6
 input:          .res 18
 key:            .res KEY_MAX + 1

@@ -381,7 +381,9 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   `serial=4755`); "In use:" the number GetSerialNumber gives now; a row
   "Bypass" off or on (`[system] protection=bypass`; switching it on shows
   the disclaimer); "Per application": the `[serials]` lines (class and
-  number; five shown), add (asks the class, then the number) and remove;
+  number; five shown), add (asks the class, then the number), remove and
+  from disk (a GEOS boot disk's serial: the first drive A-D with GEOBOOT,
+  then the class asked);
   the disclaimer under them. The serial and the bypass count from the
   next start; the `[serials]` list at once on OK or Save (`FE_SERIALS`).
   Test: s9.py (VICE).

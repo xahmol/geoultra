@@ -5,7 +5,9 @@ tenth page in the side list (from y 16): "fixed" asks for a number
 (typed: 12ab): [system] serial=12AB; "GeoUltra": serial=4755 (GeoUltra's own number); the
 bypass switched on: the disclaimer (OK), protection=bypass; add: the
 class and the number asked (geoWrite, 4321): [serials] geoWrite=4321
-and its line in the list; the line selected and removed: gone. Screens:
+and its line in the list; the line selected and removed: gone; from
+disk: drive A's GEOS 2.0 boot disk (GEOS_ORACLE: GEOBOOT, serial 58B5)
+found, the class asked (geoCalc): geoCalc=58B5. Screens:
 build/harness/gush/settings-s9*.png.
 Usage: tests/settings/s9.py
 """
@@ -125,6 +127,11 @@ def main():
         press(LIST_X + 20, LIST_TOP + 6, t=3)               # its line selected, removed
         press(BTN_X + 10, LIST_TOP + 25, t=3)
         check("removed: no geoWrite line", b"geoWrite=" in settings_text(), False)
+        press(BTN_X + 10, LIST_TOP + 41, t=12)              # from disk: drive A's GEOBOOT
+        g.png("settings-s9-disk")
+        g.queue("geoCalc\r", settle=4)
+        check("from disk: [serials] geoCalc=58B5 (the GEOS disk on A)",
+              b"geoCalc=58B5\r\n" in settings_text(), True)
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)
