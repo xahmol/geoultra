@@ -121,10 +121,14 @@ CHK             = CHC + $100
 VARS_AT         = CHK + $100    ; the variables (BSS, psw.cfg) to $5FFF
         .assert VARS_AT <= $5970, error, "psw.inc: the buffers reach psw.cfg's VARS"
 PICBUF          = $6000         ; a picture record (compacted): the background
-PIC_MAX         = $1F40         ; screen's place, unused (dialogs draw on the
+PIC_MAX         = $1B40         ; screen's place, unused (dialogs draw on the
                                 ; foreground only, dispBufferOn)
 FONTBUF         = $6000         ; a font image, while the prolog is written
-FONT_MAX        = $1F40         ; (the pictures come later: the same place)
+FONT_MAX        = $1B40         ; (the pictures come later: the same place)
+GEOSBUF         = $8100         ; GEOS's buffers the file engine uses as
+GEOSBUF_LEN     = $0400         ; scratch (fileHeader: the open record
+KEEPBUF         = $7B40         ; file's index): kept here around each
+                                ; engine call (out.s FileEngine), to $7F3F
 FONTLIST        = PAGEBUF       ; FindFTypes' names, while fonts are looked
                                 ; for (the document is closed then)
 

@@ -8,6 +8,11 @@
         .export PutSp, PutNL, FileEngine, outErr, EngineInit
         .import docName
 
+        .segment "ZEROPAGE"
+
+cs:     .res 2                  ; (Copy's pointers)
+cd:     .res 2
+
         .segment "CODE"
 
 ; OutOpen: the print folder made (there already: fine) and
@@ -324,9 +329,62 @@ PutHex: pha
 :       ora #'0'
         jmp PutC
 
-; FileEngine: A = the function (docs/FILE_ENGINE.md).
+; FileEngine: A = the function (docs/FILE_ENGINE.md), GEOS's buffers
+; $8100-$84FF kept around it: the engine uses them as scratch, and
+; fileHeader holds the open document's record index (the U64, 2026-11-19:
+; after the first write no more pages could be read; VICE's tests answer
+; the calls themselves). A, X and the r-registers as the engine left
+; them.
 FileEngine:
-        jmp (feVec)
+        sty keepY2              ; (Y: the handle, for the engine)
+        pha
+        ldy #0                  ; GEOSBUF to KEEPBUF
+        jsr Copy
+        pla
+        ldy keepY2
+        jsr Call
+        sta resA
+        stx resX
+        php
+        ldy #1                  ; back
+        jsr Copy
+        plp
+        lda resA
+        ldx resX
+        rts
+Call:   jmp (feVec)
+
+; Copy: Y = 0: GEOSBUF_LEN bytes from GEOSBUF to KEEPBUF; 1: back.
+; Keeps the r-registers (its own pointers: cs, cd).
+Copy:   lda #<GEOSBUF
+        sta cs
+        lda #>GEOSBUF
+        sta cs + 1
+        lda #<KEEPBUF
+        sta cd
+        lda #>KEEPBUF
+        sta cd + 1
+        tya
+        beq :+
+        ldx cs                  ; (back: the two swapped)
+        lda cd
+        sta cs
+        stx cd
+        ldx cs + 1
+        lda cd + 1
+        sta cs + 1
+        stx cd + 1
+:       ldx #>GEOSBUF_LEN
+        ldy #0
+:       lda (cs),y
+        sta (cd),y
+        iny
+        bne :-
+        inc cs + 1
+        inc cd + 1
+        dex
+        bne :-
+        rts
 
 Pow10:  .byte $A0, $86, $01     ; 100000
         .byte $10, $27, $00     ; 10000
@@ -348,6 +406,9 @@ outLen: .res 1
 full:   .res 1
 outErr: .res 1
 keepX:  .res 1
+keepY2: .res 1
+resA:   .res 1
+resX:   .res 1
 lead:   .res 1
 quot:   .res 2
 at:     .res 1

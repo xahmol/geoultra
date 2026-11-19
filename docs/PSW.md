@@ -14,8 +14,9 @@ and footer, on A4. The LW and GU fonts (IDs 27-37) become the
 printer's own fonts as real text: Times, Helvetica, Courier, Avant
 Garde, Bookman, Helvetica Narrow, New Century Schoolbook, Palatino,
 Zapf Chancery, Symbol, Zapf Dingbats (`realtext.s`). It is on drive E
-and starts from the desktop and from gush with a document. Not yet
-tried on the U64.
+and starts from the desktop and from gush with a document. On the U64
+(2026-11-19) GeoUTools' manual (11 pages, pictures) takes about a
+minute and its file is gwtool ps's byte for byte.
 
 ## Use
 
@@ -53,7 +54,11 @@ twice through GEOS's VLIR calls (`OpenRecordFile`, `ReadRecord`):
 The text it writes is exactly what `gwtool ps` (tools/gwps.py) writes
 for the same document: the PC tool is the reference. The output goes
 through GeoUltra's file engine (`out.s`: `FE_HOME`, `FE_MKDIR`,
-`FE_OPEN`, `FE_WRITE`, `FE_CLOSE`).
+`FE_OPEN`, `FE_WRITE`, `FE_CLOSE`). The engine uses GEOS's buffers
+`$8100-$84FF` as scratch, and `fileHeader` holds the open document's
+record index, so `out.s` keeps those 1 KB around every engine call
+(at `$7B40`; found on the U64, where the second page could not be read
+after the first write).
 
 Fonts (`font.s`): each font ID the document uses gets a slot (up to 16:
 its widths, height, baseline and file name), found with FindFTypes and
@@ -80,5 +85,8 @@ written, then a picture record, in the background screen's place
 - `tests/print/psent.py`: started with a document from gush and from the
   desktop's context menu (the engine's `FE_RUNDOC`: an application on
   drive E with a document), each file the same as `gwtool ps`'s.
+- `tests/print/psu64.py`: on the U64, the desktop's "make PostScript"
+  on the manual, the file read back over FTP and compared with `gwtool
+  ps`'s; the user's files put back.
 - `tests/print/psref.py`: `gwtool ps` against geoWrite's own printout,
   dot for dot (docs/GWTOOL_MANUAL.md, "PostScript").
