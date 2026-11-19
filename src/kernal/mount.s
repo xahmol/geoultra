@@ -1914,7 +1914,16 @@ Keep:   lda fontsOn
         sta reuCtrl
         lda #REU_STASH
         sta reuCmd
-        rts
+        lda #<TEXT              ; [serials] from the same text (serials.s
+        sta r2L                 ; module 126)
+        lda #>TEXT
+        sta r2H
+        lda textEnd
+        sta r3L
+        lda textEnd+1
+        sta r3H
+        jsr OvlCall
+        .byte 126, 0
 
 ; Entries: the 8 entries of DBUF: each file's chains moved, then its
 ; entry's start and header addresses. C set: a reference out of range.
