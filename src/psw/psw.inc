@@ -117,6 +117,7 @@ CHX_HI          = $5560         ; x, width, code, its combination (font and
 CHW             = $5660         ; style), and where it was in the page
 CHC             = $5760
 CHK             = $5860
+VARS_AT         = $5960         ; the variables (BSS, psw.cfg) to $5FFF
 PICBUF          = $6000         ; a picture record (compacted): the background
 PIC_MAX         = $1F40         ; screen's place, unused (dialogs draw on the
                                 ; foreground only, dispBufferOn)

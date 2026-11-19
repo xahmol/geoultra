@@ -11,7 +11,7 @@
         .export docName, paperW, paperH
         .import FontInit, Prescan, Prolog, Pages, OutOpen, OutClose, outErr, FindFonts
         .import docWidth, hdrFlags, headH, footH, pageH, docV20
-        .import __BSS_RUN__, __BSS_SIZE__
+        .import __BSS_RUN__, __BSS_SIZE__, real
 
 FindFile        = $C20B
 GetFHdrInfo     = $C229
@@ -40,6 +40,8 @@ Start:  lda r0L                 ; (before ClearBss: options is in BSS)
         jsr ClearBss
         pla
         sta options
+        lda #$80                ; real text (step P5: the options box)
+        sta real
         lda #ST_WR_FORE         ; (the background screen's memory is the
         sta dispBufferOn        ; picture buffer)
         jsr Choose

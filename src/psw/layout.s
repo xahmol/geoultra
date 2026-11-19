@@ -9,6 +9,7 @@
 
         .export Measure, Combo, Token, Next, StateInit, nch, lineH, lineB, ended, first, recEnd
         .export curFid, curStyle, comboFid, comboFidH, comboStyle, nCombo, COMBO_MAX
+        .export curCombo, comboSlot
         .import Width, Height, Base, SlotAX, UseSlot
 
 COMBO_MAX       = 64

@@ -7,13 +7,14 @@
 
         .include "psw.inc"
 
-        .export Prescan, Prolog, Pages, ReadRec, Down, FindFonts
+        .export Prescan, Prolog, Pages, ReadRec, Down, FindFonts, runAt, runEnd, lineY, real
         .export docWidth, nPages, hdrFlags, headH, footH, pageH, docV20, top, dry
         .import Measure, Token, Next, StateInit, nch, lineH, lineB, ended, first, recEnd
         .import curFid, curStyle, comboFid, comboFidH, comboStyle
         .import PutC, PutI, PutZ, PutDec, PutHund, PutSp
         .import GlyphSetup, GlyphBits, glyphW, fHeight, fBase, docName, paperW, paperH
-        .import FindFont, SlotAX, UseSlot, LoadImage
+        .import FindFont, SlotAX, UseSlot, LoadImage, RealFam, RealRun, curCombo, comboSlot
+        .import size, style
         .import Picture
 
 KEY_MAX         = 32
@@ -152,14 +153,20 @@ MarkRec:
         jmp @loop
 :       cmp #T_CHAR
         bne @other
+        bit real                ; (real text: no Type 3 glyphs)
+        bpl :+
         lda curFid
+        ldx curFid + 1
+        jsr RealFam
+        bcs @chr
+:       lda curFid
         ldx curFid + 1
         ldy curStyle
         jsr KeyOf
         ldy #0
         lda (tp),y
         jsr Mark
-        lda #T_CHAR
+@chr:   lda #T_CHAR
 @other: jsr Next
         jmp @loop
 @end:   rts
@@ -859,11 +866,30 @@ Line:   lda top                 ; y = top + the baseline
         jsr Run
         ldx runEnd
         jmp @run
-@end:   rts
+@end:   ldx curCombo            ; (the font in force in use again: the
+        lda comboSlot,x         ; next line is measured with it)
+        jmp UseSlot
 
-; Run: the pieces runAt..runEnd-1 as one show in their Type 3 font.
+; Run: the pieces runAt..runEnd-1: in a LaserWriter font as real text
+; (realtext.s, when real), else as one show in their Type 3 font.
 Run:    ldx runAt
         ldy CHK,x               ; the combination's font ID and style
+        bit real
+        bpl @t3
+        lda comboFid,y
+        ldx comboFidH,y
+        jsr RealFam
+        bcc @t3
+        lda comboStyle,y
+        sta style
+        lda comboFid,y
+        and #63
+        sta size
+        lda comboSlot,y         ; (its font's widths and metrics)
+        jsr UseSlot
+        jmp RealRun
+@t3:    ldx runAt
+        ldy CHK,x
         lda comboStyle,y
         sta rStyle
         lda comboFidH,y
@@ -954,5 +980,6 @@ runEnd: .res 1
 tmp2:   .res 1
 mul:    .res 1
 rStyle: .res 1
+real:   .res 1                  ; $80: LaserWriter fonts as real text
 x0:     .res 3
 y0:     .res 3

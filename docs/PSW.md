@@ -6,12 +6,15 @@ as geoWrite lays them out, so lines and pages break where they break in
 geoWrite. `ps2pdf` on a PC makes a PDF of it, and any PostScript printer
 prints it. Decisions and plan: docs/DESIGN.md, "PostScript writer".
 
-**State (2026-11-19): steps P1-P2 of six.** It writes documents in any
+**State (2026-11-19): steps P1-P4 of six.** It writes documents in any
 bitmap font (the system fonts, GeoUltra's GU fonts, the user's fonts:
 found as geoWrite finds them) with bold, underline, reverse and
 outline, tab stops, all alignments and line spacings, pictures, header
-and footer, on A4. The LW and GU fonts are drawn from their bitmaps for
-now (step P3: as the printer's own fonts, real text).
+and footer, on A4. The LW and GU fonts (IDs 27-37) become the
+printer's own fonts as real text: Times, Helvetica, Courier, Avant
+Garde, Bookman, Helvetica Narrow, New Century Schoolbook, Palatino,
+Zapf Chancery, Symbol, Zapf Dingbats (`realtext.s`). Next: the options
+box (paper, look) and the ways to start it (desktop, gush).
 
 ## Use
 
@@ -51,8 +54,8 @@ the fonts are looked for and their images read for the Type 3 glyphs,
 and opened again for the pages.
 
 Memory: the application at `$0400`, the page record at `$2C00` (7 KB),
-header and footer, the fonts' widths and names, the output buffer and
-the line's characters up to `$5FFF`; a font image while the prolog is
+header and footer, the fonts' widths and names, the output buffer, the
+line's characters and the variables up to `$5FFF`; a font image while the prolog is
 written, then a picture record, in the background screen's place
 (`$6000-$7F3F`; the application draws on the foreground only).
 
@@ -63,6 +66,6 @@ written, then a picture record, in the background screen's place
   test; its file must be the same as `gwtool ps`'s, byte for byte.
   `--doc=features`: psref.py's test document (GU fonts at 10-24
   points, header and footer, alignments, spacings, decimal tabs)
-  against `gwtool ps --bitmap`.
+  against `gwtool ps`, with real text.
 - `tests/print/psref.py`: `gwtool ps` against geoWrite's own printout,
   dot for dot (docs/GWTOOL_MANUAL.md, "PostScript").

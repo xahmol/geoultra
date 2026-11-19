@@ -12,8 +12,8 @@ the two must be the same. Files: build/harness/print/psc64-c64.ps,
 psc64-pc.ps; the screen psc64.png.
 --doc=features: tests/print/psref.py's test document instead (GU
 Serif, Sans and Mono at 10-24 points, from drive E; a header and a
-footer; the alignments and spacings), compared with `gwtool ps
---bitmap` (step P2: the fonts from their bitmaps; real text is P3).
+footer; the alignments and spacings; the GU fonts as real text, IDs
+27-37: step P3), compared with gwtool ps.
 Usage: tests/print/psc64.py [DOCUMENT.cvt] [--doc=features]
 """
 import os
@@ -124,7 +124,7 @@ def main():
             name = l[5:].rsplit(" ", 1)[0].rsplit("/", 1)[-1][:-3]
     pc = os.path.join(OUT, "psc64-pc.ps")
     subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gwtool.py"), "ps", disk, pc,
-                    name or "GeoUTools UK"] + (["--bitmap"] if feat else []), check=True, capture_output=True)
+                    name or "GeoUTools UK"], check=True, capture_output=True)
     a = open(raw, "rb").read() if os.path.exists(raw) else b""
     b = open(pc, "rb").read()
     same = a == b
