@@ -1,0 +1,201 @@
+# GeoUltra's sample brochure, a geoWrite 2.1 document made by
+# tools/gwgen.py (make samples). Pictures: samples/shots (samples/shots.py)
+# and the start picture (build/samples/logo.png).
+
+[document]
+name = "Brochure"
+font = "GU Serif"
+size = 12
+info = "GeoUltra in four pages: a sample geoWrite document, made with GeoUltra's gwgen."
+footer = "GeoUltra - a GEOS-compatible system for the C64 with an Ultimate"
+footer_font = "GU Sans"
+footer_size = 9
+
+# --- the cover
+
+[[block]]
+text = ""
+after = 3
+
+[[block]]
+picture = "../build/samples/logo.png"
+width = 400
+threshold = 150
+
+[[block]]
+text = ""
+after = 1
+
+[[block]]
+text = "**GeoUltra**"
+font = "GU Sans"
+size = 24
+align = "center"
+after = 1
+
+[[block]]
+text = "A GEOS-compatible system for the Commodore 64 with an Ultimate"
+font = "GU Sans"
+size = 14
+align = "center"
+after = 2
+
+[[block]]
+text = "*Beta 1, version 0.1, for the Ultimate 64 family*"
+align = "center"
+after = 4
+
+[[block]]
+text = "GeoUltra brings the GEOS world to the Ultimate. It starts from a cartridge file, keeps its drives as disk images in the REU and stores everything on the Ultimate's USB stick or SD card. It comes with its own desktop, settings, shell, fonts and printer drivers, and it aims to run the GEOS applications you already have."
+align = "justify"
+left = 40
+right = 40
+
+[[block]]
+pagebreak = true
+
+# --- the desktop
+
+[[block]]
+text = "**A desktop for disk images and the Ultimate**"
+font = "GU Sans"
+size = 18
+after = 1
+
+[[block]]
+text = "GeoUltra's desktop is a file manager for the GEOS drives A to E and the Ultimate's own file system. Disk images on the stick are mounted on a drive with one click, or opened like folders without mounting them. Files are copied, moved, renamed and deleted with the mouse or the keys; a copy between the Ultimate and a GEOS drive converts GEOS files to CVT and back."
+align = "justify"
+after = 1
+keep = true
+
+[[block]]
+picture = "shots/desktop-list.png"
+width = 320
+threshold = 128
+
+[[block]]
+text = ""
+
+[[block]]
+text = "Two panes show two folders side by side. Drag a selection from one to the other, or onto a folder or a drive in the sidebar: moved on the same drive, copied to another. Lists, large icons or a detailed view with sizes and dates; seven themes, and your own."
+align = "justify"
+after = 1
+keep = true
+
+[[block]]
+picture = "shots/two-panes.png"
+width = 320
+threshold = 128
+
+[[block]]
+pagebreak = true
+
+# --- programs, tasks, clipboard
+
+[[block]]
+text = "**Programs, tasks and one clipboard**"
+font = "GU Sans"
+size = 18
+after = 1
+
+[[block]]
+text = "A double click on a document starts the program it was made with, the newest version found on the drives. The right mouse button opens a menu with what fits the file: on a geoWrite document, **make PostScript**."
+align = "justify"
+after = 1
+keep = true
+
+[[block]]
+picture = "shots/context-menu.png"
+width = 320
+threshold = 128
+
+[[block]]
+text = ""
+
+[[block]]
+text = "Several programs run side by side, each in its own task: C= and RUN/STOP switch between them. What you cut or copy is on one clipboard for every drive and task. When you have not used the computer for a while, GeoUltra saves the whole session to the stick, and after a power cycle you are back where you were."
+align = "justify"
+after = 1
+keep = true
+
+[[block]]
+picture = "shots/task-list.png"
+width = 320
+threshold = 128
+
+[[block]]
+pagebreak = true
+
+# --- printing, fonts, settings, gush
+
+[[block]]
+text = "**Printing and fonts**"
+font = "GU Sans"
+size = 18
+after = 1
+
+[[block]]
+text = "Programs print into a queue in the REU and can go on at once. GeoUltra's own drivers print to the Ultimate's printer emulation (Epson FX-80 or Commodore MPS) or to a PDF file on the stick. GU PostScript writes geoWrite documents as PostScript, laid out as geoWrite lays them out, with sharp letters at any size. Ten font families of its own, GU Serif to GU Script, are in every program's font list; this brochure uses them."
+align = "justify"
+after = 1
+keep = true
+
+[[block]]
+picture = "shots/settings-printing.png"
+width = 320
+threshold = 128
+
+[[block]]
+text = ""
+
+[[block]]
+text = "**Settings and a shell**"
+font = "GU Sans"
+size = 18
+after = 1
+
+[[block]]
+text = "GeoUltra Settings sets the desktop, themes and colours, turbo speed, time, drives, REU, pointer, printing and serial numbers. For those who like to type, gush is a shell with commands for files, disk images and the network, scripts and pipes."
+align = "justify"
+after = 1
+keep = true
+
+[[block]]
+picture = "shots/gush.png"
+width = 320
+threshold = 100
+
+[[block]]
+pagebreak = true
+
+# --- what you need
+
+[[block]]
+text = "**What you need**"
+font = "GU Sans"
+size = 18
+after = 1
+
+[[block]]
+text = "-\tan Ultimate 64, Ultimate 64 Elite or Commodore 64 Ultimate, firmware 3.15 or later;\n-\tits REU set to 16 MB and its Command Interface on (GeoUltra's configuration file sets both);\n-\ta USB stick or SD card, and a mouse;\n-\tyour own GEOS applications as disk images."
+tabs = [24]
+after = 1
+
+[[block]]
+text = "The Ultimate II+ on a C64 and the Commodore 128 are planned for later versions."
+after = 2
+
+[[block]]
+text = "**Good to know**"
+font = "GU Sans"
+size = 18
+after = 1
+
+[[block]]
+text = "GeoUltra keeps the GEOS 2.0 programming interface and is checked against GEOS 2.0's behaviour, but it cannot promise that every GEOS application runs: the GEOS world has many versions and add-ons, and some programs rely on details of their own. The user manual lists what was tested. GeoUltra contains no Berkeley Softworks code and ships no GEOS software: your applications, fonts and documents are your own copies."
+align = "justify"
+after = 1
+
+[[block]]
+text = "GeoUltra is developed by Xander Mol with the help of AI (Claude, by Anthropic), tested in VICE and on an Ultimate 64. The user manual, docs/GEOULTRA_MANUAL, tells you how to install it and how everything works."
+align = "justify"

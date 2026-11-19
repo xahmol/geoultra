@@ -1,0 +1,27 @@
+# A short sample letter for the sample disk (tools/gwgen.py)
+[document]
+name = "Letter"
+font = "GU Serif"
+size = 12
+info = "A sample letter in GeoUltra's GU Serif."
+
+[[block]]
+text = "Club Commodore\nMarket Street 64\nAmsterdam"
+align = "right"
+after = 2
+
+[[block]]
+text = "Dear members,"
+after = 1
+
+[[block]]
+text = "This letter was written in **geoWrite** on a Commodore 64 with an Ultimate, in *GU Serif*, one of GeoUltra's own fonts. GeoUltra prints it on the Ultimate's printer emulation, as a PDF, or as PostScript with sharp letters at any size."
+align = "justify"
+after = 1
+
+[[block]]
+text = "See you at the next meeting,"
+after = 2
+
+[[block]]
+text = "The board"

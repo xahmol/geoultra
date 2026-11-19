@@ -1,6 +1,6 @@
 ---
 title: GeoUltra PC tools
-subtitle: geosdisk, gwtool, gptool, mkappsdnp, mkgeosfont
+subtitle: geosdisk, gwtool, gwgen, gptool, mkappsdnp, mkgeosfont
 ---
 
 # About these tools
@@ -319,6 +319,53 @@ Format and Pagination", pagetable.com; how geoWrite measures a line
 (for `ps`): the same article, behaviour only. The 1.x differences: observed by
 comparing a document before and after geoWrite 2.1 converted it. Own
 code; the image reading is tools/mkappsdnp.py's.
+
+# gwgen: geoWrite documents from a description
+
+    tools/gwgen.py DESCRIPTION.toml OUT [--ps=FILE.ps] [--letter]
+
+Makes a geoWrite 2.1 document from a text description: paragraphs with
+their font, size, style, alignment, margins, tabs and spacing; pictures;
+page breaks; a header and a footer. GeoUltra's sample brochure and quick
+start guide are made with it (`samples/`, `make samples`). OUT is a new
+D64 or D81, or a folder for a CVT; `--ps` also writes the document as
+PostScript (as `gwtool ps`), to check it or to make a PDF.
+
+```
+[document]
+name = "Letter"            # 16 characters at most
+width = 480                # 480 (6 inches) or 640 (8 inches)
+font = "GU Serif"          # the default font and size of the blocks
+size = 12
+header = "Club news"       # optional, on every page; header_font,
+footer = "Page footer"     # header_size, header_align (footer_ too)
+
+[[block]]                  # a paragraph
+text = "Plain, **bold**, *italic*, __underlined__, ^^outline^^."
+font = "GU Sans"           # a GU family: GU Serif, Sans, Mono, Book ...
+size = 18                  # 9, 10, 12, 14, 18 or 24
+align = "center"           # left, center, right, justify
+spacing = 1                # 1, 1.5 or 2
+left = 0                   # margins in dots (80 an inch); indent: the
+right = 0                  # first line's, from the left margin
+indent = 0
+tabs = [120, 240]          # tab stops, dots from the left edge
+after = 1                  # empty lines after it
+keep = true                # on the same page as the next block
+
+[[block]]                  # a picture (PNG, JPEG ...)
+picture = "shot.png"
+width = 320                # dots, a multiple of 8
+threshold = 128            # black below it (0-255); or dither = true
+
+[[block]]
+pagebreak = true
+```
+
+`\t` in a text is a TAB, `\n` a new line with the same ruler. Text is
+ASCII. gwgen lays every page out as geoWrite does, with the GU fonts
+(`make fonts`), and starts a new page when the next block would not
+fit, so the document opens in geoWrite as it was laid out.
 
 # gptool: geoPaint pictures
 

@@ -1,0 +1,166 @@
+# GeoUltra's quick start guide, a geoWrite 2.1 document made by
+# tools/gwgen.py (make samples). Pictures: samples/shots (samples/shots.py).
+
+[document]
+name = "Quick start"
+font = "GU Sans"
+size = 12
+info = "GeoUltra's quick start guide: from the files on the stick to printing a document."
+header = "GeoUltra quick start guide"
+header_font = "GU Sans"
+header_size = 9
+footer = "The whole story: the user manual, docs/GEOULTRA_MANUAL"
+footer_font = "GU Sans"
+footer_size = 9
+
+[[block]]
+text = "**GeoUltra quick start**"
+size = 24
+after = 1
+
+[[block]]
+text = "From the files on the stick to a printed document in eight steps. You need an Ultimate 64, Ultimate 64 Elite or Commodore 64 Ultimate with firmware 3.15 or later, a USB stick, a mouse, and your own GEOS applications as disk images."
+font = "GU Serif"
+align = "justify"
+after = 1
+
+[[block]]
+text = "**1\tPut GeoUltra on the stick**"
+size = 14
+tabs = [24]
+keep = true
+
+[[block]]
+text = "Copy geoultra64.crt and geoultra64.cfg into one folder on the USB stick, for example GEOULTRA. Keep both names: the Ultimate finds the configuration by the cartridge's name. Copy your GEOS disk images onto the stick too."
+font = "GU Serif"
+align = "justify"
+left = 24
+after = 1
+
+[[block]]
+text = "**2\tStart it**"
+size = 14
+tabs = [24]
+keep = true
+
+[[block]]
+text = "In the Ultimate's file browser, select geoultra64.crt and run it. The configuration file comes with it: a 16 MB REU, the Command Interface, turbo and the printer emulation, for this session only. After the start picture you see the desktop."
+font = "GU Serif"
+align = "justify"
+left = 24
+after = 1
+keep = true
+
+[[block]]
+picture = "shots/desktop-list.png"
+width = 256
+threshold = 128
+
+[[block]]
+text = ""
+
+[[block]]
+text = "**3\tMount your disk images**"
+size = 14
+tabs = [24]
+keep = true
+
+[[block]]
+text = "Click usb0 in the sidebar and find an image. Click the mount icon at the right end of its line (or choose mount with the right mouse button) and pick a drive, A to D. GeoUltra mounts the same images again at every start. Mount your GEOS 2.0 boot disk image too: its serial number lets the applications installed under it run."
+font = "GU Serif"
+align = "justify"
+left = 24
+after = 1
+
+[[block]]
+text = "**4\tStart a program**"
+size = 14
+tabs = [24]
+keep = true
+
+[[block]]
+text = "Open the drive with geoWrite and double-click it, or double-click one of your documents: the program it belongs to starts with it. GEOS programs and documents work on drives A to E; copy a file from the stick to a drive first."
+font = "GU Serif"
+align = "justify"
+left = 24
+after = 1
+
+[[block]]
+text = "**5\tPrint**"
+size = 14
+tabs = [24]
+keep = true
+
+[[block]]
+text = "Programs print to the Ultimate's printer emulation with GU Epson FX-80; the pages end up as pictures on the stick. For a PDF, choose GU PDF A4 on the Printing page of Settings (geos > settings). For a geoWrite document in PostScript, use make PostScript in its menu under the right mouse button: the file goes to GEOULTRA/print."
+font = "GU Serif"
+align = "justify"
+left = 24
+after = 1
+keep = true
+
+[[block]]
+picture = "shots/context-menu.png"
+width = 256
+threshold = 128
+
+[[block]]
+text = ""
+
+[[block]]
+text = "**6\tSwitch between programs**"
+size = 14
+tabs = [24]
+keep = true
+
+[[block]]
+text = "Press C= and RUN/STOP in any program for the task list: new task starts a fresh desktop while the program waits as it is. Cut and copy work across programs and drives."
+font = "GU Serif"
+align = "justify"
+left = 24
+after = 1
+
+[[block]]
+text = "**7\tMake it yours**"
+size = 14
+tabs = [24]
+keep = true
+
+[[block]]
+text = "geos > settings opens GeoUltra Settings: the view, themes and colours, turbo speed, the time server, drives, pointer and printer. OK saves and goes back to the desktop."
+font = "GU Serif"
+align = "justify"
+left = 24
+after = 1
+keep = true
+
+[[block]]
+picture = "shots/settings-desktop.png"
+width = 256
+threshold = 128
+
+[[block]]
+text = ""
+
+[[block]]
+text = "**8\tSwitch off**"
+size = 14
+tabs = [24]
+keep = true
+
+[[block]]
+text = "Changed disk images are written back to the stick by themselves, a few seconds after a program writes. Wait until that is done before you switch off. With hibernation on (Settings, System page), GeoUltra saves the whole session when the computer is idle, and comes back where you were after a power cycle; hold C= while it starts to begin fresh."
+font = "GU Serif"
+align = "justify"
+left = 24
+after = 1
+
+[[block]]
+text = "**If a program refuses to run**"
+size = 14
+keep = true
+
+[[block]]
+text = "Berkeley's applications are keyed to the serial number of the GEOS disk they were installed with. If one says \"Please reboot your system using the same GEOS disk\", the desktop offers to set its number in Settings. Only for applications you own a licensed copy of."
+font = "GU Serif"
+align = "justify"
