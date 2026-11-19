@@ -22,6 +22,8 @@ Usage: tests/print/psc64.py [DOCUMENT.cvt] [--doc=features] [--letter] [--c64]
 import os
 import subprocess
 import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "print")
@@ -36,8 +38,6 @@ entry = (ext[0] | ext[1] << 8) + 30
 v.mem_set(0x033F, b"\x60")                  # rts: the answered calls
 v.checkpoint(entry, temporary=False)
 import time
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
-import localcfg  # noqa: E402
 def press(x, y):                            # a press (GEOS's icons act on it)
     v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))
     v.mem_set(0x8505, b"\x00")

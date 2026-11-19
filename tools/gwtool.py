@@ -13,7 +13,7 @@
 IMAGE is a D64, D71, D81 or DNP (a name may carry a DNP folder,
 "Writing/Letter"). OUT is a folder (CVT files written there) or a new
 .d64 / .d81 image (made with VICE's c1541, which must be on the PATH or
-in ~/.local/opt/vice-3.10/bin). `convert` turns geoWrite 1.x documents
+in VICE_BIN from .env). `convert` turns geoWrite 1.x documents
 (all of them without NAMEs) into geoWrite 2.x documents and copies 2.x
 ones as they are; `merge` joins the documents NAME... in that order into
 one 2.x document NEWNAME: their pages one after another (each starts on

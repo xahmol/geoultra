@@ -16,6 +16,8 @@ import os
 import shutil
 import subprocess
 import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -27,8 +29,6 @@ SCRAP_TRACKS = (246, 247)
 # then FindFile or GetFile of the name at $4F00), results at $02F0.
 HOOK = '''
 import time
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
-import localcfg  # noqa: E402
 jt = harness.jumptab()
 def jsr(n):
     a = jt[n]; return [0x20, a & 0xFF, a >> 8]

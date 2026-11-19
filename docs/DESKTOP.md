@@ -3,7 +3,7 @@
 GeoUltra's own desktop: a GEOS application that replaces GEOS 2.0's
 deskTop as the place `EnterDeskTop` leads to. Own design (DESIGN.md,
 "Desktop": decisions 2026-10-29 and 2026-11-06; mock-ups:
-https://claude.ai/artifact/2yrZuKGyDceuaFJ2Do4gsq, direction C "modern
+https://claude.ai/artifact/2yrZuKGyDceuaFJ2Do4gsq (private Claude page), direction C "modern
 minimal"). Clean-room: no deskTop, TopDesk or MegaPatch code, icons or
 layouts copied; GEOS's own conventions (menu bar, geos menu with desk
 accessories, dialogs) are kept because applications and users expect
@@ -70,7 +70,7 @@ moves the window over the folder's entries.
 
 The desktop's look is a **theme built from design elements**, not from
 palette numbers (mock-up with all choices:
-https://claude.ai/artifact/5Jv2FtLekd6o343SYpRhJJ, approved
+https://claude.ai/artifact/5Jv2FtLekd6o343SYpRhJJ (private Claude page), approved
 2026-11-06). Each element is one drawing routine with a few styles;
 colour is a property of an element, by name:
 
@@ -420,7 +420,7 @@ colour is a property of an element, by name:
   left, so the INI file handling (side.s) moves to an overlay first;
   the context menu and Info are an overlay.
 - **Toolbar, after the mock-up (user, 2026-11-11; mock-up:
-  https://claude.ai/artifact/ECimQq7UX37FcgWScJuR7u):** the height is a
+  https://claude.ai/artifact/ECimQq7UX37FcgWScJuR7u (private Claude page)):** the height is a
   view option, not a theme style: view > toolbar > two-line (16 px,
   framed 16 x 14 buttons, the default), one-line (8 px, flat 8 x 8 icons
   12 px apart, dotted lines between the groups, one list row more) or

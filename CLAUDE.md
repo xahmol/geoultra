@@ -119,33 +119,37 @@ the REU RAM-drive layer and the kernal can be tested in VICE (with a VICE REU).
   TopDesk and its source, the Klaus Finke collection, geowrite2rtf,
   Final Cartridge III with GEOS, the Ultimate C64 KERNAL API, Commodore
   peripheral bus series.
-- UCI: `~/git/ultimate-uci-oscar64/docs/UCILIB_MANUAL.md` (firmware 3.15
+- UCI: `lib/ultimate-uci-oscar64/docs/UCILIB_MANUAL.md` (firmware 3.15
   commands incl. `DOS_CMD_LOAD_REU`/`SAVE_REU` with address and length, GEOS
   RAM disk commands, unlock sequence for a disabled Command Interface).
-- geos-oscar64 (`~/git/geos-oscar64`): Oscar64 runtime and full C API for
+- geos-oscar64 (a sibling checkout, not yet public): Oscar64 runtime and full C API for
   GEOS 64/128, tested in VICE and on the U64; usable for the desktop and
   tools. Its `docs/GEOSLIB_MANUAL.md` explains the zero page sharing.
 
 ## Test environment (from the GeoUTools work)
 
-- VICE 3.10 in `~/.local/opt/vice-3.10/bin` (`x64sc`, `x128`; built from
-  `~/vice-3.10`, needed for the Megabyter cartridge) for interactive use,
-  and a headless build (no window, no sound) in
-  `~/.local/opt/vice-3.10-headless/bin` (from `~/vice-3.10-headless`,
-  `--enable-headlessui`) for every unattended run: the harness, `vice-shot`,
-  `smoke-vice`. The user does not want VICE windows and sound popping up
-  during automated runs. VICE 3.8 stays in `/usr/local/bin`: unattended GEOS boots with an AUTO_EXEC test program and `-limitcycles N -exitscreenshot` (`-exitscreenshotvicii` for
-  the 40-column screen in x128, `-40col`/`-80col`).
-- Ultimate 64-II at 192.168.1.148 (firmware 3.15a) through the c64bridge
+This PC's paths and addresses are in `.env` (keys in `.env.example`,
+read by the Makefile and `tools/localcfg.py`); never write them into
+tracked files.
+
+- VICE 3.10 (`VICE_BIN`; `x64sc`, `x128`, needed for the Megabyter
+  cartridge) for interactive use, and a headless build (no window, no
+  sound; `VICE_HEADLESS_BIN`, `--enable-headlessui`) for every unattended
+  run: the harness, `vice-shot`, `smoke-vice`. The user does not want
+  VICE windows and sound popping up during automated runs. An older VICE
+  3.8 on the PATH: unattended GEOS boots with an AUTO_EXEC test program
+  and `-limitcycles N -exitscreenshot` (`-exitscreenshotvicii` for the
+  40-column screen in x128, `-40col`/`-80col`).
+- Ultimate 64-II (`ULTIP1`, firmware 3.15a) through the c64bridge
   MCP server; screenshots with GeoUTools' `tests/e2e/shot.py` (VIC stream).
   GEOS 2.0 boots from 1541 images only with the stock drive ROM (the
   configured JiffyDOS ROM with Extra RAM fails); D81 images are faster.
   Mouse automation: write `mouseXPos`/`mouseYPos` ($3A-$3C), inject a press
   with `mouseData` ($8505) = 0 and `pressFlag` ($39) |= $20; joystick-port
   fire taps work for icons and lists but not reliably for menus.
-- GEOS boot disks (user's own, never commit or redistribute):
-  `~/geos-dev/u64-usb/` (GEOS 64/128 2.0, Wheels, MP3, GDOS64, RAM boot
-  sets), `~/geos-dev/finke/` (Klaus Finke collection).
+- GEOS boot disks (user's own, never commit or redistribute): in
+  `GEOS_DEV` (GEOS 64/128 2.0, Wheels, MP3, GDOS64, RAM boot sets, the
+  Klaus Finke collection).
 
 ## Code-quality sweeps (user, 2026-10-30)
 

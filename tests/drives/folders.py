@@ -2,7 +2,7 @@
 """Folders on a native (DNP) drive on GeoUltra in VICE (src/kernal/folders.s).
 
 Drive B is a copy of GEOS_NATIVE_DISK (default the user's own
-~/geos-dev/u64-usb/ramapps.DNP, only read). Through the extension jump
+ramapps.DNP in GEOS_DEV, only read). Through the extension jump
 table (guExtTable): MakeDir, SetCurDir (the folder's name becomes the
 disk name, root files are not seen), SaveFile and ReadFile inside it,
 DirUp (the file is not seen at the root), RemoveDir refused while the

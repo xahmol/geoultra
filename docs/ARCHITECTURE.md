@@ -531,8 +531,8 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
 
 - Image (since 2026-11-06 a native image with folders; a 1541 image
   before): built from GeoUltra's own GEOS files as CVTs (each
-  `src/tools/NAME.s` assembled at `$0400`, packed by geos-oscar64's
-  `geosapp.py`; gush, gush's external commands). `src/sysdrive.toml` says
+  `src/tools/NAME.s` assembled at `$0400`, packed by `tools/geosapp.py`
+  (a copy of geos-oscar64's); gush, gush's external commands). `src/sysdrive.toml` says
   which file goes into which folder (the system's applications, desk
   accessories and fonts in the root, which the kernal merges; gush's
   commands in `bin`); `tools/mkappsdnp.py` builds
@@ -604,8 +604,8 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
   for a file type no file has, so the kernal lists only `..` and the
   folders; OPEN/RETURN/DEL move through them, DISK goes to the next drive,
   OK leaves the chosen folders current.
-- Desk accessories are padded to whole blocks by geos-oscar64's
-  `geosapp.py` (0.1.2; before that by the Makefile): c1541 writes a short
+- Desk accessories are padded to whole blocks by `tools/geosapp.py`
+  (geos-oscar64 0.1.2's; before that by the Makefile): c1541 writes a short
   last block full, and a desk accessory's header end address must cover
   all it loads, or `LdDeskAcc` saves less of the application than
   `ReadFile` overwrites (geoWrite crashed after geoFolder until this;

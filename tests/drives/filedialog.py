@@ -2,7 +2,7 @@
 """Folders in an existing application's file dialog (DBGETFILES) in VICE.
 
 Drive B is a copy of GEOS_NATIVE_DISK (default the user's own
-~/geos-dev/u64-usb/ramapps.DNP with geoWrite 2.0, only read). A folder is
+ramapps.DNP in GEOS_DEV with geoWrite 2.0, only read). A folder is
 made with MakeDir (extension jump table), geoWrite is started and its
 "Open" dialog shown: the first row must be "/GU folder"; RETURN enters it
 (the list shows ".." only); DEL goes back (the folder row again); the

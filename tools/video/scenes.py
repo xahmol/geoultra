@@ -32,7 +32,7 @@ import png  # noqa: E402
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
 import localcfg  # noqa: E402
 
-IP = "192.168.1.148"
+IP = localcfg.get("ULTIP1", "192.168.1.64")   # the Ultimate (.env)
 STREAM_PORT = 11002             # (11000 is OBS's on the Windows side: WSL shares
                                 # ports; the firewall rule allows 11000-11010)
 HOME = "/USB0/GEOULTRA/"

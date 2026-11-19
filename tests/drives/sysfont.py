@@ -2,7 +2,7 @@
 """A font on drive E, the system drive, in geoWrite on GeoUltra in VICE.
 
 A test copy of the system drive gets a font from the user's own disks
-(SYSFONT_DISK, a D64 or D81, default ~/geos-dev/u64-usb/GEOS64.D81, font
+(SYSFONT_DISK, a D64 or D81, default GEOS64.D81 in GEOS_DEV, font
 SYSFONT_NAME, default LW_Cal; never committed) in its root next to
 GeoUltra's own files (src/sysdrive.toml, tools/mkappsdnp.py), is
 relocated (tools/sysreloc.py) and patched into a copy of the cartridge. geoWrite runs from GEOS_APPS_DISK (default the

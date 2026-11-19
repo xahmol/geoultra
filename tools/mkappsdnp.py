@@ -21,8 +21,8 @@ Manifest (TOML):
     strict = false                 # true: a missing file stops the build
 
     [sources]                      # name = image or folder of CVTs
-    gdos = "~/geos-dev/u64-usb/ramapps.DNP"
-    geoutools = "~/git/GeoUTools/build"
+    gdos = "private/ramapps.DNP"
+    geoutools = "../GeoUTools/build"
 
     [[folder]]
     path = ""                      # "" is the root; "A/B" nested

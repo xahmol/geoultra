@@ -7,7 +7,7 @@ checks GeoUltra against itself and, for the 1571, against a model of GEOS
 Drive B is the image:
 
   native  a copy of GEOS_NATIVE_DISK (default the user's own
-          ~/geos-dev/u64-usb/ramapps.DNP, only read, never committed)
+          ramapps.DNP in GEOS_DEV, only read, never committed)
           with its directory cut back to its first block
   d71     a freshly formatted, empty double-sided D71 made here
 

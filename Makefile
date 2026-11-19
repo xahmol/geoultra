@@ -29,10 +29,9 @@ ULTIP1 ?= <set_ULTIP1_in_.env>
 VICE_BIN ?=
 VICE_HEADLESS_BIN ?=
 OSCAR64 ?= oscar64
-GEOS_OSCAR64 ?= ../geos-oscar64
 GEOUTOOLS ?= ../GeoUTools
 GEOS_DEV ?= private
-export VICE_BIN VICE_HEADLESS_BIN GEOS_OSCAR64 GEOUTOOLS GEOS_DEV
+export VICE_BIN VICE_HEADLESS_BIN GEOUTOOLS GEOS_DEV
 
 CA65    = ca65
 LD65    = ld65
@@ -41,7 +40,7 @@ VICE    = $(if $(VICE_BIN),$(VICE_BIN)/,)x64sc
 # A headless VICE (no window, no sound) for unattended runs, if there is one
 VICEHL  = $(if $(VICE_HEADLESS_BIN),$(VICE_HEADLESS_BIN)/x64sc,$(VICE))
 C1541   = $(if $(VICE_BIN),$(VICE_BIN)/,)c1541
-GEOSAPP = $(GEOS_OSCAR64)/tools/geosapp.py
+GEOSAPP = tools/geosapp.py
 PYTHON  = python3
 
 UCILIB  = lib/ultimate-uci-oscar64/include
@@ -70,8 +69,8 @@ checkcfg: check-deploy
 # --- System drive (drive E, docs/DESIGN.md "System drive") ------------
 
 # GeoUltra's own GEOS files, assembled at $0400 and packed as CVT by
-# geos-oscar64's geosapp.py (0.1.2 or later: it pads desk accessories to
-# whole blocks), written to a D64 with VICE's c1541.
+# tools/geosapp.py (a copy of geos-oscar64 0.1.2's: it pads desk
+# accessories to whole blocks), written to a D64 with VICE's c1541.
 SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt \
            build/settings/settings.cvt build/tools/splash.cvt build/fonts/.done \
            build/printer/epson.cvt build/printer/mps.cvt \

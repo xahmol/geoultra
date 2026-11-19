@@ -23,6 +23,8 @@ import random
 import shutil
 import subprocess
 import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
@@ -47,8 +49,6 @@ PAT_ODD = [0x00, 0x22, 0x55, 0xFF]
 
 HOOK = r'''
 import time
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
-import localcfg  # noqa: E402
 v.mem_set(0x4E00, %(name)r + b"\0")
 v.mem_set(0x4E80, %(text)r + b"\0")
 v.mem_set(0x5000, %(data)r)

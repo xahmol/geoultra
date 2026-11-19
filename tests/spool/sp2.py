@@ -14,6 +14,8 @@ import os
 import shutil
 import subprocess
 import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "spool")
@@ -22,8 +24,6 @@ DRIVER = b"Epson MX-80"
 
 HOOK = r'''
 import time
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
-import localcfg  # noqa: E402
 jt = harness.jumptab()
 lbl = {}
 for line in open(%(lbl)r):

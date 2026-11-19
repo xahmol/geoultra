@@ -12,6 +12,8 @@ Usage: tests/fonts/f1reloc.py
 import os
 import subprocess
 import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "fonts")
@@ -21,8 +23,6 @@ FONT_BANK, FONT_TRACK = 180, 237
 
 HOOK = r'''
 from vicemon import RESP_CHECKPOINT
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
-import localcfg  # noqa: E402
 lbl = {}
 for line in open(%(lbl)r):
     p = line.split(); lbl.setdefault(p[2].lstrip("."), int(p[1], 16))

@@ -4,7 +4,7 @@ Every value comes from, in this order: the environment, the file `.env`
 in the repository's root (KEY=value lines, gitignored; `.env.example`
 lists the keys), or a default that needs nothing of a particular PC:
 programs on the PATH, sibling checkouts next to this repository
-(`../geos-oscar64`, `../GeoUTools`), and your own disk images in the
+(`../GeoUTools`, only for some U64 tests), and your own disk images in the
 gitignored `private/` folder. `~` and `$HOME` in values are expanded.
 The Makefile reads the same `.env` (and passes it on to the scripts).
 
@@ -63,10 +63,10 @@ X64SC = _tool("VICE_BIN", "x64sc")
 X64SC_HEADLESS = _tool("VICE_HEADLESS_BIN", "x64sc", "VICE_BIN")
 C1541 = _tool("VICE_BIN", "c1541")
 
-# Sibling projects: geos-oscar64 (geosapp.py, which packs GEOS
-# applications) and GeoUTools (its manual and screenshot tool, some tests).
-GEOS_OSCAR64 = get("GEOS_OSCAR64", os.path.join(os.path.dirname(ROOT), "geos-oscar64"))
-GEOSAPP = os.path.join(GEOS_OSCAR64, "tools", "geosapp.py")
+# geosapp.py packs GEOS applications (a copy of geos-oscar64's, in tools/).
+GEOSAPP = os.path.join(ROOT, "tools", "geosapp.py")
+# A sibling project, optional: GeoUTools (its manual and screenshot tool,
+# some U64 tests and the video scripts).
 GEOUTOOLS = get("GEOUTOOLS", os.path.join(os.path.dirname(ROOT), "GeoUTools"))
 GEOUTOOLS_SHOT = os.path.join(GEOUTOOLS, "tests", "e2e", "shot.py")
 
