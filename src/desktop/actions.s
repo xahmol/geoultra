@@ -495,7 +495,6 @@ nameDlg:
         .byte CANCEL, DBI_X_2, DBI_Y_2
         .byte 0
 
-
 ; WhatGoes's scratch (overlay data: set in each call)
 goes:           .word 0         ; the entries Delete takes
 first:          .word 0         ; the first of them

@@ -19,7 +19,7 @@
         .import SideLoad, SideLists, SidePress, FavAdd, ThemeSave, ClockSave
         .import ViewSave, ToolbarSave, ToolDraw, ToolPress, tbMode, topY, Derive
         .import HistAdd, BigInit, Frame, Info, SelAll, HistBack, HistForward
-        .import Refresh, TaskPress, TaskOpen, OpenTask, ClipShow, ClipSave, ClipClear
+        .import Refresh, TaskPress, TaskOpen, OpenTask, ClipShow, ClipSave, ClipClear, fontDue
         .import SpoolPress, QueueWin
         .import PaneInit, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
         .import CopyOther, MoveOther, CdPath
@@ -94,6 +94,9 @@ Start:  jsr OvlInit             ; (ovl.s: the overlays into the REU, while
         jsr Draw
         jsr HistAdd             ; (the first place in the history)
         jsr TaskOpen            ; (a new task's path: opened, side.s)
+        lda #$80                ; (theme.s ClockTick: CVT files dropped
+        sta fontDue             ; into GEOULTRA/fonts installed, once the
+                                ; desktop is on the screen)
         lda #<mainMenu
         sta r0L
         lda #>mainMenu

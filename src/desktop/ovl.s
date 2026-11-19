@@ -47,6 +47,7 @@ OvlFail:
 
         Stub Mount, 3           ; overlay 3: mount.s
         Stub FontAct, 3         ; (fontact.s: a system font in or out)
+        Stub FontImport, 3      ; (fontact.s: GEOULTRA/fonts' CVT files)
         Stub Eject, 3
         Stub ClipShow, 3        ; (clip.s: the clipboard menu)
         Stub ClipSave, 3

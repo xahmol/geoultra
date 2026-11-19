@@ -26,7 +26,8 @@
         .export Neutral, Dialog, MenuNeutral, Recover, ClockTick, MenuCells, ShadowCells
         .export TextWidth, boldOn, clockMode, viewMode, MonthName, Ov_Derive
         .export lettersDue, rootsSeen, sortDue, cIconT, cDesk, tByType
-        .import Status, taskRedraw
+        .import Status, taskRedraw, FontImport
+        .export fontDue
         .import PaneLetters
         .export lastMin, clockX, MonLo, MonHi, stripL, listR, paneR
         .import ClockDraw       ; (ovl.s: overlay 5, tooldraw.s)
@@ -564,7 +565,11 @@ Recover:
 ; again); a list waiting to be sorted sorted (list.s, SortNow); the
 ; clock drawn again when the minute changed.
 ClockTick:
-        bit taskRedraw          ; (back from the task popup: the tasks'
+        bit fontDue             ; (the first pass after the start:
+        bpl :+                  ; fontact.s's import, its question over
+        lsr fontDue             ; the drawn desktop)
+        jsr FontImport
+:       bit taskRedraw          ; (back from the task popup: the tasks'
         bpl :+                  ; count again, list.s TaskInd)
         lda #0
         sta taskRedraw
@@ -748,3 +753,8 @@ pcol:           .byte 0
         .segment "BSS"
 
 shadow:         .res 1000       ; the desktop's colours (Paint)
+
+        .segment "BSS"
+
+fontDue:        .res 1          ; $80: FontImport at the next tick (desktop.s
+                                ; Start sets it; ClockTick clears it)

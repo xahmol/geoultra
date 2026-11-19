@@ -214,8 +214,31 @@ driveLimit:     .byte FE_LAST_BANK + 2  ; a drive's banks end below this - 1
 ; Init: A, X = spool='s first and fourth character: the banks wanted
 ; (128, 256, 512: 2, 4, 8; 1024, 2048: 16, 32; else 2); up to that - 2
 ; at the top of the drives' area, from bank 179 (FE_LAST_BANK) down, while no REU drive
-; uses them; spoolExtra, spoolBase, driveLimit set.
+; uses them; spoolExtra, spoolBase, driveLimit set. The queue of an
+; earlier session forgotten: its mark cleared (the REU keeps its contents
+; across a reboot, so a cold start found that queue paused, its jobs
+; still waiting, 2026-11-19; a resumed session, which keeps its queue,
+; does not come here: autoexec.s); HeadLoad and FE_SPOOL then make an
+; empty one.
 Init:   stx tmp
+        pha
+        lda #<NoMark
+        sta r0L
+        lda #>NoMark
+        sta r0H
+        lda #<QHEAD
+        sta r1L
+        lda #>QHEAD
+        sta r1H
+        lda #4
+        sta r2L
+        lda #0
+        sta r2H
+        lda #SYS_BANK
+        sta r3L
+        ldy #REU_STASH
+        jsr SysRAMOp
+        pla
         ldx #2
 @d:     cmp Digit,x
         beq @dig
@@ -279,6 +302,7 @@ Init:   stx tmp
         sta driveLimit
         rts
 
+NoMark:         .byte 0, 0, 0, 0    ; (Mark's place cleared)
 Digit:          .byte "125"         ; 128, 256, 512; a fourth digit: x + 3
 Banks:          .byte 2, 4, 8, 16, 32, 0
 tmp:            .byte 0

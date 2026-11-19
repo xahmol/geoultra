@@ -463,8 +463,11 @@ and find them when a document uses them.
   ```
 
   then copy FONTS.DNP into `GEOULTRA` and start GeoUltra again.
-  CVT files dropped straight into `GEOULTRA/fonts` come later (docs/
-  DESIGN.md "System font folder").
+- **CVT files dropped into `GEOULTRA/fonts`** (the top of it, not its
+  subfolders, which are a library to pick from) are installed by the
+  desktop when it starts: it copies those not installed yet into
+  FONTS.DNP and asks "Restart now?". Without a free drive letter it
+  tries again at the next start.
 
 ## Limits
 
