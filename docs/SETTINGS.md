@@ -386,6 +386,10 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   then the class asked);
   the disclaimer under them. The serial and the bypass count from the
   next start; the `[serials]` list at once on OK or Save (`FE_SERIALS`).
-  Test: s9.py (VICE).
+  Started with a "document" (r0L ST_LD_DATA, `dataFileName` an
+  application's class: the desktop's refusal notice, step S5), Settings
+  opens on this page and asks "Serial for <class> (4 hex):" (the class's
+  padding spaces off), then adds the line.
+  Tests: s9.py, tests/desktop/d35.py (VICE).
 
-Beta 1 needs S1-S6's first versions (docs/DESIGN.md, "Releases").
+Beta 1 has S1-S5 (S6, re-key, deferred to after Beta 1; docs/DESIGN.md, "Releases").

@@ -11,8 +11,8 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, Dialog
-        .export Pickup
+        .import FileEngine, Dialog, RunE, appName, docShort, docDrive
+        .export Pickup, Refused
 
 FC_RAW          = $02
 FI_CBM          = 1             ; the CBM type byte (its low bits: 1 SEQ)
@@ -27,6 +27,73 @@ pLine1: .res 2                  ; (DBVARSTR: zero page pointers)
 pp:     .res 2                  ; a name being copied
 
         .segment "OV9"
+
+; Refused (the desktop's first tick, before the pickup; docs/DESIGN.md
+; "Serial number" S5, the user's decision of 2026-11-19): when the kernal
+; noted an application that refused its serial number (FE_SERIALS with
+; r1 = 0: its class; serials.s), a question: "<class> refused to run" /
+; "(its serial number). Set it in Settings?"; YES starts GU Settings from
+; drive E with the class as its "document" (open.s RunE: Settings opens
+; its Serials page and asks the number). Destroys all.
+Refused:
+        lda #<refCls
+        sta r0L
+        lda #>refCls
+        sta r0H
+        lda #0
+        sta r1L
+        sta r1H
+        lda #FE_SERIALS
+        jsr FileEngine
+        txa
+        bne @end
+        ldx #1                  ; line 1: (BOLDON,) the class and " refused
+        ldy #0                  ; to run"
+:       lda refCls,y
+        beq :+
+        sta refLine,x
+        inx
+        iny
+        cpy #12
+        bcc :-
+:       dex                     ; (trailing spaces off)
+        lda refLine,x
+        cmp #' '
+        beq :-
+        inx
+        ldy #0
+:       lda RefText,y
+        sta refLine,x
+        beq :+
+        inx
+        iny
+        bne :-
+:       lda #<refLine
+        sta pLine1
+        lda #>refLine
+        sta pLine1 + 1
+        lda #<refDlg
+        sta r0L
+        lda #>refDlg
+        sta r0H
+        jsr Dialog
+        lda r0L
+        cmp #YES
+        bne @end
+        ldx #SETTINGS_LEN       ; GU Settings with the class
+:       lda SettingsName,x
+        sta appName,x
+        dex
+        bpl :-
+        ldx #12
+:       lda refCls,x
+        sta docShort,x
+        dex
+        bpl :-
+        lda #8
+        sta docDrive
+        jmp RunE                ; (back only after an error)
+@end:   rts
 
 ; Pickup: see above. Destroys all.
 Pickup: lda #<home
@@ -278,12 +345,26 @@ noteDlg:
         .word NoteText2
         .byte OK, DBI_X_2, DBI_Y_2
         .byte 0
+refDlg: .byte DEF_DB_POS | 1
+        .byte DBVARSTR, TXT_LN_X, TXT_LN_1_Y + 6, pLine1
+        .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+        .word RefText2
+        .byte YES, DBI_X_0, DBI_Y_2
+        .byte NO, DBI_X_2, DBI_Y_2
+        .byte 0
+RefText:        .byte " refused to run", PLAINTEXT, 0
+RefText2:       .byte "(its serial). Set it in Settings?", 0
+SettingsName:   .byte "GU Settings", 0
+SETTINGS_LEN    = * - SettingsName - 1
 NoteText:       .byte BOLDON, "PostScript from geoLaser", PLAINTEXT, 0
 NoteText2:      .byte "moved to GEOULTRA/print.", 0
 Prefix:         .byte "PS."
 PrintText:      .byte "print", 0
 PsExt:          .byte ".ps", 0
 
+refCls: .res 13
+refLine: .byte BOLDON
+        .res 32
 root:   .byte "/a", 0
 drive:  .byte 0
 handle: .byte 0

@@ -14,7 +14,7 @@
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
         .import TimeDraw, TimePress, ThemeDraw, ThemePress, ReuDraw, ReuPress
         .import DriveDraw, DrivePress, StartDraw, StartPress, PrintDraw, PrintPress
-        .import SerDraw, SerPress
+        .import SerDraw, SerPress, SerFor
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
         .export themeLoaded, themeNo, themeCount, themePart, themeNames
         .export themePath, themeTmp, noFile, DrawPage, page, repaint, BarOn, BarOff, ThemesFull, Ask2
@@ -36,7 +36,9 @@ pageVec:        .res 2          ; DrawPage, Press: the page's routine
 
 ; Start: SETTINGS.INI read, the screen drawn on the Desktop page, the
 ; buttons and the mouse and keys taken; back to MainLoop.
-Start:  jsr OvlInit             ; (ovl.s: the pages into the REU, while
+Start:  lda r0L                 ; (ST_LD_DATA: started for an application
+        sta startOpts           ; that refused its serial: the Serials page)
+        jsr OvlInit             ; (ovl.s: the pages into the REU, while
                                 ; dirEntryBuf still holds our entry)
         lda guExtTable          ; the file engine: guExtTable + FE_ENTRY
         clc
@@ -55,8 +57,15 @@ Start:  jsr OvlInit             ; (ovl.s: the pages into the REU, while
         jsr ReadChrome
         jsr UseSettings
         lda #PAGE_DESKTOP
-        sta page
+        bit startOpts           ; (the desktop's refusal notice, 2026-11-19:
+        bpl :+                  ; dataFileName holds the application's class)
+        lda #PAGE_SERIALS
+:       sta page
         jsr DrawAll
+        bit startOpts
+        bpl :+
+        jsr SerFor              ; (pser.s: its number asked)
+:
         lda #<Press
         sta otherPressVec
         lda #>Press
@@ -579,6 +588,7 @@ FullText2:      .byte "Delete one first.", 0
         .segment "BSS"
 
 page:           .res 1          ; the page shown (PAGE_*)
+startOpts:      .res 1          ; Start's r0L
 at:             .res 1
 dirty:          .res 1          ; something changed since the last write
 noFile:         .res 1          ; nothing to write (no Ultimate)

@@ -19,7 +19,7 @@
         .import ChoiceDraw, ChoicePress, ButtonDraw, OnButton, DrawPage
         .import IniFind, IniSet, IniDel, iniSkip, dirty, NoRoom, Dialog, Plain
         .import iniBase, iniLen
-        .export Ov_SerDraw, Ov_SerPress
+        .export Ov_SerDraw, Ov_SerPress, Ov_SerFor
 
 GetSerialNumber = $C196         ; GEOS jump table
 GetBlock        = $C1E4
@@ -411,18 +411,22 @@ Add:    lda #0
         ldx #>AskClsT
         ldy #12
         jsr Ask
-        bcs @end
+        bcs AddEnd
         lda input
-        beq @end
+        beq AddEnd
         ldy #12
 :       lda input,y
         sta key,y
         dey
         bpl :-
-        lda #0
-        sta input
         lda #<AskNumT
         ldx #>AskNumT
+; AddNum: the number for the class in key asked (the question at A/X);
+; [serials] class=number.
+AddNum: pha
+        lda #0
+        sta input
+        pla
         ldy #4
         jsr Ask
         bcs @end
@@ -437,7 +441,8 @@ Add:    lda #0
         bcs @full
         jmp Changed
 @full:  jmp NoRoom
-@end:   jmp DrawPage
+@end:
+AddEnd: jmp DrawPage
 
 ; Remove: the selected line taken out.
 Remove: lda sel
@@ -590,6 +595,47 @@ BootSerial:
         rts
 @no:    sec
         rts
+
+; Ov_SerFor (settings.s Start, started by the desktop for an application
+; that refused its serial number; dataFileName its class): the number
+; asked for that class, then [serials] class=number.
+Ov_SerFor:
+        ldy #12
+:       lda dataFileName,y
+        sta key,y
+        dey
+        bpl :-
+        ldy #12                 ; (taskName's padding spaces off)
+:       lda #0
+        sta key,y
+        dey
+        bmi :+
+        lda key,y
+        cmp #' '
+        beq :-
+:       ldx #0                  ; "Serial for <class> (4 hex):"
+:       lda ForT,x
+        sta forText,x
+        beq :+
+        inx
+        bne :-
+:       ldy #0
+:       lda key,y
+        beq :+
+        sta forText,x
+        inx
+        iny
+        bne :-
+:       ldy #0
+:       lda ForEnd,y
+        sta forText,x
+        beq :+
+        inx
+        iny
+        bne :-
+:       lda #<forText
+        ldx #>forText
+        jmp AddNum
 
 ; KeyApp: r0, r1 = [serials] key.
 KeyApp: lda #<SSerials
@@ -927,6 +973,9 @@ RemoveB:        .byte "remove", 0
 AskSerT:        .byte BOLDON, "Serial number (4 hex digits):", PLAINTEXT, 0
 AskClsT:        .byte BOLDON, "The application's class:", PLAINTEXT, 0
 AskNumT:        .byte BOLDON, "Its serial (4 hex digits):", PLAINTEXT, 0
+ForT:           .byte BOLDON, "Serial for ", 0
+ForEnd:         .byte " (4 hex):", PLAINTEXT, 0
+forText:        .res 40
 useT:           .byte "In use: XXXX (the rows: at the next start)", 0
 
 sel:            .byte $FF

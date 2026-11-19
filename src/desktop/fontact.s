@@ -8,7 +8,7 @@
         .import FileEngine, ListRead, ListDraw, Busy, Idle, Dialog, Error
         .import entryName, path
         .export Ov_FontAct, Ov_FontImport
-        .import Pickup
+        .import Pickup, Refused
 
         .segment "ZEROPAGE"
 
@@ -576,5 +576,6 @@ Ov_FontAct = FontScope::Act
 ; Ov_FontImport (theme.s ClockTick, the desktop's first tick): geoLaser's
 ; PostScript picked up (pickup.s), then the CVT files imported.
 Ov_FontImport:
+        jsr Refused             ; (pickup.s: an application's refusal)
         jsr Pickup
         jmp FontScope::Import

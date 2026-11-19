@@ -40,4 +40,6 @@ SERIALS_BANK    = COLD_BANK
 SERIALS_AT      = $F000         ; a count, then the entries
 SERIALS_MAX     = 32
 SER_LEN         = 14            ; the class (12 characters) and the serial
+SERIALS_REFUSED = $F1F0         ; the class of an application that refused
+                                ; (its zero; 0: none; serials.s module 127)
         .assert SERIALS_AT + 1 + SERIALS_MAX * SER_LEN <= COLD_KEYS, error, "sysdrive.inc: [serials] into COLD_KEYS"

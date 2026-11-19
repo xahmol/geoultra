@@ -4,7 +4,11 @@ number", step S1): FE_SERIALS with an INI text in memory, then
 GetSerialNumber with taskName set (as the kernal sets it when an
 application starts): a listed class gives its serial (any case, the
 class only), another the system's own, a class longer than 12
-characters is left out, an empty [serials] clears the table.
+characters is left out, an empty [serials] clears the table. The
+refusal note (step S5): a dialog box whose DBVARSTR text is geoWrite
+2.1's "Please reboot your system..." (BOLDON first, as geoWrite shows
+it) with taskName "geoWrite" noted, FE_SERIALS with r1 = 0 gives the
+class once, then nothing; an ordinary box (DBTXTSTR) notes nothing.
 Usage: tests/engine/serials.py
 """
 import os
@@ -68,6 +72,34 @@ def main():
         r = v.mem_get(0x02, 0x03)
         return r[0] | r[1] << 8
 
+    def box(item, text):
+        """A dialog box with one text item (DBTXTSTR or DBVARSTR, r5),
+        opened and left: the CPU stopped while it waits for a click."""
+        import time
+        v.mem_set(0x4F00, text + b"\0")
+        if item == 12:
+            desc = [0x81, 12, 16, 16, 0x0C, 1, 17, 72, 0]
+        else:
+            desc = [0x81, 11, 16, 16, 0x00, 0x4F, 1, 17, 72, 0]
+        v.mem_set(0x4E80, bytes(desc))
+        dlg = jt["DoDlgBox"]
+        code = [0x78, 0xA9, 0x30, 0x85, 0x01, 0xA9, 0x00, 0x85, 0x0C, 0xA9, 0x4F, 0x85, 0x0D,
+                0xA9, 0x80, 0x85, 0x02, 0xA9, 0x4E, 0x85, 0x03, 0x20, dlg & 0xFF, dlg >> 8]
+        v.mem_set(harness.TRAMPOLINE, bytes(code + [0x4C, 0, 0]))
+        v.regs_set({"PC": harness.TRAMPOLINE})
+        v.resume()
+        time.sleep(3)
+        v.ping()
+
+    def refused():
+        """FE_SERIALS with r1 = 0: (X, the class noted or None)."""
+        fe = k["ExtTable"] + 30
+        v.mem_set(0x4D00, b"\xEE" * 13)
+        run([0xA9, 0x00, 0x85, 0x02, 0xA9, 0x4D, 0x85, 0x03, 0xA9, 0, 0x85, 0x04, 0x85, 0x05,
+             0xA9, 36, 0x20, fe & 0xFF, fe >> 8, 0x8E, 0xF0, 0x02])
+        x = v.mem_get(0x02F0, 0x02F0)[0]
+        return x, (bytes(v.mem_get(0x4D00, 0x4D0C)).split(b"\0")[0] if x == 0 else None)
+
     try:
         v.resume()
         import time
@@ -89,6 +121,15 @@ def main():
         check("[desktop]'s line is no serial", serial_for("geoCalc"), own)
         serials(b"[serials]\r\n")
         check("an empty [serials]: the table cleared", serial_for("geoWrite"), own)
+        check("no refusal noted at first", refused()[0] != 0, True)
+        v.mem_set(k["taskName"], b"geoWrite".ljust(12, b"\0") + b"\0")
+        box(11, b"\x18Not a refusal")
+        check("an ordinary box: nothing noted", refused()[0] != 0, True)
+        box(12, b"\x18Please reboot your system\x16\x50\x00\x40using the same GEOS disk")
+        check("geoWrite's refusal (DBVARSTR): its class noted", refused(), (0, b"geoWrite"))
+        check("the note read once: then nothing", refused()[0] != 0, True)
+        box(11, b"\x18Please reboot your system")
+        check("the same text with DBTXTSTR: noted too", refused(), (0, b"geoWrite"))
     finally:
         g.stop()
     print("serials: %s" % ("all passed" if ok else "FAILED"))

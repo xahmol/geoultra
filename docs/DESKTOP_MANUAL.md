@@ -446,6 +446,20 @@ says so. Only the root of drives A-D is looked at, four files a drive
 at a time. For geoWrite documents GU PostScript (docs/PSW.md) does the
 same without geoLaser.
 
+## An application that refuses its serial number
+
+Berkeley's applications are keyed to the serial number of the GEOS boot
+disk they were first run with. When one of them refuses to run on
+GeoUltra ("Please reboot your system using the same GEOS disk..."),
+the desktop asks after it has ended: "geoWrite refused to run (its
+serial). Set it in Settings?". Yes opens Settings on its Serials page
+and asks the number for that application (the one of the boot disk it
+was installed with; "from disk" there reads it from a GEOS boot disk);
+the application then gets that number from then on. Only the refusal
+texts GeoUltra knows are noticed (geoWrite 2.1's so far); for others,
+add the application on the Serials page yourself. Only for applications
+you own a licensed copy of.
+
 ## System fonts
 
 Fonts you want in every program, whatever the disk, go into

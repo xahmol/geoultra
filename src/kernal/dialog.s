@@ -1309,7 +1309,8 @@ OvSaveState:
         lda dbPort
         sta CPU_PORT
         plp
-        rts
+        jsr OvlCall             ; (the state saved: a refusal of the serial
+        .byte 127, 3            ; number noted, serials.s; a tail call)
 
 OvRestoreState:
         php

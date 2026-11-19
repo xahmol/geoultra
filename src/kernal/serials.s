@@ -18,7 +18,7 @@
 
 CR_     = 13
 
-        .import SysRAMOp, taskName, serialNumber
+        .import SysRAMOp, taskName, serialNumber, OvlCall
 
 ; Module scratch ($9F70-$9FFF: kept for the running module across the
 ; REU operations; overlay.s)
@@ -42,8 +42,15 @@ keep            = $9F87
 
 ; OvSerials (FE_SERIALS, the file engine's dispatcher): r0 = an INI text,
 ; r1 = its length: its [serials] parsed into the table at once. X = 0.
+; r1 = 0: the query instead (module 127 entry 6): the class of an
+; application that refused to run since the last query.
 OvSerials:
-        lda argR0
+        lda argR1
+        ora argR1+1
+        bne :+
+        jsr OvlCall             ; (a tail call)
+        .byte 127, 6
+:       lda argR0
         sta r2L
         clc
         adc argR1
@@ -298,6 +305,142 @@ Op:     sta r2L
         .scope Mod127
 
         jmp Lookup              ; entry 0 (GetSerialNumber)
+        jmp Refusal             ; entry 3 (dialog.s module 11, OvSaveState)
+        jmp Query               ; entry 6 (FE_SERIALS with r1 = 0)
+
+; Refusal (a dialog box starting: DBoxDesc its description; r-registers
+; free, the state just saved): when one of its texts (DBTXTSTR) is a
+; known refusal of the serial number (Refused below: fixed texts as
+; Berkeley's applications show them; style codes before them skipped),
+; the running application's class (taskName) is noted in the REU
+; (SERIALS_REFUSED) for the desktop (the user's decision of 2026-11-19).
+Refusal:
+        lda taskName
+        beq @end
+        ldy #0                  ; the items after the position (as DoDlgBox)
+        lda (DBoxDesc),y
+        asl a
+        ldy #7
+        bcc @item
+        ldy #1
+@item:  cpy #$F0                ; (a stale description: the scan ends)
+        bcs @end
+        lda (DBoxDesc),y
+        beq @end
+        iny
+        cmp #DBTXTSTR
+        beq @text
+        cmp #DBVARSTR
+        beq @var
+        and #$3F                ; (DBGETFILES' MegaPatch flags)
+        tax
+        cpx #ITEM_N
+        bcs @end                ; (unknown: stop)
+        tya
+        clc
+        adc ItemLen,x
+        tay
+        jmp @item
+@var:   iny                     ; DBVARSTR: x, y, the register holding
+        iny                     ; the text's address (geoWrite's showError)
+        lda (DBoxDesc),y
+        tax
+        lda 0,x
+        sta r0L
+        lda 1,x
+        jmp @look
+@text:  iny                     ; DBTXTSTR: x, y, the text's address
+        iny
+        lda (DBoxDesc),y
+        sta r0L
+        iny
+        lda (DBoxDesc),y
+@look:  sta r0H
+        iny
+        sty at
+        jsr Known
+        ldy at
+        bcs @item
+        lda #<taskName          ; noted: its class
+        ldx #>taskName
+        ldy #REU_STASH
+        jmp RefOp
+@end:   rts
+
+; Known: C clear when the text at r0 (style codes first skipped) starts
+; with one of the refusal texts.
+Known:  ldy #0
+:       lda (r0),y
+        beq @no
+        cmp #$20
+        bcs :+
+        iny
+        bne :-
+:       sty r1L                 ; (its first character)
+        ldx #0
+@text:  ldy r1L
+@cmp:   lda Refused,x
+        beq @yes
+        cmp (r0),y
+        bne @next
+        inx
+        iny
+        bne @cmp
+@next:  lda Refused,x           ; the next refusal text
+        beq :+
+        inx
+        bne @next
+:       inx
+        lda Refused,x
+        bne @text
+@no:    sec
+        rts
+@yes:   clc
+        rts
+
+; The refusal texts (each zero-ended; an empty one ends the list).
+Refused:        .byte "Please reboot your system", 0  ; (geoWrite 2.1's: "...
+                .byte 0                 ; using the same GEOS disk", mist64)
+; The bytes after each command's code (GEOS's dialog commands 0-19).
+ItemLen:        .byte 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 3, 4, 0, 2, 2, 2, 4, 2
+ITEM_N          = * - ItemLen
+
+; Query (FE_SERIALS with r1 = 0): the noted class to r0 (13 bytes) and
+; cleared. X = 0, or FILE_NOT_FOUND when there was none.
+Query:  lda argR0                ; straight into the caller's buffer
+        ldx argR0+1
+        ldy #REU_FETCH
+        jsr RefOp
+        ldx #FILE_NOT_FOUND
+        ldy #0
+        lda (r0),y
+        beq @end
+        lda #<ItemLen           ; cleared (ItemLen starts with a zero)
+        ldx #>ItemLen
+        ldy #REU_STASH
+        jsr RefOp
+        ldx #0
+@end:   rts
+
+; RefOp: Y the command, 13 bytes between A/X (low/high) and the REU's
+; SERIALS_REFUSED (bank SERIALS_BANK). r0 = A/X afterwards.
+RefOp:  sta r0L
+        stx r0H
+        lda #<SERIALS_REFUSED
+        sta r1L
+        lda #>SERIALS_REFUSED
+        sta r1H
+        lda #13
+        sta r2L
+        jmp FetchOp
+
+Fetch:  ldy #REU_FETCH
+FetchOp:
+        lda #0
+        sta r2H
+        lda #SERIALS_BANK
+        sta r3L
+        jmp SysRAMOp
 
 ; Lookup: C clear and r0 = the serial listed in [serials] for the running
 ; application (taskName: its class, 12 characters; any case); else C set
@@ -307,10 +450,6 @@ Lookup: stx keepX
         sty keepY
         lda taskName            ; (no application named: nothing)
         beq @no
-        lda r0L
-        sta saveR0
-        lda r0H
-        sta saveR0+1
         lda #1                  ; the count
         sta r2L
         lda #<count
@@ -411,17 +550,9 @@ Addr:   lda #<(SERIALS_AT + 1)
         bne @add
 @end:   rts
 
-; Fetch: r2L bytes from the REU at r1 (bank SERIALS_BANK) to r0.
-Fetch:  lda #0
-        sta r2H
-        lda #SERIALS_BANK
-        sta r3L
-        ldy #REU_FETCH
-        jmp SysRAMOp
 
 keepX   = $9F88
 keepY   = $9F89
-saveR0  = $9F8A                 ; word
 at      = $9F8C
 
         .endscope

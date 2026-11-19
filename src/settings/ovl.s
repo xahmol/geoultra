@@ -32,6 +32,7 @@ OvlFail:
         Stub PtrPress, 2
         Stub SerDraw, 2         ; (pser.s, the Serials page)
         Stub SerPress, 2
+        Stub SerFor, 2
         Stub SysDraw, 3         ; overlay 3: psys.s
         Stub SysPress, 3
         Stub TimeDraw, 4        ; overlay 4: ptime.s
