@@ -83,6 +83,21 @@ build/tools/geofolder.bin: build/gen/gushicon.inc
 build/tools/%.cvt: build/tools/%.bin src/tools/%.toml
 	$(PYTHON) $(GEOSAPP) src/tools/$*.toml $< $@
 
+# GU PostScript (src/psw, docs/DESIGN.md "PostScript writer"): psw.s
+# first (its Start at $0400), then the other modules.
+PSWSRCS = src/psw/psw.s $(filter-out src/psw/psw.s,$(wildcard src/psw/*.s))
+PSWOBJS = $(patsubst src/psw/%.s,build/psw/%.o,$(PSWSRCS))
+
+build/psw/%.o: src/psw/%.s src/psw/psw.inc
+	@mkdir -p build/psw
+	$(CA65) -g -I src/psw -o $@ $<
+
+build/psw/psw.bin: $(PSWOBJS) src/psw/psw.cfg
+	$(LD65) -C src/psw/psw.cfg -m build/psw/psw.map -Ln build/psw/psw.lbl -o $@ $(PSWOBJS)
+
+build/psw/psw.cvt: build/psw/psw.bin src/psw/psw.toml
+	$(PYTHON) $(GEOSAPP) src/psw/psw.toml $< $@
+
 # The boot splash as a data file on drive E (bitmap, then colours), which
 # the desktop's GeoUltra info shows (ctxmenu.s).
 # Its status line says how to leave it (mksplash.py's own mode).
@@ -574,6 +589,7 @@ test-print: all
 	$(PYTHON) tests/print/pdf1.py
 	$(PYTHON) tests/print/gwcross.py
 	$(PYTHON) tests/print/psref.py
+	$(PYTHON) tests/print/psc64.py
 
 # The GEOS 2.0 deskTop with a 1581 drive A (the driver called between
 # InitForIO and DoneWithIO, the KERNAL ROM in; tests/drives/desktop81.py).

@@ -1,0 +1,8 @@
+[file]
+name    = "GU PostScript"
+type    = "APPLICATION"
+class   = "GUPostScript"
+version = "V0.1"
+author  = "GeoUltra"
+info    = "geoWrite documents as PostScript files in GEOULTRA/print"
+mode    = "40"
