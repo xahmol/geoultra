@@ -14,7 +14,7 @@
         .include "desktop.inc"
 
         .import MenuNeutral, Recover, Dialog, FileEngine, entryInfo, entryName
-        .import cur, count, Fetch, IsDotDot, Back, IsImage
+        .import cur, count, Fetch, IsDotDot, Back, IsImage, path
         .export Ov_Popup, Ov_Info, Ov_About
 Ov_Popup = Popup
 Ov_Info = Info
@@ -22,7 +22,7 @@ Ov_About = About
 
 ITEMS_N         = 12            ; (CTX_* in desktop.inc: their order)
 ITEM_H          = 14            ; as GEOS's menus
-BOX_W           = 92
+BOX_W           = 112           ; ("install as system font", 2026-11-19)
 BOX_H           = ITEMS_N * ITEM_H + 2
 TEXT_DX         = 6             ; an item's text: from the box's left edge
 TEXT_DY         = 10            ; its baseline below the item's top
@@ -188,6 +188,7 @@ IsPrinter:
         lda #0
         sta isPrn
         sta isImg
+        sta isFont
         lda count
         ora count+1
         beq @end
@@ -205,11 +206,22 @@ IsPrinter:
 @geos:  cmp #K_GEOS
         bne @end
         lda entryInfo + FI_GTYPE
+        cmp #FONT_TYPE
+        beq @font
         cmp #PRINTER_FILE
         bne @end
         lda #$80
         sta isPrn
 @end:   rts
+@font:  lda #$80                ; a font: $C0 when in /f (installed)
+        ldx path + 1
+        cpx #'f'
+        bne :+
+        ldx path + 2
+        bne :+
+        lda #$C0
+:       sta isFont
+        rts
 
 ; ItemText: item `at`'s text in its place.
 ItemText:
@@ -239,8 +251,18 @@ ItemText:
         sta r0H
         bne @put                ; (always)
 @img:   cpx #1                  ; a disk image's "open in new task":
-        bne @put                ; "mount" (list.s TaskOrMount)
-        bit isImg
+        bne @put                ; "mount" (list.s TaskOrMount); a font's:
+        bit isFont              ; "install as system font", in /f
+        bpl @mnt                ; "uninstall" (fontact.s)
+        lda #<TInstall
+        ldx #>TInstall
+        bvc :+
+        lda #<TUninst
+        ldx #>TUninst
+:       sta r0L
+        stx r0H
+        bne @put                ; (always)
+@mnt:   bit isImg
         bpl @put
         lda #<TMount
         sta r0L
@@ -886,6 +908,8 @@ TextLo: .byte <T0, <TN, <T1, <T2, <T3, <T4, <T5, <T6, <T7, <T8, <T9, <T10
 TextHi: .byte >T0, >TN, >T1, >T2, >T3, >T4, >T5, >T6, >T7, >T8, >T9, >T10
 T0:     .byte "open", 0
 TMount: .byte "mount", 0
+TInstall:       .byte "install as system font", 0
+TUninst:        .byte "uninstall", 0
 TPrinter:
         .byte "use as printer", 0
 TN:     .byte "open in new task", 0
@@ -972,6 +996,7 @@ which:  .res 1
 bufSave:        .res 1
 isPrn:  .res 1                  ; IsPrinter: $80 a printer driver
 isImg:  .res 1                  ; IsPrinter: $80 a disk image
+isFont: .res 1                  ; IsPrinter: $80 a font, $C0 one in /f
 tmpX:   .res 1
 tmpY:   .res 1
 numL:   .res 1

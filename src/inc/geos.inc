@@ -351,6 +351,7 @@ dataDiskName    = $8453
 DESK_ACC        = 5
 PRINTER_FILE    = 9             ; GEOS file type PRINTER
 APPLICATION     = 6
+FONT_TYPE       = 8             ; GEOS file type FONT
 TEMPORARY       = 13
 AUTO_EXEC       = 14
 O_GHST_VEC      = $4B

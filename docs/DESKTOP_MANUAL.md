@@ -444,7 +444,15 @@ and find them when a document uses them.
 - **Only the system fonts:** `diskfonts=hide` (above) leaves the disks'
   fonts out of the lists. A document that uses a font only its own disk
   has then shows the program's substitute.
-- **Filling it:** for now on a PC, with geosdisk (`tools/geosdisk.py`
+- **Installing from the desktop:** the context menu of a font file
+  (a GEOS font on any drive) has **install as system font**; a font in
+  "installed fonts" (drive E's first folder, or go > system fonts) has
+  **uninstall**. GeoUltra needs a free drive letter for a moment (it
+  mounts FONTS.DNP there, making it the first time); with A-D all in
+  use it says so. The change counts from the next start: answer
+  **Yes** to "Restart now?" and GeoUltra restarts and comes back where
+  you were.
+- **Filling it on a PC:** with geosdisk (`tools/geosdisk.py`
   without arguments shows its commands), for example from the
   zimmers.net collection in
   `GEOULTRA/fonts`:
@@ -455,8 +463,7 @@ and find them when a document uses them.
   ```
 
   then copy FONTS.DNP into `GEOULTRA` and start GeoUltra again.
-  Installing and removing from the desktop's context menu, and CVT
-  files dropped straight into `GEOULTRA/fonts`, come later (docs/
+  CVT files dropped straight into `GEOULTRA/fonts` come later (docs/
   DESIGN.md "System font folder").
 
 ## Limits

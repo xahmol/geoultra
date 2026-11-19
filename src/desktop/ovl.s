@@ -44,7 +44,9 @@ OvlFail:
         Stub Ask, 2
         Stub OpenTask, 2        ; (actions.s: task.s's FE_TASK)
         Stub TaskTake, 2
+
         Stub Mount, 3           ; overlay 3: mount.s
+        Stub FontAct, 3         ; (fontact.s: a system font in or out)
         Stub Eject, 3
         Stub ClipShow, 3        ; (clip.s: the clipboard menu)
         Stub ClipSave, 3

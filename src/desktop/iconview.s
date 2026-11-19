@@ -35,7 +35,9 @@ CACHE_N         = (BIG_PAGE * 256 - CACHE_PAGE * 256) / 64 ; entries whose
 SMALL_BYTES     = 9             ; icons.s: a packet byte and 8 rows
 H_ICON          = 4             ; its icon: a $BF packet and 63 bytes
 
-        .segment "CODE"
+        .segment "OV1"          ; (theme.s's Derive, its only caller, is
+                                ; overlay 1's: moved out of the full core,
+                                ; 2026-11-19)
 
 ; IconLayout (theme.s, Derive, in the icon view): the grid's columns and
 ; rows, its first card, rows = the cells on a page, step = the columns.
@@ -92,6 +94,8 @@ IconLayout:
         jmp @mul
 :       sta rows
         rts
+
+        .segment "CODE"
 
 ; DrawCell (ListDraw, the icon view): cell `row` (its entry fetched):
 ; the icon, the name, the selection inverted, the cursor framed.

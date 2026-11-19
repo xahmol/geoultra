@@ -58,7 +58,13 @@ PrnUlt: ldx #0                  ; which: 0 Epson, 1 MPS, else none
         sta r1H
         lda #FE_HOME
         jsr FileEngine
-        ldx #4                  ; the print folder made (there already:
+        txa                     ; no home folder (an error, or an empty
+        bne :+                  ; path: no Ultimate, VICE): nothing to set
+        lda home                ; up (an empty home made "print" in the
+        cmp #'/'                ; current folder, 2026-11-19)
+        beq :++
+:       rts
+:       ldx #4                  ; the print folder made (there already:
         jsr AddFolder           ; an error, not minded)
         lda #0
         sta cmd2,x

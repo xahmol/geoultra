@@ -36,7 +36,7 @@ PANE_DIV        = 159           ; two panes: the line between them
         .export TaskOrMount, ListRCard
         .export ThumbRows, SortArrow
         .import sortMode, boldOn
-        .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd
+        .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd, FontAct
         .import CopyOther, MoveOther
         .import SortList
         .import topY, titleEnd
@@ -2043,7 +2043,13 @@ TaskOrMount:
         ldx cur+1
         jsr Fetch
         lda entryInfo + FI_KIND
-        cmp #K_UFILE
+        cmp #K_GEOS             ; a font: installed as a system font, or
+        bne :+                  ; one in /f uninstalled (item 1's text:
+        lda entryInfo + FI_GTYPE ; ctxmenu.s; actions.s FontAct)
+        cmp #FONT_TYPE
+        bne @task
+        jmp FontAct
+:       cmp #K_UFILE
         bne @task
         jsr IsImage
         bcs @task

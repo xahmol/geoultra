@@ -36,6 +36,8 @@ FE_CLOSE        = 4
 FE_COPY         = 5
 FE_DELETE       = 7
 FE_HOME         = 26
+FE_MKIMG        = 24            ; (engine.inc: a new, empty disk image)
+FE_REBOOT       = 28            ; (engine.inc: Y = 1 keeps the session)
 FE_MKDIR        = 8
 FE_MOUNT        = 17
 FE_MOUNTINFO    = 23
