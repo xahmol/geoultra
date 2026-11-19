@@ -89,13 +89,8 @@ def features_doc():
     shutil.rmtree(out, ignore_errors=True)
     os.makedirs(out)
     gwtool.save_new(out, "PS features", [p1, p2, p3], head, foot, {}, "GeoUltra's psref test document.")
-    path = os.path.join(out, os.listdir(out)[0])
-    data = bytearray(open(path, "rb").read())
-    at = 254 + 0x4D + 15 - 2            # (the class's version digit: V2.1, as
-    assert data[at] == ord("0")         # geoWrite 2.1 writes; a V2.0 document
-    data[at] = ord("1")                 # is placed differently)
-    open(path, "wb").write(data)
-    return path
+    return os.path.join(out, os.listdir(out)[0])   # (V2.1: gwtool marks a wide
+                                                    # document so; V2.0 is placed differently)
 
 
 def printout(raw, doc, wait=1500):

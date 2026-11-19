@@ -51,8 +51,8 @@ sys.path.insert(0, os.path.join(HERE, "fonts"))
 ESC_GRAPHICS, ESC_RULER, ESC_NEWCARDSET = 0x10, 0x11, 0x17
 TAB, PAGE_BREAK, CR = 0x09, 0x0C, 0x0D
 UNDERLINE, BOLD, REVERSE, ITALIC, OUTLINE, SUPER, SUB = 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02
-PAPER = {"a4": (595.28, 841.89), "letter": (612.0, 792.0)}
-DOT = 0.9                               # points per dot
+PAPER = {"a4": (59528, 84189), "letter": (61200, 79200)}   # hundredths of a point
+DOT = 0.9                               # points per dot (90 hundredths)
 # IDs 27-37 (geoLaser's table: ID - 27 is the family; docs/DESIGN.md
 # "Fonts"): the LaserWriter's fonts, (plain, bold, italic, bold italic).
 PS_FONTS = {
@@ -389,6 +389,24 @@ class Writer:
             self.glyphs[name] = {}
         return self.type3[key], key[1]
 
+    def prescan(self, records):
+        """The bitmap fonts and their glyphs, as the C64 writer's first
+        pass finds them: every character in each record (header, footer,
+        then the pages) under its font and style, the fonts in the order
+        first met (real-text fonts left out)."""
+        for rec in records:
+            fid, style = 0, 0
+            for t in tokens(rec):
+                if t[0] == "font":
+                    fid, style = t[1], t[2]
+                elif t[0] == "c" and not (fid >> 6 in PS_FONTS and self.real):
+                    name, st = self.type3_font(fid, style)
+                    c = t[1]
+                    if c not in self.glyphs[name]:
+                        f = self.fonts.get(fid)
+                        cs = st & ~REVERSE if c == 0x20 else st
+                        self.glyphs[name][c] = (f.cell(c, cs), f.base)
+
     def piece_ops(self, ln, top):
         """PostScript for a line's text: each run of characters of one
         font and style, unbroken by a jump, placed at its x."""
@@ -483,15 +501,18 @@ class Writer:
         return "<%s> %d %d %d %d PIC" % (bits.hex(), x, y + PIC_DOWN, wc * 8, h)
 
     def write(self, path, title):
-        pw, ph = PAPER.get(self.paper) or (self.width * DOT, self.height * DOT)   # ("page":
+        # in whole hundredths of a point, rounded half up: the C64 writer
+        # computes the same with integers, so both write the same text
+        pw, ph = PAPER.get(self.paper) or (self.width * 90, self.height * 90)    # ("page":
                                         # the page itself, for tests: a dot a pixel at 80 dpi)
-        x0 = (pw - self.width * DOT) / 2
-        y0 = ph - (ph - self.height * DOT) / 2
+        x0 = (pw - self.width * 90 + 1) // 2
+        y0 = (ph + self.height * 90 + 1) // 2
+        hund = lambda v: "%d.%02d" % divmod(v, 100)
         out = ["%!PS-Adobe-3.0",
                "%%%%Title: %s" % title,
                "%%Creator: GeoUltra gwtool ps",
                "%%%%Pages: %d" % len(self.pages),
-               "%%%%BoundingBox: 0 0 %d %d" % (round(pw), round(ph)),
+               "%%%%BoundingBox: 0 0 %d %d" % ((pw + 50) // 100, (ph + 50) // 100),
                "%%EndComments",
                "%%BeginProlog",
                "/M {moveto} bind def /S {show} bind def",
@@ -508,11 +529,11 @@ class Writer:
             out += self.type3_def(name, glyphs)
         out.append("%%EndProlog")
         out.append("%%BeginSetup")
-        out.append("<< /PageSize [%s %s] >> setpagedevice" % (round(pw, 2), round(ph, 2)))
+        out.append("<< /PageSize [%s %s] >> setpagedevice" % (hund(pw), hund(ph)))
         out.append("%%EndSetup")
         for n, ops in enumerate(self.pages, 1):
             out.append("%%%%Page: %d %d" % (n, n))
-            out.append("gsave %.2f %.2f translate %.1f -%.1f scale" % (x0, y0, DOT, DOT))
+            out.append("gsave %s %s translate 0.9 -0.9 scale" % (hund(x0), hund(y0)))
             out += [o for o in ops if o]
             out.append("grestore showpage")
         out.append("%%EOF")
@@ -561,6 +582,7 @@ def write(path, pages_, header, footer, pics, fonts, paper="a4", page_height=752
     w = Writer(fonts, paper, width, page_height)
     w.pics = pics
     w.real = real                       # False: every font from its bitmaps
+    w.prescan([r for r in (header, footer) if r] + list(pages_))
     state = {"ruler": None, "fid": 0, "style": 0}
     head = layout(header, fonts, dict(state)) if header else None
     foot = layout(footer, fonts, dict(state)) if footer else None
