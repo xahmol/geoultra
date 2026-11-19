@@ -18,6 +18,8 @@ import os
 import shutil
 import subprocess
 import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,8 +33,6 @@ os.environ["GEOS_APPS_DISK"] = REF
 import apprun  # noqa: E402
 import harness  # noqa: E402
 from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
-import localcfg  # noqa: E402
 
 PORT = 6546
 NAME, FOLDER, HDR, DATA, BACK, RES = 0x4F00, 0x4F40, 0x4000, 0x4400, 0x5000, 0x02F0

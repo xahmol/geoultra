@@ -445,9 +445,16 @@ FetchOp:
 ; Lookup: C clear and r0 = the serial listed in [serials] for the running
 ; application (taskName: its class, 12 characters; any case); else C set
 ; and r0 = the system's own (misc.s serialNumber: GetSerialNumber's
-; default, here to save the resident kernal's bytes). Keeps X, Y.
+; default, here to save the resident kernal's bytes). Keeps X, Y and
+; r1-r3L (GetSerialNumber destroys only A, HG2G; the REU fetches below use
+; r1-r3L, so they are kept in the module scratch and put back).
 Lookup: stx keepX
         sty keepY
+        ldx #4
+:       lda r1L,x
+        sta keepR,x
+        dex
+        bpl :-
         lda taskName            ; (no application named: nothing)
         beq @no
         lda #1                  ; the count
@@ -485,8 +492,7 @@ Lookup: stx keepX
         sta r0L
         lda entry + 13
         sta r0H
-        ldx keepX
-        ldy keepY
+        jsr Restore
         clc
         rts
 @none:
@@ -494,9 +500,19 @@ Lookup: stx keepX
         sta r0L
         lda serialNumber+1
         sta r0H
+        jsr Restore
+        sec
+        rts
+
+; Restore: r1-r3L, X and Y as Lookup found them. Keeps the carry.
+Restore:
+        ldx #4
+:       lda keepR,x
+        sta r1L,x
+        dex
+        bpl :-
         ldx keepX
         ldy keepY
-        sec
         rts
 
 ; Same: C clear when the entry's class is taskName's (12 characters,
@@ -554,5 +570,6 @@ Addr:   lda #<(SERIALS_AT + 1)
 keepX   = $9F88
 keepY   = $9F89
 at      = $9F8C
+keepR   = $9F8D             ; 5 bytes: r1L-r3L, kept by Lookup
 
         .endscope

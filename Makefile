@@ -49,7 +49,7 @@ REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 DEPLOYDIR ?= /SD/geoultra/
 
-.PHONY: all docs samples checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all docs samples release checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(GEOS_DEV)/GEOS64-v2.0-unkeyed.d64
 
@@ -422,6 +422,20 @@ private/geoultra-apps.dnp: private/apps.toml tools/mkappsdnp.py
 deploy: check-deploy build/geoultra64.crt build/geoultra64.cfg
 	curl -sS --max-time 120 --ftp-create-dirs -T build/geoultra64.crt ftp://$(ULTIP1)$(DEPLOYDIR)
 	curl -sS --max-time 60 --ftp-create-dirs -T build/geoultra64.cfg ftp://$(ULTIP1)$(DEPLOYDIR)
+
+# The release archive (make release): what a user needs, nothing of the
+# design record; the PC tools are used from the repository (tools
+# manual). RELEASE_TAG names a pre-release (beta1); empty for a release.
+RELEASE_TAG ?= beta1
+RELEASE_NAME = geoultra-$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)$(if $(RELEASE_TAG),-$(RELEASE_TAG))
+release: build/geoultra64.crt build/geoultra64.cfg docs samples
+	rm -rf build/release && mkdir -p build/release/$(RELEASE_NAME)/samples
+	cp build/geoultra64.crt build/geoultra64.cfg LICENSE README.pdf \
+	   docs/manuals/GEOULTRA_MANUAL.pdf docs/manuals/TOOLS_MANUAL.pdf build/release/$(RELEASE_NAME)/
+	cp build/samples/geoultra-samples.d81 build/samples/brochure.pdf build/samples/quickstart.pdf \
+	   build/release/$(RELEASE_NAME)/samples/
+	cd build/release && zip -qr ../../$(RELEASE_NAME).zip $(RELEASE_NAME)
+	@echo "$(RELEASE_NAME).zip"; unzip -l $(RELEASE_NAME).zip
 
 # The PDFs of the README and the user documents (pandoc with XeLaTeX;
 # ~/.claude/makefile_conventions.md); committed, so they ship in releases.

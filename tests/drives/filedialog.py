@@ -17,6 +17,8 @@ import os
 import shutil
 import subprocess
 import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -27,8 +29,6 @@ os.environ["GEOS_APPS_DISK"] = TEST_DISK
 import apprun  # noqa: E402
 import harness  # noqa: E402
 from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
-import localcfg  # noqa: E402
 
 PORT = 6527
 FILE_TAB = 0x8300                               # fileTrScTab: the list's names

@@ -116,6 +116,10 @@ def main():
         check("geoWrite: its listed serial", serial_for("geoWrite"), 0x4321)
         check("any case: GEOWRITE too", serial_for("GEOWRITE"), 0x4321)
         check("Test App (hex in any case)", serial_for("Test App"), 0x1A2B)
+        v.mem_set(0x04, bytes([0x11, 0x22, 0x33, 0x44, 0x55, 0x66]))   # r1-r3
+        serial_for("geoWrite")
+        check("GetSerialNumber keeps r1-r3 (HG2G: destroys A only)",
+              bytes(v.mem_get(0x04, 0x09)), bytes([0x11, 0x22, 0x33, 0x44, 0x55, 0x66]))
         check("not listed: the system's own", serial_for("geoPaint"), own)
         check("a class longer than 12 characters: left out", serial_for("A Very Long "), own)
         check("[desktop]'s line is no serial", serial_for("geoCalc"), own)

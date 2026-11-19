@@ -13,3 +13,6 @@ __pycache__/
 
 # Private test set (the user's own applications; never committed)
 private/
+
+# Release archives (make release)
+geoultra-*.zip

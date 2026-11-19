@@ -16,7 +16,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
 from gushvice import Gush  # noqa: E402
 
-KEY_DOWN, KEY_LEFT, CR = 17, 8, 13
+KEY_DOWN, KEY_LEFT, KEY_HOME, CR = 17, 8, 18, 13
 DBL = 0x8515                    # dblClickCount
 
 
@@ -79,13 +79,15 @@ def main():
                 time.sleep(3)
                 v.ping()
                 check("RETURN on e: /e", path(), "/e")
-                gpos = 5                                    # (sorted: "..", the folder bin,
-                                                            # geoFolder, GeoUltra Desktop,
-                                                            # GU Settings, gush)
-                press(150, LIST_TOP + gpos * ROW_H + 4, wait=0.3)
-                v.mem_set(DBL, bytes([30]))
-                press(150, LIST_TOP + gpos * ROW_H + 4, wait=10)
-                check("a double click on /e's gush: it runs (FE_RUNSYS)",
+                # /e holds 23 entries (fonts, printer drivers, GU PostScript),
+                # gush below the visible rows: the cursor to it (row 20: "..",
+                # bin, geoFolder, GeoUltra Desktop, the GU files, gush), RETURN
+                # (the same open path as a double click: FE_RUNSYS)
+                g.keys([KEY_HOME] + [KEY_DOWN] * 20, settle=0.2)
+                g.keys([CR], settle=1)
+                time.sleep(10)
+                v.ping()
+                check("RETURN on /e's gush: it runs (FE_RUNSYS)",
                       bytes(v.mem_get(0x0400, 0x040F)), gush)
         finally:
             g.stop()
