@@ -414,6 +414,51 @@ red, green and blue with - and +; you see it at once; "none" goes back
 to the Ultimate's own palette. Save or OK writes the theme file. The
 pages Drives and REU follow; their plan is in docs/SETTINGS.md.
 
+Two system keys have no page yet; add them to `SETTINGS.INI` by hand
+(read at the next start):
+
+```
+[system]
+diskfonts=hide       (programs' font lists: only the system fonts)
+
+[print]
+fastbus=on           (GU Epson FX-80 and GU Commodore MPS send faster)
+```
+
+`fastbus=on` uses a faster timing on the serial bus than the IEC
+standard allows. The Ultimate's own printer takes it (a fully black
+page in 210 s instead of 261 s); a real printer on the bus may not, so
+leave it off for one.
+
+## System fonts
+
+Fonts you want in every program, whatever the disk, go into
+`GEOULTRA/FONTS.DNP` on the stick: a disk image of its own (8 tracks,
+512 KB, room for about 100 fonts), loaded at every start. Programs
+list them with the fonts of the current disk and drive E's GU fonts,
+and find them when a document uses them.
+
+- **The same font ID twice:** an installed font (in FONTS.DNP) wins
+  over a disk's font with the same ID, and a disk's font wins over the
+  GU fonts on drive E. A program's list shows each ID once.
+- **Only the system fonts:** `diskfonts=hide` (above) leaves the disks'
+  fonts out of the lists. A document that uses a font only its own disk
+  has then shows the program's substitute.
+- **Filling it:** for now on a PC, with geosdisk (`tools/geosdisk.py`
+  without arguments shows its commands), for example from the
+  zimmers.net collection in
+  `GEOULTRA/fonts`:
+
+  ```
+  tools/geosdisk.py new FONTS.DNP --tracks=8 --name="System fonts"
+  tools/geosdisk.py add FONTS.DNP "fonts/English/Roma.cvt" "fonts/English/Mykonos.cvt"
+  ```
+
+  then copy FONTS.DNP into `GEOULTRA` and start GeoUltra again.
+  Installing and removing from the desktop's context menu, and CVT
+  files dropped straight into `GEOULTRA/fonts`, come later (docs/
+  DESIGN.md "System font folder").
+
 ## Limits
 
 - Folders with more than 384 entries are shown in the order on disk;

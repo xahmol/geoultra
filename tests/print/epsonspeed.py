@@ -148,11 +148,11 @@ def main():
             t0 = time.time()
             u.fe(33, y=2)
             marks = []
-            while time.time() - t0 < 3600:
-                x, a, rr = u.fe(33, y=0)
-                pct = rr[1] >> 8
-                marks.append((round(time.time() - t0), pct))
-                if listing() - have:
+            while time.time() - t0 < 3600:                # until the queue is empty
+                x, a, rr = u.fe(33, y=0)                    # (an empty page writes no
+                pct = rr[1] >> 8                            # PNG: the firmware skips a
+                marks.append((round(time.time() - t0), pct))    # clean page)
+                if a == 0:
                     break
                 time.sleep(5)
             t = time.time() - t0

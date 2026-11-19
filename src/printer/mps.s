@@ -242,7 +242,7 @@ PrintBuffer:
         bcs @pass               ; (always)
 @keep:  ldy #W_COUNT
         sta (wb),y
-        jmp Close
+        jmp Hold                ; (the printer kept listening: prnserial.inc)
 
 ; Shift: each card's waiting rows from 7 on moved to 0 on (count - 7 of
 ; them, count 7-14).

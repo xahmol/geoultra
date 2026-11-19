@@ -33,7 +33,7 @@
         .import bypassOn
 .endif
         .import uciPresent, wbPending, serialNumber, hibLimit, SetDevice, FindFile
-        .import GetFHdrInfo, fontsOn
+        .import GetFHdrInfo, fontsOn, guPrnFast
 
 UCI_ID          = $C9
 TARGET_DOS      = $01
@@ -1702,8 +1702,7 @@ Entries:                                ; (module 122: DBUF's entries)
 ; GEOULTRA/FONTS.DNP into banks FONT_BANK on and relocated there
 ; (Reloc), fontsOn $80. Absent, larger than FONT_TRACKS tracks or
 ; damaged: no system fonts (fontsOn 0).
-Load:   lda #0
-        sta fontsOn
+Load:   jsr Keys                ; fontsOn $40 (diskfonts=hide), guPrnFast
         ldx #0
 @name:  lda fontsName,x
         sta path,x
@@ -1734,12 +1733,72 @@ Load:   lda #0
         bne @close
         jsr Reloc
         bcs @close
-        lda #$80
+        lda fontsOn
+        ora #$80
         sta fontsOn
 @close: jsr CloseFile
 @end:   rts
 
 fontsName:      .byte "FONTS.DNP", 0
+
+; Keys: two SETTINGS.INI keys (the text still in TEXT up to textEnd:
+; ReadSettings; letters in any case; each name is the only one of its
+; kind, so its section is not checked): "diskfonts=hide" ([system]):
+; fontsOn = $40, programs' font lists leave the drives' fonts out
+; (sysdrive.s module 124), else 0; "fastbus=on" ([print]): guPrnFast =
+; $80, GeoUltra's printer drivers send at the faster bus timing, else 0.
+Keys:   lda #0
+        sta fontsOn
+        sta guPrnFast
+        ldx #<hideKey
+        ldy #>hideKey
+        jsr InText
+        bcc :+
+        lda #$40
+        sta fontsOn
+:       ldx #<fastKey
+        ldy #>fastKey
+        jsr InText
+        bcc :+
+        lda #$80
+        sta guPrnFast
+:       rts
+
+; InText: C set when the zero-ended key at X/Y (upper case) is in TEXT
+; before textEnd. Destroys A, X, Y, r1, r2.
+InText: stx r2L
+        sty r2H
+        lda #<TEXT
+        sta r1L
+        lda #>TEXT
+        sta r1H
+@at:    lda r1L                 ; r1 < textEnd: compare there
+        cmp textEnd
+        lda r1H
+        sbc textEnd+1
+        bcs @no
+        ldy #0
+@cmp:   lda (r2),y
+        beq @yes                ; (the key's end: found)
+        lda (r1),y
+        cmp #'a'
+        bcc :+
+        and #$DF                ; (lower case letters to upper case)
+:       cmp (r2),y
+        bne @next
+        iny
+        bne @cmp
+@next:  inc r1L
+        bne @at
+        inc r1H
+        bne @at
+@no:    clc
+        rts
+@yes:   sec
+        rts
+
+hideKey:        .byte "DISKFONTS=HIDE", 0
+fastKey:        .byte "FASTBUS=ON", 0
 
 ; Reloc: every track/sector reference of FONTS.DNP in banks FONT_BANK on
 ; moved up by FONT_TRACK, so its files load from any drive as tracks

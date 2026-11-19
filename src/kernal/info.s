@@ -6,7 +6,7 @@
 
         .import ExtTable
         .export Trap, sysFlgCopy, BootGEOS, basicBuf, guMouse2, ptrColour
-        .export progColours, guClockFresh
+        .export progColours, guClockFresh, guPrnFast
 
         .segment "INFO"
         .org $C000                      ; fixed addresses in this block
@@ -58,6 +58,13 @@ guClockFresh:   .byte 0                 ; $C0FB: 1 when the cold start took
                                         ; set it since (FE_SETTIME clears it):
                                         ; the desktop then adds SETTINGS.INI's
                                         ; [time] adjust= (the user, 2026-11-13)
+guPrnFast:      .byte 0                 ; $C0FC: bit 7: GeoUltra's printer
+                                        ; drivers (src/printer/prnserial.inc)
+                                        ; send at the faster bus timing the
+                                        ; Ultimate's printer takes ([print]
+                                        ; fastbus=on, mount.s module 121;
+                                        ; the user, 2026-11-19)
+        .assert * <= $C100, error, "info.s: the information block reaches the jump table"
         .reloc
 
         .segment "CODE"

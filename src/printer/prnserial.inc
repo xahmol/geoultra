@@ -34,16 +34,47 @@ O_CLK           = $10
 O_DATA          = $20
 PRN_DEV         = 4
 ACK_WAIT        = 43            ; x about 0.7 s: a byte's acknowledgement
+SETUP_SPEC      = 3             ; IecDelay counts (5 cycles, about 5 us
+SETUP_FAST      = 1             ; each at 1 MHz): see Timing
+GAP_SPEC        = 20
+GAP_FAST        = 6
 LISTEN          = $20 + PRN_DEV
 UNLISTEN        = $3F
 PRN_CLOSE       = $E0 | (PRN_SA & $0F) ; CLOSE on PRN_SA's channel
 
-; Open: device 4 listening on PRN_SA's channel. Carry set and X =
-; DEV_NOT_FOUND when it does not answer (the bus released again), else
-; carry clear, X 0.
+; Timing: the bit set-up and the gap between bytes for this call: the
+; IEC specification's minimums (set-up 20 us, data valid 20 us, 100 us
+; between bytes; Michael Steil, "Commodore Peripheral Bus: Part 4"), or,
+; with GeoUltra's guPrnFast ($C0FC bit 7, [print] fastbus=on; the "GU"
+; signature at $C0E0 checked, so under GEOS 2.0 always the first), less:
+; set-up 5 us, 30 us between bytes, which the Ultimate's printer takes
+; (measured on the U64, 2026-11-19: a black page 261 s, fast 210 s; the
+; first 302 s with 60 us data valid). Destroys A.
+Timing: ldx #GAP_SPEC
+        ldy #SETUP_SPEC
+        lda $C0E0               ; (no "GU" signature: GEOS 2.0's bytes)
+        cmp #'G'
+        bne @set
+        lda $C0E1
+        cmp #'U'
+        bne @set
+        bit $C0FC
+        bpl @set
+        ldx #GAP_FAST
+        ldy #SETUP_FAST
+@set:   stx gapN
+        sty setupN
+        rts
+
+; Open: device 4 listening on PRN_SA's channel (still, after Hold: no
+; ATN). Carry set and X = DEV_NOT_FOUND when it does not answer (the bus
+; released again), else carry clear, X 0.
 Open:   jsr InitForIO
+        jsr Timing
         lda #0
         sta iecErr
+        bit listening           ; (kept listening by the last call)
+        bmi @on
         lda #LISTEN
         jsr IecCmd
         bcs Fail
@@ -52,10 +83,14 @@ Open:   jsr InitForIO
         lda iecErr
         bne Fail
         jsr IecAtnOff
-        ldx #0
+        lda #$80
+        sta listening
+@on:    ldx #0
         clc
         rts
-Fail:   jsr IecFree
+Fail:   lda #0
+        sta listening
+        jsr IecFree
         jsr DoneWithIO
         ldx #DEV_NOT_FOUND
         sec
@@ -70,7 +105,9 @@ Fail:   jsr IecFree
 ; $FE, _push_command), not at UNLISTEN, so a page's last bytes (its FF)
 ; waited for the next job, which then printed the previous page (the
 ; user's U64, 2026-11-16).
-Close:  lda #UNLISTEN
+Close:  lda #0
+        sta listening
+        lda #UNLISTEN
         jsr IecCmd
         jsr IecFree
         lda #LISTEN
@@ -81,6 +118,20 @@ Close:  lda #UNLISTEN
         lda #UNLISTEN
         jsr IecCmd
 @free:  jsr IecFree
+        jsr DoneWithIO
+        ldx #0
+        clc
+        rts
+
+; Hold (PrintBuffer's end): the printer kept listening for the next
+; call, the I/O left; X 0, carry clear. No ATN between a page's bands:
+; the Ultimate's firmware takes about 0.4 s for each Open and Close
+; (measured on the U64, 2026-11-18: an empty page 39 s, straight through
+; the driver), and it draws its 256-byte buffer whenever it is full;
+; StopPrint's Close ends the page (and makes it take the rest). After a
+; byte not taken: Close instead (the session ended).
+Hold:   lda iecErr
+        bne Close
         jsr DoneWithIO
         ldx #0
         clc
@@ -158,12 +209,12 @@ IecSend:
         bcs :+
         ora #O_DATA             ; 0: DATA pulled
 :       sta IEC
-        ldx #3                  ; (set up)
+        ldx setupN              ; (set up: Timing)
         jsr IecDelay
         lda IEC                 ; CLK released: the bit is valid
         and #$FF - O_CLK
         sta IEC
-        ldx #12                 ; (at least 60 us)
+        ldx #4                  ; (at least 20 us)
         jsr IecDelay
         lda IEC                 ; CLK pulled, DATA released
         ora #O_CLK
@@ -185,12 +236,17 @@ IecSend:
         bne :-
         inc iecErr              ; not taken: nothing more is sent
         rts
-@took:  ldx #20                 ; (at least 100 us between bytes)
+@took:  ldx gapN                ; (between bytes: Timing)
 IecDelay:                       ; (X x 5 cycles)
         dex
         bne IecDelay
 SendEnd:
         rts
+
+listening:      .byte 0         ; $80: the printer listening (Open, Hold;
+                                ; in CODE: BSS is not in the file)
+setupN:         .byte SETUP_SPEC ; the bit set-up, IecDelay counts (Timing)
+gapN:           .byte GAP_SPEC  ; the gap between bytes (Timing)
 
 ; Work: wb from r1.
 Work:   lda r1L

@@ -133,6 +133,25 @@ ownDesk:        .byte $80       ; $80: EnterDeskTop starts GeoUltra's desktop
 turboWant:      .byte $FF       ; $D031 at full speed; $FF: no turbo (speed.s)
 turboNow:       .byte $FF       ; $D031 now (a resumed session: Resumed)
 
+ftAfterF        = $9F9C         ; r7H after the installed fonts (module 15
+                                ; -> 116; the overlay scratch, as 116's)
+; Modules 116 and 124 (one entry per font ID), in the overlay scratch
+; (Enter and Leave are overlay calls: a module's own bytes come back new
+; after them; no engine call meanwhile).
+fids            = $9F70         ; each entry's font ID (15 words)
+nUser           = $9F8E         ; the drive's fonts in the list (first)
+nF              = $9F8F         ; the installed ones' (after them)
+nE              = $9F90         ; drive E's (last)
+nAll            = $9F91
+at              = $9F92         ; the entry looked at
+fid             = $9F93         ; (word) IdOf's answer ($FFFF: none)
+save6           = $9F95         ; (word) the caller's r6
+save7           = $9F97         ; (word) the caller's r7
+count           = $9F99         ; Ids: entries still to read; Has: its end
+MARKED          = $FFFE         ; an entry's ID once it is to be taken out
+        .assert fids + 2 * 15 <= nUser, error, "sysdrive.s: fids"
+        .assert count < ftAfterF, error, "sysdrive.s: scratch over ftAfterF"
+
         .segment "OVL15"                ; overlay module 15: drive E
 
         jmp OvFTypes            ; entry 0
@@ -168,23 +187,26 @@ OvFTypes:
         dec r6H
 @room:  jsr Usable
         bcs @ok
-        clc                     ; FindFTypes moved r6 back by the name's
-        lda r6L                 ; offset: forward again for the second run
-        adc #OFF_FNAME
-        sta r6L
-        bcc @e
-        inc r6H
-@e:     lda ftCount             ; an application's list? (taken here and
+        lda ftCount             ; an application's list? (taken here and
         sta ftAll               ; cleared: E's own search ends in
         lda #0                  ; OvFTypes too)
         sta ftCount
         lda r7H
         sta ftLeft
-        jsr Enter
+        jsr FFTypes             ; the installed fonts first: they win
+        lda r7H                 ; over E's (module 123); where their part
+        sta ftAfterF            ; ends (module 116)
+        beq @list               ; (no room left for E's)
+        clc                     ; FindFTypes moved r6 back by the name's
+        lda r6L                 ; offset: forward again for E's run
+        adc #OFF_FNAME
+        sta r6L
+        bcc @e
+        inc r6H
+@e:     jsr Enter
         jsr FindFTypes
         jsr Leave
-        jsr FFTypes             ; (the system fonts after E's: module 123)
-        lda ftAll               ; (an application's list only)
+@list:  lda ftAll               ; (an application's list only)
         beq @ok
         lda r7L
         cmp #DESK_ACC
@@ -427,24 +449,16 @@ GetBlock        = $C1E4         ; GEOS jump table
 FONT_ID         = $80           ; a font file's header: its ID (word)
 ENTRY           = 17            ; FindFTypes: a name and its zero
 MAXN            = 15            ; names the list can hold
-; In the overlay scratch (Enter and Leave are overlay calls: this
-; module's own bytes come back new after them; no engine call meanwhile)
-fids            = $9F70         ; the user's fonts' IDs (MAXN words)
-nUser           = $9F90         ; the user's fonts in the list
-nE              = $9F91         ; drive E's still to look at
-at              = $9F92         ; the entry looked at
-fid             = $9F93         ; (word) IdOf's answer ($FFFF: none)
-save6           = $9F95         ; (word) the caller's r6
-save7           = $9F97         ; (word) the caller's r7
-        .assert save7 + 2 <= $9FA0, error, "module 116: scratch into HP"
 
-; Once (an application's font list just got drive E's fonts: ftStart
-; the list, ftAll the names that fitted, ftLeft those left before E's
-; search, r7H after it): E's fonts whose font ID one of the user's
-; fonts in the list already has are taken out, the list closed up (the
-; user's decision 2026-11-15: one entry per ID, the user's own; e.g.
-; their LW_Roma, ID 27, hides GU Serif). r6 and r7H as if those had not
-; been found; r0-r5 destroyed (FindFTypes destroys them too).
+; Once (an application's font list just got the installed fonts and
+; drive E's: ftStart the list, ftAll the names that fitted, ftLeft those
+; left before the installed ones' search, ftAfterF after it, r7H after
+; E's): one entry per font ID, by the user's rules (2026-11-15 and
+; 2026-11-18): a drive's own font wins over GeoUltra's GU fonts on E (their
+; LW_Roma, ID 27, hides GU Serif), an installed font (FONTS.DNP) wins
+; over both; with the hide switch (fontsOn bit 6, [system] diskfonts=
+; hide) the drive's fonts are all left out. r6 and r7H as if those taken
+; out had not been found; r0-r5 destroyed (FindFTypes destroys them too).
 Once:   lda r6L
         sta save6
         lda r6H
@@ -457,50 +471,51 @@ Once:   lda r6L
         sec
         sbc ftLeft
         sta nUser
-        beq @end
-        cmp #MAXN + 1
-        bcs @end
         lda ftLeft
+        sec
+        sbc ftAfterF
+        sta nF
+        lda ftAfterF
         sec
         sbc r7H
         sta nE
+        clc
+        adc nF
+        adc nUser
+        sta nAll
         beq @end
-        lda #0                  ; the user's fonts' IDs
+        cmp #MAXN + 1
+        bcs @end
+        lda #0
         sta at
-@user:  jsr IdOf
-        lda at
-        asl a
-        tax
-        lda fid
-        sta fids,x
-        lda fid+1
-        sta fids+1,x
-        inc at
-        lda at
-        cmp nUser
-        bcc @user
-@e:     jsr Enter               ; drive E's, one by one
-        jsr IdOf
+        lda nUser               ; the IDs: the drive's fonts, the installed
+        jsr Ids                 ; ones' and E's (each shown in the slot)
+        lda nF
+        beq :+
+        lda #FONT_BANK
+        sta sysShow
+        jsr Enter
+        lda nF
+        jsr Ids
         jsr Leave
-        ldx nUser
-@cmp:   dex
-        bmi @keep
-        txa
-        asl a
-        tay
-        lda fid
-        cmp fids,y
-        bne @cmp
-        lda fid+1
-        cmp fids+1,y
-        bne @cmp
-        cmp #$FF                ; (both unknown: kept)
-        beq @keep
+        lda #SYSDRV_BANK
+        sta sysShow
+:       lda nE
+        beq :+
+        jsr Enter
+        lda nE
+        jsr Ids
+        jsr Leave
+:       jsr Marks
+        ldx nAll                ; taken out from the last one back
+@out:   dex
+        bmi @end
+        stx at
+        jsr Marked
+        bne :+
         jsr Remove
-        jmp @next
-@keep:  inc at
-@next:  dec nE
-        bne @e
+:       ldx at
+        jmp @out
 @end:   lda save6
         sta r6L
         lda save6+1
@@ -511,7 +526,39 @@ Once:   lda r6L
         sta r7H
         rts
 
-; At: r0 = entry at of the list (ftStart + at * 17). Destroys A.
+; Ids: A entries from entry at on: their font IDs into fids (IdOf on
+; the drive shown now). at moves past them.
+Ids:    sta count
+@one:   lda count
+        beq @end
+        jsr IdOf
+        lda at
+        asl a
+        tax
+        lda fid
+        sta fids,x
+        lda fid+1
+        sta fids+1,x
+        inc at
+        dec count
+        jmp @one
+@end:   rts
+
+Marks:  jsr OvlCall             ; (module 124: the entries to take out
+        .byte 124, 0            ; get the ID MARKED)
+
+; Marked: Z set when entry at is to be taken out (its ID MARKED).
+Marked: lda at
+        asl a
+        tax
+        lda fids,x
+        cmp #<MARKED
+        bne :+
+        lda fids+1,x
+        cmp #>MARKED
+:       rts
+
+; At: r0 = entry at of the list (ftStart + at * 17). Destroys A, X.
 At:     lda ftStart
         sta r0L
         lda ftStart+1
@@ -529,7 +576,7 @@ At:     lda ftStart
 @end:   rts
 
 ; IdOf: fid = the font ID of the font named by entry at, from its header
-; block on the current drive (FindFile, GetBlock into diskBlkBuf); $FFFF
+; block on the drive shown (FindFile, GetBlock into diskBlkBuf); $FFFF
 ; when it cannot be read.
 IdOf:   lda #$FF
         sta fid
@@ -559,8 +606,8 @@ IdOf:   lda #$FF
         sta fid+1
 @end:   rts
 
-; Remove: entry at taken out, the ones after it (nE - 1 of drive E's)
-; moved up; the caller's r6 back by an entry, r7H one more.
+; Remove: entry at taken out, the nAll - at - 1 after it moved up, nAll
+; one less; the caller's r6 back by an entry, r7H one more.
 Remove: jsr At
         lda r0L                 ; r1 = this entry, r0 = the next
         sta r1L
@@ -571,7 +618,10 @@ Remove: jsr At
         sta r1H
         adc #0
         sta r0H
-        ldx nE                  ; length: (nE - 1) * 17
+        lda nAll                ; length: (nAll - at - 1) * 17
+        sec
+        sbc at
+        tax
         lda #0
         sta r2L
         sta r2H
@@ -588,13 +638,99 @@ Remove: jsr At
         ora r2H
         beq :+
         jsr MoveData
-:       sec
+:       dec nAll
+        sec
         lda save6
         sbc #ENTRY
         sta save6
         bcs :+
         dec save6+1
 :       inc save7+1
+        rts
+
+        .endscope
+
+        .segment "OVL124"               ; overlay module 124: the system
+        .scope Mod124                   ; fonts' rules for module 116
+
+        jmp Marks                       ; entry 0
+
+; Marks: the entries to take out get the ID MARKED (Once's rules, module
+; 116): a drive's font when the drive's fonts are hidden or an installed
+; font has its ID; one of E's when a drive's font (not hidden) or an
+; installed one has its ID. Entries are marked in order, so a marked
+; drive's font no longer counts for E's (an installed font has its ID
+; then: E's goes too).
+Marks:  ldx #0
+@one:   stx at
+        cpx nUser
+        bcs @sys
+        bit fontsOn             ; a drive's font: out when hidden or an
+        bvs @mark               ; installed font has its ID
+        jsr InF
+        bcs @mark
+        bcc @next
+@sys:   txa                     ; the installed ones (next): kept; E's
+        sec                     ; (last): out when a drive's font (not
+        sbc nUser               ; hidden) or an installed one has its ID
+        cmp nF
+        bcc @next
+        bit fontsOn
+        bvs :+
+        ldx #0
+        ldy nUser
+        jsr Has
+        bcs @mark
+:       jsr InF
+        bcc @next
+@mark:  lda at
+        asl a
+        tay
+        lda #<MARKED
+        sta fids,y
+        lda #>MARKED
+        sta fids+1,y
+@next:  ldx at
+        inx
+        cpx nAll
+        bcc @one
+        rts
+
+; InF: C set when an installed font (nF entries after the drive's) has
+; entry at's ID. Has: the same for entries X to Y - 1. An unknown ID
+; ($FFFF) never.
+InF:    ldx nUser
+        lda nUser
+        clc
+        adc nF
+        tay
+Has:    sty count
+        lda at
+        asl a
+        tay
+        lda fids,y
+        sta fid
+        lda fids+1,y
+        sta fid+1
+        and fid
+        cmp #$FF
+        beq @no
+@cmp:   cpx count
+        bcs @no
+        txa
+        asl a
+        tay
+        lda fids,y
+        cmp fid
+        bne @next
+        lda fids+1,y
+        cmp fid+1
+        beq @yes
+@next:  inx
+        bne @cmp
+@no:    clc
+        rts
+@yes:   sec
         rts
 
         .endscope

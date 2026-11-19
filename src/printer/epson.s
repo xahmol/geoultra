@@ -223,7 +223,7 @@ PrintBuffer:
         jsr Put
         lda #0
         jsr Put
-:       jmp Close
+:       jmp Hold                ; (the printer kept listening: prnserial.inc)
 
 ; Inks: inkSet, the inks (InkBit) any card's ink or paper uses; black
 ; alone without colours (r2's high byte 0: no colour bytes).
@@ -337,6 +337,17 @@ Build:  lda dat
         sta card
         sta len
         sta len+1
+        lda #4                  ; the turn's chain entered at row rowN - 1
+        sec                     ; (Rows: 3 bytes a row, row 3 first)
+        sbc rowN
+        sta at
+        asl a
+        adc at
+        adc #<Rows
+        sta @tj+1
+        lda #>Rows
+        adc #0
+        sta @tj+2
 @card:  lda #0                  ; at: the card's first column (card x 8)
         sta at+1
         lda card
@@ -348,31 +359,29 @@ Build:  lda dat
         rol at+1
         sta at
         jsr Levels
-        ldx #0                  ; tmp: the pass's rows, then paper
-@row:   cpx rowN
-        bcs @blank
-        txa
+        ldx #0                  ; tmp: the pass's rows as this ink prints
+        stx any                 ; them (any: a dot at all)
+@row:   txa
         clc
         adc rowA
         tay
         jsr Row
         sta tmp,x
+        ora any
+        sta any
         inx
-        bne @row                ; (always)
-@blank: lda #0
-:       cpx #8
-        bcs @turn
-        sta tmp,x
-        inx
-        bne :-
+        cpx rowN
+        bcc @row
+        lda any                 ; no dot: 8 empty columns at once (most
+        bne @turn               ; cards of a text page; the user's U64,
+        ldy #7                  ; 2026-11-18: the turn of all 8 rows of
+:       sta (out),y             ; every card took 0.3 s a band at 1 MHz)
+        dey
+        bpl :-
+        bmi @nextc
 @turn:  ldy #0                  ; 8 columns, the leftmost dot first
-@colm:  ldx #0
-        lda #0
-:       asl tmp,x
-        rol a
-        inx
-        cpx #8
-        bne :-
+@colm:  lda #0
+@tj:    jsr Rows                ; (entered at row rowN - 1: patched above)
         sta (out),y
         cmp #0
         beq :+
@@ -386,7 +395,7 @@ Build:  lda dat
 :       iny
         cpy #8
         bne @colm
-        clc                     ; the next card
+@nextc: clc                     ; the next card
         lda out
         adc #8
         sta out
@@ -404,6 +413,20 @@ Build:  lda dat
         beq :+
         jmp @card
 :       rts
+
+; Rows: A's bits from the pass's rows, each row's leftmost dot taken
+; (asl), row 0 into bit 7 down to row rowN - 1 (ror from the last row
+; up); entered at row rowN - 1 (Build patches the jsr), A = 0 there.
+Rows:   asl tmp+3
+        ror a
+        asl tmp+2
+        ror a
+        asl tmp+1
+        ror a
+        asl tmp
+        ror a
+        rts
+        .assert tmp < $100, error, "epson.s: Rows needs tmp in the zero page"
 
 ; Levels: this card's patterns for ink: patIE/patIO (where the card has
 ; ink, even and odd rows) and patPE/patPO (its paper). Black alone: ink
@@ -519,6 +542,7 @@ card:   .res 1
 at:     .res 2
 lvl:    .res 1
 pix:    .res 1
+any:    .res 1                  ; Build: any row of the card with a dot
 pr:     .res 1
 patIE:  .res 1
 patIO:  .res 1
