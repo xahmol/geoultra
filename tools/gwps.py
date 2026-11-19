@@ -330,11 +330,9 @@ def measure(toks, i, fonts, state, first):
                 extra.append(acc)
                 if k in adds:
                     acc = adds[k]
-    pieces = []
-    for k, (cx, w, c, fid, style) in enumerate(chars):
-        if c is None or c == 0x20 and k >= len(text):
-            continue
-        dx = shift + (extra[k] if k < len(extra) else 0)
+    pieces = []                         # (the text's characters but its
+    for k, (cx, w, c, fid, style) in enumerate(text):   # trailing spaces; tabs
+        dx = shift + (extra[k] if k < len(extra) else 0)    # are no pieces)
         pieces.append((cx + dx, w, c, fid, style))
     ln.pieces = pieces
     return j, ln, ended
