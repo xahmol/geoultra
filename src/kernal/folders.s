@@ -655,7 +655,10 @@ Set81:  stx slot81
         bcs @mis
         jsr Formatted
         bcs @end
-        ldx slot81
+        lda curDrive            ; the slot: from curDrive, not slot81,
+        sec                     ; which FindFile's nested overlay call
+        sbc #8                  ; (FirstDirBlock, module 117) fetches anew
+        tax                     ; (e1.py, 2026-11-19: drive A's folder set)
         lda r1L
         ldy #0
         jmp Go
@@ -739,7 +742,8 @@ Up81:   stx slot81
         jmp Go
 
 slot81: .byte 0                 ; (module bytes: no nested overlay calls
-want81: .byte 0                 ; while they are used)
+want81: .byte 0                 ; while they are used; FindFile makes one
+                                ; on a 1581 since 2026-11-16, module 117)
 cur81:  .byte 0
 
         .endscope
