@@ -15,7 +15,7 @@ pictures from Word or Markdown need Pillow.
     tools/gwtool.py fromdocx IN.docx OUT NAME [--wide]
     tools/gwtool.py md IMAGE OUT.md NAME [NAME ...] [--page-breaks=records]
     tools/gwtool.py frommd IN.md OUT NAME [--wide] [--font=NAME]
-    tools/gwtool.py ps IMAGE OUT.ps NAME [NAME ...] [--letter] [--fonts=DIR]
+    tools/gwtool.py ps IMAGE OUT.ps NAME [NAME ...] [--letter] [--fonts=DIR] [--bitmap]
 
 - **IMAGE**: a D64, D71, D81 or DNP. On a DNP a name may include its
   folder: `Writing/Letter`.
@@ -172,6 +172,8 @@ makes a PDF of it; any PostScript printer prints it.
   font files on IMAGE, then in `--fonts=DIR` (CVT files), then among
   GeoUltra's GU fonts (`build/fonts`, made by `make fonts`). A font
   found nowhere is drawn in the system font, with a warning.
+- **--bitmap** draws the LW and GU fonts from their bitmaps too: the
+  document looks exactly as on the C64's printer, without real text.
 - BSW (the system font, ID 0) and BSW128 (GEOS 128's, ID 128) are
   drawn in GeoUltra's own system font, which has BSW's widths.
 - Pictures are drawn as they are, at 80 dots an inch.
@@ -179,18 +181,28 @@ makes a PDF of it; any PostScript printer prints it.
   page height, centred on A4 (`--letter`: US Letter). The header and
   footer are drawn on every page, not on a title page.
 
-Checked against geoWrite: tests/print/psref.py prints GeoUTools'
-manual with geoWrite 2.1 on GeoUltra (VICE, GU Epson FX-80) and compares
-every page dot for dot with gwtool's PostScript rendered by ghostscript
-(2026-11-19: all 11 pages the same, about 206,000 dots). What that
-document covers: the system fonts, plain, bold, underline and outline,
-tab stops, paragraph margins, pictures, left alignment, single spacing.
-What it learnt: geoWrite leaves 2 dots under every line, ends a line
-at a space that passes the right margin, and centres a picture between
-the margins, 2 rows up into the line above. Not yet checked against
-geoWrite: centred, right-aligned and justified text, 1.5 and 2 line
-spacing (taken as 1.5 and 2 times the line with its 2 dots), other
-bitmap fonts and sizes, real text, headers and footers.
+Checked against geoWrite: tests/print/psref.py prints a document with
+geoWrite 2.1 on GeoUltra (VICE, GU Epson FX-80) and compares every page
+dot for dot with gwtool's PostScript rendered by ghostscript (with
+`--bitmap` where the document has LW or GU fonts, as the printer gets
+bitmaps). Two documents, all pages the same (2026-11-19): GeoUTools'
+manual (11 pages: the system fonts, bold, underline, outline, tab
+stops, pictures) and a test document of its own (3 pages: a header and
+a footer; left, centred, right and justified text; 1.5 and 2 line
+spacing; GU Serif, Sans and Mono at 10-24 points mixed on a line;
+reverse and italic; decimal tab stops; a hanging indent; BSW128).
+What the comparison taught about geoWrite: 2 dots of leading under
+every line, with 1.5 and 2 spacing the room added above the text; a
+line's height comes from the fonts that have characters on it; a space
+that passes the right margin ends the line and keeps its word; pictures
+are centred between the margins on a card, 2 rows up into the line
+above; the underline row is the line only; a reversed space is drawn
+plain; the body starts at the header height and the footer ends at the
+page height that the file header keeps; a "Write Image V2.0" document
+is printed as a 480-dot page whatever its margins (so gwtool's
+`fromdocx --wide` and `frommd --wide` now write V2.1). Not checked
+yet: real text against a LaserWriter, bitmap fonts other than the GU
+and system fonts, superscript and subscript.
 
 ## What a conversion changes
 
@@ -216,7 +228,9 @@ its result with gwtool's, which is the same byte for byte.
 - The disk name of a new image is "converted".
 - `ps`: geoWrite's page number, date and time fields in the header and
   footer are not filled in yet; superscript and subscript are drawn on
-  the line.
+  the line; italic and outline are drawn plain in bitmap fonts (as
+  GeoUltra draws them), and as real italic and outline in the LW and GU
+  fonts.
 
 ## Sources
 

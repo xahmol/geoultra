@@ -8,7 +8,7 @@
     gwtool.py fromdocx IN.docx OUT NAME [--wide]
     gwtool.py md IMAGE OUT.md NAME [NAME ...] [--page-breaks=records]
     gwtool.py frommd IN.md OUT NAME [--wide] [--font=NAME]
-    gwtool.py ps IMAGE OUT.ps NAME [NAME ...] [--letter] [--fonts=DIR]
+    gwtool.py ps IMAGE OUT.ps NAME [NAME ...] [--letter] [--fonts=DIR] [--bitmap]
 
 IMAGE is a D64, D71, D81 or DNP (a name may carry a DNP folder,
 "Writing/Letter"). OUT is a folder (CVT files written there) or a new
@@ -36,7 +36,8 @@ geoWrite lays it out: the LW and GU fonts (IDs 27-37) as the
 LaserWriter's fonts, real text; any other font drawn from its own
 bitmaps, found on IMAGE, in --fonts=DIR (CVT files) or GeoUltra's GU
 fonts (build/fonts); BSW and BSW128 as GeoUltra's system font. A4 by
-default, --letter for US Letter; ps2pdf makes a PDF of it.
+default, --letter for US Letter; --bitmap draws every font from its
+bitmaps (the C64's look); ps2pdf makes a PDF of it.
 
 What a conversion does (geoWrite 1.x "Write Image V1.x" to 2.x, as
 geoWrite 2.1 itself converts a document when it opens one; observed by
@@ -347,7 +348,12 @@ def save_new(out, name, pg, head, foot, pics, info):
     entry[0x15], entry[0x16] = 1, 7
     now = datetime.datetime.now()
     entry[0x17:0x1C] = bytes([now.year % 100, now.month, now.day, now.hour, now.minute])
-    gf = GeoFile(bytes(entry), new_header(height(head), height(foot), info), None, recs)
+    header = bytearray(new_header(height(head), height(foot), info))
+    if any(p[:1] == b"\x11" and (p[3] | p[4] << 8) > 480 for p in pg):
+        header[VERSION_AT + 3] = ord("1")   # wide (640 dots): "V2.1", or geoWrite 2.1
+                                            # prints it as a 480-dot page (tests/print/
+                                            # psref.py, 2026-11-19)
+    gf = GeoFile(bytes(entry), bytes(header), None, recs)
     output([gf], out)
     print("%s: %d pages, %d pictures%s" % (name, len(pg), len(pics),
           ", header" if head else "") + (", footer" if foot else ""))
@@ -450,7 +456,10 @@ def main(argv):
                              {r: recs[r] for r in range(PIC_FIRST, PIC_LAST + 1) if recs[r]},
                              gwps.Fonts(files), paper="letter" if "--letter" in argv else "a4",
                              page_height=height, title_page=bool(h[0x8B] & 0x80),
-                             title=", ".join(args[3:]))
+                             title=", ".join(args[3:]), real="--bitmap" not in argv,
+                             head_h=h[0x8C] | h[0x8D] << 8, foot_h=h[0x8E] | h[0x8F] << 8,
+                             version=bytes(h[VERSION_AT:VERSION_AT + 4]))     # (the first
+                                                    # document's: 1.x ones convert to V2.0)
         print("%s: %d pages from %d document(s)" % (args[2], len(pg), len(parts)))
         for fid in missing:
             warn("font ID %d, %d points: not found, drawn in the system font" % (fid >> 6, fid & 63))

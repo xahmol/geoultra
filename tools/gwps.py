@@ -17,15 +17,20 @@ the next tab stop past the text (a decimal stop lines up the text up to
 the next full stop on it); the line's height and baseline are the
 largest of its fonts' (outline 2 more, GetRealSize), and 2 dots of
 leading under it; a picture (graphics escape) is a line of its own,
-its height the picture's, centred between the margins (on a card). Line spacing 1.5 and 2 multiply the height with its leading. (The
+its height the picture's, centred between the margins (on a card). Line spacing 1.5 and 2 multiply the height with its leading, the room
+added above the text. (The
 leading, picture placement and the end at an overflowing space come
 from geoWrite's own printout: tests/print/psref.py.)
 Alignment left, centred, right, justified (the spaces widened, not on a
 paragraph's last line).
 
 Drawing: one PostScript unit is one geoWrite dot (1/80", 0.9 points),
-y downwards from the page's top; the page (480 or 640 dots wide, the
-file header's page height) centred on A4 or Letter. Fonts: IDs 27-37
+y downwards from the page's top; the page (640 dots wide when a ruler
+reaches past 480 in a V2.1 document, else 480; a "Write Image V2.0"
+document is always 480, as geoWrite 2.1 prints it; the file header's
+page height) centred on A4 or Letter. The header at the top, the body
+below the header height the file header keeps, the footer above the
+page's end by the footer height kept there. Fonts: IDs 27-37
 (the LW fonts, GeoUltra's GU fonts) are the LaserWriter's built-in fonts
 as real text at the GEOS size (their widths are the LaserWriter's;
 each word placed where geoWrite has it and scaled to geoWrite's width
@@ -241,8 +246,6 @@ def measure(toks, i, fonts, state, first):
     left = (ruler.para if first else ruler.left) if ruler else 0
     right = ruler.right if ruler else 480
     f = fonts.get(state["fid"])
-    hi = f.height + (2 if state["style"] & OUTLINE else 0)     # (GetRealSize)
-    base = f.base + (2 if state["style"] & OUTLINE else 0)
     x = left
     chars = []                          # (x, width, code, fid, style) or tab marks
     space_at = None                     # (token index after the space, chars kept)
@@ -259,8 +262,6 @@ def measure(toks, i, fonts, state, first):
         if kind == "font":
             state["fid"], state["style"] = t[1], t[2]
             f = fonts.get(t[1])
-            hi = max(hi, f.height + (2 if t[2] & OUTLINE else 0))
-            base = max(base, f.base + (2 if t[2] & OUTLINE else 0))
             j += 1
             continue
         if kind in ("cr", "pb"):
@@ -291,10 +292,18 @@ def measure(toks, i, fonts, state, first):
         j += 1
         if c == 0x20:
             space_at = (j, len(chars), dict(state))
+    # the height and baseline: the largest of the fonts with characters on
+    # the line (outline 2 more: GetRealSize); a line without any: the font
+    # in effect (geoWrite's printout: a font changed at a line's start
+    # does not count the one before)
+    used = {(fid, style) for _, _, _, fid, style in chars} or {(state["fid"], state["style"])}
+    hi = max(fonts.get(fid).height + (2 if style & OUTLINE else 0) for fid, style in used)
+    base = max(fonts.get(fid).base + (2 if style & OUTLINE else 0) for fid, style in used)
     ln = Line()
     sp = {1: 3, 2: 4}.get(ruler.spacing if ruler else 0, 2)
     ln.height = (hi + LEADING) * sp // 2
-    ln.base = base
+    ln.base = base + ln.height - (hi + LEADING)     # (1.5 and 2: the room above
+                                                    # the text, geoWrite's printout)
     # alignment: the line's width without its trailing spaces
     text = [ch for ch in chars if ch[2] is not None]
     while text and text[-1][2] == 0x20:
@@ -394,14 +403,15 @@ class Writer:
         y = top + ln.base
         for r in runs:
             fam = r["fid"] >> 6
-            if fam in PS_FONTS:
+            if fam in PS_FONTS and self.real:
                 ops += self.real_text(r, y)
             else:
                 name, st = self.type3_font(r["fid"], r["style"])
                 f = self.fonts.get(r["fid"])
                 for c in r["codes"]:
-                    if c not in self.glyphs[name]:
-                        self.glyphs[name][c] = (f.cell(c, st), f.base)
+                    if c not in self.glyphs[name]:  # (a space without reverse:
+                        cs = st & ~REVERSE if c == 0x20 else st     # geoWrite's
+                        self.glyphs[name][c] = (f.cell(c, cs), f.base)  # printout)
                 ops.append("/%s 1 SF %d %d M %s S" % (name, r["x"], y, ps_string(r["codes"])))
         return ops
 
@@ -438,13 +448,16 @@ class Writer:
             ops.append("0 setgray")
         return ops
 
-    def page(self, lines, header, footer):
+    def page(self, lines, header, footer, head_h=None, foot_h=None):
+        """A page: the header at the top, the body below the header's
+        height, the footer above the page's end (the heights the file
+        header keeps, as geoWrite uses them; measured when it has none)."""
         ops = []
         y = 0
-        for part, at in ((header, 0), (footer, None)):
+        for part, at, kept in ((header, 0, head_h), (footer, None, foot_h)):
             if not part:
                 continue
-            h = sum(ln.height for ln in part)
+            h = kept or sum(ln.height for ln in part)
             yy = at if at is not None else self.height - h
             for ln in part:
                 ops += self.piece_ops(ln, yy)
@@ -538,19 +551,22 @@ class Writer:
 
 
 def write(path, pages_, header, footer, pics, fonts, paper="a4", page_height=752, title_page=False,
-          title="geoWrite document"):
+          title="geoWrite document", real=True, head_h=None, foot_h=None, version=b"V2.1"):
     """pages_: page records (2.x); header, footer: records or None; pics:
     {record: data}; fonts: a Fonts. Returns the fonts not found (drawn
     in the system font)."""
-    width = 640 if any(p[:1] == b"\x11" and (p[3] | p[4] << 8) > 480 for p in pages_) else 480
+    width = 640 if version != b"V2.0" and any(p[:1] == b"\x11" and (p[3] | p[4] << 8) > 480
+                                              for p in pages_) else 480     # (geoWrite 2.1
+    # prints a V2.0 document as a 480-dot page whatever its margins: psref.py)
     w = Writer(fonts, paper, width, page_height)
     w.pics = pics
+    w.real = real                       # False: every font from its bitmaps
     state = {"ruler": None, "fid": 0, "style": 0}
     head = layout(header, fonts, dict(state)) if header else None
     foot = layout(footer, fonts, dict(state)) if footer else None
     for n, rec in enumerate(pages_):
         lines = layout(rec, fonts, state)
         show = not (title_page and n == 0)
-        w.page(lines, head if show else None, foot if show else None)
+        w.page(lines, head if show else None, foot if show else None, head_h, foot_h)
     w.write(path, title)
     return sorted(fonts.missing)

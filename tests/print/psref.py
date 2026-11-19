@@ -13,12 +13,20 @@ the same document with paper "page" (one dot a pixel at 80 dpi), which
 ghostscript renders; each page is compared dot for dot after the one
 offset that lines the two up (the printer's margins). Outline is drawn
 plain by GeoUltra's kernal, so the comparison holds for it too.
-The printout is kept (build/harness/print/psref.raw) and made again
-only with --print.
-Usage: tests/print/psref.py [--print] [--pages=N]
+--doc=features: a document made here instead (features_doc: a header
+and a footer; left, centred, right and justified paragraphs; 1.5 and 2
+line spacing; GU Serif, Sans and Mono at several sizes, mixed on a
+line; bold, underline, reverse, italic, outline; regular and decimal
+tab stops; a hanging indent; BSW128), with GeoUltra's GU fonts (drive E
+for geoWrite, build/fonts for gwps) drawn from their bitmaps on both
+sides (gwps real=False), so the layout is compared dot for dot.
+The printout is kept (build/harness/print/psref[-features].raw) and
+made again only with --print.
+Usage: tests/print/psref.py [--print] [--pages=N] [--doc=features]
 """
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -35,12 +43,67 @@ DOC = os.environ.get("GEOUTOOLS_MANUAL", os.path.expanduser("~/git/GeoUTools/doc
 C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
 
 
-def printout(raw):
-    """geoWrite prints DOC from drive A (a D81 with the document alone)."""
+def ruler(left, right, para=None, align=0, spacing=0, tabs=()):
+    """A ruler escape (27 bytes; $10 in the flags as geoWrite 2.1 writes it)."""
+    t = list(tabs) + [right] * (8 - len(tabs))
+    b = bytearray([0x11]) + left.to_bytes(2, "little") + right.to_bytes(2, "little")
+    for x in t:
+        b += x.to_bytes(2, "little")
+    b += (left if para is None else para).to_bytes(2, "little") + bytes([0x10 | align | spacing << 2, 0, 0, 0])
+    return bytes(b)
+
+
+def card(fid=9, style=0):
+    return bytes([0x17, fid & 0xFF, fid >> 8, style])
+
+
+def features_doc():
+    """The test document's CVT (build/harness/print/psfeat/PS features.cvt)."""
+    import gwtool
+    serif, sans, mono = 27 << 6, 28 << 6, 30 << 6
+    lorem = (b"The quick brown fox jumps over the lazy dog while the five boxing wizards jump "
+             b"quickly, and a wizard's job is to vex chumps quickly in fog.")
+    p1 = (ruler(80, 560) + card() + b"Left aligned: " + lorem + b"\r"
+          + ruler(80, 560, align=1) + card() + b"Centred: " + lorem + b"\r"
+          + ruler(80, 560, align=2) + card() + b"Right aligned: " + lorem + b"\r"
+          + ruler(80, 560, align=3) + card() + b"Justified: " + lorem + b" " + lorem + b"\r"
+          + ruler(80, 560, spacing=1) + card() + b"Spacing 1.5: " + lorem + b"\r"
+          + ruler(80, 560, spacing=2) + card() + b"Spacing 2: " + lorem + b"\r"
+          + ruler(80, 560) + card() + b"\r")
+    p2 = (ruler(80, 560) + card(serif | 12) + b"GU Serif 12: " + lorem + b"\r"
+          + card(sans | 10) + b"GU Sans 10: " + lorem + b"\r"
+          + card(mono | 12) + b"GU Mono 12: the quick brown fox\r"
+          + card(serif | 24, 0x40) + b"Serif 24 bold\r"
+          + card(sans | 10) + b"small " + card(serif | 24) + b"BIG" + card(sans | 10) + b" small again\r"
+          + card(serif | 12, 0x40) + b"bold " + card(serif | 12, 0x80) + b"underline "
+          + card(serif | 12, 0x20) + b"reverse " + card(serif | 12, 0x10) + b"italic "
+          + card(serif | 12, 0x08) + b"outline " + card(serif | 12, 0xC0) + b"bold underline"
+          + card(serif | 12) + b"\r" + card() + b"\r")
+    p3 = (ruler(80, 560, tabs=(200, 320 | 0x8000, 440)) + card() + b"Item\t12.5\tend\r"
+          + b"A longer item\t1234.75\tx\r" + b"\t\t.5\tdecimal only\r"
+          + ruler(120, 560, para=80) + card() + b"Hanging indent: " + lorem + b"\r"
+          + ruler(80, 560) + card(128 << 6 | 9) + b"BSW128: the system font of GEOS 128.\r")
+    head = ruler(80, 560, align=1) + card(9, 0x40) + b"GeoUltra PostScript test\r"
+    foot = ruler(80, 560, align=2) + card() + b"the footer, right aligned\r"
+    out = os.path.join(OUT, "psfeat")
+    shutil.rmtree(out, ignore_errors=True)
+    os.makedirs(out)
+    gwtool.save_new(out, "PS features", [p1, p2, p3], head, foot, {}, "GeoUltra's psref test document.")
+    path = os.path.join(out, os.listdir(out)[0])
+    data = bytearray(open(path, "rb").read())
+    at = 254 + 0x4D + 15 - 2            # (the class's version digit: V2.1, as
+    assert data[at] == ord("0")         # geoWrite 2.1 writes; a V2.0 document
+    data[at] = ord("1")                 # is placed differently)
+    open(path, "wb").write(data)
+    return path
+
+
+def printout(raw, doc, wait=1500):
+    """geoWrite prints doc from drive A (a D81 with the document alone)."""
     docdisk = os.path.join(OUT, "psref-doc.d81")
     if os.path.exists(docdisk):
         os.remove(docdisk)
-    subprocess.run([C1541, "-format", "psref,pr", "d81", docdisk, "-geoswrite", DOC],
+    subprocess.run([C1541, "-format", "psref,pr", "d81", docdisk, "-geoswrite", doc],
                    check=True, capture_output=True)
     toml = os.path.join(OUT, "psref.toml")
     open(toml, "w").write('[dnp]\nout = "psref.dnp"\nname = "Apps test"\nid = "AT"\ntracks = 8\n'
@@ -59,7 +122,7 @@ def printout(raw):
               "223,98,p", "w:1", "223,98,r", "w:4",          # Drive: A
               "223,63,p", "w:1", "223,63,r", "w:15",         # the document
               "35,6,p", "w:2", "45,92,p", "w:3",             # file > print
-              "111,120,p", "w:1", "111,120,r", "w:1500",     # OK
+              "111,120,p", "w:1", "111,120,r", "w:%d" % wait,  # OK
               "s:" + os.path.join(OUT, "psref-after.png")]
     subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "15",
                     "--select", "/b/Writing/GEOWRITE", "--bypass", "--out", os.path.join(OUT, "psref.png"),
@@ -79,15 +142,19 @@ def oracle_pages(raw):
     return pages
 
 
-def ours(pages_n):
-    gf = read_cvt(DOC)
+def ours(pages_n, doc=DOC, real=True):
+    gf = read_cvt(doc)
     recs = gf.records + [None] * (127 - len(gf.records))
     pg = [r for r in recs[:61] if r not in (None, "end")][:pages_n]
     pics = {r: recs[r] for r in range(64, 127) if recs[r] not in (None, "end")}
     h = gf.header
     ps = os.path.join(OUT, "psref.ps")
-    gwps.write(ps, pg, None, None, pics, gwps.Fonts([]), paper="page",
-               page_height=h[0x90] | h[0x91] << 8)
+    files = [read_cvt(os.path.join(ROOT, "build", "fonts", f))
+             for f in sorted(os.listdir(os.path.join(ROOT, "build", "fonts"))) if f.endswith(".cvt")]
+    gwps.write(ps, pg, recs[61] if recs[61] not in (None, "end") else None,
+               recs[62] if recs[62] not in (None, "end") else None, pics, gwps.Fonts(files), paper="page",
+               page_height=h[0x90] | h[0x91] << 8, title_page=bool(h[0x8B] & 0x80), real=real,
+               head_h=h[0x8C] | h[0x8D] << 8, foot_h=h[0x8E] | h[0x8F] << 8, version=bytes(h[0x59:0x5D]))
     for f in os.listdir(OUT):
         if f.startswith("psref-our-"):
             os.remove(os.path.join(OUT, f))
@@ -129,12 +196,14 @@ def best_offset(a, b):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    raw = os.path.join(OUT, "psref.raw")
+    feat = "--doc=features" in sys.argv
+    doc = features_doc() if feat else DOC
+    raw = os.path.join(OUT, "psref-features.raw" if feat else "psref.raw")
     if "--print" in sys.argv or not os.path.exists(raw):
-        printout(raw)
+        printout(raw, doc, 600 if feat else 1500)
     n = next((int(a[8:]) for a in sys.argv if a.startswith("--pages=")), 99)
     theirs = oracle_pages(raw)[:n]
-    mine = ours(len(theirs))
+    mine = ours(len(theirs), doc, real=not feat)
     ok = len(theirs) == len(mine) and len(theirs) > 0
     print("%s pages: geoWrite printed %d, gwps wrote %d" % ("pass" if ok else "FAIL", len(theirs), len(mine)))
     for k, (t, m) in enumerate(zip(theirs, mine), 1):
