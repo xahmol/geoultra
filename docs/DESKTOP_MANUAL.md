@@ -435,6 +435,17 @@ standard allows. The Ultimate's own printer takes it (a fully black
 page in 210 s instead of 261 s); a real printer on the bus may not, so
 leave it off for one.
 
+## PostScript from geoLaser
+
+If you have geoLaser or geoPubLaser (Berkeley's PostScript programs for
+geoWrite and geoPublish), the file they write onto drive A or B
+("PS.<name>", a sequential file) is picked up when the desktop starts:
+it is moved to `GEOULTRA/print/<name>.ps` on the Ultimate (an older
+file of that name replaced) and deleted from the disk image, and a note
+says so. Only the root of drives A-D is looked at, four files a drive
+at a time. For geoWrite documents GU PostScript (docs/PSW.md) does the
+same without geoLaser.
+
 ## System fonts
 
 Fonts you want in every program, whatever the disk, go into

@@ -130,7 +130,9 @@ def main():
         put(HOME + "FONTS.DNP", None)
         put(HOME + "MOUNTS.INI", MOUNTS)
         u.boot(crt)                                         # an earlier session's queue,
-        time.sleep(20)                                      # paused (spool.s module 105)
+        time.sleep(35)                                      # paused (spool.s module 105;
+                                                            # after the desktop's first tick:
+                                                            # its pickup and import, 2026-11-19)
         x = u.fe(33, y=1)[0]                                # FE_SPOOL: pause, state
         r = u.fe(33, y=0)
         check("a session's print queue paused", (x, r[2][0] >> 8), (0, 0x80))

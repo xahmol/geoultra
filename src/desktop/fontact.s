@@ -8,6 +8,7 @@
         .import FileEngine, ListRead, ListDraw, Busy, Idle, Dialog, Error
         .import entryName, path
         .export Ov_FontAct, Ov_FontImport
+        .import Pickup
 
         .segment "ZEROPAGE"
 
@@ -262,6 +263,8 @@ Bring:  bit mounted
         sta r1H
         lda #0
         sta r2L
+        sta r3L                 ; (no progress routine: r3 = 0)
+        sta r3H
         lda #FE_COPY
         jsr FileEngine
         txa
@@ -365,6 +368,8 @@ In:     jsr Make
         sta r1H
         lda #0
         sta r2L
+        sta r3L                 ; (no progress routine: r3 = 0)
+        sta r3H
         lda #FE_COPY
         jsr FileEngine
         jmp Fin
@@ -568,4 +573,8 @@ src:            .res 63 + 18    ; (a path, "/", a GEOS name)
 info:           .res 16         ; (FE_STAT's info block)
         .endscope
 Ov_FontAct = FontScope::Act
-Ov_FontImport = FontScope::Import
+; Ov_FontImport (theme.s ClockTick, the desktop's first tick): geoLaser's
+; PostScript picked up (pickup.s), then the CVT files imported.
+Ov_FontImport:
+        jsr Pickup
+        jmp FontScope::Import
