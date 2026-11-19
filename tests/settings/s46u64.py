@@ -27,7 +27,7 @@ import apprun  # noqa: E402
 HOME = "/USB0/GEOULTRA/"
 TEST = HOME + "THEMES/Ztest.ini"
 KEY_STUB = 0xC0A0
-PAGE_THEME, SIDE_TOP, SIDE_ROW = 0, 24, 16
+PAGE_THEME, SIDE_TOP, SIDE_ROW = 0, 16, 16      # (SIDE_TOP 16 since 2026-11-19)
 THEME_UP = (242, 36 - 3)
 DELETE_XY = (92 + 18, 20 * 8 - 6 + 7)               # ptheme.s BDel
 YES_XY, NO_XY = (90, 110), (220, 110)               # (DEF_DB_POS: OK as Yes)

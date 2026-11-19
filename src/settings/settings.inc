@@ -29,8 +29,10 @@ TITLE_Y         = 11            ; the title's baseline (the bar: y 0-15)
 TITLE_LINE      = 15            ; the line under it
 SIDE_W          = 80            ; the side list: x 0-79
 SIDE_LINE       = 82            ; the line between list and page
-SIDE_TOP        = 24            ; the first page name's row top (rows on
-SIDE_ROW        = 16            ; whole cards: the mark's colours)
+SIDE_TOP        = 16            ; the first page name's row top (rows on
+SIDE_ROW        = 16            ; whole cards: the mark's colours; from 16
+                                ; since 2026-11-19: ten pages to the button
+                                ; line, 176)
 PAGE_LEFT       = 90            ; the page: x 90-319
 PAGE_TOP        = 16            ; y 16 to PAGE_BOTTOM
 PAGE_BOTTOM     = 171
@@ -39,9 +41,11 @@ BUTTON_LINE     = 176           ; the line above the buttons (the buttons'
 BUTTON_Y        = 180           ; the buttons' top
 SCREEN_RIGHT    = 319
 PAGE_CARD       = PAGE_LEFT / 8 ; the page's first card (11: x 88)
-PAGES_N         = 9             ; Theme, Desktop, System, Time, Drives,
-                                ; REU, Pointer, Start, Printing (PAGE_*;
-                                ; the user, 2026-11-12: Time its own page)
+PAGES_N         = 10            ; Theme, Desktop, System, Time, Drives,
+                                ; REU, Pointer, Start, Printing, Serials
+                                ; (PAGE_*; the user, 2026-11-12: Time its
+                                ; own page; 2026-11-19: Serials)
+        .assert SIDE_TOP + PAGES_N * SIDE_ROW <= BUTTON_LINE, error, "settings.inc: the side list into the buttons"
 PAGE_THEME      = 0
 PAGE_DESKTOP    = 1
 PAGE_SYSTEM     = 2
@@ -51,6 +55,7 @@ PAGE_REU        = 5
 PAGE_POINTER    = 6
 PAGE_START      = 7             ; auto-exec files at the cold start (pstart.s)
 PAGE_PRINT      = 8             ; the printer (pprint.s)
+PAGE_SERIALS    = 9             ; serial numbers (pser.s)
 
 ; The INI text (src/inc/ini.inc): SETTINGS.INI whole, at most 2048 bytes
 ; as the desktop and gush read it

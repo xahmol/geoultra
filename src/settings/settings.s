@@ -14,9 +14,11 @@
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
         .import TimeDraw, TimePress, ThemeDraw, ThemePress, ReuDraw, ReuPress
         .import DriveDraw, DrivePress, StartDraw, StartPress, PrintDraw, PrintPress
+        .import SerDraw, SerPress
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
         .export themeLoaded, themeNo, themeCount, themePart, themeNames
         .export themePath, themeTmp, noFile, DrawPage, page, repaint, BarOn, BarOff, ThemesFull, Ask2
+        .export Plain
         .import row
         .importzp SWATCH_X        ; (152: exported as zero page)
         .export IniPaths, IniLoad, IniEmpty, IniSet, IniFind, iniLen, iniPath
@@ -348,6 +350,16 @@ Write:  lda noFile              ; (no Ultimate: nothing to write)
         bne @fail
         lda #0
         sta dirty
+        lda iniBase             ; [serials] to the kernal at once (serials.s
+        sta r0L                 ; FE_SERIALS; the user, 2026-11-19)
+        lda iniBase+1
+        sta r0H
+        lda iniLen
+        sta r1L
+        lda iniLen+1
+        sta r1H
+        lda #FE_SERIALS
+        jsr FileEngine
 @theme: lda themeDirty          ; the theme file (the Theme page)
         beq @ok
         jsr UseTheme
@@ -488,17 +500,17 @@ SIDE_BASE       = 11            ; a page name's baseline below its row top
 ; Each page's drawing and click routines (stubs into its overlay, ovl.s),
 ; in PAGE_* order.
 DrawLo:         .byte <ThemeDraw, <DeskDraw, <SysDraw, <TimeDraw, <DriveDraw, <ReuDraw
-                .byte <PtrDraw, <StartDraw, <PrintDraw
+                .byte <PtrDraw, <StartDraw, <PrintDraw, <SerDraw
 DrawHi:         .byte >ThemeDraw, >DeskDraw, >SysDraw, >TimeDraw, >DriveDraw, >ReuDraw
-                .byte >PtrDraw, >StartDraw, >PrintDraw
+                .byte >PtrDraw, >StartDraw, >PrintDraw, >SerDraw
 PressLo:        .byte <ThemePress, <DeskPress, <SysPress, <TimePress, <DrivePress, <ReuPress
-                .byte <PtrPress, <StartPress, <PrintPress
+                .byte <PtrPress, <StartPress, <PrintPress, <SerPress
 PressHi:        .byte >ThemePress, >DeskPress, >SysPress, >TimePress, >DrivePress, >ReuPress
-                .byte >PtrPress, >StartPress, >PrintPress
+                .byte >PtrPress, >StartPress, >PrintPress, >SerPress
         .assert * - PressHi = PAGES_N, error, "a press routine per page"
 
-NameLo:         .byte <N0, <N1, <N2, <N3, <N4, <N5, <N6, <N7, <N8
-NameHi:         .byte >N0, >N1, >N2, >N3, >N4, >N5, >N6, >N7, >N8
+NameLo:         .byte <N0, <N1, <N2, <N3, <N4, <N5, <N6, <N7, <N8, <N9
+NameHi:         .byte >N0, >N1, >N2, >N3, >N4, >N5, >N6, >N7, >N8, >N9
 N0:             .byte "Theme", 0
 N1:             .byte "Desktop", 0
 N2:             .byte "System", 0
@@ -508,6 +520,7 @@ N5:             .byte "REU", 0
 N6:             .byte "Pointer", 0
 N7:             .byte "Start", 0
 N8:             .byte "Printing", 0
+N9:             .byte "Serials", 0
 IniName:        .byte "SETTINGS.INI", 0
 TmpName:        .byte "SETTINGS.TMP", 0
 

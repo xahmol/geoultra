@@ -11,6 +11,7 @@
         .export Dabs, Dnegate, Ddec, ClearRam, FillRam, i_FillRam, InitRam
         .export CopyString, CopyFString, CmpString, CmpFString, CallRoutine
         .export DoInlineReturn, GetRandom, GetSerialNumber, serialNumber
+        .import OvlCall
 .ifdef BYPASS
         .export bypassOn
         .import ExpectedSerial
@@ -20,7 +21,6 @@
 
 returnAddress   = $3D           ; word: inline routines' return address
 random          = $850A         ; word
-SERIAL          = $4755         ; GeoUltra's serial number ("GU")
 
         .segment "DATA"
 
@@ -395,13 +395,17 @@ GetRandom:
         inc random              ; never stuck at zero
 @ok:    rts
 
-; GetSerialNumber: r0 = the serial number: GeoUltra's own, or the one in
+; GetSerialNumber: r0 = the serial number: the one [serials] lists for
+; the running application (serials.s), else with the bypass the one the
+; application stored (bypass.s), else GeoUltra's own or the one in
 ; SETTINGS.INI ([system] serial=, read at boot), so that applications
 ; installed under another GEOS serial number run. Destroys A.
 GetSerialNumber:
-.ifdef BYPASS
+        jsr SerialFor           ; r0: [serials]' (C clear) or the system's
+.ifdef BYPASS                   ; own (serials.s module 127)
+        bcc @end
         bit bypassOn            ; [system] protection=bypass: the number
-        bpl @own                ; the calling application stored (bypass.s)
+        bpl @end                ; the calling application stored (bypass.s)
         stx bypassX
         tsx
         lda $0101,x
@@ -410,13 +414,13 @@ GetSerialNumber:
         sta r0H
         ldx bypassX
         jmp ExpectedSerial
-@own:
 .endif
-        lda serialNumber
-        sta r0L
-        lda serialNumber+1
-        sta r0H
-        rts
+@end:   rts
+
+; SerialFor: module 127 (serials.s Lookup): C clear, r0 = the serial.
+SerialFor:
+        jsr OvlCall
+        .byte 127, 0
 
         .segment "DATA"
 

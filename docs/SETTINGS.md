@@ -372,4 +372,18 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   "PS look". The network push comes here later. Test: s8.py (VICE,
   8 checks).
 
+- **The Serials page** (the user, 2026-11-19; docs/DESIGN.md "Serial
+  number"): the tenth page, pser.s (overlay 2 with the Pointer page);
+  the side list starts at y 16 so ten rows reach the button line. A row
+  "Serial": boot disk (no `[system] serial=`: the user's GEOS boot disk
+  found on the drives at the start), fixed (asks for four hex digits:
+  `serial=12AB`), GeoUltra (GeoUltra's own number, written as a fixed
+  `serial=4755`); "In use:" the number GetSerialNumber gives now; a row
+  "Bypass" off or on (`[system] protection=bypass`; switching it on shows
+  the disclaimer); "Per application": the `[serials]` lines (class and
+  number; five shown), add (asks the class, then the number) and remove;
+  the disclaimer under them. The serial and the bypass count from the
+  next start; the `[serials]` list at once on OK or Save (`FE_SERIALS`).
+  Test: s9.py (VICE).
+
 Beta 1 needs S1-S6's first versions (docs/DESIGN.md, "Releases").

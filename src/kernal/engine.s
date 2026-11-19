@@ -138,6 +138,7 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 114, 0            ; FE_SPOOL (spool.s)
         .byte 118, 0            ; FE_DRVSWAP (drvswap.s)
         .byte 55, 3             ; FE_RUNDOC (sysdrive.s)
+        .byte 126, 3            ; FE_SERIALS (serials.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),

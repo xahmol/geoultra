@@ -285,7 +285,7 @@ applications call `$9030-$904D` directly.
   | `$E700-$E712` | print queue: its header (spool.s `Q_*`) |
   | `$E800-$F9FF` | free (until 2026-11-16 the printer driver slots, which did not fit: now in bank 27 at `$2000`) |
 
-  Not in bank 1 (it comes back from HIBERNAT.BIN on a resume, after the cold start): the cold start's `fontsOn` and `guPrnFast` for a resumed session are in bank 17 at `$FF00` (the ROM mirror's unused last bank; sysdrive.inc `COLD_KEYS`).
+  Not in bank 1 (it comes back from HIBERNAT.BIN on a resume, after the cold start): the cold start's `fontsOn` and `guPrnFast` for a resumed session are in bank 17 at `$FF00` (the ROM mirror's unused last bank; sysdrive.inc `COLD_KEYS`). The `[serials]` table is there too, at `$F000` (serials.s: a count, 32 entries of a class and a serial).
   | `$FA00-$FAFF` | print queue: the job table, 16 of 16 bytes (`JOBTAB`) |
 - **InitForIO / DoneWithIO** live in the driver: they bank the C64 Kernal
   ROM in over `$E000` (for serial printer drivers), so they and anything

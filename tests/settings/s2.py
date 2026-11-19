@@ -21,7 +21,7 @@ from vicemon import RESP_CHECKPOINT  # noqa: E402
 
 PAGE_DESKTOP, PAGE_POINTER = 1, 6
 X0, STEP = 90 + 10, 56
-SIDE_TOP, SIDE_ROW = 24, 16
+SIDE_TOP, SIDE_ROW = 16, 16           # (settings.inc; from 16 since 2026-11-19)
 Y0, DY, X1, X2 = 16 + 20, 18, 150, 212
 CANCEL_XY = (27 * 8 + 24, 188)
 YES_XY = (90, 110)

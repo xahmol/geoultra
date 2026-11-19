@@ -361,3 +361,5 @@ TXT_LN_2_Y      = 32
 DBI_X_2         = 17
 DBI_Y_2         = 72
 mousePicData    = $84C1
+SERIAL          = $4755         ; GeoUltra's own serial number ("GU"; misc.s,
+                                ; Settings' Serials page)

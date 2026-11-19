@@ -22,7 +22,7 @@ from gushvice import Gush, OUT, harness, KEY_STUB  # noqa: E402
 from vicemon import RESP_CHECKPOINT  # noqa: E402
 
 PAGE_PRINT = 8
-SIDE_TOP, SIDE_ROW = 24, 16
+SIDE_TOP, SIDE_ROW = 16, 16           # (settings.inc; from 16 since 2026-11-19)
 ROW_Y = 16 + 20                 # the row's baseline (PAGE_TOP + 20)
 MPS_XY = (173 + 3, ROW_Y - 3)   # MPS's box
 PDF_XY = (255 + 3, ROW_Y - 3)   # PDF Letter's box

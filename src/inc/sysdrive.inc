@@ -33,3 +33,11 @@ FONT_TRACK      = 237
 FONT_TRACKS     = 8
         .assert FONT_TRACK + FONT_TRACKS = SCRAP_TRACK, error, "sysdrive.inc: the fonts' tracks end below the scrap store's"
         .assert SYSDRV_TRACK + SYSDRV_TRACKS = 255, error, "sysdrive.inc: E's tracks end at 255 (Locate checks no bound)"
+
+; [serials] (serials.s, docs/DESIGN.md "Serial number"): the table in the
+; ROM mirror's unused last bank, below COLD_KEYS
+SERIALS_BANK    = COLD_BANK
+SERIALS_AT      = $F000         ; a count, then the entries
+SERIALS_MAX     = 32
+SER_LEN         = 14            ; the class (12 characters) and the serial
+        .assert SERIALS_AT + 1 + SERIALS_MAX * SER_LEN <= COLD_KEYS, error, "sysdrive.inc: [serials] into COLD_KEYS"

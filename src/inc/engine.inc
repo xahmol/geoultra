@@ -51,7 +51,8 @@ FE_SPOOL        = 33            ; the print queue: state, jobs, pause,
                                 ; resume, cancel (spool.s)
 FE_DRVSWAP      = 34            ; drive B and r0L's swapped (drvswap.s)
 FE_RUNDOC       = 35            ; an application on E started with a document
-FE_COUNT        = 36
+FE_SERIALS      = 36            ; [serials] from an INI text (serials.s)
+FE_COUNT        = 37
 FE_VER          = $0003         ; FE_VERSION's answer (the engine's version)
 
 ; FE_COPY, FE_MOVE: flags (r2L)
