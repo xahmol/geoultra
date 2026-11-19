@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""[serials] in VICE (src/kernal/serials.s; docs/DESIGN.md "Serial
+"""[serials] in VICE (src/kernal/serials.s; docs/design/DESIGN.md "Serial
 number", step S1): FE_SERIALS with an INI text in memory, then
 GetSerialNumber with taskName set (as the kernal sets it when an
 application starts): a listed class gives its serial (any case, the

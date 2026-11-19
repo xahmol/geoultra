@@ -115,7 +115,7 @@ def printout(raw, doc, wait=1500):
     if os.path.exists(raw):
         os.remove(raw)
     env = dict(os.environ, APPRUN_DRIVE_A=docdisk, APPRUN_PREHOOK=pre,
-               GEOS_APPS_DISK=os.path.join(OUT, "psref.dnp"), PYTHONPATH=os.path.join(ROOT, "tools", "harness"),
+               GEOS_APPS_DISK=os.path.join(OUT, "psref.dnp"), PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness"),
                APPRUN_VICE_ARGS="-devicebackend4 1 -busdevice4 -pr4drv raw -pr4output text -pr4txtdev 1 -prtxtdev2 " + raw)
     clicks = ["103,86,p", "w:1", "103,86,r", "w:4",          # Open
               "223,98,p", "w:1", "223,98,r", "w:4",          # Drive: A
@@ -123,7 +123,7 @@ def printout(raw, doc, wait=1500):
               "35,6,p", "w:2", "45,92,p", "w:3",             # file > print
               "111,120,p", "w:1", "111,120,r", "w:%d" % wait,  # OK
               "s:" + os.path.join(OUT, "psref-after.png")]
-    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "15",
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"), "--wait", "15",
                     "--select", "/b/Writing/GEOWRITE", "--bypass", "--out", os.path.join(OUT, "psref.png"),
                     "GEOWRITE"]
                    + clicks, env=env, capture_output=True, text=True, timeout=3000)

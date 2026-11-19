@@ -1,4 +1,4 @@
-; GeoUltra Desktop: geoLaser's PostScript picked up (docs/DESIGN.md
+; GeoUltra Desktop: geoLaser's PostScript picked up (docs/design/DESIGN.md
 ; "Printing", the geoLaser route; the user's decisions of 2026-11-19:
 ; the pickup only, the files moved). geoLaser and geoPubLaser (the
 ; user's own) write their PostScript as a CBM SEQ file "PS.<name>" onto
@@ -28,7 +28,7 @@ pp:     .res 2                  ; a name being copied
 
         .segment "OV9"
 
-; Refused (the desktop's first tick, before the pickup; docs/DESIGN.md
+; Refused (the desktop's first tick, before the pickup; docs/design/DESIGN.md
 ; "Serial number" S5, the user's decision of 2026-11-19): when the kernal
 ; noted an application that refused its serial number (FE_SERIALS with
 ; r1 = 0: its class; serials.s), a question: "<class> refused to run" /

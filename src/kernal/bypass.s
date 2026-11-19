@@ -6,7 +6,7 @@
 ; its applications are still under copyright; using this module is your
 ; own responsibility. It contains no code or data from any application.
 ; It is off unless SETTINGS.INI says [system] protection=bypass, and
-; `make BYPASS=0` builds GeoUltra without it (docs/DESIGN.md, "Serial
+; `make BYPASS=0` builds GeoUltra without it (docs/design/DESIGN.md, "Serial
 ; number").
 ;
 ; How: an application that checks the serial number compares the result

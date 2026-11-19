@@ -1,4 +1,4 @@
-; The print spooler (docs/DESIGN.md "Print spooler"; the user's decisions
+; The print spooler (docs/design/DESIGN.md "Print spooler"; the user's decisions
 ; of 2026-11-15). Own code.
 ;
 ; The queue's REU banks: 27-28 always; with SETTINGS.INI [system] spool=
@@ -1218,7 +1218,7 @@ Cancelled:
 
         jmp FeSpool             ; entry 0 (FE_SPOOL, the file engine)
 
-; FE_SPOOL (docs/FILE_ENGINE.md; the desktop's indicator and queue
+; FE_SPOOL (docs/design/FILE_ENGINE.md; the desktop's indicator and queue
 ; window): Y = 0: A = the job printing, counted from Q_BASE (0: the
 ; queue empty), r0L the jobs since then, r0H $80 paused, r1L the
 ; printer's error that paused it, r1H the printing job's progress in %

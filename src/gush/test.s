@@ -1,4 +1,4 @@
-; gush: test, [ ], read, true, false (docs/GUSH.md). Their answer is the
+; gush: test, [ ], read, true, false (docs/design/GUSH.md). Their answer is the
 ; line's status ($?, failed: 0 true, 1 false).
 ; test: no words false; one word: true when not empty; "! ..." the
 ; opposite; -e/-f/-d path (there, a file, a folder or drive), -z/-n word

@@ -1,6 +1,6 @@
 # Conformance cases for the disk driver (src/drivers/reudrv.s) and the
 # device routines: GEOS 2.0 reads its boot disk through the 1541 turbo,
-# GeoUltra the same disk image from the REU (tools/harness/harness.py,
+# GeoUltra the same disk image from the REU (tools/dev/harness/harness.py,
 # prepare_disks).
 
 BUF = 0x4000

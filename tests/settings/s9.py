@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings in VICE: the Serials page (pser.s; docs/DESIGN.md
+"""GeoUltra Settings in VICE: the Serials page (pser.s; docs/design/DESIGN.md
 "Serial number", step S3; the user's decisions of 2026-11-19), the
 tenth page in the side list (from y 16): "fixed" asks for a number
 (typed: 12ab): [system] serial=12AB; "GeoUltra": serial=4755 (GeoUltra's own number); the

@@ -1,4 +1,4 @@
-; gush: running a command line and the commands (docs/GUSH.md,
+; gush: running a command line and the commands (docs/design/GUSH.md,
 ; "Commands"): exit, clear, echo, pwd, cd, ls here; the file commands
 ; in files.s. Own code.
 
@@ -21,7 +21,7 @@
 
 EnterDeskTop    = $C22C         ; GEOS jump table
 
-; Info block (docs/FILE_ENGINE.md, "Functions")
+; Info block (docs/design/FILE_ENGINE.md, "Functions")
 END_OF_DIR      = $48
 
         .segment "ZEROPAGE"

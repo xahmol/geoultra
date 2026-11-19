@@ -1,5 +1,5 @@
 ; Drive B and the document's drive swapped while a program runs (overlay
-; module 118; docs/DESIGN.md "Drives"; the user's decision of
+; module 118; docs/design/DESIGN.md "Drives"; the user's decision of
 ; 2026-11-18). geoWrite 2.1, started with a document, looks for it on
 ; drive A when the disk names match and otherwise always on drive B
 ; (findDocDevice in mist64/geowrite, read for this behaviour only), so a

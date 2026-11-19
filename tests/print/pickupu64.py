@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """geoLaser's PostScript picked up on the U64 (src/desktop/pickup.s;
-docs/DESIGN.md "Printing", the user's decisions of 2026-11-19): drive B a
+docs/design/DESIGN.md "Printing", the user's decisions of 2026-11-19): drive B a
 test D81 (GEOULTRA/test/pickup.d81) with a CBM SEQ file "PS.TEST" as
 geoLaser writes one (made with c1541; its bytes a PostScript-like text);
 at the desktop's start it is copied to GEOULTRA/print/TEST.ps (the same
@@ -20,7 +20,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 from feu64 import U64  # noqa: E402
 import apprun  # noqa: E402
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))

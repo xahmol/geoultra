@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The clock from NTP seconds in VICE (src/kernal/enginentp.s, module 78,
-and module 79's summer-time rule; docs/SETTINGS.md, the Time page): the
+and module 79's summer-time rule; docs/design/SETTINGS.md, the Time page): the
 module called directly with an NTP time, [time] offset= and summer=
 set in its variables (VICE has no network for FE_NTP itself), GEOS's
 clock read afterwards. The EU rule around both switches of 2026 (the

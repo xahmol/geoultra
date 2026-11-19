@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GU Epson FX-80's own cost per band on the U64, without the spooler (a
-measurement, docs/DESIGN.md "Printing"): spOn 0 (drivers not caught), the
+measurement, docs/design/DESIGN.md "Printing"): spOn 0 (drivers not caught), the
 driver loaded from drive E, then one routine on the C64 calls StartPrint,
 PrintBuffer 94 times with an empty band (or every MODE band black) and
 StopPrint, timed from the PC (start to the done flag). The printer set

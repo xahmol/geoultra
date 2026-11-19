@@ -1,6 +1,6 @@
 ; wc: lines, words and bytes of files, or of the input (a pipe or a <
 ; file), as "lines words bytes name" (no name for the input); with more
-; files a total. The example external gush command (docs/GUSH_COMMANDS.md).
+; files a total. The example external gush command (docs/reference/GUSH_COMMANDS.md).
 ; Own code, GeoUltra.
 
         .include "geos.inc"

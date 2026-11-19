@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FE_RUNSYS in VICE (docs/GUSH.md, "Where gush lives"): gush started from
+"""FE_RUNSYS in VICE (docs/design/GUSH.md, "Where gush lives"): gush started from
 drive E (the system drive in the cartridge) by the file engine, as the
 boot setting and geoFolder's button do; then a name not on E, and one
 that is no application (geoFolder, a desk accessory) come back with

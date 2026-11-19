@@ -1,4 +1,4 @@
-; gush: the history across sessions (docs/GUSH.md). HistSave writes the
+; gush: the history across sessions (docs/design/GUSH.md). HistSave writes the
 ; newest HIST_SAVE lines, the oldest first, a CR
 ; after each, to HOME/gush_history when gush ends (exit, an application
 ; started, reboot); HistLoad reads them back at gush's start into the

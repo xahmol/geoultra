@@ -11,9 +11,9 @@ them before opening a pull request (PR).
   feature, a change of behaviour, a new file format or a change in the
   memory layout. Agree on the approach before writing the code; design
   decisions are taken by the maintainer and recorded in
-  [`DESIGN.md`](docs/DESIGN.md).
-- Read [`DESIGN.md`](docs/DESIGN.md) (decisions, what is verified on
-  hardware, what is open) and [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) (how
+  [`DESIGN.md`](docs/design/DESIGN.md).
+- Read [`DESIGN.md`](docs/design/DESIGN.md) (decisions, what is verified on
+  hardware, what is open) and [`ARCHITECTURE.md`](docs/reference/ARCHITECTURE.md) (how
   the kernal, drivers, overlays and REU are laid out).
 - One topic per PR. Do not mix a fix with unrelated clean-ups or
   reformatting.
@@ -51,7 +51,7 @@ stay where GEOS 2.0 put it: the jump table (`$C100`-), the info block,
 the variables `$8000`-`$88FF`, the driver areas, the zero page use
 (`$80`-`$FA` free for applications), registers in and out and what each
 routine destroys (HG2G chapter 20). See `CLAUDE.md` and
-[`FEASIBILITY.md`](docs/FEASIBILITY.md), "Compatibility contract". Any change
+[`FEASIBILITY.md`](docs/design/FEASIBILITY.md), "Compatibility contract". Any change
 that touches it needs a conformance case (section 5) and a note in the
 PR.
 
@@ -91,13 +91,13 @@ Every PR states which of these were run and their results:
    pass. These compare GeoUltra with GEOS 2.0 in VICE and need your own
    GEOS 2.0 disk (`GEOS_ORACLE`). One known flake: a GetString case
    occasionally fails on GEOS 2.0's side (`geos ee00`); rerun that file
-   (`tools/harness/harness.py tests/conformance/getstring.py`).
+   (`tools/dev/harness/harness.py tests/conformance/getstring.py`).
 3. **A new or changed kernal routine** gets conformance cases written
    from HG2G, which pass before the routine counts as done.
 4. The drive and feature tests for the area you touched:
    `test-native`, `test-d71`, `test-folders`, `test-filedialog`,
    `test-sysfont`, `test-bypass`; and an application run with
-   `tools/harness/apprun.py` where an application is affected.
+   `tools/dev/harness/apprun.py` where an application is affected.
 5. **Hardware:** VICE has no Ultimate Command Interface, so code that
    uses the UCI, the REU's size, turbo or the Ultimate's file system is
    tested on a real Ultimate. Write down the device, firmware version

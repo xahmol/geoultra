@@ -1,4 +1,4 @@
-; gush: the line editor and history (docs/GUSH.md, "Keys and the line
+; gush: the line editor and history (docs/design/GUSH.md, "Keys and the line
 ; editor"). The input line (up to LINE_MAX characters) after the prompt on
 ; one screen row, scrolled sideways when longer than the row; keys from
 ; keyVector; the last HIST_N lines in the application's REU (bank

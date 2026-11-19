@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE (docs/DESKTOP.md): the actions. In
+"""GeoUltra's desktop in VICE (docs/design/DESKTOP.md): the actions. In
 /b (gush's test disk with the files f00-f02): new folder (C=N, a name
 typed into the dialog), copy f00 (C=C) and paste it in the folder (C=V);
 paste again: the question, YES replaces; cut f01 in /b and paste it in

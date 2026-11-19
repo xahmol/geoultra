@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A paused, full print queue in VICE (docs/DESIGN.md "Print spooler";
+"""A paused, full print queue in VICE (docs/design/DESIGN.md "Print spooler";
 src/kernal/spool.s, modules 107 and 112): the queue paused (FE_SPOOL 1),
 then a job of 250 rows (more than the 2-bank queue holds) through
 tests/spool/logdrv.s: its StartPrint fits (room for a whole page, X = 0),
@@ -72,9 +72,9 @@ def main():
                    check=True, capture_output=True)
     hook = os.path.join(OUT, "hook-sp6.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl"), "rows": ROWS, "wait": 60})
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "10", "--out", os.path.join(OUT, "sp6.png"), "GEOWRITE", "h:" + hook],
-                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness")),
+                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness")),
                        capture_output=True, text=True, timeout=600)
     line = next((l for l in r.stdout.splitlines() if l.startswith("SP6")), "")
     print(line or r.stderr[-600:])

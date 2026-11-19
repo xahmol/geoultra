@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE (docs/DESKTOP.md): favourites.
+"""GeoUltra's desktop in VICE (docs/design/DESKTOP.md): favourites.
 C=F adds the current folder (/b), not twice; a selected folder (a new
 one, the cursor on it) is added as itself; the fifth favourite drops the
 first; the sidebar shows them ("FAVOURITES", codes $80-$83) and a click

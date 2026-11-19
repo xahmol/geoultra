@@ -1,4 +1,4 @@
-; gush: the command line into words (docs/GUSH.md, "Syntax"). Spaces
+; gush: the command line into words (docs/design/GUSH.md, "Syntax"). Spaces
 ; separate words; "..." and '...' keep spaces; \ takes the next character
 ; as it is. $NAME, ${NAME} and $? are replaced by the value (not in
 ; '...'; a value is not split into words). An unquoted >, >> or < is a

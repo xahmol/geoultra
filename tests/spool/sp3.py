@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The print spooler's playback in VICE (docs/DESIGN.md "Print spooler";
+"""The print spooler's playback in VICE (docs/design/DESIGN.md "Print spooler";
 src/kernal/spool.s): the same page (InitForPrint, StartPrint,
 two rows, StopPrint) printed twice through tests/spool/logdrv.s, a
 printer driver that logs its calls and each row's sum at $0280 (VICE's
@@ -69,8 +69,8 @@ def run(tag, on, wait):
     hook = os.path.join(OUT, "hook-sp3-%s.py" % tag)
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl"), "on": on, "wait": wait})
     env = dict(os.environ, GEOS_APPS_DISK=os.path.join(OUT, "apps.d64"),
-               PYTHONPATH=os.path.join(ROOT, "tools", "harness"))
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+               PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness"))
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "10", "--out", os.path.join(OUT, "sp3-%s.png" % tag), "GEOWRITE",
                         "h:" + hook], env=env, capture_output=True, text=True, timeout=500)
     if r.returncode:

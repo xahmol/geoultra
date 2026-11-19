@@ -1,4 +1,4 @@
-; File engine: changing files and folders (docs/FILE_ENGINE.md
+; File engine: changing files and folders (docs/design/FILE_ENGINE.md
 ; "Functions"; engine.s has the module list): module 27 FE_DELETE,
 ; FE_RENAME, FE_MKDIR, FE_RMDIR, FE_CD. Own code.
 

@@ -1,5 +1,5 @@
 """Calling the file engine on GeoUltra on the Ultimate 64, for the U64
-tests of tests/engine/ (docs/FILE_ENGINE.md, "Tests").
+tests of tests/engine/ (docs/design/FILE_ENGINE.md, "Tests").
 
 GeoUltra boots from the U64's flash (the cartridge in /Flash/carts,
 REU and Command Interface on; MOUNTS.INI points at the test copies in

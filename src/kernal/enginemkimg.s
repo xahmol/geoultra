@@ -1,4 +1,4 @@
-; File engine: new disk images (docs/FILE_ENGINE.md "Mount"; engine.s has
+; File engine: new disk images (docs/design/FILE_ENGINE.md "Mount"; engine.s has
 ; the module list): module 71 FE_MKIMG (free REU banks found, cleared,
 ; the image saved), module 72 the blocks of an empty D64, D71 or D81,
 ; module 73 those of an empty native image (DNP). Shared: fefmt.inc.

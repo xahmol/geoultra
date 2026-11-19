@@ -1,5 +1,5 @@
 ; GeoUltra kernal: serial numbers per application from SETTINGS.INI's
-; [serials] (docs/DESIGN.md "Serial number": the user's decisions of
+; [serials] (docs/design/DESIGN.md "Serial number": the user's decisions of
 ; 2026-11-19: keys are the class only, "geoWrite=58B5", any case,
 ; trailing spaces ignored; a change takes effect at once). The section
 ; is parsed into a table in REU bank SERIALS_BANK at SERIALS_AT (a

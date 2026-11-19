@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop on the U64 (docs/DESKTOP.md): disk images.
+"""GeoUltra's desktop on the U64 (docs/design/DESKTOP.md): disk images.
 A favourite (SETTINGS.INI, made for the test and deleted again) takes the
 desktop to /usb0/geoultra/test; the cursor walks to geopub.d64 (its name
 read back through the clipboard, C=C) and a click on the mount icon at
@@ -22,7 +22,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 from feu64 import U64  # noqa: E402
 import apprun  # noqa: E402
 

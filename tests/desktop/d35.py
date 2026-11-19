@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE: the refusal notice (docs/DESIGN.md "Serial
+"""GeoUltra's desktop in VICE: the refusal notice (docs/design/DESIGN.md "Serial
 number", step S5; the user's decisions of 2026-11-19). An application
 "geoWrite" shows geoWrite 2.1's refusal box ("Please reboot your
 system..." through DBVARSTR, as its showError; mist64/geowrite): the

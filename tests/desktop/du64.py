@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop on the U64 (docs/DESKTOP.md, D1): SETTINGS.INI
+"""GeoUltra's desktop on the U64 (docs/design/DESKTOP.md, D1): SETTINGS.INI
 [system] desktop=geoultra makes EnterDeskTop start it from drive E. The
 test stick has no SETTINGS.INI (it is made and deleted again; an
 existing one stops the test). Boots the cartridge, calls EnterDeskTop

@@ -1,7 +1,7 @@
 ; Boot mounts through the Ultimate Command Interface (cold start only,
 ; segment INIT): find the GEOULTRA home folder, read MOUNTS.INI and load
 ; each listed disk image whole into the REU, then write the mount table
-; that DiskInit reads (docs/DESIGN.md, "Mount list", "Drives A-D").
+; that DiskInit reads (docs/design/DESIGN.md, "Mount list", "Drives A-D").
 ;
 ; MOUNTS.INI:   [drives]
 ;               A=/USB0/Geos/GEOS64.D81
@@ -952,7 +952,7 @@ Mount:  lda drive
 @close: jsr CloseFile
 @end:   rts
 
-; --- A native drive of another size than its DNP (docs/DESIGN.md "DNP
+; --- A native drive of another size than its DNP (docs/design/DESIGN.md "DNP
 ; of another size than the drive", user 2026-11-04) ---------------------
 
 ; SizeOption (after ReadPath): options after the path, each after a
@@ -1395,7 +1395,7 @@ zero:   .byte 0
 ; --- Turbo -----------------------------------------------------------------
 
 ; TurboInit (cold start, after MountAll, I/O on): the U64's turbo
-; registers at full speed ($D031 = 15, badline stalls off; docs/DESIGN.md
+; registers at full speed ($D031 = 15, badline stalls off; docs/design/DESIGN.md
 ; "Ultimate settings"). Without them ($D031 reads $FF: the firmware's
 ; Turbo Control is not "U64 Turbo Registers", as when the cartridge was
 ; not started with geoultra64.cfg) the setting is applied through the UCI
@@ -1680,7 +1680,7 @@ bootName:       .byte "GEOBOOT", 0
 bootPerm:       .byte "GeoBoot     V1.0"
 
 ; ======================================================================
-; The system fonts at the cold start (docs/DESIGN.md "System font
+; The system fonts at the cold start (docs/design/DESIGN.md "System font
 ; folder"): overlay modules 121 and 122 (INIT is full). They call back
 ; into INIT (OpenFile, ImageSize, LoadReu, CloseFile), still there then.
 ; Their variables live in TEXT (FV, fontvars below): a module's own
@@ -1806,7 +1806,7 @@ fastKey:        .byte "FASTBUS=ON", 0
 
 ; Reloc: every track/sector reference of FONTS.DNP in banks FONT_BANK on
 ; moved up by FONT_TRACK, so its files load from any drive as tracks
-; FONT_TRACK+1 on (reudrv.s Locate), as tools/sysreloc.py does for drive
+; FONT_TRACK+1 on (reudrv.s Locate), as tools/dev/sysreloc.py does for drive
 ; E at build time: the root header 1/1 (its directory link, its own
 ; block, the parent fields, the border block), then each block of the
 ; root directory and the border block (their files and entries: module

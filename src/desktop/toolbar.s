@@ -1,4 +1,4 @@
-; GeoUltra Desktop: the toolbar (docs/DESKTOP.md, "Toolbar and
+; GeoUltra Desktop: the toolbar (docs/design/DESKTOP.md, "Toolbar and
 ; right-click"; the user's decisions and mock-up of 2026-11-11). A row
 ; under the menu bar across the full width, its height a view option
 ; (tbMode, theme.s: TB_TWO two lines, 16 px, framed 16 x 14 buttons;

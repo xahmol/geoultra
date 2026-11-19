@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GU PostScript (src/psw, docs/DESIGN.md "PostScript writer") in VICE
+"""GU PostScript (src/psw, docs/design/DESIGN.md "PostScript writer") in VICE
 against gwtool ps (tools/gwps.py), byte for byte. A D81 with the
 application and a geoWrite document (GEOUTOOLS_MANUAL by default:
 GeoUTools' manual, 11 pages, the system fonts, pictures) as the apps
@@ -133,8 +133,8 @@ def main():
     if "--c64" in sys.argv:
         clicks.append((150, 104))           # C64 look (real text at 90)
     open(hook, "w").write(HOOK % {"raw": raw, "handle": HANDLE, "clicks": clicks})
-    env = dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness"))
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+    env = dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness"))
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "8", "--out", os.path.join(OUT, "psc64.png"), "GU PostScript",
                         "h:" + hook],
                        env=env, capture_output=True, text=True, timeout=3000)

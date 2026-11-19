@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: the sidebar's favourites and recent documents
-; (docs/DESKTOP.md). Favourite folders are kept in
+; (docs/design/DESKTOP.md). Favourite folders are kept in
 ; SETTINGS.INI's [favourites] section, recent documents in RECENT.INI's
 ; [recent] section (both in the home folder, a path a line); the desktop
 ; reads them at its start (applications reuse its memory). Up to

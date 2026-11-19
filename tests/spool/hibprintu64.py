@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Printing and the automatic hibernation save on the U64 (docs/DESIGN.md
+"""Printing and the automatic hibernation save on the U64 (docs/design/DESIGN.md
 "Print spooler", "Hibernation"; writeback.s, spool.s module 120): a
 three-page job for GU PDF A4 is recorded through the spooler (StartPrint,
 94 bands, StopPrint per page; the queue paused meanwhile), played, and

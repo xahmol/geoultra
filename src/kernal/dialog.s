@@ -5,7 +5,7 @@
 ; RETURN for OK, the recovery on exit) follow the reassembled GEOS 2.0
 ; kernal, mist64/geos kernal/dlgbox/*.s, read as behaviour reference
 ; only. Own code and data layout; the system icons are GeoUltra's own
-; (tools/mkicons.py). Checked with tests/conformance/dialog.py.
+; (tools/dev/mkicons.py). Checked with tests/conformance/dialog.py.
 ;
 ; DBGETFILES: the file list box; its layout (124 x 88 pixels, five rows
 ; of 14, up to 15 files, the arrows from six files on, a name already in
@@ -714,7 +714,7 @@ GfInvert:
         jsr GfRow
         jmp InvertRectangle
 
-; --- Folders in the file list (native drives; docs/DESIGN.md "Directories")
+; --- Folders in the file list (native drives; docs/design/DESIGN.md "Directories")
 
 GetDirHead      = $C247         ; jump table
 OFF_FNAME       = 3             ; the name in a directory entry

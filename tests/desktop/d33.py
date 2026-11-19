@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GeoUltra's desktop in VICE: the context menu on a font (ctxmenu.s,
-fontact.s; docs/DESIGN.md "System font folder"). Drive B gets a GU font
+fontact.s; docs/design/DESIGN.md "System font folder"). Drive B gets a GU font
 (build/fonts/guserif.cvt); the desktop in /b, the cursor on it, the
 context menu: IsPrinter marks it a font (isFont $80, outside /f: item 1
 "install as system font"; the screen shows the box wide enough for

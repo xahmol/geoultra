@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Auto-exec files at the cold start on the U64 (the user's decisions of
-2026-11-14; src/kernal/autoexec.s, modules 92-93; docs/DESIGN.md).
+2026-11-14; src/kernal/autoexec.s, modules 92-93; docs/design/DESIGN.md).
 
 Two tiny AUTO_EXEC files (GUAUTO1, GUAUTO2, made here: each appends its
 number and firstBoot to the unused bytes of GeoUltra's information block

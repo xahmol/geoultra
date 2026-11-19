@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: the print spooler's indicator and queue window
-; (docs/DESIGN.md "Print spooler"; the user's decisions of
+; (docs/design/DESIGN.md "Print spooler"; the user's decisions of
 ; 2026-11-15: the indicator in the menu bar left of the date, as the
 ; status line has no room with two panes; the window from a click on it
 ; and from geos > print queue; a job cancelled stops at once). The

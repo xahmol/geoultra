@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush steps 1.1-1.2 in VICE (docs/GUSH.md): the frame. gush starts and greets,
+"""gush steps 1.1-1.2 in VICE (docs/design/GUSH.md): the frame. gush starts and greets,
 shows the prompt; echo, pwd, an unknown command, DEL while typing, clear,
 the screen scrolling after 24 lines, exit back to the deskTop. Screens in
 build/harness/gush/g1-*.png.

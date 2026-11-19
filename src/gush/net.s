@@ -1,4 +1,4 @@
-; gush: network commands (docs/GUSH.md; overlay 4,
+; gush: network commands (docs/design/GUSH.md; overlay 4,
 ; ovl.s) through the Ultimate's network target, FE_UCI (enginenet.s).
 ; ifconfig: the interface's address, netmask, gateway and MAC address.
 ; wget [-O name] http://host[:port]/path: the file over HTTP/1.0 into the

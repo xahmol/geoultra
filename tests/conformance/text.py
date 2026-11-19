@@ -1,4 +1,4 @@
-# Conformance cases for text output (tools/harness/harness.py).
+# Conformance cases for text output (tools/dev/harness/harness.py).
 #
 # Metrics are compared with each system's own system font (same metrics
 # by design). Drawing is compared with one shared test font: GeoUltra's

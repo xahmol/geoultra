@@ -1,4 +1,4 @@
-; File engine: system functions for gush (docs/FILE_ENGINE.md
+; File engine: system functions for gush (docs/design/FILE_ENGINE.md
 ; "Functions"; engine.s has the module list): module 75 FE_TURBO,
 ; FE_HOME, FE_SETTIME, FE_REBOOT. An application cannot reach the turbo
 ; registers' owner (speed.s), the home folder (REU bank 1), the

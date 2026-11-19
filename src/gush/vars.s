@@ -1,4 +1,4 @@
-; gush: shell variables (docs/GUSH.md). A table of
+; gush: shell variables (docs/design/GUSH.md). A table of
 ; entries "NAME", 0, "value", 0, one after the other in vars (VARS_SIZE
 ; bytes; varsEnd: past the last). Names: letters, digits and "_", not
 ; starting with a digit, at most NAME_MAX characters; values up to

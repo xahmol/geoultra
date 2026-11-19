@@ -1,5 +1,5 @@
 # GU Sans (GeoUltra's Helvetica look-alike, font ID 28): hand-drawn
-# glyphs for tools/mkgeosfont.py --fix (docs/DESIGN.md "Fonts"): the
+# glyphs for tools/mkgeosfont.py --fix (docs/design/DESIGN.md "Fonts"): the
 # characters whose shape from the Adobe 75-dpi bitmaps is wider than the
 # cell the LW-compatible widths give, redrawn narrower in the same style
 # (Adobe's drawings as the model; X11 font-adobe-75dpi, permissive

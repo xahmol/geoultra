@@ -10,7 +10,7 @@ the file's path (GEOULTRA/print/<program>-20YYMMDD-HHMMSS.pdf), made for
 the first page and appended to for the second, mutool reads the PDF
 without a repair (its xref and the update's /Prev right) and finds two
 pages, each page's image is the rows as sent (the blank rest included),
-and the spooled file is the same. docs/DESIGN.md "Printing".
+and the spooled file is the same. docs/design/DESIGN.md "Printing".
 Usage: tests/print/pdf1.py
 """
 import os
@@ -108,8 +108,8 @@ def run(tag, data, spooled):
                                   "spon": ep1.label("spOn"), "on": 0x80 if spooled else 0,
                                   "handle": HANDLE})
     env = dict(os.environ, GEOS_APPS_DISK=os.path.join(OUT, "apps.d64"),
-               PYTHONPATH=os.path.join(ROOT, "tools", "harness"))
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+               PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness"))
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "10", "--out", os.path.join(OUT, "pdf1-%s.png" % tag), "GEOWRITE",
                         "h:" + hook], env=env, capture_output=True, text=True, timeout=900)
     if r.returncode:

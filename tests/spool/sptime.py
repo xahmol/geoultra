@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """How long the print spooler takes per record, in VICE (a measurement;
-docs/DESIGN.md "Print spooler"): a page of 94 empty rows recorded with
+docs/design/DESIGN.md "Print spooler"): a page of 94 empty rows recorded with
 the queue paused through tests/spool/logdrv.s (a driver that only logs),
 then resumed and timed in emulated time (GEOS's clock, $8519-$851B)
 until the driver has had every call. No printer, no serial bus: what is
@@ -81,9 +81,9 @@ def main():
     hook = os.path.join(OUT, "hook-sptime.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl"), "rows": ROWS, "wait": 300,
                                     "noapp": int(os.environ.get("SPTIME_NOAPP", "0"))})
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "10", "--out", os.path.join(OUT, "sptime.png"), "GEOWRITE", "h:" + hook],
-                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness")),
+                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness")),
                        capture_output=True, text=True, timeout=600)
     line = next((l for l in r.stdout.splitlines() if l.startswith("SPT")), "")
     print(line or r.stderr[-600:])

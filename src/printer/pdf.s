@@ -1,5 +1,5 @@
 ; GU PDF A4, GU PDF Letter: GeoUltra's printer drivers that print into
-; PDF files on the Ultimate (docs/DESIGN.md "Printing", the user's
+; PDF files on the Ultimate (docs/design/DESIGN.md "Printing", the user's
 ; decisions of 2026-11-16: a folder "print" in GEOULTRA, a file per
 ; document named after the program that printed and the date and time,
 ; A4 with a Letter choice). One source: assembled with LETTER defined,

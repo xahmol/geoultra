@@ -95,9 +95,9 @@ def main():
                    check=True, capture_output=True)
     hook = os.path.join(OUT, "hook-sp5.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl")})
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "10", "--out", os.path.join(OUT, "sp5.png"), "GEOWRITE", "h:" + hook],
-                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness")),
+                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness")),
                        capture_output=True, text=True, timeout=600)
     out = {l.split()[1]: l.split(None, 2)[2] for l in r.stdout.splitlines() if l.startswith("SP5 ")}
     if not out:

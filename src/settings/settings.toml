@@ -1,4 +1,4 @@
-# GeoUltra Settings (docs/SETTINGS.md): on drive E (src/sysdrive.toml),
+# GeoUltra Settings (docs/design/SETTINGS.md): on drive E (src/sysdrive.toml),
 # started from the desktop's geos menu and toolbar, and from gush.
 [file]
 name = "GU Settings"

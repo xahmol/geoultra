@@ -1,4 +1,4 @@
-; GeoUltra Desktop: opening (docs/DESKTOP.md). Open: the
+; GeoUltra Desktop: opening (docs/design/DESKTOP.md). Open: the
 ; cursor's entry (RETURN, a double click): a folder or drive entered
 ; (FE_CD), an application started in the desktop's place, a desk
 ; accessory run (it comes back: the screen drawn again), a printer

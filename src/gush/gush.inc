@@ -1,4 +1,4 @@
-; gush (docs/GUSH.md): constants shared by its sources.
+; gush (docs/design/GUSH.md): constants shared by its sources.
 
 COLS            = 53            ; the console: 6-pixel cells on 320 pixels
 ROWS            = 25            ; row 0 the status line
@@ -18,7 +18,7 @@ minutes         = $851A
 ; Keys (keyData): geos.inc has them (DEL is KEY_DELETE, cursor left
 ; KEY_LEFT), and CR.
 
-; The file engine (docs/FILE_ENGINE.md): entry 6 of GeoUltra's extension
+; The file engine (docs/design/FILE_ENGINE.md): entry 6 of GeoUltra's extension
 ; jump table, whose address is at guExtTable (gush.s, FileEngine); its
 ; functions and errors.
 guExtTable      = $C0E4

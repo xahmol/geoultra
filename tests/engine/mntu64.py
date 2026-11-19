@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """File engine on the Ultimate 64: mounting while GEOS runs
-(docs/FILE_ENGINE.md "Mount"; enginemount.s).
+(docs/design/FILE_ENGINE.md "Mount"; enginemount.s).
 
 GeoUltra from the U64's flash (feu64.py); the cartridge given on the
 command line is put there first. Only test copies in /USB0/GEOULTRA/test

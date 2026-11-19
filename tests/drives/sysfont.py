@@ -5,7 +5,7 @@ A test copy of the system drive gets a font from the user's own disks
 (SYSFONT_DISK, a D64 or D81, default GEOS64.D81 in GEOS_DEV, font
 SYSFONT_NAME, default LW_Cal; never committed) in its root next to
 GeoUltra's own files (src/sysdrive.toml, tools/mkappsdnp.py), is
-relocated (tools/sysreloc.py) and patched into a copy of the cartridge. geoWrite runs from GEOS_APPS_DISK (default the
+relocated (tools/dev/sysreloc.py) and patched into a copy of the cartridge. geoWrite runs from GEOS_APPS_DISK (default the
 user's neos-mouse-driver-for-geos.d64, five fonts, so the menu has room),
 the font menu is opened, and the font chosen and typed with. Screens in
 build/harness/sysfont-*.png; the font menu is checked for the font's
@@ -48,7 +48,7 @@ def build():
                    check=True, stdout=subprocess.DEVNULL)
     inc = open(os.path.join(ROOT, "src", "inc", "sysdrive.inc")).read()
     shift = re.search(r"^SYSDRV_TRACK\s*=\s*(\d+)", inc, re.M).group(1)
-    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "sysreloc.py"), plain, image, shift],
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "sysreloc.py"), plain, image, shift],
                    check=True, stdout=subprocess.DEVNULL)
     crt = bytearray(open(os.path.join(ROOT, "build", "geoultra64.crt"), "rb").read())
     packets, at = [], int.from_bytes(crt[0x10:0x14], "big")
@@ -78,7 +78,7 @@ def build():
 
 def run(cartridge, out, *events):
     env = dict(os.environ, GEOS_APPS_DISK=APPS_DISK, GEOULTRA_CRT=cartridge)
-    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                     "--wait", "12", "--out", out, "GEOWRITE",
                     "102,63,p", "102,63,r", "w:3", "k:Font test", "k:#13", "w:8"] + list(events),
                    env=env, check=True, stdout=subprocess.DEVNULL)

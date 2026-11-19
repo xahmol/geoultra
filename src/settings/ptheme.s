@@ -1,4 +1,4 @@
-; GeoUltra Settings: the Theme page (overlay 5, ovl.s; docs/SETTINGS.md):
+; GeoUltra Settings: the Theme page (overlay 5, ovl.s; docs/design/SETTINGS.md):
 ; the theme editor, in compact rows: Theme [-] name [+]
 ; with "use" (SETTINGS.INI [desktop] theme=) and "copy" (a new theme
 ; file from this one); Part [-] name [+] (the theme file's lines,

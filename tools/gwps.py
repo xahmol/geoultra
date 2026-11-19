@@ -1,5 +1,5 @@
 """gwps.py - a geoWrite 2.x document as PostScript, for gwtool.py's `ps`
-command (docs/TOOLS_MANUAL.md, "PostScript"; docs/DESIGN.md "PostScript
+command (docs/manuals/TOOLS_MANUAL.md, "PostScript"; docs/design/DESIGN.md "PostScript
 writer": the user's decisions of 2026-11-15 and 2026-11-19). It is the
 reference for the C64 writer: both lay a page out as geoWrite does, and
 tests/print compare them with geoWrite's own printout. No packages
@@ -53,7 +53,7 @@ TAB, PAGE_BREAK, CR = 0x09, 0x0C, 0x0D
 UNDERLINE, BOLD, REVERSE, ITALIC, OUTLINE, SUPER, SUB = 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02
 PAPER = {"a4": (59528, 84189), "letter": (61200, 79200)}   # hundredths of a point
 DOT = 0.9                               # points per dot (90 hundredths)
-# IDs 27-37 (geoLaser's table: ID - 27 is the family; docs/DESIGN.md
+# IDs 27-37 (geoLaser's table: ID - 27 is the family; docs/design/DESIGN.md
 # "Fonts"): the LaserWriter's fonts, (plain, bold, italic, bold italic).
 PS_FONTS = {
     27: ("Times-Roman", "Times-Bold", "Times-Italic", "Times-BoldItalic"),

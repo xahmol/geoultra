@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE: the list sorted (docs/DESKTOP.md,
+"""GeoUltra's desktop in VICE: the list sorted (docs/design/DESKTOP.md,
 "Sorting"): ".." first, then folders, then files, each group by name in
 any case. Drive B gets files zz, Mm, aa, BB (and gush; c1541 names them in
 PETSCII: AA, \xc2\xc2, \xcdM, ZZ, sorted as AA, BB, MM, ZZ), two folders are

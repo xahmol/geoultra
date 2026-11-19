@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush in VICE (docs/GUSH.md, "Commands"): cp (a new name, the
+"""gush in VICE (docs/design/GUSH.md, "Commands"): cp (a new name, the
 question before overwriting answered n and y, -f, several sources into a
 folder, a progress line), mv, mkdir -t (a 1581 partition), rm (asked,
 -f), rmdir (not empty, then empty), cat, more (pages, q), df, errors.

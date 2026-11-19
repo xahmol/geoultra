@@ -1,4 +1,4 @@
-; GeoUltra Desktop: the 8 x 8 icons (docs/DESKTOP.md, "Look and
+; GeoUltra Desktop: the 8 x 8 icons (docs/design/DESKTOP.md, "Look and
 ; themes"), own drawings from the approved mock-up
 ; (2026-11-06): an entry's kind in the list, the sidebar's drives,
 ; Ultimate roots, favourites and recent documents, the open drive's

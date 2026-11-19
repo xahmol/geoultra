@@ -429,7 +429,7 @@ Out:    lda #FE_WRITE
 ; then uses the theme (overlay 1: an overlay calls no other).
 DeskRead:
         lda PrntFilename        ; no printer yet: GU Epson FX-80 (drive E;
-        bne :+                  ; docs/DESIGN.md "Printing"), unless
+        bne :+                  ; docs/design/DESIGN.md "Printing"), unless
         ldx #DEF_PRN_LEN        ; printer= names another
 @def:   lda DefPrinter,x
         sta PrntFilename,x

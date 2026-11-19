@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush in VICE (docs/GUSH.md, "Starting programs", "help"):
+"""gush in VICE (docs/design/GUSH.md, "Starting programs", "help"):
 help, help CMD, starting an application by name (gush itself: a fresh
 screen), by path and from a drive's root when it is not in the current
 directory; a file that is no program; an unknown name.

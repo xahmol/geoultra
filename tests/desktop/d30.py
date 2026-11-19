@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE (docs/DESIGN.md "Drives"; the user's
+"""GeoUltra's desktop in VICE (docs/design/DESIGN.md "Drives"; the user's
 decision of 2026-11-18): a document on drive C opens in geoWrite 2.1,
 which looks for a document only on drive A (equal disk names) or else on
 drive B: the desktop swaps drives B and C while geoWrite runs
@@ -21,7 +21,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 sys.path.insert(0, os.path.join(ROOT, "tests", "desktop"))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
 import localcfg  # noqa: E402

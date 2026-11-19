@@ -1,5 +1,5 @@
 # Conformance cases for arithmetic, memory, strings, calls and the REU
-# routines (tools/harness/harness.py).
+# routines (tools/dev/harness/harness.py).
 
 A = 0x4000          # data area
 B = 0x4100

@@ -1,7 +1,7 @@
 ; GEOS 64 2.0 interface: zero page, system variables and constants that
 ; applications are compiled against. Addresses from HG2G2022 and
 ; inc/geossym.inc of the reassembled kernal (mist64/geos, Maciej
-; Witkowiak); see docs/ARCHITECTURE.md, "Attribution".
+; Witkowiak); see docs/reference/ARCHITECTURE.md, "Attribution".
 
 ; Pseudo-registers r0-r15
 r0      = $02

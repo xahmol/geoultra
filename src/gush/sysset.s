@@ -1,4 +1,4 @@
-; gush: turbo, date and ntp (docs/GUSH.md), with turbo -s
+; gush: turbo, date and ntp (docs/design/GUSH.md), with turbo -s
 ; writing the step into SETTINGS.INI's [system] section. Own code.
 
         .include "geos.inc"

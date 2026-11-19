@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Task switching in VICE (docs/DESIGN.md "Task switcher"; src/kernal/
+"""Task switching in VICE (docs/design/DESIGN.md "Task switcher"; src/kernal/
 task.s): the desktop in /b; a request (taskReq, as C= + RUN/STOP sets
 it) opens the popup: the desktop, new task, close task. "new task": a
 fresh desktop in slot 1, moved to /a there; the popup again: back to

@@ -1,4 +1,4 @@
-; Folders on native drives (docs/DESIGN.md, "Directories"): CMD native
+; Folders on native drives (docs/design/DESIGN.md, "Directories"): CMD native
 ; subdirectories. Each drive has a current folder (the T/S of its header
 ; block; 1/1 is the root); the disk driver reads and writes that header as
 ; curDirHead and starts the directory at its link, so existing applications
@@ -17,7 +17,7 @@
 ;
 ; 1581 images: sub-directory partitions act as folders the same way
 ; (folderS = 0: the partition starting at folderT; Dir81, Patch81 below,
-; modules 18-21 at the end; docs/ARCHITECTURE.md "1581 partitions as
+; modules 18-21 at the end; docs/reference/ARCHITECTURE.md "1581 partitions as
 ; folders"). Modules: 12 the four moves (1581 ones go on to 18), 13
 ; SetGEOSDisk and RemoveDir (1581: 21), 14 MakeDir (1581: 19, which
 ; formats with 20). Shared code: foldershared.inc, foldername.inc,
@@ -84,7 +84,7 @@ MakeDir:        jsr OvlCall     ; +20 r0 = name: a new folder in it
 RemoveDir:      jsr OvlCall     ; +25 r0 = name of an empty folder: removed
         .byte 13, 3
 FileEngine:     jsr OvlCall     ; +30 the file engine: A = function
-        .byte 22, 0             ;     (engine.s, docs/FILE_ENGINE.md)
+        .byte 22, 0             ;     (engine.s, docs/design/FILE_ENGINE.md)
 
 SetGEOSDiskOvl:                 ; the driver's SetGEOSDisk (module 13)
         jsr OvlCall
@@ -268,7 +268,7 @@ OvDirRoot:
         jmp Go
 @end:   rts
 
-; --- 1581 partitions as folders (docs/GEOS_REFERENCE.md "1581
+; --- 1581 partitions as folders (docs/reference/GEOS_REFERENCE.md "1581
 ; partitions", as the real 1581 DOS writes them) ---------------------
 ; The current partition is folderT = its first track, folderS = 0; the
 ; root keeps the native default 1/1 (Dir81 then gives track 40).

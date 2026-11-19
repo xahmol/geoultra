@@ -1,4 +1,4 @@
-# Conformance cases for dialog boxes (tools/harness/harness.py).
+# Conformance cases for dialog boxes (tools/dev/harness/harness.py).
 #
 # DoDlgBox only returns when the dialog ends, so the cases run as event
 # cases with "noreturn"; after the call r0L (the result) is stored at

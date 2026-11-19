@@ -1,4 +1,4 @@
-; File engine (docs/FILE_ENGINE.md): constants, the work area and the REU
+; File engine (docs/design/FILE_ENGINE.md): constants, the work area and the REU
 ; layout shared by its overlay modules (src/kernal/engine*.s). Included by
 ; each engine source; defines symbols only, no code.
 
@@ -344,7 +344,7 @@ sNew            = feInfo + 6    ; nonzero: a block was added (FE_WRITE)
 .define LN_NAME "GU.LONGNAMES"  ; its name (felong.inc, enginelong.s)
 LN_EXACT        = $01           ; H_PAT's first byte: an exact short name
                                 ; follows (FE_OPENDIR on one file)
-; GU.LONGNAMES (docs/FILE_ENGINE.md, "Long names"): records of LN_REC
+; GU.LONGNAMES (docs/design/FILE_ENGINE.md, "Long names"): records of LN_REC
 ; bytes, two in each block's data, never across blocks.
 LN_REC          = 127
 LN_T            = 0             ; the file's directory block (0: free)

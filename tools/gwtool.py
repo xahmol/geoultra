@@ -277,7 +277,7 @@ def new_header(head_h, foot_h, info):
 
 
 def write_cvt(gf, path):
-    """A CVT (the layout c1541 -geoswrite reads, as tools/vlircvt.py)."""
+    """A CVT (the layout c1541 -geoswrite reads, as tools/dev/vlircvt.py)."""
     sig = bytearray(gf.entry[:30]) + b"PRG formatted GEOS file V1.0"
     sig += bytes(BLOCK - len(sig))
     header = gf.header[2:2 + BLOCK].ljust(BLOCK, b"\0")

@@ -2,7 +2,7 @@
 ; source files use).
 
 ; Drive flags (drvFlags, one byte per drive; mount.s sets them at boot,
-; the driver and the write-back keep them; docs/ARCHITECTURE.md).
+; the driver and the write-back keep them; docs/reference/ARCHITECTURE.md).
 F_DIRTY         = $01           ; changed since the last write-back
 F_READONLY      = $02           ; the image file is read-only
 F_BACKUP        = $04           ; writeback.s: a backup copy was made

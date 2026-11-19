@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""File engine on the Ultimate 64 (docs/FILE_ENGINE.md, "Tests").
+"""File engine on the Ultimate 64 (docs/design/FILE_ENGINE.md, "Tests").
 
 GeoUltra from the U64's flash (feu64.py); the cartridge given on the
 command line is put there first. Everything the test writes is in

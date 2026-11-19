@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE: the icon view (docs/DESKTOP.md, "Icon
+"""GeoUltra's desktop in VICE: the icon view (docs/design/DESKTOP.md, "Icon
 view"). In /a (GEOS's own files): the grid's layout (5 columns beside
 the wide sidebar, 4 rows under the toolbar: 20 cells a page, scrolling
 a row of 5), the GEOS files' header icons kept in the REU (their bits

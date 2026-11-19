@@ -18,7 +18,7 @@
 ; (a callback may find another module there), and a module's own bytes
 ; (variables included) are fetched anew from the REU after every nested
 ; overlay call, so values that must survive one live outside the module.
-; docs/ARCHITECTURE.md.
+; docs/reference/ARCHITECTURE.md.
 
         .include "geos.inc"
         .include "hw.inc"

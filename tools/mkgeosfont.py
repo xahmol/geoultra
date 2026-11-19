@@ -5,7 +5,7 @@
                   [--pcf PATTERN]
 
 FONT.otf is an OpenType/TrueType font (GeoUltra's fonts: TeX Gyre, GUST
-Font Licence; docs/DESIGN.md "Fonts"). ID is the GEOS font ID (10 bits),
+Font Licence; docs/design/DESIGN.md "Fonts"). ID is the GEOS font ID (10 bits),
 NAME the file name and the font's name in menus ("GU Serif"), SIZES the
 point sizes, comma-separated (GEOS: 1 point = 1 pixel at 80 dpi, the
 font's height in rows). OUT.cvt is a VLIR CVT that c1541 -geoswrite and

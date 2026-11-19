@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Task switching on the U64 (docs/DESIGN.md "Task switcher"; src/
+"""Task switching on the U64 (docs/design/DESIGN.md "Task switcher"; src/
 kernal/task.s, modules 95-98): the desktop as task 0 marks a RAM byte
 ($0334) $AA; a request (taskReq, as C= + RUN/STOP sets it) opens the
 popup; "new task": slot 1, a fresh desktop, the byte set to $BB there;

@@ -1,5 +1,5 @@
 # GU Book (GeoUltra's Bookman look-alike, font ID 32, after TeX Gyre
-# Bonum): hand-drawn glyphs for tools/mkgeosfont.py --fix (docs/DESIGN.md
+# Bonum): hand-drawn glyphs for tools/mkgeosfont.py --fix (docs/design/DESIGN.md
 # "Fonts"): at 9 and 10 points FreeType's rendering loses the crossbars
 # of f and t and a serif of T. Rows: "#" ink, "." paper; the size's full
 # height, the cell's width. Own drawings, 2026-11-16.

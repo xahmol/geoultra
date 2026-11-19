@@ -1,5 +1,5 @@
 # GU Serif (GeoUltra's Times look-alike, font ID 27): hand-drawn glyphs
-# for tools/mkgeosfont.py --fix (docs/DESIGN.md "Fonts"):
+# for tools/mkgeosfont.py --fix (docs/design/DESIGN.md "Fonts"):
 # - 9 points: the lowercase drawn anew (no Adobe bitmap at 9; FreeType's
 #   rendering loses strokes at that size);
 # - 10-14 points: the characters whose shape from the Adobe 75-dpi

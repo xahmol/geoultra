@@ -1,4 +1,4 @@
-; gush, the GeoUltra shell (docs/GUSH.md): a GEOS application with a text
+; gush, the GeoUltra shell (docs/design/GUSH.md): a GEOS application with a text
 ; console (con.s), a line editor and commands over the file engine. Step
 ; 1.3: the frame (screen, status line), the line editor with history
 ; (edit.s), words and wildcards (parse.s), the commands (cmds.s). Own code.
@@ -20,7 +20,7 @@ StartMouseMode  = $C14E
 
 Start:  jmp Begin
 
-; The API for external commands (module.s, docs/GUSH_COMMANDS.md): a
+; The API for external commands (module.s, docs/reference/GUSH_COMMANDS.md): a
 ; jump table at $0403, which never moves; new entries only at its end
 ; (and API_VERSION up, module.s).
 Api:    jmp ConPut              ; $0403 A: a character (CR: a new line)

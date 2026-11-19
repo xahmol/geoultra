@@ -1,4 +1,4 @@
-; File engine: streams on GEOS drives (docs/FILE_ENGINE.md "Functions";
+; File engine: streams on GEOS drives (docs/design/FILE_ENGINE.md "Functions";
 ; engine.s has the module list): module 32 FE_OPEN, module 33 a new
 ; file for it, module 34 FE_READ, module 35 FE_WRITE (FE_CLOSE is in
 ; module 22). Shared: festream.inc. On the Ultimate the three go on in

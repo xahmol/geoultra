@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: the clipboard menu (overlay 3, with mounting: overlay
-; 7, the context menu and Info, was full; docs/DESIGN.md "Clipboard"; the user's decisions of
+; 7, the context menu and Info, was full; docs/design/DESIGN.md "Clipboard"; the user's decisions of
 ; 2026-11-15: the menu that was "disk", show, save as file, clear). The
 ; kernal keeps every program's scrap files in one store (src/kernal/
 ; scrap.s) whose directory is block 0 of track 246 on every drive; the

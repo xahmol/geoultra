@@ -1,4 +1,4 @@
-; GeoUltra Settings (docs/SETTINGS.md): the core. The start, the frame
+; GeoUltra Settings (docs/design/SETTINGS.md): the core. The start, the frame
 ; (title, the side list of pages, OK, Cancel and Save), the pages handed
 ; to their overlays (ovl.s), and SETTINGS.INI: read whole at the start
 ; (src/inc/inifile.inc), changed in memory by the pages (ini.inc,
@@ -76,7 +76,7 @@ Start:  lda r0L                 ; (ST_LD_DATA: started for an application
         sta r0H
         jmp DoIcons
 
-; FileEngine: A = the function (docs/FILE_ENGINE.md).
+; FileEngine: A = the function (docs/design/FILE_ENGINE.md).
 FileEngine:
         jmp (feVec)
 

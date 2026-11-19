@@ -1,4 +1,4 @@
-; File engine: long names on GEOS drives (docs/FILE_ENGINE.md, "Long
+; File engine: long names on GEOS drives (docs/design/FILE_ENGINE.md, "Long
 ; names"; engine.s has the module list): module 48 looks them up (a long
 ; name to its file, a file to its long name, FE_GETLONG), module 49 keeps
 ; GU.LONGNAMES (a record set, dropped; module 53 makes the file), module

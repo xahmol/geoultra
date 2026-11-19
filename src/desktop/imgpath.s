@@ -1,6 +1,6 @@
 ; GeoUltra Desktop: paths through disk images for the recent documents
 ; and for opening a document inside an image that is not mounted
-; (overlay 6, ovl.s; docs/DESKTOP.md "Recent documents"; the user's
+; (overlay 6, ovl.s; docs/design/DESKTOP.md "Recent documents"; the user's
 ; decision of 2026-11-18: a recent document on an image unmounted since
 ; did nothing when clicked; it should offer to mount the image again).
 ; All on side.s's work buffer (a path, workLen its length):

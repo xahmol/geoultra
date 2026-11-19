@@ -1,5 +1,5 @@
 ; GU PostScript: the output file (GEOULTRA/print/<document>.ps) through
-; GeoUltra's file engine (docs/FILE_ENGINE.md), written in blocks of
+; GeoUltra's file engine (docs/design/FILE_ENGINE.md), written in blocks of
 ; OUT_MAX bytes, and the number formats the PostScript needs. Own code.
 
         .include "psw.inc"
@@ -329,7 +329,7 @@ PutHex: pha
 :       ora #'0'
         jmp PutC
 
-; FileEngine: A = the function (docs/FILE_ENGINE.md), GEOS's buffers
+; FileEngine: A = the function (docs/design/FILE_ENGINE.md), GEOS's buffers
 ; $8100-$84FF kept around it: the engine uses them as scratch, and
 ; fileHeader holds the open document's record index (the U64, 2026-11-19:
 ; after the first write no more pages could be read; VICE's tests answer

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """How fast GU Epson FX-80 prints on the U64's printer (a measurement,
-not a pass/fail test; docs/DESIGN.md "Printing"): three pages recorded
+not a pass/fail test; docs/design/DESIGN.md "Printing"): three pages recorded
 through the spooler and timed while they play (FE_SPOOL's percentage
 every 5 s; the queue paused while a page is recorded, timed from the
 resume): an empty page (only paper feed: the cost per band without

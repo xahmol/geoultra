@@ -35,7 +35,7 @@
 
 // volatile and a __noinline reu(): the REU reads and writes buf by DMA,
 // which the compiler cannot see; inlined, the 'A' store was dropped as
-// dead (rule in docs/OSCAR64_MANUAL.md, REU section).
+// dead (rule in docs/reference/OSCAR64_MANUAL.md, REU section).
 static volatile char buf[260];
 static char dir[] = "/Temp/";
 static char name[] = "gutest.bin";

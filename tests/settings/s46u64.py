@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GeoUltra Settings on the U64: the Theme page's delete (the user,
-2026-11-13; docs/SETTINGS.md). A test theme, THEMES/Ztest.ini (a copy of
+2026-11-13; docs/design/SETTINGS.md). A test theme, THEMES/Ztest.ini (a copy of
 the GeoUltra theme with name=Ztest), is written first and is the only
 file the test deletes; the user's SETTINGS.INI and theme files are only
 read, and checked byte for byte at the end. Settings on its Theme page:
@@ -20,7 +20,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 from feu64 import U64  # noqa: E402
 import apprun  # noqa: E402
 

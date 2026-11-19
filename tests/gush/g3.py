@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush in VICE (docs/GUSH.md, "Syntax", "Commands"): words with
+"""gush in VICE (docs/design/GUSH.md, "Syntax", "Commands"): words with
 quotes and backslash, wildcards through the engine's listing (a match,
 none, a folder part), ls on "/" and a drive, ls -l, cd and pwd (also cd
 without a path: the start drive's root), errors as text.

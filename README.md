@@ -38,33 +38,44 @@ lists what was tested.
 
 ## Documents
 
-For users:
+The documents are in three groups: `docs/manuals/` for users,
+`docs/reference/` for developers, `docs/design/` the design record.
+
+**User manuals** (`docs/manuals/`, each also as a PDF):
 
 | File | Contents |
 | --- | --- |
-| [`docs/GEOULTRA_MANUAL.md`](docs/GEOULTRA_MANUAL.md) | **The user manual**: installing and starting, the desktop, drives and disk images, programs and tasks, Settings, themes, printing, fonts, serial numbers, gush, the files on the stick, limits, what was tested |
-| [`docs/TOOLS_MANUAL.md`](docs/TOOLS_MANUAL.md) | **The PC tools**: geosdisk (disk images), gwtool (geoWrite documents: convert, merge, Word, Markdown, PostScript), gptool (geoPaint pictures), mkappsdnp (an applications image), mkgeosfont (GEOS fonts) |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Rules for pull requests and what a bug report needs |
+| [`GEOULTRA_MANUAL.md`](docs/manuals/GEOULTRA_MANUAL.md) ([PDF](docs/manuals/GEOULTRA_MANUAL.pdf)) | **The user manual**: installing and starting, the desktop, drives and disk images, programs and tasks, Settings, themes, printing (with GU PostScript), fonts, serial numbers, gush, the files on the stick, limits, what was tested |
+| [`TOOLS_MANUAL.md`](docs/manuals/TOOLS_MANUAL.md) ([PDF](docs/manuals/TOOLS_MANUAL.pdf)) | **The PC tools**: geosdisk (disk images), gwtool (geoWrite documents: convert, merge, Word, Markdown, PostScript), gwgen (geoWrite documents from a description), gptool (geoPaint pictures), mkappsdnp (an applications image), mkgeosfont (GEOS fonts) |
 
-`make docs` makes PDFs of them (pandoc and XeLaTeX). `make samples`
-makes the sample geoWrite documents (a brochure, a quick start guide, a
+`make docs` makes the PDFs (pandoc and XeLaTeX). `make samples` makes
+the sample geoWrite documents (a brochure, a quick start guide, a
 letter) on a D81 image, and PDFs of the brochure and the guide
 (`samples/`, made with `tools/gwgen.py`).
 
-Design and internals:
+**Technical and developer reference** (`docs/reference/`):
 
 | File | Contents |
 | --- | --- |
-| [`docs/DESIGN.md`](docs/DESIGN.md) | The decisions, the phases, what was verified in VICE and on hardware, the code sweeps |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How it is built: cartridge, boot, kernal, overlays, REU map, drivers, tests |
-| [`docs/FILE_ENGINE.md`](docs/FILE_ENGINE.md) | The file engine, the kernal extension the desktop, gush and Settings use |
-| [`docs/DESKTOP.md`](docs/DESKTOP.md) | The desktop: design, plan, state of the work |
-| [`docs/SETTINGS.md`](docs/SETTINGS.md) | GeoUltra Settings: decisions, structure, steps |
-| [`docs/GUSH.md`](docs/GUSH.md) | gush, the shell: design, state of the work |
-| [`docs/GUSH_COMMANDS.md`](docs/GUSH_COMMANDS.md) | Writing external gush commands |
-| [`docs/PSW.md`](docs/PSW.md) | GU PostScript: how it works, tests |
-| [`docs/FEASIBILITY.md`](docs/FEASIBILITY.md) | The original feasibility analysis (its route and phases superseded by DESIGN.md) |
-| [`docs/GEOS_REFERENCE.md`](docs/GEOS_REFERENCE.md), [`docs/GEOS_API_REFERENCE.md`](docs/GEOS_API_REFERENCE.md) | GEOS technical reference and per-routine API (from The Hitchhiker's Guide to GEOS v2022) |
+| [`ARCHITECTURE.md`](docs/reference/ARCHITECTURE.md) | How it is built: cartridge, boot, kernal, overlays, REU map, drivers, tests |
+| [`GUSH_COMMANDS.md`](docs/reference/GUSH_COMMANDS.md) | Writing external gush commands |
+| [`PSW.md`](docs/reference/PSW.md) | GU PostScript inside: how it works, its tests |
+| [`GEOS_REFERENCE.md`](docs/reference/GEOS_REFERENCE.md), [`GEOS_API_REFERENCE.md`](docs/reference/GEOS_API_REFERENCE.md) | GEOS technical reference and per-routine API (from The Hitchhiker's Guide to GEOS v2022) |
+| [`OSCAR64_MANUAL.md`](docs/reference/OSCAR64_MANUAL.md) | Oscar64 compiler reference (the smoke tests) |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Rules for pull requests and what a bug report needs |
+
+**Design record** (`docs/design/`): how GeoUltra was decided and
+planned, kept as the history of the project. Parts describe plans that
+changed later; the manuals describe GeoUltra as it is.
+
+| File | Contents |
+| --- | --- |
+| [`DESIGN.md`](docs/design/DESIGN.md) | The decisions, the phases, what was verified in VICE and on hardware, the code sweeps |
+| [`FILE_ENGINE.md`](docs/design/FILE_ENGINE.md) | The file engine, the kernal extension the desktop, gush and Settings use |
+| [`DESKTOP.md`](docs/design/DESKTOP.md) | The desktop: design, plan, state of the work |
+| [`SETTINGS.md`](docs/design/SETTINGS.md) | GeoUltra Settings: decisions, structure, steps |
+| [`GUSH.md`](docs/design/GUSH.md) | gush, the shell: design, state of the work |
+| [`FEASIBILITY.md`](docs/design/FEASIBILITY.md) | The original feasibility analysis (its route and phases superseded by DESIGN.md) |
 
 ## Building from source
 
@@ -136,7 +147,7 @@ Berkeley Softworks code.
 ### Fonts
 
 GeoUltra's own GEOS fonts ("GU Serif", "GU Sans", ...; `make fonts`,
-`tools/mkgufonts.py`) are drawn from two free sources, kept in
+`tools/dev/mkgufonts.py`) are drawn from two free sources, kept in
 `tools/fonts/src` with their licences:
 
 - the TeX Gyre fonts by Bogusław Jackowski and Janusz M. Nowacki (GUST
@@ -164,7 +175,7 @@ written with AI says so in a `Co-Authored-By: Claude` line.
 How the AI's work is checked: every kernal routine is compared with
 GEOS 2.0's behaviour in VICE by the conformance harness
 (`make conformance`, `make conformance81`), and hardware facts are
-measured on an Ultimate 64 (docs/DESIGN.md, "Verified on hardware"). On
+measured on an Ultimate 64 (docs/design/DESIGN.md, "Verified on hardware"). On
 the Ultimate the AI also runs the tests itself through its network
 interface (deploying builds, changing settings, reading memory, taking
 screenshots), while Xander does the physical steps (power cycles, keys)
@@ -174,9 +185,9 @@ The desktop likewise: `make test-desktop` in VICE and
 `tests/desktop/du64.py` and `d6u64.py` on the Ultimate 64.
 Some steps are done unattended: on Xander's instruction the AI works
 through steps he decided on, testing, committing and pushing each one,
-and he reviews the result afterwards (the commits and docs/GUSH.md say
+and he reviews the result afterwards (the commits and docs/design/GUSH.md say
 what was done and tested).
-The manuals (docs/GEOULTRA_MANUAL.md, docs/TOOLS_MANUAL.md) are written
+The manuals (docs/manuals/GEOULTRA_MANUAL.md, docs/manuals/TOOLS_MANUAL.md) are written
 by the AI from the code, its tests and Xander's design decisions, and
 checked against the code where it states a fact (keys, settings, file
 names); Xander reviews them. The sample documents (`samples/`: the

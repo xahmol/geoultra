@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE (docs/DESKTOP.md "Opening"; the user's
+"""GeoUltra's desktop in VICE (docs/design/DESKTOP.md "Opening"; the user's
 decision of 2026-11-18): a document opens in the newest version of its
 application on any drive. Drive A is a geoWrite 1.x work disk with its
 own geoWrite and old documents (GEOS_OLDWRITE_DISK, the user's own, a
@@ -17,7 +17,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 OLD = os.environ.get("GEOS_OLDWRITE_DISK", os.path.join(ROOT, "build", "harness", "bb", "g03.d64"))
 DOC = "Big Brother 1"
 KEY_DOWN, KEY_HOME, CR = 17, 18, 13

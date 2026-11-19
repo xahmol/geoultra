@@ -1,6 +1,6 @@
 ; GU Epson FX-80: GeoUltra's printer driver for Epson FX-80/JX-80
 ; printers and for the Ultimate's virtual printer in its Epson emulation
-; (docs/DESIGN.md "Printing"). Loaded at PRINTBASE ($7900, up to $7F3F)
+; (docs/design/DESIGN.md "Printing"). Loaded at PRINTBASE ($7900, up to $7F3F)
 ; with the GEOS 2.0 printer driver interface (HG2G chapter 11 and the
 ; entries 20-176 to 20-183: InitForPrint, StartPrint, PrintBuffer,
 ; StopPrint, GetDimensions, PrintASCII, StartASCII, SetNLQ). Own code,

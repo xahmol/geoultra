@@ -1,5 +1,5 @@
 ; File engine: the Ultimate's Command Interface for gush's network
-; commands (docs/FILE_ENGINE.md "Functions"; engine.s has the module
+; commands (docs/design/FILE_ENGINE.md "Functions"; engine.s has the module
 ; list): module 80 FE_UCI, a command sent as given and its reply's data
 ; taken, through the exchange every Ultimate call uses (module 36,
 ; engineult.s), so the protocol lives in one place. Own code.

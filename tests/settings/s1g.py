@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings started from gush (docs/SETTINGS.md): the
+"""GeoUltra Settings started from gush (docs/design/SETTINGS.md): the
 command line "/e/GU Settings" (quotes keep the space) starts it from
 drive E: its code at $0400 and its Desktop page. Screen:
 build/harness/gush/settings-s1g.png.

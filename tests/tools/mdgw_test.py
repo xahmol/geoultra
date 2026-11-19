@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/mdgw.py and tools/gwmd.py through gwtool (docs/TOOLS_MANUAL.md,
+"""tools/mdgw.py and tools/gwmd.py through gwtool (docs/manuals/TOOLS_MANUAL.md,
 "Markdown"): a Markdown text with headings (ATX and underlined), bold,
 italic, code, a link, a bulleted and a numbered list, a block quote, a
 code block, a table, a page break, a rule and a picture (PNG) made into

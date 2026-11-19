@@ -1,4 +1,4 @@
-; INI text in memory (docs/SETTINGS.md, "Structure"): find, set and
+; INI text in memory (docs/design/SETTINGS.md, "Structure"): find, set and
 ; delete a key in a section of SETTINGS.INI, MOUNTS.INI or a theme file
 ; held whole in a buffer. Shared code, own design; reading and writing
 ; the file are the includer's (they differ per program). Lines end in

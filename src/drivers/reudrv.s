@@ -1,5 +1,5 @@
 ; REU image disk driver at $9000: every drive A-D is a disk image held
-; whole in the REU (docs/DESIGN.md, "Drives A-D"). One driver serves all
+; whole in the REU (docs/design/DESIGN.md, "Drives A-D"). One driver serves all
 ; types; a geometry step maps track/sector to a block number, and a block
 ; is one 256-byte REU DMA. Written from the HG2G2022 descriptions of the
 ; disk routines; behaviour details (the ChkDkGEOS compare length, the
@@ -119,7 +119,7 @@ InitForIO:
         ldy #0
         sty $D030
         lda $D031               ; U64 turbo registers ($FF: none): 1 MHz
-        sta ioTurbo             ; for the serial bus (docs/DESIGN.md
+        sta ioTurbo             ; for the serial bus (docs/design/DESIGN.md
         cmp #$FF                ; "Turbo")
         beq @slow
         sty $D031
@@ -183,7 +183,7 @@ IoNmi:  rti
 ; code) finds the drive-execute and status calls after the first STA $8B
 ; behind NewDisk and calls those. GeoUltra's answers (ProtExecute,
 ; ProtStatus) report "not an original disk", unless the optional module
-; is switched on (src/kernal/bypass.s, docs/DESIGN.md "Serial number").
+; is switched on (src/kernal/bypass.s, docs/design/DESIGN.md "Serial number").
 NewDisk:
         jmp NoTurbo
         sta $8B
@@ -361,7 +361,7 @@ BufPtr: lda #<diskBlkBuf
 
 ; Locate: r1 of the current drive -> blkHi/blkLo and dmaReu. C set when
 ; valid; else C clear and X = error. Tracks SYSDRV_TRACK+1 and up (to 255)
-; are drive E's blocks (docs/ARCHITECTURE.md "System drive"): its native
+; are drive E's blocks (docs/reference/ARCHITECTURE.md "System drive"): its native
 ; image at SYSDRV_BANK, track - SYSDRV_TRACK, on every drive but a native
 ; one that large (locSys = $80 then). An empty drive has only E's
 ; tracks (type 0 takes the @sys way below): the desktop starts from E

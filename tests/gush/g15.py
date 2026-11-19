@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's control flow in VICE (docs/GUSH.md): if,
+"""gush's control flow in VICE (docs/design/GUSH.md): if,
 elif, else, while, for, nesting, test and [ ], read from the keyboard
 and a file, a script with blocks over lines, errors of unbalanced blocks.
 (RUN/STOP: not here; the monitor cannot hold a key in the matrix.)

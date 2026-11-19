@@ -1,4 +1,4 @@
-; gush: the file commands (docs/GUSH.md, "Commands"): cp, mv, rm, mkdir,
+; gush: the file commands (docs/design/GUSH.md, "Commands"): cp, mv, rm, mkdir,
 ; rmdir, cat, more, df. Questions (y, n, a: all) before an overwrite or
 ; a delete unless -f, read from GEOS's key queue (GetNextChar: a command
 ; runs inside keyVector, so it cannot wait for the next keyVector call);

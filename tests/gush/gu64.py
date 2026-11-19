@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush on the Ultimate 64 (docs/GUSH.md, "Tests").
+"""gush on the Ultimate 64 (docs/design/GUSH.md, "Tests").
 
 Before the reboot gush (and geoFolder) are copied onto drive A's test
 copy (/USB0/GEOULTRA/test/GEOS64.D81, mounted on A; never the user's own

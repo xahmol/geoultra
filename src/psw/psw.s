@@ -1,4 +1,4 @@
-; GU PostScript (docs/DESIGN.md "PostScript writer", step P1): a geoWrite
+; GU PostScript (docs/design/DESIGN.md "PostScript writer", step P1): a geoWrite
 ; 2.x document as a PostScript file in GEOULTRA/print, laid out as
 ; geoWrite lays it out, written as tools/gwps.py (gwtool ps) writes it.
 ; Started with a document (ST_LD_DATA: the desktop's "make PostScript",

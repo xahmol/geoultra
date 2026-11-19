@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The print spooler's banks in VICE (docs/DESIGN.md "Print spooler";
+"""The print spooler's banks in VICE (docs/design/DESIGN.md "Print spooler";
 src/kernal/spool.s): SpoolInit as module 92 calls it with
 spool='s first and fourth characters: none (128 KB: banks 27-28 only),
 "1024" (16 banks: 14 more, banks 166-179; FE_MOUNT's limit below them;

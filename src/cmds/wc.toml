@@ -1,4 +1,4 @@
-# wc, the example external gush command (docs/GUSH_COMMANDS.md): a GEOS
+# wc, the example external gush command (docs/reference/GUSH_COMMANDS.md): a GEOS
 # APPL_DATA file of class "gush cmd", its data at gush's transient area.
 [file]
 name = "wc"

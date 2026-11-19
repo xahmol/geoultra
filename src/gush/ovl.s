@@ -1,4 +1,4 @@
-; gush: overlays (docs/GUSH.md, "Memory"). gush is a VLIR file: record 0
+; gush: overlays (docs/design/GUSH.md, "Memory"). gush is a VLIR file: record 0
 ; the resident core at $0400-$4FFF (console, editor, parser, executor,
 ; variables, scripts, redirection, starting programs); records 1-OVL_N
 ; overlays linked at TRANS ($5000-$5FFF, gush.cfg), the area external

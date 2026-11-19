@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Choosing the printer in GeoUltra's desktop (docs/DESIGN.md "Printing",
+"""Choosing the printer in GeoUltra's desktop (docs/design/DESIGN.md "Printing",
 the user's decisions of 2026-11-16; src/desktop/inifile.s UsePrinter,
 open.s, ctxmenu.s) in VICE: at the desktop's start, with no printer
 chosen, PrntFilename is GU Epson FX-80 (drive E); in /b (the test disk,

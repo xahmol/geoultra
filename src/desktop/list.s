@@ -1,4 +1,4 @@
-; GeoUltra Desktop: the list (docs/DESKTOP.md). A folder's
+; GeoUltra Desktop: the list (docs/design/DESKTOP.md). A folder's
 ; entries are read once (FE_OPENDIR, FE_READDIR) into an entry table in
 ; the application's REU, ENTRY_SIZE bytes each from bank ENTRY_BANK on
 ; (up to ENTRY_MAX), in directory order; the list area shows `rows`

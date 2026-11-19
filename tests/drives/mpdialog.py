@@ -17,7 +17,7 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 SOURCE = os.environ.get("GEOS_MP_DISK", os.path.join(ROOT, "private", "geoultra-apps.dnp"))
 TEST_DISK = os.path.join(ROOT, "build", "harness", "mpdialog-test.dnp")
 os.environ["GEOS_APPS_DISK"] = TEST_DISK

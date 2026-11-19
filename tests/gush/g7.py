@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""geoFolder's gush button in VICE (docs/GUSH.md, "Where gush lives"):
+"""geoFolder's gush button in VICE (docs/design/GUSH.md, "Where gush lives"):
 geoFolder (a desk accessory) started from gush, its dialog with the gush
 button (build/harness/gush/g7-geofolder.png), the button clicked: gush
 starts from drive E in the application's place (a fresh screen).

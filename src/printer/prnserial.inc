@@ -1,5 +1,5 @@
 ; prnserial.inc: the serial part of GeoUltra's printer drivers
-; (src/printer/epson.s, mps.s; docs/DESIGN.md "Printing"), included in
+; (src/printer/epson.s, mps.s; docs/design/DESIGN.md "Printing"), included in
 ; their CODE: device 4 on the serial bus with routines of our own, not
 ; the C64 KERNAL's (the user, 2026-11-16: with the JiffyDOS KERNAL the
 ; Ultimate's printer does not work even from BASIC; our own routines

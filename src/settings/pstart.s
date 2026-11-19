@@ -1,5 +1,5 @@
 ; GeoUltra Settings: the Start page (overlay 8, ovl.s; the user's
-; decisions of 2026-11-14, docs/DESIGN.md): the auto-exec files
+; decisions of 2026-11-14, docs/design/DESIGN.md): the auto-exec files
 ; the cold start runs, in order: SETTINGS.INI [system] autoexec=/a/NAME
 ; lines (a path with its drive and folder; the kernal's autoexec.s reads
 ; them). A list (AUTO_MAX at most) with add, remove, up and down; add

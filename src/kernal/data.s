@@ -8,7 +8,7 @@
 
 patterns:
         ; GeoUltra's own designs; at each number the same kind of pattern
-        ; as GEOS 2.0's (docs/DESIGN.md, "System patterns"), so that
+        ; as GEOS 2.0's (docs/design/DESIGN.md, "System patterns"), so that
         ; applications' title bars, scroll areas and fills look as meant.
         .byte $00, $00, $00, $00, $00, $00, $00, $00  ;  0 white
         .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF  ;  1 black

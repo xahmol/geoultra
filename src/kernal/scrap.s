@@ -1,4 +1,4 @@
-; The scrap store (docs/DESIGN.md "Clipboard"; the user's decision of
+; The scrap store (docs/design/DESIGN.md "Clipboard"; the user's decision of
 ; 2026-11-15): GEOS programs exchange cut, copy and paste through scrap
 ; files on their own disk, sequential files named after their type, five
 ; characters and " Scrap" ("Text  Scrap", "Photo Scrap", "Calc  Scrap";

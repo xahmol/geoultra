@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""gush's external commands in VICE (docs/GUSH.md,
-docs/GUSH_COMMANDS.md): wc (build/cmds/wc.cvt, a module) on drive B: a
+"""gush's external commands in VICE (docs/design/GUSH.md,
+docs/reference/GUSH_COMMANDS.md): wc (build/cmds/wc.cvt, a module) on drive B: a
 file, two files and their total, the input from a pipe and from <, no
 input, a missing file, by its path; an overlay command afterwards (the
 area the module used fetched again).

@@ -1,5 +1,5 @@
 ; File engine: copies between a GEOS drive and the Ultimate, raw
-; (docs/FILE_ENGINE.md, "Copying"; engine.s has the module list): module
+; (docs/design/FILE_ENGINE.md, "Copying"; engine.s has the module list): module
 ; 42 onto the Ultimate, module 43 from it (the source, the new entry's
 ; fields, the target), module 44 its blocks onto the GEOS drive. Own code.
 ;

@@ -1,4 +1,4 @@
-; File engine: the clocks from an NTP server (docs/FILE_ENGINE.md
+; File engine: the clocks from an NTP server (docs/design/FILE_ENGINE.md
 ; "Functions"; engine.s has the module list): module 76 FE_NTP (the
 ; exchange with the server through the Ultimate's network target), module
 ; 77 SETTINGS.INI read and module 79 its [time] section, module 78 the

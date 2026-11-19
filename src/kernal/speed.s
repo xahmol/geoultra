@@ -1,4 +1,4 @@
-; Turbo per application (overlay module 16; docs/DESIGN.md "Turbo"): at
+; Turbo per application (overlay module 16; docs/design/DESIGN.md "Turbo"): at
 ; every application start (OvAppGate, sysdrive.s, with its file header in
 ; fileHeader) the U64's speed is set: 1 MHz when its permanent name is on
 ; the SETTINGS.INI list ([system] slow=NAME, up to SLOW_MAX names, kept by

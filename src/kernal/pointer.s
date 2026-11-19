@@ -1,5 +1,5 @@
-; The mouse pointer's designs (docs/SETTINGS.md, the Pointer page;
-; module 86). Four own drawings (tools/mkpointers.py): a classic arrow,
+; The mouse pointer's designs (docs/design/SETTINGS.md, the Pointer page;
+; module 86). Four own drawings (tools/dev/mkpointers.py): a classic arrow,
 ; a large arrow, a hand, a crosshair, each with its hot spot (the pixel
 ; the mouse position points at). A design is copied into the kernal's
 ; pointer picture (pointerPic, what the cold start and a new pointer

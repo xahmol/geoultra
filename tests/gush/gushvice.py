@@ -1,10 +1,10 @@
-"""gush in VICE, for tests/gush/*.py (docs/GUSH.md, "Tests").
+"""gush in VICE, for tests/gush/*.py (docs/design/GUSH.md, "Tests").
 
 GeoUltra boots with drive A the GEOS 2.0 disk (GEOS_ORACLE, only read) and
 drive B a D81 made for the test with gush on it (from build/gush/gush.cvt,
 written by VICE's c1541), plus what the test puts there. gush is started
 from drive B with GetFile, keys go to it through keyVector (a one-shot
-appMain routine, as tools/harness/apprun.py does), and its screen is read
+appMain routine, as tools/dev/harness/apprun.py does), and its screen is read
 from its text shadow (build/gush/gush.lbl) or rendered as a PNG.
 """
 import os
@@ -13,7 +13,7 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 import apprun  # noqa: E402
 import harness  # noqa: E402
 from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402

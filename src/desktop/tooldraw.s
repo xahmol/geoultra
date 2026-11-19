@@ -25,7 +25,7 @@ DOT_ROWS        = 4             ; a flat group line: 4 dots, 2 px apart
         .segment "OV5"
 
 ; BigInit (desktop.s, at the start): the icon view's generic 24 x 21
-; icons (build/gen/bigicons.inc, tools/mkbigicons.py) into the REU,
+; icons (build/gen/bigicons.inc, tools/dev/mkbigicons.py) into the REU,
 ; where iconview.s fetches them (bank 6 from $7000: between the overlays
 ; and the history); bigOk set. Here, not in the core: they cost it
 ; nothing.

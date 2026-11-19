@@ -1,5 +1,5 @@
 # Conformance cases for BitmapUp, the sprite routines and icons
-# (tools/harness/harness.py).
+# (tools/dev/harness/harness.py).
 
 DATA_AT = 0x4000
 TABLE_AT = 0x4200

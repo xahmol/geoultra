@@ -1,4 +1,4 @@
-; File engine (docs/FILE_ENGINE.md): files by path over the GEOS drives
+; File engine (docs/design/FILE_ENGINE.md): files by path over the GEOS drives
 ; and, later, the Ultimate's file system. One resident entry, FileEngine
 ; (extension jump table +30, folders.s); everything else is in overlay
 ; modules 22-79:

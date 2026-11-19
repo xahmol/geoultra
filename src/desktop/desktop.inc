@@ -30,7 +30,7 @@ IsMseInRegion   = $C2B3
 GetNextChar     = $C2A7
 SwapRAM         = $C2CE
 
-; The file engine (docs/FILE_ENGINE.md): functions, flags, info block, kinds
+; The file engine (docs/design/FILE_ENGINE.md): functions, flags, info block, kinds
 FE_CD           = 11
 FE_CLOSE        = 4
 FE_COPY         = 5
@@ -86,7 +86,7 @@ ERR_INIMG       = $62           ; a program or document inside a disk image
 ERR_PRINTER     = $63           ; (no error: a printer driver chosen)
                                 ; refused (tree.s, errors.s)
 
-; Layout (docs/DESKTOP.md, "Screen"), the entry name, dialogs, modifiers
+; Layout (docs/design/DESKTOP.md, "Screen"), the entry name, dialogs, modifiers
 BASELINE        = 7             ; a row's baseline below its top
 DBI_X_0         = 1             ; the left icon's place in a dialog
 LIST_LEFT       = 82

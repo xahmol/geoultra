@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings on the U64 (docs/SETTINGS.md): the Theme
+"""GeoUltra Settings on the U64 (docs/design/SETTINGS.md): the Theme
 page with the real theme files. The user's SETTINGS.INI and
 THEMES/Custom.ini are kept first and put back byte for byte at the
 end. Settings on its Theme page lists the THEMES folder's files; [+]

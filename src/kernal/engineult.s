@@ -1,4 +1,4 @@
-; File engine: the Ultimate's file system (docs/FILE_ENGINE.md, "Paths";
+; File engine: the Ultimate's file system (docs/design/FILE_ENGINE.md, "Paths";
 ; engine.s has the module list). Module 36: the exchange with the
 ; Ultimate's DOS (target 2), its status as an error, and the folder
 ; changes every Ultimate function starts with; the function modules reach

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's network commands in VICE (docs/GUSH.md):
+"""gush's network commands in VICE (docs/design/GUSH.md):
 only what needs no network (VICE has no Ultimate): their help, wget's
 words and URLs refused, ifconfig failing without a Command Interface.
 The network itself: gu64.py on the U64.

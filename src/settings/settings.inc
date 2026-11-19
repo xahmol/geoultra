@@ -1,4 +1,4 @@
-; GeoUltra Settings: constants shared by its modules (docs/SETTINGS.md).
+; GeoUltra Settings: constants shared by its modules (docs/design/SETTINGS.md).
 
 ; GEOS jump table (and GeoUltra's extension table)
 guExtTable      = $C0E4         ; GeoUltra: the extension table
@@ -23,7 +23,7 @@ FetchRAM        = $C2CB
 FE_ENTRY        = 30            ; the file engine: guExtTable + 30
 TXT_LN_4_Y      = 64            ; a dialog's fourth text line (16 to 80 in steps of 16)
 
-; The screen (docs/SETTINGS.md, "Decisions": a side list of pages, the
+; The screen (docs/design/SETTINGS.md, "Decisions": a side list of pages, the
 ; page on the right, OK, Cancel and Save at the bottom)
 TITLE_Y         = 11            ; the title's baseline (the bar: y 0-15)
 TITLE_LINE      = 15            ; the line under it

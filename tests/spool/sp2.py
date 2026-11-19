@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The print spooler recording in VICE (docs/DESIGN.md "Print spooler";
+"""The print spooler recording in VICE (docs/design/DESIGN.md "Print spooler";
 src/kernal/spool.s): a printer driver ("Epson MX-80" from the
 applications disk, GEOS_APPS_DISK, the user's own, never committed)
 loaded with GetFile (catching switched on: spOn): its entries (not GetDimensions) become `jsr
@@ -7,7 +7,7 @@ SpoolEnt`; InitForPrint, StartPrint, two PrintBuffer rows (from the
 screen), StopPrint called: each returns at once, the queue's header
 (REU bank 1 $E700) has one job open and the records' bytes, the queue
 (bank 27, from $4000) holds T_DRIVER, its slot and job number, T_INIT, T_START, the rows as
-given, T_STOP. Through tools/harness/apprun.py (an h: hook).
+given, T_STOP. Through tools/dev/harness/apprun.py (an h: hook).
 Usage: tests/spool/sp2.py
 """
 import os
@@ -74,9 +74,9 @@ def main():
     shutil.copyfile(APPS_DISK, disk)
     hook = os.path.join(OUT, "hook-sp2.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl"), "drv": DRIVER})
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "10", "--out", os.path.join(OUT, "sp2.png"), "GEOWRITE", "h:" + hook],
-                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness")),
+                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness")),
                        capture_output=True, text=True, timeout=400)
     out = {l.split()[1]: l.split(None, 2)[2] for l in r.stdout.splitlines() if l.startswith("SP2")}
     if not out:

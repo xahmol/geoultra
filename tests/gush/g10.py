@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's free, turbo and date in VICE (docs/GUSH.md): VICE has
+"""gush's free, turbo and date in VICE (docs/design/GUSH.md): VICE has
 no Ultimate, so turbo finds no turbo registers and date sets GEOS's clock
 but not the Ultimate's (on the U64: gu64.py).
 Usage: tests/gush/g10.py

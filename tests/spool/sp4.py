@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The print spooler with a full queue in VICE (docs/DESIGN.md "Print
+"""The print spooler with a full queue in VICE (docs/design/DESIGN.md "Print
 spooler"; src/kernal/spool.s, module 112): 250 rows (641 bytes each
 queued, more than the 2-bank queue holds) printed spooled through
 tests/spool/logdrv.s: a call that does not fit waits while records are
@@ -65,9 +65,9 @@ def main():
                    check=True, capture_output=True)
     hook = os.path.join(OUT, "hook-sp4.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl"), "rows": ROWS, "wait": 120})
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "10", "--out", os.path.join(OUT, "sp4.png"), "GEOWRITE", "h:" + hook],
-                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness")),
+                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness")),
                        capture_output=True, text=True, timeout=600)
     line = next((l for l in r.stdout.splitlines() if l.startswith("SP4")), "")
     print(line or r.stderr[-600:])

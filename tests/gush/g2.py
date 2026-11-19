@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush in VICE (docs/GUSH.md, "Keys and the line editor"):
+"""gush in VICE (docs/design/GUSH.md, "Keys and the line editor"):
 inserting in the middle, DEL and INST, the cursor keys, HOME, CTRL+A, E,
 K, U (through gush's test flag: VICE's monitor cannot hold a key),
 RUN/STOP, the history (up, down, no repeats), a line longer than the

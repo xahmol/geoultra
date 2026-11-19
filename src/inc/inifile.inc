@@ -1,4 +1,4 @@
-; INI files in and out (docs/SETTINGS.md, "Structure"): a file in the
+; INI files in and out (docs/design/SETTINGS.md, "Structure"): a file in the
 ; home folder (GEOULTRA on the Ultimate) read whole into ini.inc's
 ; buffer, and written back through a temporary file that then takes the
 ; old one's place, so a failed write never leaves half a file. Shared

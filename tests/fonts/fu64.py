@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The system fonts and the cold start's settings keys on the U64
-(docs/DESIGN.md "System font folder"; mount.s modules 121-122,
+(docs/design/DESIGN.md "System font folder"; mount.s modules 121-122,
 sysdrive.s module 123): a FONTS.DNP with "F Roma" (a copy of Roma from
 an applications disk, GEOS_APPS_DISK, the user's own) put into GEOULTRA,
 SETTINGS.INI given "fastbus=on" and "diskfonts=hide" for the test; after

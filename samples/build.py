@@ -28,11 +28,11 @@ DOCS = (("letter", "Letter"), ("brochure", "Brochure"), ("quickstart", "Quick st
 
 
 def splash():
-    """build/samples/splash.png (the start picture, tools/splash/mksplash.py)
+    """build/samples/splash.png (the start picture, tools/dev/splash/mksplash.py)
     and logo.png (its upper part: the logo, the name, the line under it)."""
     os.makedirs(BUILD, exist_ok=True)
     tmp = os.path.join(BUILD, "splash")
-    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "splash", "mksplash.py"),
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "splash", "mksplash.py"),
                     tmp + ".bin", tmp + "_col.bin", tmp + ".png", "Graphical desktop for the Ultimate"],
                    env=dict(os.environ, GU_KERNAL=os.path.join(ROOT, "build", "kernal64.bin")), check=True)
     from PIL import Image

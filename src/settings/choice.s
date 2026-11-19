@@ -1,4 +1,4 @@
-; GeoUltra Settings: choice rows (docs/SETTINGS.md), the widget most
+; GeoUltra Settings: choice rows (docs/design/SETTINGS.md), the widget most
 ; pages are made of. A row is a label and two or more options, each
 ; with a box in front; the box of the option in force is filled. The
 ; option in force comes from the INI text (a section's key; a value not

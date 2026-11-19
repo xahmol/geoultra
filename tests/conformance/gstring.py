@@ -1,5 +1,5 @@
 # Conformance cases for DrawPoint, TestPoint, DrawLine and GraphicsString
-# (tools/harness/harness.py). The mode of DrawPoint and DrawLine is in the
+# (tools/dev/harness/harness.py). The mode of DrawPoint and DrawLine is in the
 # N and carry flags ("flags": "C" set, "" clear, "N" recover).
 
 STR_AT = 0x4000

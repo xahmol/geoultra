@@ -1,10 +1,10 @@
-; File engine: GEOS files as CVT on the Ultimate (docs/FILE_ENGINE.md,
+; File engine: GEOS files as CVT on the Ultimate (docs/design/FILE_ENGINE.md,
 ; "Copying"; engine.s has the module list): a GEOS file onto the open
 ; Ultimate file as CVT (module 56; VLIR files' records module 58), a CVT
 ; recognised by its signature block (module 60, from module 46) and
 ; converted back onto a GEOS drive (module 57; VLIR module 59). Shared:
 ; fecvtout.inc, fecvtread.inc, fecvtwrite.inc.
-; Own code; the format as docs/GEOS_REFERENCE.md "CVT" describes it
+; Own code; the format as docs/reference/GEOS_REFERENCE.md "CVT" describes it
 ; (Convert 2.5 and VICE c1541 -geoswrite/-geosread write and read it).
 ;
 ; A CVT: blocks of 254 bytes (a sector without its link). The signature

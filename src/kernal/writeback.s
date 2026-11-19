@@ -1,5 +1,5 @@
 ; Write-back: the changed blocks of the REU drives into their image files
-; on the Ultimate (docs/DESIGN.md, "Write-back", "Image protection").
+; on the Ultimate (docs/design/DESIGN.md, "Write-back", "Image protection").
 ; Overlay module 1 (src/kernal/overlay.s). Called from MainLoop a few
 ; seconds after the last write (WbCheck in the disk driver), never inside
 ; a disk call.

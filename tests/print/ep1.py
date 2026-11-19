@@ -7,7 +7,7 @@ printer does not answer on GeoUltra's cartridge here) and read back
 of ten bands (two of the driver's five-band cycles) of pseudo-random
 dots printed directly (spooling off), in black (r2 = 0) and in colour (a
 random colour byte per card), and an ASCII page. Every GEOS dot must be
-where docs/DESIGN.md "Printing" puts it: column X at 3X/240", row R at
+where docs/design/DESIGN.md "Printing" puts it: column X at 3X/240", row R at
 round(R x 2.7)/216" (exactly 80 dpi both ways), and no other; colours as
 the driver's inks (the levels and dither patterns below, the spec);
 ASCII as text, CR as CR LF, SetNLQ as ESC E, StopPrint as FF. The black
@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
 import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import harness                                   # noqa: E402
 import epsonstream                               # noqa: E402
@@ -37,7 +37,7 @@ APPS_DISK = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 BANDS = 10
 TEXT = b"Hello GeoUltra\rsecond line\r"
 
-# The spec of the colours (docs/DESIGN.md "Printing"): per ink (K, C, M, Y,
+# The spec of the colours (docs/design/DESIGN.md "Printing"): per ink (K, C, M, Y,
 # their ESC r codes 0, 2, 1, 4) the level of each C64 colour: 0 none,
 # 1 a quarter, 2 half, 3 solid; the patterns of even and odd rows.
 LEVEL = {0: [3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 2, 0, 0, 1],
@@ -119,10 +119,10 @@ def run(tag, colour, ascii_, data, colr, spooled=False, name=b"GU Epson FX-80", 
                                  "spon": label("spOn"), "on": 0x80 if spooled else 0,
                                  "name": name, "absent": 1 if absent else 0})
     env = dict(os.environ, GEOS_APPS_DISK=os.path.join(OUT, "apps.d64"),
-               PYTHONPATH=os.path.join(ROOT, "tools", "harness"),
+               PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness"),
                APPRUN_VICE_ARGS="" if absent else
                "-devicebackend4 1 -busdevice4 -pr4drv raw -pr4output text -pr4txtdev 1 -prtxtdev2 " + raw)
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "10", "--out", os.path.join(OUT, "ep1-%s.png" % tag), "GEOWRITE",
                         "h:" + hook], env=env, capture_output=True, text=True, timeout=600)
     if r.returncode:

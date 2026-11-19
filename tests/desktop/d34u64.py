@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GeoUltra's desktop on the U64: CVT files dropped into GEOULTRA/fonts
-installed at the desktop's start (docs/DESIGN.md "System font folder",
+installed at the desktop's start (docs/design/DESIGN.md "System font folder",
 step F4; fontact.s Import). Two CVT files from the user's library
 (fonts/English: Roma, Mykonos) copied to the top of GEOULTRA/fonts, no
 FONTS.DNP, MOUNTS.INI with A and B only: at the cold start the desktop
@@ -21,7 +21,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 from feu64 import U64  # noqa: E402
 import apprun  # noqa: E402
 

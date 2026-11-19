@@ -1,4 +1,4 @@
-; GeoUltra Desktop: the icon view (docs/DESKTOP.md, "Decisions": the
+; GeoUltra Desktop: the icon view (docs/design/DESKTOP.md, "Decisions": the
 ; user, 2026-11-11). A grid of cells, CELL_W x CELL_H pixels, as many
 ; columns as fit beside the sidebar (5, or 6 with the narrow one) and as
 ; many rows as fit under the path line; each cell the entry's 24 x 21
@@ -443,7 +443,7 @@ Generic:
 ; BigFor: the big icon for each 8 x 8 icon (icons.s's order), $FF none.
 BigFor: .byte BIG_FOLDER, $FF, BIG_FILE, $FF, $FF, BIG_IMAGE, BIG_FILE
         .byte BIG_DRIVE, BIG_DRIVE, BIG_USB, BIG_SD
-BIG_FOLDER      = 0             ; (tools/mkbigicons.py's order)
+BIG_FOLDER      = 0             ; (tools/dev/mkbigicons.py's order)
 BIG_PARENT      = 1
 BIG_DRIVE       = 2
 BIG_FILE        = 3

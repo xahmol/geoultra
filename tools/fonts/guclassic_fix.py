@@ -1,6 +1,6 @@
 # GU Classic (GeoUltra's Palatino look-alike, font ID 35, after TeX Gyre
 # Pagella): hand-drawn glyphs for tools/mkgeosfont.py --fix
-# (docs/DESIGN.md "Fonts"): at 9 points FreeType's rendering loses the
+# (docs/design/DESIGN.md "Fonts"): at 9 points FreeType's rendering loses the
 # crossbars of f and t, at 9 and 10 the top of T. Rows: "#" ink, "."
 # paper; the size's full height, the cell's width. Own drawings,
 # 2026-11-16.

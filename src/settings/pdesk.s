@@ -1,4 +1,4 @@
-; GeoUltra Settings: the Desktop page (overlay 1, ovl.s; docs/SETTINGS.md,
+; GeoUltra Settings: the Desktop page (overlay 1, ovl.s; docs/design/SETTINGS.md,
 ; "Pages"): the desktop's view, toolbar, clock, panes, the sort order,
 ; what an existing file at a copy's target gets and whether deleting
 ; asks first (the user, 2026-11-12, after GeoDesk64), as choice rows

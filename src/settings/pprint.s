@@ -1,5 +1,5 @@
 ; GeoUltra Settings: the Printing page (overlay 1 with the Desktop page,
-; ovl.s; docs/SETTINGS.md, "Pages"; docs/DESIGN.md "Printing", the
+; ovl.s; docs/design/SETTINGS.md, "Pages"; docs/design/DESIGN.md "Printing", the
 ; user's decisions of 2026-11-16): the printer, one of GeoUltra's
 ; drivers on drive E (GU Epson FX-80, GU Commodore MPS, GU PDF A4, GU PDF
 ; Letter), as SETTINGS.INI's [desktop] printer= (the name the desktop
@@ -93,7 +93,7 @@ Rows:   .byte 5
         .word COL3, TFast, VOn
         .byte Y0 + 2 * DY               ; the disks' fonts in the programs'
         .word LFonts, SSystem, KDiskFonts ; lists (from the next start:
-        .byte 2, 0                      ; docs/GEOULTRA_MANUAL.md "System
+        .byte 2, 0                      ; docs/manuals/GEOULTRA_MANUAL.md "System
         .word COL1, TAll, 0             ; fonts")
         .word COL3, TSysOnly, VHide
         .byte Y0 + 3 * DY               ; GU PostScript's paper (src/psw

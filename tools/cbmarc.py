@@ -1,5 +1,5 @@
 """cbmarc.py - Commodore archive and container formats for geosdisk.py
-(docs/TOOLS_MANUAL.md; the user's request of 2026-11-18, after geoBEAP's
+(docs/manuals/TOOLS_MANUAL.md; the user's request of 2026-11-18, after geoBEAP's
 list of formats): Lynx (read and write), G64 (GCR) images, and .gz / .zip
 around anything. Each reader gives bytes (a disk image) or a list of
 files (name, CBM type letter, data).

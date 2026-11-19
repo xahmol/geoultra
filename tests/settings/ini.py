@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""src/inc/ini.inc in VICE (docs/SETTINGS.md, "Structure"): IniFind,
+"""src/inc/ini.inc in VICE (docs/design/SETTINGS.md, "Structure"): IniFind,
 IniSet and IniDel on texts in a buffer, checked byte for byte. GeoUltra
 boots as in the engine tests (tests/engine/feharness.py) and stops
 before the desktop loads; the test program (tests/settings/initest.s)

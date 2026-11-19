@@ -2,7 +2,7 @@
 """geoWrite on GeoUltra in VICE: a document created, typed, saved (file >
 close), opened again (its text as typed), edited at its start, saved and
 opened once more (the edit kept), then file > quit and the document on
-the disk (FindFile). Through tools/harness/apprun.py with a copy of an
+the disk (FindFile). Through tools/dev/harness/apprun.py with a copy of an
 applications disk (GEOS_APPS_DISK, the user's own, default the
 neos-mouse-driver disk with geoWrite 1.1; never committed). Screens:
 build/harness/gw/*.png.
@@ -42,7 +42,7 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     disk = os.path.join(OUT, "apps.d64")
     shutil.copyfile(APPS_DISK, disk)
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"),
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "12", "--find", DOC, "--out", os.path.join(OUT, "end.png"),
                         "GEOWRITE"] + events(), env=dict(os.environ, GEOS_APPS_DISK=disk),
                        capture_output=True, text=True, timeout=590)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One entry per font ID in a program's font list, in VICE (docs/DESIGN.md
+"""One entry per font ID in a program's font list, in VICE (docs/design/DESIGN.md
 "System font folder"; sysdrive.s modules 15, 116, 123, 124; the user's
 rules of 2026-11-15 and 2026-11-18): the drive (a copy of an
 applications disk, GEOS_APPS_DISK, the user's own) gets "D Serif", a
@@ -85,18 +85,18 @@ def main():
     subprocess.run(GD + ["add", img, APPS + ":Roma"], check=True, capture_output=True)
     subprocess.run(GD + ["rename", img, "Roma", "F Roma"], check=True, capture_output=True)
     rel = os.path.join(OUT, "F3FONTS-reloc.dnp")
-    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "sysreloc.py"), img, rel, "237", "8"],
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "sysreloc.py"), img, rel, "237", "8"],
                    check=True, capture_output=True)
     hook = os.path.join(OUT, "hook-f3.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl"), "img": rel})
-    sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+    sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
     import apprun
     for p in (apprun.REU_IMAGE, apprun.REU_IMAGE + ".src"):
         if os.path.exists(p):
             os.remove(p)
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "10",
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"), "--wait", "10",
                         "--out", os.path.join(OUT, "f3.png"), "GEOWRITE", "h:" + hook],
-                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness")),
+                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness")),
                        capture_output=True, text=True, timeout=1200)
     lines = {l.split()[1]: l for l in r.stdout.splitlines() if l.startswith("F3 ")}
     for l in lines.values():

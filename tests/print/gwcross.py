@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """geoWrite printing a document from another drive (the user's U64,
-2026-11-16; docs/DESIGN.md "Printing"): drive A the user's GEOS64.D81
+2026-11-16; docs/design/DESIGN.md "Printing"): drive A the user's GEOS64.D81
 (GEOS_ORACLE81, a copy; never committed) with "ReadMe 1581", drive B a
 native image made here with geoWrite in a folder "Writing". geoWrite
 starts in /b/Writing, opens the document from A, prints it with GU Epson
@@ -44,7 +44,7 @@ def main():
         os.remove(raw)
     after = os.path.join(OUT, "gwcross-after.png")
     env = dict(os.environ, APPRUN_DRIVE_A=d81, APPRUN_PREHOOK=pre,
-               GEOS_APPS_DISK=os.path.join(OUT, "gwcross.dnp"), PYTHONPATH=os.path.join(ROOT, "tools", "harness"),
+               GEOS_APPS_DISK=os.path.join(OUT, "gwcross.dnp"), PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness"),
                APPRUN_VICE_ARGS="-devicebackend4 1 -busdevice4 -pr4drv raw -pr4output text -pr4txtdev 1 -prtxtdev2 " + raw)
     clicks = ["103,86,p", "w:1", "103,86,r", "w:4",          # Open
               "223,98,p", "w:1", "223,98,r", "w:4",          # Drive: A
@@ -52,7 +52,7 @@ def main():
               "35,6,p", "w:2", "45,92,p", "w:3",             # file > print
               "111,120,p", "w:1", "111,120,r", "w:240",      # OK
               "s:" + after]
-    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "15",
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"), "--wait", "15",
                     "--select", "/b/Writing/GEOWRITE", "--out", os.path.join(OUT, "gwcross.png"), "GEOWRITE"]
                    + clicks, env=env, capture_output=True, text=True, timeout=900)
     data = open(raw, "rb").read() if os.path.exists(raw) else b""

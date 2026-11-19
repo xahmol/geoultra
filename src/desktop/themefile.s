@@ -1,4 +1,4 @@
-; GeoUltra Desktop: theme files (docs/DESKTOP.md, "Look and themes";
+; GeoUltra Desktop: theme files (docs/design/DESKTOP.md, "Look and themes";
 ; the user, 2026-11-11: every theme a file, the built-in ones editable,
 ; and a custom one). A theme is GEOULTRA/THEMES/<name>.ini, in words as
 ; the approved mock-up wrote it:

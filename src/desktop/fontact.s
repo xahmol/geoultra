@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: system fonts installed and uninstalled (overlay 9,
-; ovl.s; docs/DESIGN.md "System font folder", step F; the user's
+; ovl.s; docs/design/DESIGN.md "System font folder", step F; the user's
 ; decisions of 2026-11-19). Own code.
 
         .include "geos.inc"
@@ -18,7 +18,7 @@ line2:          .res 2
         .segment "OV9"          ; (overlay 9 of its own since 2026-11-19:
                                 ; 3, then 7 were full)
 
-; --- System fonts (docs/DESIGN.md "System font folder"; the user's
+; --- System fonts (docs/design/DESIGN.md "System font folder"; the user's
 ; decisions of 2026-11-19) ---------------------------------------------
 
 ; Ov_FontAct (list.s TaskOrMount, item 1 of the context menu; the cursor's

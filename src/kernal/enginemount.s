@@ -1,5 +1,5 @@
 ; File engine: disk images mounted and unmounted while GEOS runs
-; (docs/FILE_ENGINE.md "Mount"; engine.s has the module list): module 65
+; (docs/design/FILE_ENGINE.md "Mount"; engine.s has the module list): module 65
 ; FE_MOUNT (the image checked), module 68 its REU banks found and the
 ; image loaded, module 69 the new drive entered, module 66 FE_UMOUNT (a
 ; drive emptied, after the write-back), modules 67 and 70 MOUNTS.INI

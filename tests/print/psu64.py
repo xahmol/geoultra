@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GU PostScript on the U64 (docs/PSW.md; step P6's hardware test): the
+"""GU PostScript on the U64 (docs/reference/PSW.md; step P6's hardware test): the
 desktop's "make PostScript" on GeoUTools' manual writes GEOULTRA/print/
 GeoUTools UK.ps on the stick, read back over FTP and compared with
 gwtool ps's byte for byte. MOUNTS.INI for the test: A the test copy of
@@ -20,7 +20,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 from feu64 import U64  # noqa: E402
 import apprun  # noqa: E402
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))

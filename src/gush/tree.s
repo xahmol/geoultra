@@ -1,4 +1,4 @@
-; gush: cp -r, a folder copied with everything in it (docs/GUSH.md,
+; gush: cp -r, a folder copied with everything in it (docs/design/GUSH.md,
 ; "Commands"). The walk is src/inc/treewalk.inc, shared with the
 ; desktop's folders (each folder's listing read whole into the
 ; application's REU, bank TREE_BANK, before anything in it is copied, so

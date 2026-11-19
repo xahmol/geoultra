@@ -1,4 +1,4 @@
-; GeoUltra Desktop: themes (docs/DESKTOP.md, "Look and themes"). A theme
+; GeoUltra Desktop: themes (docs/design/DESKTOP.md, "Look and themes"). A theme
 ; is a style byte per design element and a colour byte per
 ; colour (THM_LEN bytes); the six built-in themes are from the approved
 ; mock-up (2026-11-06). ThemeSet copies one into the record and derives

@@ -1,4 +1,4 @@
-; gush: starting programs (docs/GUSH.md, "Starting programs"). A word
+; gush: starting programs (docs/design/GUSH.md, "Starting programs"). A word
 ; that is no command names a GEOS application or desk accessory: by its
 ; path, or by name in the current directory and then in the root of each
 ; drive A-D (drive E, "/e/bin" in the design, when the file engine knows

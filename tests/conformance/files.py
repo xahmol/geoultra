@@ -76,7 +76,7 @@ CASES = [
     # drive count as a folder and the search recursed without end. The
     # names and the count differ on purpose since 2026-11-16: drive E
     # holds GeoUltra's own fonts, which the jump table's FindFTypes adds
-    # (docs/DESIGN.md "Fonts"; tests/fonts/fontlist.py checks them)
+    # (docs/design/DESIGN.md "Fonts"; tests/fonts/fontlist.py checks them)
     dict(name="FindFTypes fonts, none on the disk", routine="FindFTypes",
          r={"r6": BUF, "r7L": 8, "r7H": 5, "r10": 0},
          mem={BUF: [0xEE] * 0x60}, compare=["X"]),

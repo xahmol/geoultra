@@ -1,6 +1,6 @@
 ; Shared by the 1581 partition modules 18 and 21 (src/kernal/folders.s),
 ; assembled into each, as an overlay module cannot call another's code.
-; Format: docs/GEOS_REFERENCE.md, "1581 partitions and sub-directories".
+; Format: docs/reference/GEOS_REFERENCE.md, "1581 partitions and sub-directories".
 
 ; Tracks: A/Y = a partition's size in blocks (lo/hi) -> r3L = its tracks;
 ; C set when it is a whole number of at least 3 (a sub-directory).

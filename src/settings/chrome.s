@@ -1,4 +1,4 @@
-; GeoUltra Settings: the theme in the core (docs/SETTINGS.md). The
+; GeoUltra Settings: the theme in the core (docs/design/SETTINGS.md). The
 ; theme files (THEMES/<name>.ini) listed and read, their lines parsed
 ; (moved here from the Theme page, ptheme.s, 2026-11-14: Settings now
 ; draws itself in the theme in use, and the Theme page's overlay was

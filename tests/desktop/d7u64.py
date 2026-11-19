@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop on the U64 (docs/DESKTOP.md): theme files.
+"""GeoUltra's desktop on the U64 (docs/design/DESKTOP.md): theme files.
 GEOULTRA/THEMES holds the six built-in themes and Custom (made by the
 desktop when they are not there: this test only checks they are, and
 that Night.ini says what the built-in Night is, its palette too); with

@@ -1,7 +1,7 @@
-; The system drive, drive E (docs/DESIGN.md "System drive"; ARCHITECTURE
+; The system drive, drive E (docs/design/DESIGN.md "System drive"; ARCHITECTURE
 ; "System drive"): GeoUltra's own GEOS files (geoFolder ...) on a
 ; read-only native image with folders (src/sysdrive.toml) at REU bank
-; SYSDRV_BANK, relocated at build time (tools/sysreloc.py) so all its
+; SYSDRV_BANK, relocated at build time (tools/dev/sysreloc.py) so all its
 ; track/sector references use tracks SYSDRV_TRACK+1 to 255. The disk
 ; driver reads those tracks from drive E on every drive (reudrv.s,
 ; Locate), so a file found there can be read through the current drive,
@@ -762,7 +762,7 @@ Has:    sty count
 ; ======================================================================
 
         .segment "OVL123"               ; overlay module 123: the system
-        .scope Mod123                   ; fonts searched (docs/DESIGN.md
+        .scope Mod123                   ; fonts searched (docs/design/DESIGN.md
                                         ; "System font folder")
         jmp FTypes                      ; entry 0 (module 15, OvFTypes)
         jmp Find                        ; entry 3 (module 15, OvFindFile)

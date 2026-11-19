@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GeoUltra's printer drivers on the U64 with the Ultimate's own IEC
-printer, and GU PDF A4 into GEOULTRA/print (docs/DESIGN.md "Printing";
+printer, and GU PDF A4 into GEOULTRA/print (docs/design/DESIGN.md "Printing";
 the PDF read back with mutool and taken away again): a test page through GU Epson FX-80
 (the printer's Epson emulation, colour PNG) and GU Commodore MPS (its
 Commodore emulation, black and white PNG), each loaded from drive E and

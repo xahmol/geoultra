@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop on the U64 (docs/DESKTOP.md "Recent documents"; the
+"""GeoUltra's desktop on the U64 (docs/design/DESKTOP.md "Recent documents"; the
 user's decision of 2026-11-18): a recent document inside a disk image
 that is not mounted offers to mount it, then opens. A D64 made for the
 test (gu-doctest.d64, in /USB0/GEOULTRA/test) holds "ReadMe 1581", a
@@ -25,7 +25,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 sys.path.insert(0, os.path.join(ROOT, "tests", "desktop"))
 from feu64 import U64  # noqa: E402
 import apprun  # noqa: E402

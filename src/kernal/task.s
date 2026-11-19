@@ -1,4 +1,4 @@
-; Task switching (docs/DESIGN.md "Task switcher"; the user's decisions of
+; Task switching (docs/design/DESIGN.md "Task switcher"; the user's decisions of
 ; 2026-11-14). C= + RUN/STOP, in any application, opens a small popup
 ; drawn over the screen: the tasks (the current one marked), "new task",
 ; "close task"; RETURN or a click switches, RUN/STOP cancels. A switch
@@ -12,7 +12,7 @@
 ; MainLoop's; module 95 the popup, 97 its drawing, 96 the switch and a
 ; new task, 98 the table and closing.
 ; Own design and code; the behaviour after MegaPatch 3's TaskManager
-; (idea only, docs/DESIGN.md).
+; (idea only, docs/design/DESIGN.md).
 
         .include "geos.inc"
         .include "hw.inc"
@@ -56,7 +56,7 @@ FIRST_Y         = BOX_ROW * 8 + 22 ; the first entry's baseline
 SCREEN_SAVE     = $D000         ; REU bank 1: the popup's rows of the screen
 COLOUR_SAVE     = $E100         ; and their colour cells (after the
                                 ; bitmap's BOX_ROWS * 320 bytes); bank 1's
-                                ; map: docs/ARCHITECTURE.md ($A000-$BFFF
+                                ; map: docs/reference/ARCHITECTURE.md ($A000-$BFFF
                                 ; is the native BAM's working copy)
 SYS_BANK        = 1
 REU_STASH_FF00  = $80           ; execute on a write to $FF00, C64 -> REU (as hibernate.s)
@@ -1004,7 +1004,7 @@ lockBuf:        .res ::TBL_LEN
 
         jmp FeTask              ; entry 0 (FE_TASK, the file engine)
 
-; FE_TASK (docs/FILE_ENGINE.md): Y = 0: A = the tasks running. 1: the
+; FE_TASK (docs/design/FILE_ENGINE.md): Y = 0: A = the tasks running. 1: the
 ; popup asked for (it opens at MainLoop's end, outside the engine call:
 ; it would use the engine's work area). 2: a new task that opens the
 ; path at r0 (the desktop's "open in new task"; FE_NO_TASK when no slot

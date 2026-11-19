@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """File engine on the Ultimate 64: disk images gone into like folders
-(docs/FILE_ENGINE.md "Disk images as folders"; engineimg.s, modules
+(docs/design/FILE_ENGINE.md "Disk images as folders"; engineimg.s, modules
 88-90).
 
 Only test copies are used: the test D64 (test/geopub.d64) is copied by

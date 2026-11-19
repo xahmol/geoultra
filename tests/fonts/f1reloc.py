@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""The system fonts' relocation in VICE (docs/DESIGN.md "System font
+"""The system fonts' relocation in VICE (docs/design/DESIGN.md "System font
 folder"; src/kernal/mount.s overlay modules 121-122): a FONTS.DNP of 8
 tracks made with tools/geosdisk.py holding fonts from an applications
 disk (GEOS_APPS_DISK, the user's own; VLIR) and a sequential file, put
 into REU banks 180-187 as the cold start loads it, relocated by module
 121 (entry 3, Reloc): the banks then hold, byte for byte, what
-tools/sysreloc.py makes of the same image with offset 237 (the proven
+tools/dev/sysreloc.py makes of the same image with offset 237 (the proven
 relocation of drive E). Module 121's Reloc returns C clear.
 Usage: tests/fonts/f1reloc.py
 """
@@ -74,7 +74,7 @@ def main():
     open(seq, "wb").write(bytes(range(256)) * 3)
     subprocess.run(GD + ["add", img, seq, "--seq"], check=True, capture_output=True)
     want = os.path.join(OUT, "FONTS-reloc.dnp")
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "sysreloc.py"), img, want,
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "sysreloc.py"), img, want,
                         str(FONT_TRACK), "8"], capture_output=True, text=True)
     print(r.stdout.strip() or r.stderr.strip())
     expect = open(want, "rb").read()
@@ -83,14 +83,14 @@ def main():
     hook = os.path.join(OUT, "hook-f1.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl"), "img": img, "used": used,
                                   "bank": FONT_BANK, "tracks": 8, "back": back})
-    sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+    sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
     import apprun
     for p in (apprun.REU_IMAGE, apprun.REU_IMAGE + ".src"):
         if os.path.exists(p):
             os.remove(p)
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "10",
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"), "--wait", "10",
                         "--out", os.path.join(OUT, "f1.png"), "GEOWRITE", "h:" + hook],
-                       env=dict(os.environ, PYTHONPATH=os.path.join(ROOT, "tools", "harness")),
+                       env=dict(os.environ, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness")),
                        capture_output=True, text=True, timeout=1200)
     line = next((l for l in r.stdout.splitlines() if l.startswith("F1")), "")
     print(line or r.stderr[-600:])

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""File engine on GeoUltra in VICE (docs/FILE_ENGINE.md).
+"""File engine on GeoUltra in VICE (docs/design/FILE_ENGINE.md).
 
 The reference D81 of tests/drives/part81.py (made by the real 1581 DOS:
 SUB1 with HELLO and the nested SUB2 with DEEP, RAW, ROOTFILE) is drive B;

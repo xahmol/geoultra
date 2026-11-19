@@ -1,4 +1,4 @@
-; GeoUltra Desktop (docs/DESKTOP.md): GeoUltra's own desktop, milestone
+; GeoUltra Desktop (docs/design/DESKTOP.md): GeoUltra's own desktop, milestone
 ; 1. This file: the start, the menus (geos with the desk accessories,
 ; drive E's merged in by the kernal; file with the actions; view with
 ; the themes; disk), the sidebar (drives A-D that are there, drive E,
@@ -1280,7 +1280,7 @@ Gush:   lda #<GushName
         ldx #>GushName
         bne RunSys              ; (always)
 ; Settings (geos > settings, the toolbar): GeoUltra Settings
-; (docs/SETTINGS.md) from drive E, as gush.
+; (docs/design/SETTINGS.md) from drive E, as gush.
 Settings:
         lda #<SettingsName
         ldx #>SettingsName

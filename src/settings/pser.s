@@ -1,5 +1,5 @@
 ; GeoUltra Settings: the Serials page (overlay 2 with the Pointer page,
-; ovl.s; docs/DESIGN.md "Serial number", the user's decisions of
+; ovl.s; docs/design/DESIGN.md "Serial number", the user's decisions of
 ; 2026-11-19: the full design, a tenth page). The serial number GeoUltra
 ; gives (SETTINGS.INI [system] serial=: none the user's own GEOS boot
 ; disk, found on the drives at the start; four hex digits a fixed one;

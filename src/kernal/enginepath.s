@@ -1,4 +1,4 @@
-; File engine paths (docs/FILE_ENGINE.md "Paths"; engine.s has the module
+; File engine paths (docs/design/FILE_ENGINE.md "Paths"; engine.s has the module
 ; list): module 23 makes a path absolute, module 24 walks it. Own code.
 ;
 ; A path: parts separated by "/"; "/" first: from the top, else from the

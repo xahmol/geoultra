@@ -1,4 +1,4 @@
-; Hibernation (docs/DESIGN.md, "Hibernation"; docs/ARCHITECTURE.md): the
+; Hibernation (docs/design/DESIGN.md, "Hibernation"; docs/reference/ARCHITECTURE.md): the
 ; running session to GEOULTRA/HIBERNAT.BIN on the Ultimate and back.
 ;
 ; Suspend (overlay module 8, entry 0): the drives are written back first;

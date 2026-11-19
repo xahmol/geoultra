@@ -6,7 +6,7 @@ FE_SPOOL 5): InitForPrint, then PAGES pages of BANDS bands of
 pseudo-random dots each. Checks: the path, the calls, mutool reads the
 PDF without a repair and finds the pages, each page's image is the rows
 as sent with the rest blank. Fast (seconds), for working on the driver;
-tests/print/pdf1.py runs it in VICE. docs/DESIGN.md "Printing".
+tests/print/pdf1.py runs it in VICE. docs/design/DESIGN.md "Printing".
 Both drivers, GU PDF A4 and GU PDF Letter (their paper checked).
 Usage: tests/print/pdfsim.py [PAGES] [BANDS]
 """

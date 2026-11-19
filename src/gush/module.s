@@ -1,5 +1,5 @@
-; gush: external commands (docs/GUSH.md; writing
-; one: docs/GUSH_COMMANDS.md). A module is a file whose data starts with
+; gush: external commands (docs/design/GUSH.md; writing
+; one: docs/reference/GUSH_COMMANDS.md). A module is a file whose data starts with
 ; MOD_MAGIC ("GCMD"), the API version it needs and a jmp to its code,
 ; built for the transient area TRANS ($5000, 4 KB at most, the overlays'
 ; area: ovl.s): on a GEOS drive a GEOS file of class "gush cmd", on the
@@ -21,7 +21,7 @@
 
 GetNextChar     = $C2A7         ; GEOS jump table
 NAME_MAX        = 16            ; (vars.s)
-API_VERSION     = 1             ; (docs/GUSH_COMMANDS.md)
+API_VERSION     = 1             ; (docs/reference/GUSH_COMMANDS.md)
 MOD_ENTRY       = 5             ; the module's jmp, after magic and version
 
         .segment "CODE"

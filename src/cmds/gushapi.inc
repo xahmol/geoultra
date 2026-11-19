@@ -1,4 +1,4 @@
-; gushapi.inc: what an external gush command needs (docs/GUSH_COMMANDS.md).
+; gushapi.inc: what an external gush command needs (docs/reference/GUSH_COMMANDS.md).
 ; A module is linked at GU_TRANS (src/cmds/cmd.cfg) and starts with
 ;
 ;       .byte "GCMD", GU_API_VERSION
@@ -30,7 +30,7 @@ GU_READIN       = $041E         ; r1: buffer, r2: length -> r2: read (0:
 GU_DECIMAL      = $0421         ; r0-r1: a 32-bit number, A: columns
 GU_KEY          = $0424         ; -> A: a key, waited for
 
-; File engine functions (docs/FILE_ENGINE.md) a command needs most.
+; File engine functions (docs/design/FILE_ENGINE.md) a command needs most.
 FE_STAT         = 1
 FE_OPENDIR      = 2
 FE_READDIR      = 3

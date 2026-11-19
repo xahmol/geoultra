@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The print spooler's banks on the U64 (docs/DESIGN.md "Print spooler"):
+"""The print spooler's banks on the U64 (docs/design/DESIGN.md "Print spooler"):
 SETTINGS.INI [system] spool=2048 (the user's file kept and put
 back byte for byte, HIBERNAT.BIN set aside), a boot: the spooler gets the
 banks at the top of the drives' area that the mounted drives leave free

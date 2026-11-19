@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's variables in VICE (docs/GUSH.md):
+"""gush's variables in VICE (docs/design/GUSH.md):
 NAME=value, $NAME, ${NAME}, quoting ("..." expands, '...' and \\$ do
 not), $? after a failed and a good line, set, unset, a lone "$".
 Usage: tests/gush/g12.py

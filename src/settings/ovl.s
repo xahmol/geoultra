@@ -1,4 +1,4 @@
-; GeoUltra Settings: overlays (docs/SETTINGS.md, "Structure"). The
+; GeoUltra Settings: overlays (docs/design/SETTINGS.md, "Structure"). The
 ; application is a VLIR file: record 0 the core at $0400-$4FFF, records
 ; 1 to OVL_N one page each at TRANS ($5000-$5FFF): 1 the Desktop page
 ; (pdesk.s) and the Printing page (pprint.s), 2 the Pointer page (pptr.s), 3 the System page (psys.s), 4 the Time page (ptime.s), 5 the Theme page (ptheme.s);

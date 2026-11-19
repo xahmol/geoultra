@@ -1,5 +1,5 @@
-; VLIR overlays for a GEOS application (gush, the desktop; docs/GUSH.md
-; "Memory", docs/DESKTOP.md "Structure"). Shared code, own design: moved
+; VLIR overlays for a GEOS application (gush, the desktop; docs/design/GUSH.md
+; "Memory", docs/design/DESKTOP.md "Structure"). Shared code, own design: moved
 ; here from gush's ovl.s on 2026-11-11 when the desktop needed the same.
 ;
 ; The application is a VLIR file: record 0 the resident core; records 1

@@ -1,4 +1,4 @@
-; File engine: copying and moving on GEOS drives (docs/FILE_ENGINE.md
+; File engine: copying and moving on GEOS drives (docs/design/FILE_ENGINE.md
 ; "Copying"; engine.s has the module list): module 29 FE_COPY and FE_MOVE
 ; (the source, the order, a move in one folder as a rename), module 30
 ; the target and its checks, module 31 the blocks and the new directory
@@ -49,7 +49,7 @@ Drop:   jsr OvlCall             ; (module 51: a deleted file's record)
 ; r3 = a progress routine or 0 (called after each block with r4 = blocks
 ; done; C set: stop, FE_CANCELLED). The target's name: r1's last part,
 ; or the source's when r1 is a folder or a drive. Between a GEOS drive
-; and the Ultimate (raw, docs/FILE_ENGINE.md "Copying"): modules 42-44.
+; and the Ultimate (raw, docs/design/FILE_ENGINE.md "Copying"): modules 42-44.
 OvCopy: lda #0
         beq Go
 ; FE_MOVE: as FE_COPY; in the same folder a rename, else a copy and the

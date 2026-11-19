@@ -1,5 +1,5 @@
 ; Fonts and desk accessories from the drive's root folder (overlay module
-; 17; docs/DESIGN.md "Directories", user 2026-10-30): on a native drive
+; 17; docs/design/DESIGN.md "Directories", user 2026-10-30): on a native drive
 ; inside a folder, FindFTypes for DESK_ACC or FONT adds the root's after
 ; the folder's, and the FindFile fallback (SysFindFile, sysdrive.s) looks
 ; for a desk accessory, font or printer driver in the root before drive

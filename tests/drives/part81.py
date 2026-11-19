@@ -21,7 +21,7 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 OUT = os.path.join(ROOT, "build", "harness", "part81")
 os.makedirs(OUT, exist_ok=True)
 VICEBIN = (localcfg.VICE_BIN or "")

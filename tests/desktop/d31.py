@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE: the system fonts (docs/DESIGN.md "System
+"""GeoUltra's desktop in VICE: the system fonts (docs/design/DESIGN.md "System
 font folder", step F; the user's choice of 2026-11-19): a FONTS.DNP with
 "F Roma" (Roma from GEOS_APPS_DISK, the user's own, renamed) relocated
-with tools/sysreloc.py and put into REU banks 180-187, fontsOn set, the
+with tools/dev/sysreloc.py and put into REU banks 180-187, fontsOn set, the
 desktop started in /e. Checks: the list of /e starts "..", "installed
 fonts" (list.s FontsEntry, kept there by the sort); opening that entry
 goes to /f, which lists F Roma (open.s); go > system fonts (Fonts) does
@@ -35,7 +35,7 @@ def main():
     subprocess.run(GD + ["add", img, APPS + ":Roma"], check=True, capture_output=True)
     subprocess.run(GD + ["rename", img, "Roma", "F Roma"], check=True, capture_output=True)
     rel = os.path.join(OUT, "D31FONTS-reloc.dnp")
-    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "sysreloc.py"), img, rel, "237", "8"],
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "sysreloc.py"), img, rel, "237", "8"],
                    check=True, capture_output=True)
     fonts = open(rel, "rb").read()
     k, kern = {}, {}

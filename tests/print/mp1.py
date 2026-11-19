@@ -3,7 +3,7 @@
 (its runner: the bytes caught at the ROM's serial routines, read back by
 cbmstream.py): a page of ten bands of pseudo-random dots (some cards
 blank: runs; every other band blank from a card on: shorter lines)
-printed directly, every dot of the first 60 cards where docs/DESIGN.md
+printed directly, every dot of the first 60 cards where docs/design/DESIGN.md
 "Printing" puts it (column X at 4X/240", row R at 3R/216": 7 rows a pass,
 the rows left over carried to the next call and printed by StopPrint),
 and no other; the same bytes through the spooler; an ASCII page as

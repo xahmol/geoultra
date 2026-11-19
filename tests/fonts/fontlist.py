@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GeoUltra's fonts on drive E in an application's font list, in VICE
-(docs/DESIGN.md "Fonts"; src/kernal/sysdrive.s modules 15 and 116):
+(docs/design/DESIGN.md "Fonts"; src/kernal/sysdrive.s modules 15 and 116):
 FindFTypes for fonts from drive B, with room for 15 and for 7 names (as
 geoWrite's menu): without fonts on B, drive E's ten GU fonts; with the
 user's LW_Roma (font ID 27) on B, LW_Roma first and GU Serif (also ID 27)
@@ -60,9 +60,9 @@ def run(tag, extra):
     subprocess.run(cmd, check=True, capture_output=True)
     hook = os.path.join(OUT, "hook-fonts.py")
     open(hook, "w").write(HOOK)
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "12",
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"), "--wait", "12",
                         "--out", os.path.join(OUT, "fonts-%s.png" % tag), "GEOWRITE", "h:" + hook],
-                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness")),
+                       env=dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness")),
                        capture_output=True, text=True, timeout=600)
     out = {}
     for line in r.stdout.splitlines():

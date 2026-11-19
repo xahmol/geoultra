@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """[serials] at the cold start on the U64 (src/kernal/serials.s, mount.s
-module 122; docs/DESIGN.md "Serial number", step S1): a SETTINGS.INI
+module 122; docs/design/DESIGN.md "Serial number", step S1): a SETTINGS.INI
 for the test lists the desktop's own class ("GU Desktop", any case)
 with 4321; after the boot, GetSerialNumber called from the desktop
 (MainLoop, through appMain as tests/engine/feu64.py does) gives 4321,

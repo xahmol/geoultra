@@ -1,10 +1,10 @@
-; GU PostScript (docs/DESIGN.md "PostScript writer"; docs/PSW.md): a
+; GU PostScript (docs/design/DESIGN.md "PostScript writer"; docs/reference/PSW.md): a
 ; geoWrite 2.x document as a PostScript file in GEOULTRA/print. The
 ; layout and the text written are tools/gwps.py's (gwtool ps), the
 ; reference the tests compare with byte for byte. Shared definitions.
 ; Own code (GeoUltra, 2026).
 
-; --- GEOS 2.0 jump table and variables (HG2G; docs/GEOS_API_REFERENCE.md)
+; --- GEOS 2.0 jump table and variables (HG2G; docs/reference/GEOS_API_REFERENCE.md)
 UseSystemFont   = $C14B
 DoDlgBox        = $C256
 EnterDeskTop    = $C22C
@@ -40,7 +40,7 @@ curHeight       = $29
 curIndexTable   = $2A           ; word
 cardDataPntr    = $2C           ; word
 
-; --- The file engine (docs/FILE_ENGINE.md)
+; --- The file engine (docs/design/FILE_ENGINE.md)
 FE_OPEN         = 13
 FE_WRITE        = 15
 FE_CLOSE        = 4

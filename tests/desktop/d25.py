@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The desktop's clipboard menu in VICE (docs/DESIGN.md "Clipboard";
+"""The desktop's clipboard menu in VICE (docs/design/DESIGN.md "Clipboard";
 src/desktop/clip.s; the user's decisions of 2026-11-15): a text scrap put
 into the store (SaveFile through the jump table, src/kernal/scrap.s);
 and a small photo scrap; clipboard > show: the text's size and first

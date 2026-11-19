@@ -1,5 +1,5 @@
 # Conformance cases for GetString, the text prompt and DBGETSTRING
-# (tools/harness/harness.py). Keys are delivered through keyVector at the
+# (tools/dev/harness/harness.py). Keys are delivered through keyVector at the
 # top of MainLoop ({"key": code}).
 
 BUF = 0x4000

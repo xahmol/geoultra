@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's mouse in VICE (docs/GUSH.md): a click on
+"""gush's mouse in VICE (docs/design/GUSH.md): a click on
 the input line puts the cursor on the character pressed; a click past
 the line's end puts it at the end; a click elsewhere does nothing.
 Usage: tests/gush/g11.py

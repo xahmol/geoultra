@@ -4,9 +4,9 @@
 ; also works without an REU), checks the REU, copies the system image
 ; (ROM banks 1..IMG_BANKS) into the REU at $020000, switches the
 ; cartridge off and fetches every remaining image to its C64 address
-; (docs/ARCHITECTURE.md, "Boot"), then starts the kernal. Status
+; (docs/reference/ARCHITECTURE.md, "Boot"), then starts the kernal. Status
 ; messages are pre-drawn strips of the splash's status line
-; (tools/splash/mksplash.py --boot).
+; (tools/dev/splash/mksplash.py --boot).
 
         .include "hw.inc"
         .include "image.inc"

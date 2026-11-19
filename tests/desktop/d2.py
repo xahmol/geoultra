@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE (docs/DESKTOP.md): the list. Drive
+"""GeoUltra's desktop in VICE (docs/design/DESKTOP.md): the list. Drive
 B holds 40 files more than gush's test disk; the engine's current folder
 is set to /b before the desktop starts. Checked from its memory: all
 entries read (count), the cursor keys move the cursor and the window

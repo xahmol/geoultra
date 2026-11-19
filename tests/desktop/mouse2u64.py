@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The right mouse button on the U64 (docs/DESKTOP.md, "Toolbar and
+"""The right mouse button on the U64 (docs/design/DESKTOP.md, "Toolbar and
 right-click": checked on the hardware first). Boots GeoUltra and watches
 guMouse2 ($C0E6: bit 7 clear while the right button is held, bit 6 at a
 press) and GEOS's mouseData ($8505, the left button) while someone

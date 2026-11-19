@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """gush's console font: GeoUltra's own 6x8 monospaced design (glyphs drawn
-for this project, docs/GUSH.md "Screen"). Each cell is 6 pixels wide and
+for this project, docs/design/GUSH.md "Screen"). Each cell is 6 pixels wide and
 8 high: the glyph in the 5 left columns, column 6 blank (the gap); rows
 0-6 for capitals and digits (baseline row 6), x-height rows 2-6,
 descenders on row 7.

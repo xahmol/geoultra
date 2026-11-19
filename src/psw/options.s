@@ -1,4 +1,4 @@
-; GU PostScript: the options (docs/DESIGN.md "PostScript writer", the
+; GU PostScript: the options (docs/design/DESIGN.md "PostScript writer", the
 ; user's decisions of 2026-11-19): paper (A4, Letter) and look (real
 ; text: the LW and GU fonts as the printer's own; C64 look: every font
 ; from its bitmaps), their defaults from SETTINGS.INI ([print] paper=

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/mkgeosfont.py (docs/DESIGN.md "Fonts"): GU Serif built from TeX
+"""tools/mkgeosfont.py (docs/design/DESIGN.md "Fonts"): GU Serif built from TeX
 Gyre Termes (the system's fonts-texgyre) with a hand fix file: the CVT's
 header (FONT, VLIR, ID 27, the (ID << 6 | size) list, the records'
 sizes), a font image per size with height = size, the widths from the

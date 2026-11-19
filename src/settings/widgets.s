@@ -1,4 +1,4 @@
-; GeoUltra Settings: buttons inside a page (docs/SETTINGS.md): a framed
+; GeoUltra Settings: buttons inside a page (docs/design/SETTINGS.md): a framed
 ; box with its label centred by its measured width, and the test whether
 ; a click is on it. A page's overlay holds its buttons' records and
 ; hands them over (ButtonDraw, OnButton). Own design and code.

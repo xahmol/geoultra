@@ -1,4 +1,4 @@
-; File engine: looking at files (docs/FILE_ENGINE.md "Functions"; engine.s
+; File engine: looking at files (docs/design/FILE_ENGINE.md "Functions"; engine.s
 ; has the module list): module 25 FE_STAT and FE_DF, module 26
 ; FE_OPENDIR, module 28 FE_READDIR (FE_CLOSE is in module 22). Own code.
 

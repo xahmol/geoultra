@@ -1,4 +1,4 @@
-; The theme files' format (docs/DESKTOP.md, "Look and themes"; the
+; The theme files' format (docs/design/DESKTOP.md, "Look and themes"; the
 ; desktop's themefile.s reads and writes them, GeoUltra Settings' theme
 ; editor edits them): the lines after name= in the file's order (their
 ; keys), each line's style words (W_NONE: no style), the kind of its

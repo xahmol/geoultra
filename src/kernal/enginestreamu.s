@@ -1,4 +1,4 @@
-; File engine: streams on the Ultimate's file system (docs/FILE_ENGINE.md
+; File engine: streams on the Ultimate's file system (docs/design/FILE_ENGINE.md
 ; "Functions"; engine.s has the module list): module 61 FE_OPEN, module
 ; 62 FE_READ, module 63 FE_WRITE, module 64 their setup (the handle,
 ; the file opened at its place, closed); shared: fepath.inc,

@@ -2,7 +2,7 @@
 ; MoveData, i_MoveData. Written from the HG2G2022 descriptions; checked
 ; with tests/conformance/misc.py.
 ;
-; Applications see ramExpSize banks (the legacy view, docs/DESIGN.md);
+; Applications see ramExpSize banks (the legacy view, docs/design/DESIGN.md);
 ; their bank n is physical REU bank legacyBase + n, the current task's own
 ; area, so they never reach the system banks, drives, task slots or other
 ; tasks' data. Their bank 0 is also MoveData's DMA scratch area, as in

@@ -1,4 +1,4 @@
-# Conformance cases for menus (tools/harness/harness.py).
+# Conformance cases for menus (tools/dev/harness/harness.py).
 #
 # Menu structures and item texts are placed at MENU_AT; screens are
 # comparable because the harness gives GEOS 2.0 GeoUltra's system font.

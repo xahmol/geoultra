@@ -1,4 +1,4 @@
-# GeoUltra's desktop (docs/DESKTOP.md): on drive E (src/sysdrive.toml),
+# GeoUltra's desktop (docs/design/DESKTOP.md): on drive E (src/sysdrive.toml),
 # started by EnterDeskTop (always since 2026-11-13).
 [file]
 name = "GeoUltra Desktop"

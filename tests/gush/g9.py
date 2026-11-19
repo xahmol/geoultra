@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's "program document" in VICE (docs/GUSH.md, "Starting programs"):
+"""gush's "program document" in VICE (docs/design/GUSH.md, "Starting programs"):
 DocPeek (tests/gush/docpeek.s) keeps what GEOS passed it at $5000; it is
 started with a document on its own drive and folder, on the other drive,
 in another folder of its drive (refused), missing, and with two words.

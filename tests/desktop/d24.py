@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The desktop's tasks in VICE (docs/DESIGN.md "Task switcher";
+"""The desktop's tasks in VICE (docs/design/DESIGN.md "Task switcher";
 src/desktop/list.s TaskWords, TaskPress; side.s TaskOpen; actions.s
 OpenTask, TaskTake; src/kernal/task.s FE_TASK): the status line shows
 "1 task" at its right end; "open in new task" on GU Settings (cursor

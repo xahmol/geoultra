@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""The system fonts found by programs in VICE (docs/DESIGN.md "System
+"""The system fonts found by programs in VICE (docs/design/DESIGN.md "System
 font folder"; sysdrive.s modules 15 and 123): a FONTS.DNP holding a font
 named "F Roma" (Roma from an applications disk, GEOS_APPS_DISK, the
 user's own, renamed so no drive has it), relocated with
-tools/sysreloc.py as the cold start does (tests/fonts/f1reloc.py checks
+tools/dev/sysreloc.py as the cold start does (tests/fonts/f1reloc.py checks
 that the two agree) and put into REU banks 180-187, fontsOn set. Checks:
 FindFTypes for fonts lists it after the drive's and E's; FindFile finds
 it on tracks 238-245 (X = 0); an unknown name stays FILE_NOT_FOUND;
@@ -83,18 +83,18 @@ def main():
     subprocess.run(GD + ["add", img, APPS + ":Roma"], check=True, capture_output=True)
     subprocess.run(GD + ["rename", img, "Roma", "F Roma"], check=True, capture_output=True)
     rel = os.path.join(OUT, "F2FONTS-reloc.dnp")
-    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "sysreloc.py"), img, rel, "237", "8"],
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "sysreloc.py"), img, rel, "237", "8"],
                    check=True, capture_output=True)
     hook = os.path.join(OUT, "hook-f2.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl"), "img": rel})
-    sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+    sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
     import apprun
     for p in (apprun.REU_IMAGE, apprun.REU_IMAGE + ".src"):
         if os.path.exists(p):
             os.remove(p)
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "10",
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"), "--wait", "10",
                         "--out", os.path.join(OUT, "f2.png"), "GEOWRITE", "h:" + hook],
-                       env=dict(os.environ, PYTHONPATH=os.path.join(ROOT, "tools", "harness")),
+                       env=dict(os.environ, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness")),
                        capture_output=True, text=True, timeout=1200)
     lines = {l.split()[1]: l for l in r.stdout.splitlines() if l.startswith("F2 ")}
     for l in lines.values():

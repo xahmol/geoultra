@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GeoUltra's desktop on the U64: system fonts installed and uninstalled
-(docs/DESIGN.md "System font folder", step F; fontact.s, ctxmenu.s,
+(docs/design/DESIGN.md "System font folder", step F; fontact.s, ctxmenu.s,
 list.s TaskOrMount). MOUNTS.INI for the test: A and B only (test copies:
 GEOS64.D81, neos.d64), so C and D are free; no FONTS.DNP. In /b, the
 cursor on Roma, item 1 of the context menu (FontAct): FONTS.DNP made and
@@ -21,7 +21,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 from feu64 import U64  # noqa: E402
 import apprun  # noqa: E402
 

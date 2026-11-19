@@ -1,4 +1,4 @@
-; gush: scripts (docs/GUSH.md). A script is a text
+; gush: scripts (docs/design/GUSH.md). A script is a text
 ; file, read whole into gush's REU (bank SCRIPT_BANK, SCRIPT_MAX bytes per
 ; level, DEPTH_MAX levels: scripts may run scripts), then its lines run
 ; statement by statement as typed lines are (Exec, flow.s). $0 is its path, $1-$9 its words,

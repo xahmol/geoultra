@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings in VICE: the Printing page (S8; docs/DESIGN.md
+"""GeoUltra Settings in VICE: the Printing page (S8; docs/design/DESIGN.md
 "Printing", the user's decisions of 2026-11-16; pprint.s): its name the
 ninth in the side list; the printer row with GU Epson FX-80 in force
 (no printer= yet), the note, "In use:" and the printer the desktop set

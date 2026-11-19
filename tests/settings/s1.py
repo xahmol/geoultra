@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings in VICE (docs/SETTINGS.md): started from
+"""GeoUltra Settings in VICE (docs/design/SETTINGS.md): started from
 the desktop's Settings routine (as geos > settings and the toolbar run
 it), the frame on the Desktop page; a page name switches pages; clicks
 on the Desktop page's options set keys in the INI text (VICE has no

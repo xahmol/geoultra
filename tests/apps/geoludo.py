@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GeoLudo (the user's own GEOS game, github.com/xahmol/ludo, GEOS/) on
-GeoUltra in VICE, through tools/harness/apprun.py: Game > (Re)Start with
+GeoUltra in VICE, through tools/dev/harness/apprun.py: Game > (Re)Start with
 four AI players and their default names, the board drawn (player 1,
 green); File > Save as SAVE_NAME; six throws (the turn and the die change the
 screen); File > Load lists the save, Open restores it: the screen below
@@ -54,7 +54,7 @@ def events(save=None, row=0, tag=""):
 def run(disk, select, row, tag, check):
     """One run: GeoLudo from DISK (SELECT: its path in a folder)."""
     env = dict(os.environ, GEOS_APPS_DISK=disk)
-    cmd = [sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "14",
+    cmd = [sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"), "--wait", "14",
            "--out", os.path.join(OUT, "loaded%s.png" % tag)]
     if select:
         cmd += ["--select", select]

@@ -1,5 +1,5 @@
-; GeoUltra Settings: the Pointer page (overlay 2, ovl.s; docs/SETTINGS.md,
-; "Pages"): the mouse pointer's four designs (tools/mkpointers.py, the
+; GeoUltra Settings: the Pointer page (overlay 2, ovl.s; docs/design/SETTINGS.md,
+; "Pages"): the mouse pointer's four designs (tools/dev/mkpointers.py, the
 ; kernal's module 86) as one choice row over SETTINGS.INI's [system]
 ; pointer= (read at every start), each with its picture under it, and
 ; its colour (pointercolour=, 0-15, with - and +; the user, 2026-11-12,

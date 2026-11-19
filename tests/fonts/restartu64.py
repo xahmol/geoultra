@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A restart that keeps the session, on the U64 (docs/DESIGN.md "System
+"""A restart that keeps the session, on the U64 (docs/design/DESIGN.md "System
 font folder"; enginesys.s FE_REBOOT with Y = 1, hibernate.s Resumed,
 mount.s module 122 Keep): GeoUltra started without FONTS.DNP (fontsOn
 0), a marker put into RAM, then a FONTS.DNP with "F Roma" (Roma from

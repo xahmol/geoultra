@@ -1,4 +1,4 @@
-; GeoUltra Settings: the Drives page (overlay 7, ovl.s; docs/SETTINGS.md
+; GeoUltra Settings: the Drives page (overlay 7, ovl.s; docs/design/SETTINGS.md
 ; the user's decisions of 2026-11-14). Three views on one page:
 ;
 ; - the drives: a row per drive A-D: its image's name, "choose" and

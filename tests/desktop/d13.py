@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra's desktop in VICE: two panes (docs/DESKTOP.md, "Two panes",
+"""GeoUltra's desktop in VICE: two panes (docs/design/DESKTOP.md, "Two panes",
 ). From /a: two panes switched on (TwoPanes, as view > two panes
 runs it): the left pane /a active, the right one "/"; the list view;
 a click in the right pane makes it active (its cursor on the entry

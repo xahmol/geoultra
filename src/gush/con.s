@@ -1,4 +1,4 @@
-; gush: the console (docs/GUSH.md, "Screen"). 53 columns and 25 rows of
+; gush: the console (docs/design/GUSH.md, "Screen"). 53 columns and 25 rows of
 ; 6x8 cells drawn straight into the hi-res bitmap with gush's own font
 ; (tools/fonts/gush6.py); row 0 the status line (inverted), rows 1-24
 ; text that scrolls. A text copy of rows 1-24 (shadow) for redrawing and

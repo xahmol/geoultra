@@ -1,6 +1,6 @@
 ; GU Commodore MPS: GeoUltra's printer driver for Commodore MPS-801/803
 ; compatible printers and for the Ultimate's virtual printer in its
-; Commodore MPS emulation, the firmware's default (docs/DESIGN.md
+; Commodore MPS emulation, the firmware's default (docs/design/DESIGN.md
 ; "Printing"). Loaded at PRINTBASE ($7900, up to $7F3F) with the GEOS
 ; 2.0 printer driver interface (HG2G chapter 11, entries 20-176 to
 ; 20-183). Own code, written from HG2G's description of 7-bit printers

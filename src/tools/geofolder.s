@@ -1,11 +1,11 @@
-; geoFolder: GeoUltra's desk accessory for folders (docs/DESIGN.md,
+; geoFolder: GeoUltra's desk accessory for folders (docs/design/DESIGN.md,
 ; "Directories", "System drive"). One file dialog: the kernal's DBGETFILES
 ; lists ".." and the folders of the current drive's current folder (a file
 ; type that no file has, so no files appear); OPEN, RETURN and DEL move
 ; through them (the kernal does that), DISK goes to the next drive, OK
 ; leaves: the drive's current folder stays as chosen, and the application
 ; sees it as the disk at its next OpenDisk. The gush button starts gush
-; (docs/GUSH.md) from drive E in the application's place. When the list would be empty
+; (docs/design/GUSH.md) from drive E in the application's place. When the list would be empty
 ; (a drive without folders, or the root of one with none), it says "No
 ; folders" above the drive's name (user's question, 2026-11-04). Own code.
 
@@ -36,7 +36,7 @@ DBTXTSTR        = 11
 DBGETFILES      = 16
 NO_FILE_TYPE    = $FF           ; no GEOS file has it: only folders listed
 DBUSRICON       = 18
-FE_RUNSYS       = 22            ; the file engine (docs/FILE_ENGINE.md)
+FE_RUNSYS       = 22            ; the file engine (docs/design/FILE_ENGINE.md)
 
         .segment "CODE"
 
@@ -137,7 +137,7 @@ noteWord:
         .word driveText
         .byte 0
 
-; The gush button (docs/GUSH.md, "Where gush lives"): its picture, (x, y
+; The gush button (docs/design/GUSH.md, "Where gush lives"): its picture, (x, y
 ; from the dialog), width in bytes, height, routine.
 gushIcon:
         .word GushIcon

@@ -1,4 +1,4 @@
-; gush: system commands (docs/GUSH.md): mount, umount,
+; gush: system commands (docs/design/GUSH.md): mount, umount,
 ; mkimg, free, reboot. Own code.
 
         .include "geos.inc"
@@ -443,7 +443,7 @@ Banks:  .byte " banks (64 KB each)", 0
 Drives: .byte "drives: ", 0
 Of:     .byte " of 157 banks used, ", 0
 FreeText:.byte " free", 0
-DRIVE_BANKS     = 149           ; banks 31-179 (docs/DESIGN.md, REU map)
+DRIVE_BANKS     = 149           ; banks 31-179 (docs/design/DESIGN.md, REU map)
 
 ; reboot: every drive written back, GeoUltra started afresh (the
 ; hibernated session dropped). Back only when that failed.

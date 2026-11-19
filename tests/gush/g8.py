@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gush's cp -r in VICE (docs/GUSH.md, "Commands"): a folder with files
+"""gush's cp -r in VICE (docs/design/GUSH.md, "Commands"): a folder with files
 and a folder in it (1581 partitions, mkdir -t) copied to a new name and
 into an existing folder; without -r a folder is refused, as by mv.
 Usage: tests/gush/g8.py

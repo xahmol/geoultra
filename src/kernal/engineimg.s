@@ -1,5 +1,5 @@
 ; File engine: disk images on the Ultimate gone into like folders (the
-; user's decision 2026-11-13; docs/FILE_ENGINE.md "Disk images as
+; user's decision 2026-11-13; docs/design/FILE_ENGINE.md "Disk images as
 ; folders"). A path such as /usb0/x/disk.d81/notes names a file inside
 ; the image: the image is loaded into free REU banks (module 68, as
 ; FE_MOUNT loads one) and shown in an empty slot A-D for this call, the

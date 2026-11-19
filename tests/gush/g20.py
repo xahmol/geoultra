@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Drive E by path in VICE (docs/FILE_ENGINE.md, "Drive E"; docs/GUSH.md):
+"""Drive E by path in VICE (docs/design/FILE_ENGINE.md, "Drive E"; docs/design/GUSH.md):
 the native system drive shown in a free slot for each engine call. "/"
 lists e; ls /e and /e/bin; cd into it; wc found along PATH in /e/bin from
 another folder; cat and cp from E; writing refused (read-only); a

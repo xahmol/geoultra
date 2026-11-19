@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The print queue through hibernation on the U64 (docs/DESIGN.md "Print
+"""The print queue through hibernation on the U64 (docs/design/DESIGN.md "Print
 spooler"; src/kernal/hibernate.s module 115): a paused queue with
 records is written straight into the REU (its header in bank 1, marked
 data in bank 27 and in the first extra bank: SETTINGS.INI [system]

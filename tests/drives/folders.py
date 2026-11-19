@@ -16,7 +16,7 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
 SOURCE = localcfg.disk("GEOS_NATIVE_DISK", "ramapps.DNP")
 TEST_DISK = os.path.join(ROOT, "build", "harness", "folders-test.dnp")
 os.environ["GEOS_APPS_DISK"] = TEST_DISK

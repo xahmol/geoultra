@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: the application for a document, the newest version
-; (overlay 6, ovl.s; docs/DESKTOP.md "Opening"; the user's decisions of
+; (overlay 6, ovl.s; docs/design/DESKTOP.md "Opening"; the user's decisions of
 ; 2026-11-18: an old geoWrite document on a disk with geoWrite 1.x on it
 ; opened in that 1.x, not in geoWrite 2.1 on another drive, which would
 ; have converted it; and geoWrite 2.1 lives in a folder, /c/Writing).

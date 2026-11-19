@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: the context menu and Info (overlay 7, ovl.s;
-; docs/DESKTOP.md, "Toolbar and right-click": the user's decisions of
+; docs/design/DESKTOP.md, "Toolbar and right-click": the user's decisions of
 ; 2026-11-11). The right mouse button (guMouse2, the 1351 driver) opens
 ; a menu at the pointer: open, open in new task, copy, cut, paste,
 ; rename, delete, info,

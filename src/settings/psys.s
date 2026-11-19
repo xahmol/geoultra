@@ -1,4 +1,4 @@
-; GeoUltra Settings: the System page (overlay 3, ovl.s; docs/SETTINGS.md):
+; GeoUltra Settings: the System page (overlay 3, ovl.s; docs/design/SETTINGS.md):
 ; turbo, the slow list and hibernation, over
 ; SETTINGS.INI's [system] keys as the kernal reads them (mount.s):
 ; turbo=N (a speed step 0-15) or turbo=off, no key for full speed;

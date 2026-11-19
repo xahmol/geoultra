@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The mouse pointer's design at boot on the U64 (docs/SETTINGS.md, step
+"""The mouse pointer's design at boot on the U64 (docs/design/SETTINGS.md, step
 S2; src/kernal/pointer.s, module 86): a test SETTINGS.INI with
 [system] pointer=3 gives the crosshair after a reboot: sprite 0's
 picture is its design (build/gen/pointers.inc), PosPointer's offsets

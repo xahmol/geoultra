@@ -1,6 +1,6 @@
 # GeoUltra Makefile
 #
-# System (docs/ARCHITECTURE.md, "Build"):
+# System (docs/reference/ARCHITECTURE.md, "Build"):
 #   make              build build/geoultra64.crt
 #   make vice         run it in VICE 3.10 (16 MB REU, 1351 mouse in port 1)
 #   make vice-shot    run unattended, screenshot to build/vice.png
@@ -13,7 +13,7 @@
 #                     GEOS64-v2.0-unkeyed.d64; CONF_REBUILD=1 makes new
 #                     snapshots of both systems)
 #
-# Hardware smoke tests (docs/DESIGN.md, "Verified on hardware"):
+# Hardware smoke tests (docs/design/DESIGN.md, "Verified on hardware"):
 #   make smoke        build build/smoke/gusmoke.crt and guseek.prg
 #   make smoke-vice   run the cartridge in VICE 3.10 with a 16 MB REU,
 #                     screenshot to build/smoke/vice.png
@@ -40,7 +40,7 @@ VICE    = $(if $(VICE_BIN),$(VICE_BIN)/,)x64sc
 # A headless VICE (no window, no sound) for unattended runs, if there is one
 VICEHL  = $(if $(VICE_HEADLESS_BIN),$(VICE_HEADLESS_BIN)/x64sc,$(VICE))
 C1541   = $(if $(VICE_BIN),$(VICE_BIN)/,)c1541
-GEOSAPP = tools/geosapp.py
+GEOSAPP = tools/dev/geosapp.py
 PYTHON  = python3
 
 UCILIB  = lib/ultimate-uci-oscar64/include
@@ -56,7 +56,7 @@ GEOS_ORACLE ?= $(GEOS_DEV)/GEOS64-v2.0-unkeyed.d64
 all: build/geoultra64.crt build/geoultra64.cfg
 
 # The Ultimate settings for the cartridge, applied by firmware 3.15 when
-# the .crt is started from its file browser (docs/DESIGN.md "Ultimate
+# the .crt is started from its file browser (docs/design/DESIGN.md "Ultimate
 # settings"); the kernal's start-up check covers the other ways.
 build/geoultra64.cfg: src/cfg/geoultra64.cfg
 	@mkdir -p build
@@ -64,12 +64,12 @@ build/geoultra64.cfg: src/cfg/geoultra64.cfg
 
 # Every item and value of the .cfg against the Ultimate in .env.
 checkcfg: check-deploy
-	$(PYTHON) tools/checkcfg.py src/cfg/geoultra64.cfg $(ULTIP1)
+	$(PYTHON) tools/dev/checkcfg.py src/cfg/geoultra64.cfg $(ULTIP1)
 
-# --- System drive (drive E, docs/DESIGN.md "System drive") ------------
+# --- System drive (drive E, docs/design/DESIGN.md "System drive") ------------
 
 # GeoUltra's own GEOS files, assembled at $0400 and packed as CVT by
-# tools/geosapp.py (a copy of geos-oscar64 0.1.2's: it pads desk
+# tools/dev/geosapp.py (a copy of geos-oscar64 0.1.2's: it pads desk
 # accessories to whole blocks), written to a D64 with VICE's c1541.
 SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt \
            build/settings/settings.cvt build/tools/splash.cvt build/fonts/.done \
@@ -82,17 +82,17 @@ build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	$(CA65) -I build/gen -o build/tools/$*.o $<
 	$(LD65) -C src/tools/$*.cfg -o $@ build/tools/$*.o
 
-# geoFolder's gush button, drawn like the system icons (tools/mkicons.py).
-build/gen/gushicon.inc: tools/mkicons.py tools/fonts/system9.py
+# geoFolder's gush button, drawn like the system icons (tools/dev/mkicons.py).
+build/gen/gushicon.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkicons.py --icon $@ GushIcon gush
+	$(PYTHON) tools/dev/mkicons.py --icon $@ GushIcon gush
 
 build/tools/geofolder.bin: build/gen/gushicon.inc
 
 build/tools/%.cvt: build/tools/%.bin src/tools/%.toml
 	$(PYTHON) $(GEOSAPP) src/tools/$*.toml $< $@
 
-# GU PostScript (src/psw, docs/DESIGN.md "PostScript writer"): psw.s
+# GU PostScript (src/psw, docs/design/DESIGN.md "PostScript writer"): psw.s
 # first (its Start at $0400), then the other modules.
 PSWSRCS = src/psw/psw.s $(filter-out src/psw/psw.s,$(wildcard src/psw/*.s))
 PSWOBJS = $(patsubst src/psw/%.s,build/psw/%.o,$(PSWSRCS))
@@ -102,12 +102,12 @@ build/psw/%.o: src/psw/%.s src/psw/psw.inc
 	$(CA65) -g -I src/psw -I build/gen -o $@ $<
 
 # Its options box's buttons, drawn like the system icons.
-build/gen/pswicons.inc: tools/mkicons.py tools/fonts/system9.py
+build/gen/pswicons.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkicons.py --icon build/gen/pswa4.inc IconA4 "A4"
-	$(PYTHON) tools/mkicons.py --icon build/gen/pswletter.inc IconLetter "Letter"
-	$(PYTHON) tools/mkicons.py --icon build/gen/pswreal.inc IconReal "Real"
-	$(PYTHON) tools/mkicons.py --icon build/gen/pswc64.inc IconC64 "C64"
+	$(PYTHON) tools/dev/mkicons.py --icon build/gen/pswa4.inc IconA4 "A4"
+	$(PYTHON) tools/dev/mkicons.py --icon build/gen/pswletter.inc IconLetter "Letter"
+	$(PYTHON) tools/dev/mkicons.py --icon build/gen/pswreal.inc IconReal "Real"
+	$(PYTHON) tools/dev/mkicons.py --icon build/gen/pswc64.inc IconC64 "C64"
 	cat build/gen/pswa4.inc build/gen/pswletter.inc build/gen/pswreal.inc build/gen/pswc64.inc > $@
 
 build/psw/options.o: build/gen/pswicons.inc
@@ -121,13 +121,13 @@ build/psw/psw.cvt: build/psw/psw.bin src/psw/psw.toml
 # The boot splash as a data file on drive E (bitmap, then colours), which
 # the desktop's GeoUltra info shows (ctxmenu.s).
 # Its status line says how to leave it (mksplash.py's own mode).
-build/tools/splash.bin: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/system9.py
+build/tools/splash.bin: tools/dev/splash/mksplash.py tools/dev/splash/idi8b-logo.png tools/fonts/system9.py
 	@mkdir -p build/tools build/gen
-	GU_VERSION=v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH) $(PYTHON) tools/splash/mksplash.py build/gen/splashinfo.bin build/gen/splashinfo_col.bin \
+	GU_VERSION=v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH) $(PYTHON) tools/dev/splash/mksplash.py build/gen/splashinfo.bin build/gen/splashinfo_col.bin \
 		build/gen/splashinfo.png "A key or a click: back to the desktop"
 	cat build/gen/splashinfo.bin build/gen/splashinfo_col.bin > $@
 
-# gush, the GeoUltra shell (docs/GUSH.md): src/gush, its font generated by
+# gush, the GeoUltra shell (docs/design/GUSH.md): src/gush, its font generated by
 # tools/fonts/gush6.py.
 GUSHSRCS = src/gush/gush.s $(filter-out src/gush/gush.s,$(wildcard src/gush/*.s))
 GUSHOBJS = $(patsubst src/gush/%.s,build/gush/%.o,$(GUSHSRCS))   # gush.o first: its Start at $0400
@@ -143,69 +143,69 @@ build/gush/%.o: src/gush/%.s src/gush/gush.inc $(wildcard src/inc/*.inc) build/g
 build/gush/gush.bin: $(GUSHOBJS) src/gush/gush.cfg
 	$(LD65) -C src/gush/gush.cfg -m build/gush/gush.map -Ln build/gush/gush.lbl -o $@ $(GUSHOBJS)
 
-build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/vlircvt.py
+build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/dev/vlircvt.py
 	$(PYTHON) $(GEOSAPP) src/gush/gush.toml $< build/gush/gush-seq.cvt
-	$(PYTHON) tools/vlircvt.py build/gush/gush-seq.cvt $@ $<.1 $<.2 $<.3 $<.4
+	$(PYTHON) tools/dev/vlircvt.py build/gush/gush-seq.cvt $@ $<.1 $<.2 $<.3 $<.4
 
-# GeoUltra's desktop (docs/DESKTOP.md): src/desktop, on drive E.
+# GeoUltra's desktop (docs/design/DESKTOP.md): src/desktop, on drive E.
 DESKSRCS = $(wildcard src/desktop/*.s)
 # The question's "Yes to all" button (64 pixels), drawn like the system icons.
 # The icon view's 24 x 21 generic icons (own drawings, text art in the tool).
-build/gen/bigicons.inc: tools/mkbigicons.py
+build/gen/bigicons.inc: tools/dev/mkbigicons.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkbigicons.py $@
-build/gen/yesall.inc: tools/mkicons.py tools/fonts/system9.py
+	$(PYTHON) tools/dev/mkbigicons.py $@
+build/gen/yesall.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkicons.py --icon $@ YesAllIcon "Yes to all" 64
+	$(PYTHON) tools/dev/mkicons.py --icon $@ YesAllIcon "Yes to all" 64
 
 # The mount dialog's drive buttons, drawn like the system icons.
 DRVICONS = $(patsubst %,build/gen/drvicon_%.inc,A B C D)
-build/gen/drvicon_%.inc: tools/mkicons.py tools/fonts/system9.py
+build/gen/drvicon_%.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkicons.py --icon $@ DriveIcon$* $*
+	$(PYTHON) tools/dev/mkicons.py --icon $@ DriveIcon$* $*
 
 # The print queue window's buttons (src/desktop/spool.s).
-build/gen/qicons.inc: tools/mkicons.py tools/fonts/system9.py
+build/gen/qicons.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkicons.py --icon $@.1 CancelIcon cancel 40
-	$(PYTHON) tools/mkicons.py --icon $@.2 PauseIcon pause
-	$(PYTHON) tools/mkicons.py --icon $@.3 ResumeIcon resume
-	$(PYTHON) tools/mkicons.py --icon $@.4 CloseIcon close
+	$(PYTHON) tools/dev/mkicons.py --icon $@.1 CancelIcon cancel 40
+	$(PYTHON) tools/dev/mkicons.py --icon $@.2 PauseIcon pause
+	$(PYTHON) tools/dev/mkicons.py --icon $@.3 ResumeIcon resume
+	$(PYTHON) tools/dev/mkicons.py --icon $@.4 CloseIcon close
 	cat $@.1 $@.2 $@.3 $@.4 > $@ && rm $@.1 $@.2 $@.3 $@.4
 
-build/gen/splashicon.inc: tools/mkicons.py tools/fonts/system9.py
+build/gen/splashicon.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkicons.py --icon $@ SplashIcon splash
+	$(PYTHON) tools/dev/mkicons.py --icon $@ SplashIcon splash
 
 build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) build/gen/yesall.inc build/gen/splashicon.inc build/gen/qicons.inc build/gen/bigicons.inc src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/desktop
 	for f in $(DESKSRCS); do $(CA65) -g -I src/inc -I build/gen -o build/desktop/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o $(patsubst src/desktop/%.s,build/desktop/%.o,$(filter-out src/desktop/desktop.s,$(DESKSRCS)))
 	$(PYTHON) $(GEOSAPP) src/desktop/desktop.toml build/desktop/desktop.bin build/desktop/desktop-seq.cvt
-	$(PYTHON) tools/vlircvt.py build/desktop/desktop-seq.cvt $@ build/desktop/desktop.bin.1 build/desktop/desktop.bin.2 build/desktop/desktop.bin.3 build/desktop/desktop.bin.4 build/desktop/desktop.bin.5 build/desktop/desktop.bin.6 build/desktop/desktop.bin.7 build/desktop/desktop.bin.8 build/desktop/desktop.bin.9
+	$(PYTHON) tools/dev/vlircvt.py build/desktop/desktop-seq.cvt $@ build/desktop/desktop.bin.1 build/desktop/desktop.bin.2 build/desktop/desktop.bin.3 build/desktop/desktop.bin.4 build/desktop/desktop.bin.5 build/desktop/desktop.bin.6 build/desktop/desktop.bin.7 build/desktop/desktop.bin.8 build/desktop/desktop.bin.9
 
-# GeoUltra Settings (docs/SETTINGS.md): src/settings, on drive E; its
+# GeoUltra Settings (docs/design/SETTINGS.md): src/settings, on drive E; its
 # OK, Cancel and Save buttons drawn like the system icons.
 SETSRCS = $(wildcard src/settings/*.s)
 SETICONS = build/gen/okicon.inc build/gen/cancelicon.inc build/gen/saveicon.inc
-build/gen/okicon.inc: tools/mkicons.py tools/fonts/system9.py
+build/gen/okicon.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkicons.py --icon $@ OkIcon OK
-build/gen/cancelicon.inc: tools/mkicons.py tools/fonts/system9.py
+	$(PYTHON) tools/dev/mkicons.py --icon $@ OkIcon OK
+build/gen/cancelicon.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkicons.py --icon $@ CancelIcon Cancel
-build/gen/saveicon.inc: tools/mkicons.py tools/fonts/system9.py
+	$(PYTHON) tools/dev/mkicons.py --icon $@ CancelIcon Cancel
+build/gen/saveicon.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
-	$(PYTHON) tools/mkicons.py --icon $@ SaveIcon Save
+	$(PYTHON) tools/dev/mkicons.py --icon $@ SaveIcon Save
 
 build/settings/settings.cvt: $(SETSRCS) src/settings/settings.inc $(SETICONS) build/gen/pointers.inc src/settings/settings.cfg src/settings/settings.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/settings
 	for f in $(SETSRCS); do $(CA65) -g -I src/inc -I src/settings -I build/gen -o build/settings/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/settings/settings.cfg -m build/settings/settings.map -Ln build/settings/settings.lbl -o build/settings/settings.bin build/settings/settings.o $(patsubst src/settings/%.s,build/settings/%.o,$(filter-out src/settings/settings.s,$(SETSRCS)))
 	$(PYTHON) $(GEOSAPP) src/settings/settings.toml build/settings/settings.bin build/settings/settings-seq.cvt
-	$(PYTHON) tools/vlircvt.py build/settings/settings-seq.cvt $@ build/settings/settings.bin.1 build/settings/settings.bin.2 build/settings/settings.bin.3 build/settings/settings.bin.4 build/settings/settings.bin.5 build/settings/settings.bin.6 build/settings/settings.bin.7 build/settings/settings.bin.8
+	$(PYTHON) tools/dev/vlircvt.py build/settings/settings-seq.cvt $@ build/settings/settings.bin.1 build/settings/settings.bin.2 build/settings/settings.bin.3 build/settings/settings.bin.4 build/settings/settings.bin.5 build/settings/settings.bin.6 build/settings/settings.bin.7 build/settings/settings.bin.8
 
-# External gush commands (docs/GUSH_COMMANDS.md): src/cmds/NAME.s linked
+# External gush commands (docs/reference/GUSH_COMMANDS.md): src/cmds/NAME.s linked
 # at gush's transient area (src/cmds/cmd.cfg), a GEOS APPL_DATA file of
 # class "gush cmd" (src/cmds/NAME.toml).
 build/cmds/%.cvt: src/cmds/%.s src/cmds/%.toml src/cmds/cmd.cfg src/cmds/gushapi.inc $(wildcard src/inc/*.inc)
@@ -222,23 +222,23 @@ build/gush/docpeek.cvt: tests/gush/docpeek.s tests/gush/docpeek.toml src/gush/gu
 	$(LD65) -C src/gush/gush.cfg -o build/gush/docpeek.bin build/gush/docpeek.o
 	$(PYTHON) $(GEOSAPP) tests/gush/docpeek.toml build/gush/docpeek.bin $@
 
-# Drive E (docs/ARCHITECTURE.md "System drive"): build/sysdrive-plain.dnp
+# Drive E (docs/reference/ARCHITECTURE.md "System drive"): build/sysdrive-plain.dnp
 # is an ordinary native image with folders (src/sysdrive.toml,
 # tools/mkappsdnp.py); build/sysdrive.dnp, the one in the cartridge, has
-# its track numbers moved above SYSDRV_TRACK (tools/sysreloc.py,
+# its track numbers moved above SYSDRV_TRACK (tools/dev/sysreloc.py,
 # src/inc/sysdrive.inc) and ends after its last used track.
 SYSDRV_TRACK  := $(shell sed -n 's/^SYSDRV_TRACK  *= *\([0-9]*\).*/\1/p' src/inc/sysdrive.inc)
 SYSDRV_TRACKS := $(shell sed -n 's/^SYSDRV_TRACKS *= *\([0-9]*\).*/\1/p' src/inc/sysdrive.inc)
-build/sysdrive.dnp: $(SYSFILES) src/sysdrive.toml src/inc/sysdrive.inc tools/mkappsdnp.py tools/sysreloc.py
+build/sysdrive.dnp: $(SYSFILES) src/sysdrive.toml src/inc/sysdrive.inc tools/mkappsdnp.py tools/dev/sysreloc.py
 	$(PYTHON) tools/mkappsdnp.py src/sysdrive.toml
-	$(PYTHON) tools/sysreloc.py build/sysdrive-plain.dnp $@ $(SYSDRV_TRACK) $(SYSDRV_TRACKS)
+	$(PYTHON) tools/dev/sysreloc.py build/sysdrive-plain.dnp $@ $(SYSDRV_TRACK) $(SYSDRV_TRACKS)
 
 # --- System -----------------------------------------------------------
 
 GEN      = build/gen
 KOBJ     = build/kernal
 # BYPASS=0 builds without the serial-number-per-application module
-# (src/kernal/bypass.s, docs/DESIGN.md "Serial number").
+# (src/kernal/bypass.s, docs/design/DESIGN.md "Serial number").
 BYPASS  ?= 1
 ifeq ($(BYPASS),1)
 KSRCS    = $(wildcard src/kernal/*.s)
@@ -256,9 +256,9 @@ KOBJS    = $(patsubst src/kernal/%.s,$(KOBJ)/%.o,$(KSRCS)) \
 VICEOPTS = -default +sound -cartcrt build/geoultra64.crt -reu -reusize 16384 \
            -mouse -controlport1device 3
 
-$(GEN)/jumptab.s: src/kernal/jumptab.txt tools/genjumptab.py $(KSRCS) $(INPSRCS)
+$(GEN)/jumptab.s: src/kernal/jumptab.txt tools/dev/genjumptab.py $(KSRCS) $(INPSRCS)
 	@mkdir -p $(GEN)
-	$(PYTHON) tools/genjumptab.py $< $@ $(KSRCS) $(INPSRCS)
+	$(PYTHON) tools/dev/genjumptab.py $< $@ $(KSRCS) $(INPSRCS)
 
 # The version: vMAJOR.MINOR.PATCH-YYYYMMDD-HHMM (as UBoot64-v2), the
 # time stamp the build's. The kernal's info block holds the numbers
@@ -294,9 +294,9 @@ $(KOBJ)/%.o: src/kernal/%.s $(INCS) $(KOBJ)/.bypass
 
 # The mouse pointer's designs (own drawings, text art in the tool), for
 # module 86 (src/kernal/pointer.s).
-$(GEN)/pointers.inc: tools/mkpointers.py
+$(GEN)/pointers.inc: tools/dev/mkpointers.py
 	@mkdir -p $(GEN)
-	$(PYTHON) tools/mkpointers.py $@
+	$(PYTHON) tools/dev/mkpointers.py $@
 
 $(KOBJ)/pointer.o: src/kernal/pointer.s $(GEN)/pointers.inc $(INCS) $(KOBJ)/.bypass
 	@mkdir -p $(KOBJ)
@@ -314,9 +314,9 @@ $(GEN)/sysfont.s: tools/fonts/system9.py tools/mkfont.py
 	@mkdir -p $(GEN)
 	$(PYTHON) tools/mkfont.py $< $@ SystemFont
 
-$(GEN)/sysicons.s: tools/mkicons.py tools/fonts/system9.py
+$(GEN)/sysicons.s: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p $(GEN)
-	$(PYTHON) tools/mkicons.py $@
+	$(PYTHON) tools/dev/mkicons.py $@
 
 $(KOBJ)/sysicons.o: $(GEN)/sysicons.s
 	@mkdir -p $(KOBJ)
@@ -342,16 +342,16 @@ build/overlays64s.bin: build/overlays64.bin
 
 SPLASH   = $(GEN)/splash.bin $(GEN)/splash_col.bin $(GEN)/splash_msg.bin $(GEN)/splash.inc
 
-$(SPLASH) &: tools/splash/mksplash.py tools/splash/idi8b-logo.png tools/fonts/system9.py build/kernal64.bin
+$(SPLASH) &: tools/dev/splash/mksplash.py tools/dev/splash/idi8b-logo.png tools/fonts/system9.py build/kernal64.bin
 	@mkdir -p $(GEN)
-	GU_KERNAL=build/kernal64.bin $(PYTHON) tools/splash/mksplash.py --boot $(SPLASH)
+	GU_KERNAL=build/kernal64.bin $(PYTHON) tools/dev/splash/mksplash.py --boot $(SPLASH)
 
 # The splash comes first: the boot ROM copies it with the CPU (--cpu 2).
 $(GEN)/image.bin $(GEN)/image.inc: build/kernal64.bin build/reudrv64.bin build/init64.bin build/kbf64.bin \
 		build/overlays64s.bin build/sysdrive.dnp \
-		$(SPLASH) tools/mkimage.py
+		$(SPLASH) tools/dev/mkimage.py
 	@mkdir -p $(GEN)
-	$(PYTHON) tools/mkimage.py --cpu 2 $(GEN)/image.bin $(GEN)/image.inc build/overlays64s.bin@REU \
+	$(PYTHON) tools/dev/mkimage.py --cpu 2 $(GEN)/image.bin $(GEN)/image.inc build/overlays64s.bin@REU \
 		$(GEN)/splash.bin@A000 $(GEN)/splash_col.bin@8C00 build/kbf64.bin@BF40 build/kernal64.bin@C000 \
 		build/reudrv64.bin@9000 build/init64.bin@4F00 build/sysdrive.dnp@BANK4
 
@@ -361,8 +361,8 @@ build/boot.o: src/boot/boot.s $(GEN)/image.inc $(SPLASH) $(INCS)
 build/boot.bin: build/boot.o src/boot/boot.cfg
 	$(LD65) -C src/boot/boot.cfg -o $@ $<
 
-build/geoultra64.crt: build/boot.bin $(GEN)/image.bin tools/mkcrt.py
-	$(PYTHON) tools/mkcrt.py $@ "GEOULTRA" build/boot.bin $(GEN)/image.bin
+build/geoultra64.crt: build/boot.bin $(GEN)/image.bin tools/dev/mkcrt.py
+	$(PYTHON) tools/dev/mkcrt.py $@ "GEOULTRA" build/boot.bin $(GEN)/image.bin
 
 vice: build/geoultra64.crt
 	$(VICE) $(VICEOPTS) -moncommands build/kernal64.lbl
@@ -371,12 +371,12 @@ vice-shot: build/geoultra64.crt
 	$(VICEHL) $(VICEOPTS) -sounddev dummy -warp -limitcycles 6000000 -exitscreenshot build/vice.png; true
 
 conformance: build/geoultra64.crt
-	$(PYTHON) tools/harness/harness.py $(if $(CONF_REBUILD),--rebuild) tests/conformance/*.py
+	$(PYTHON) tools/dev/harness/harness.py $(if $(CONF_REBUILD),--rebuild) tests/conformance/*.py
 
 # The same against GEOS 2.0 on a 1581 (GEOS_ORACLE81, default
 # $(GEOS_DEV)/GEOS64.D81): GeoUltra's 1581 image drive.
 conformance81: build/geoultra64.crt
-	$(PYTHON) tools/harness/harness.py --set d81 $(if $(CONF_REBUILD),--rebuild) \
+	$(PYTHON) tools/dev/harness/harness.py --set d81 $(if $(CONF_REBUILD),--rebuild) \
 		tests/conformance81/*.py
 
 # --- Smoke tests ------------------------------------------------------
@@ -390,8 +390,8 @@ $(SMOKE)/gusmoke.o: tests/smoke/gusmoke.s
 $(SMOKE)/bank0.bin: $(SMOKE)/gusmoke.o tests/smoke/smoke.cfg
 	$(LD65) -C tests/smoke/smoke.cfg -o $@ $<
 
-$(SMOKE)/gusmoke.crt: $(SMOKE)/bank0.bin tools/mkcrt.py
-	$(PYTHON) tools/mkcrt.py $@ "GEOULTRA SMOKE" $< --pattern 7
+$(SMOKE)/gusmoke.crt: $(SMOKE)/bank0.bin tools/dev/mkcrt.py
+	$(PYTHON) tools/dev/mkcrt.py $@ "GEOULTRA SMOKE" $< --pattern 7
 
 $(SMOKE)/guseek.prg: tests/smoke/guseek.c $(UCILIB)/ultimate_common_lib.c \
                      $(UCILIB)/ultimate_common_lib.h \
@@ -425,7 +425,7 @@ deploy: check-deploy build/geoultra64.crt build/geoultra64.cfg
 
 # The PDFs of the README and the user documents (pandoc with XeLaTeX;
 # ~/.claude/makefile_conventions.md); committed, so they ship in releases.
-DOCPDFS = README.pdf docs/GEOULTRA_MANUAL.pdf docs/TOOLS_MANUAL.pdf
+DOCPDFS = README.pdf docs/manuals/GEOULTRA_MANUAL.pdf docs/manuals/TOOLS_MANUAL.pdf
 docs: $(DOCPDFS)
 
 %.pdf: %.md pandoc-defaults.yaml pandoc-header.tex
@@ -515,7 +515,7 @@ test-engine: all
 	$(PYTHON) tests/engine/long.py
 	$(PYTHON) tests/engine/dst.py
 
-# gush, the GeoUltra shell (tests/gush/g*.py, docs/GUSH.md): started from a
+# gush, the GeoUltra shell (tests/gush/g*.py, docs/design/GUSH.md): started from a
 # test D81 in VICE, keys through keyVector and GEOS's key queue, its screen
 # read from its text shadow.
 test-gush: all build/gush/docpeek.cvt
@@ -572,13 +572,13 @@ build/uciprobe.bin: tests/engine/uciprobe.s tests/engine/uciprobe.cfg src/inc/uc
 test-sysfont: all
 	$(PYTHON) tests/drives/sysfont.py
 
-# GeoUltra's printer drivers (docs/DESIGN.md "Printing"): PRINTER files
+# GeoUltra's printer drivers (docs/design/DESIGN.md "Printing"): PRINTER files
 # for drive E, assembled at $7900 (src/printer/printer.cfg; their own
 # folder: the kernal links every file in src/drivers); their file icon
-# drawn by tools/mkprnicon.py (a letter for the printer).
-build/printer/%.icon: tools/mkprnicon.py
+# drawn by tools/dev/mkprnicon.py (a letter for the printer).
+build/printer/%.icon: tools/dev/mkprnicon.py
 	@mkdir -p build/printer
-	$(PYTHON) tools/mkprnicon.py $(PRNLETTER_$*) $@
+	$(PYTHON) tools/dev/mkprnicon.py $(PRNLETTER_$*) $@
 PRNLETTER_epson = E
 PRNLETTER_mps = C
 PRNLETTER_pdf = P
@@ -605,19 +605,19 @@ build/printer/%.cvt: src/printer/%.s src/printer/prnserial.inc src/printer/%.tom
 	$(LD65) -C src/printer/printer.cfg -o build/printer/$*.bin -m build/printer/$*.map build/printer/$*.o
 	$(PYTHON) $(GEOSAPP) src/printer/$*.toml build/printer/$*.bin $@
 
-# GeoUltra's own GEOS fonts (docs/DESIGN.md "Fonts"): build/fonts/*.cvt
+# GeoUltra's own GEOS fonts (docs/design/DESIGN.md "Fonts"): build/fonts/*.cvt
 # from the copies in tools/fonts/src (TeX Gyre, Adobe 75-dpi bitmaps).
 FONTSRCS = $(wildcard tools/fonts/src/*/*) $(wildcard tools/fonts/gu*_fix.py)
 fonts: build/fonts/.done
-build/fonts/.done: tools/mkgufonts.py tools/mkgeosfont.py $(FONTSRCS)
-	$(PYTHON) tools/mkgufonts.py build/fonts
+build/fonts/.done: tools/dev/mkgufonts.py tools/mkgeosfont.py $(FONTSRCS)
+	$(PYTHON) tools/dev/mkgufonts.py build/fonts
 	@touch $@
 
 test-fonts: all
 	$(PYTHON) tests/fonts/mkgeosfont_test.py
 	$(PYTHON) tests/fonts/fontlist.py
 
-# GeoUltra's printer drivers in VICE (docs/DESIGN.md "Printing"): their
+# GeoUltra's printer drivers in VICE (docs/design/DESIGN.md "Printing"): their
 # bytes caught at the ROM's serial routines and checked dot for dot.
 test-print: all
 	$(PYTHON) tests/print/ep1.py
@@ -633,7 +633,7 @@ test-print: all
 test-desktop81: all
 	$(PYTHON) tests/drives/desktop81.py
 
-# GeoUltra Settings (docs/SETTINGS.md): the shared INI module and the
+# GeoUltra Settings (docs/design/SETTINGS.md): the shared INI module and the
 # application's frame and Desktop page in VICE.
 test-settings: all
 	$(PYTHON) tests/settings/ini.py
@@ -647,7 +647,7 @@ test-settings: all
 	$(PYTHON) tests/settings/s7.py
 	$(PYTHON) tests/settings/s8.py
 
-# GeoUltra's own desktop (docs/DESKTOP.md): VICE; test-desktop-u64 on the
+# GeoUltra's own desktop (docs/design/DESKTOP.md): VICE; test-desktop-u64 on the
 # U64 (SETTINGS.INI desktop=geoultra, made and deleted again).
 test-desktop: all
 	$(PYTHON) tests/desktop/d1.py

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The desktop's print queue in VICE (docs/DESIGN.md "Print spooler",
+"""The desktop's print queue in VICE (docs/design/DESIGN.md "Print spooler",
 src/desktop/spool.s; the user's decisions of 2026-11-15): from
 the desktop, the queue paused (FE_SPOOL) and three jobs printed through
 tests/spool/logdrv.s (a printer driver that logs its calls, from drive

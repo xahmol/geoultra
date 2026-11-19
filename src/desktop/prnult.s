@@ -1,5 +1,5 @@
 ; GeoUltra Desktop: the Ultimate's printer set up for the printer chosen
-; (overlay 6, ovl.s; docs/DESIGN.md "Printing", the user's requests of
+; (overlay 6, ovl.s; docs/design/DESIGN.md "Printing", the user's requests of
 ; 2026-11-16). When PrntFilename is GU Epson FX-80 or GU Commodore MPS,
 ; the Ultimate gets, in its memory only (its saved settings untouched):
 ; the SoftIEC drive on (firmware 3.15a writes printer pages only then),

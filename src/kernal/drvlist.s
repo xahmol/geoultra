@@ -1,4 +1,4 @@
-; File boxes: the drive letters (overlay module 87; docs/DESIGN.md, the
+; File boxes: the drive letters (overlay module 87; docs/design/DESIGN.md, the
 ; user's decisions 2026-11-13): in a DBGETFILES box that asks for
 ; MegaPatch 3's drive button (DBSETDRVICON, bit 6 of the command; GEOS
 ; 2.0's applications keep their own document drive and set it again

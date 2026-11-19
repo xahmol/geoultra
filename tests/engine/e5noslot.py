@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The file engine reads from drive E with all four drives A-D in use
-(docs/FILE_ENGINE.md; the user's U64, 2026-11-18: GU PDF's script on
+(docs/design/FILE_ENGINE.md; the user's U64, 2026-11-18: GU PDF's script on
 drive E gave FE_NO_SLOT, "printer error" $50, the print queue paused):
 a slot is borrowed for the call (sysenter.s module 119) and put back.
 In VICE with images on A, B, C and D: FE_OPEN /e/pdfa4, FE_READ (the
@@ -65,7 +65,7 @@ print("E5 types %%s open X=%%02x read X=%%02x n=%%d close X=%%02x same=%%s data 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
+    sys.path.insert(0, os.path.join(ROOT, "tools", "dev", "harness"))
     import apprun
     d = os.path.join(OUT, "e5")
     imgs = []
@@ -77,12 +77,12 @@ def main():
     hook = os.path.join(OUT, "hook-e5.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl")})
     env = dict(os.environ, APPRUN_DRIVE_C=imgs[0], APPRUN_DRIVE_D=os.environ.get("E5_D", imgs[1]),
-               PYTHONPATH=os.path.join(ROOT, "tools", "harness"))
+               PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness"))
     rimg = apprun.REU_IMAGE
     for p in (rimg, rimg + ".src"):
         if os.path.exists(p):
             os.remove(p)
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "12",
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"), "--wait", "12",
                         "--out", os.path.join(OUT, "e5.png"), "GEOWRITE", "h:" + hook],
                        env=env, capture_output=True, text=True, timeout=600)
     line = next((l for l in r.stdout.splitlines() if l.startswith("E5 ")), "")

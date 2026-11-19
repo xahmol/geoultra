@@ -35,7 +35,7 @@ for a folder source, the CVT file name. A name may appear in several
 folders. Files that are not found are reported, the build goes on.
 
 DNP layout (CMD native, as GeoUltra's driver and DirMaster read it; checked
-against DirMaster's own DNP, docs/DESIGN.md "DirMaster and native
+against DirMaster's own DNP, docs/design/DESIGN.md "DirMaster and native
 folders"): 256 sectors per track; header 1/1 (directory at 1/34, "H",
 name, ID, "1H", own block at $20); BAM blocks 1/2-1/33 (1/2: "H", ID,
 the last track at $08; from offset $20 32 bytes per track, bit 7 first,

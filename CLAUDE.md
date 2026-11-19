@@ -12,9 +12,9 @@ existing GEOS applications. Spun off from the GeoUTools Oscar64 rebuild on
 GEOS 2.0's deskTop, geoWrite and geoPaint run in VICE, the deskTop on the
 U64 from boot-mounted images.
 
-Read [`docs/DESIGN.md`](docs/DESIGN.md) first: it holds the decisions
+Read [`docs/design/DESIGN.md`](docs/design/DESIGN.md) first: it holds the decisions
 (cartridges, REU map, drives, DNP, phases) and what is still to verify or
-open. [`docs/FEASIBILITY.md`](docs/FEASIBILITY.md) is the background
+open. [`docs/design/FEASIBILITY.md`](docs/design/FEASIBILITY.md) is the background
 analysis; its route and phase recommendations are superseded.
 
 ## Decisions already taken (by the user)
@@ -70,27 +70,27 @@ contract"):
 ## Build and test
 
 `make` builds `build/geoultra64.crt` (boot ROM, kernal, 1351 driver;
-docs/ARCHITECTURE.md), `make vice` / `make vice-shot` run it in VICE 3.10.
+docs/reference/ARCHITECTURE.md), `make vice` / `make vice-shot` run it in VICE 3.10.
 `make conformance` (1541) and `make conformance81` (1581 images) compare
 kernal routines with GEOS 2.0 in VICE
-(tests/conformance/*.py, tools/harness/): every newly implemented jump
+(tests/conformance/*.py, tools/dev/harness/): every newly implemented jump
 table routine gets cases there, written from HG2G, and must pass before
 it counts as done. The GEOS 2.0 oracle disk is the user's own
 (`GEOS_ORACLE`), never committed.
 
-`tools/harness/apprun.py NAME [events]` runs a GEOS application from an
+`tools/dev/harness/apprun.py NAME [events]` runs a GEOS application from an
 applications disk (drive B, `GEOS_APPS_DISK`, the user's own) on GeoUltra
-in VICE and renders the screen (docs/ARCHITECTURE.md, "Conformance
+in VICE and renders the screen (docs/reference/ARCHITECTURE.md, "Conformance
 harness").
 
 Only the hardware smoke tests exist so far (`tests/smoke/`, results in
 DESIGN.md "Verified on hardware"): `make smoke` builds the Megabyter test
-cartridge (ca65/ld65, packed by `tools/mkcrt.py`) and an Oscar64 UCI test,
+cartridge (ca65/ld65, packed by `tools/dev/mkcrt.py`) and an Oscar64 UCI test,
 `make smoke-vice` runs the cartridge in VICE 3.10, `make smoke-u64` runs
 both on the U64 from `.env` (`ULTIP1`), `make smoke-u64-restore` switches
 the REU and Command Interface off again. Oscar64 test code that hands
 buffers to REU DMA must use `volatile` buffers and `__noinline` REU
-wrappers (docs/OSCAR64_MANUAL.md), or stores get dropped.
+wrappers (docs/reference/OSCAR64_MANUAL.md), or stores get dropped.
 
 Planned:
 
@@ -103,7 +103,7 @@ the REU RAM-drive layer and the kernal can be tested in VICE (with a VICE REU).
 
 ## References
 
-- `docs/GEOS_REFERENCE.md` (curated) and `docs/GEOS_API_REFERENCE.md`
+- `docs/reference/GEOS_REFERENCE.md` (curated) and `docs/reference/GEOS_API_REFERENCE.md`
   (per routine): copies of `~/.claude/geos_reference.md` and
   `~/.claude/geos_api_reference.md` (global CLAUDE.md, "GEOS Projects").
 - HG2G2022 PDF: https://github.com/geos64128/HG2G2022 (text: `mutool draw -F txt`).
@@ -180,9 +180,26 @@ all of `src/` and `tools/`. Checklist for this code:
   fitted; shared code in includes rather than copies; tests that cover
   the routine so a change can be checked.
 Findings are fixed in their own commits; the sweep is logged in
-docs/DESIGN.md "Code sweeps" (date, scope, findings, what was fixed,
+docs/design/DESIGN.md "Code sweeps" (date, scope, findings, what was fixed,
 what stays open). Last sweep: 2026-11-19 (fifteenth, scoped to the changes since the fourteenth); next at the end of the
 current phase step, or after about ten feature commits.
+
+## Layout of docs/ and tools/ (user, 2026-11-19)
+
+- `docs/manuals/`: the user manuals (GEOULTRA_MANUAL, TOOLS_MANUAL), each
+  with its PDF (`make docs`); everything a user needs goes here.
+- `docs/reference/`: technical and developer reference (ARCHITECTURE,
+  GUSH_COMMANDS, PSW inside, and the copied GEOS and Oscar64 references:
+  this project keeps `GEOS_REFERENCE.md`, `GEOS_API_REFERENCE.md` and
+  `OSCAR64_MANUAL.md` HERE, not in `docs/` as the global CLAUDE.md says).
+- `docs/design/`: the design record (DESIGN, DESKTOP, FEASIBILITY,
+  FILE_ENGINE, GUSH, SETTINGS); kept in the repository, not in release
+  archives.
+- `tools/`: the PC tools users run (in the tools manual) and the modules
+  they need (`localcfg`, `mkfont`, `fonts/`); `tools/dev/`: build, test
+  and video scripts for GeoUltra's own development (harness, mkcrt,
+  sysreloc, geosapp ...). A new user-facing tool goes into `tools/` and
+  the tools manual; anything else into `tools/dev/`.
 
 ## Conventions
 

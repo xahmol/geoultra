@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GU PostScript started with a document (docs/PSW.md, "Use"; step P6)
+"""GU PostScript started with a document (docs/reference/PSW.md, "Use"; step P6)
 in VICE, both ways, each file compared with gwtool ps's byte for byte:
 - gush: `"/e/GU PostScript" "/b/GeoUTools UK"` (FE_RUNDOC: the application
   on drive E with the document of drive B);

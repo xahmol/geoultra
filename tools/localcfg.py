@@ -64,7 +64,7 @@ X64SC_HEADLESS = _tool("VICE_HEADLESS_BIN", "x64sc", "VICE_BIN")
 C1541 = _tool("VICE_BIN", "c1541")
 
 # geosapp.py packs GEOS applications (a copy of geos-oscar64's, in tools/).
-GEOSAPP = os.path.join(ROOT, "tools", "geosapp.py")
+GEOSAPP = os.path.join(ROOT, "tools", "dev", "geosapp.py")
 # A sibling project, optional: GeoUTools (its manual and screenshot tool,
 # some U64 tests and the video scripts).
 GEOUTOOLS = get("GEOUTOOLS", os.path.join(os.path.dirname(ROOT), "GeoUTools"))

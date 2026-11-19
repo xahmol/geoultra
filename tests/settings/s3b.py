@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GeoUltra Settings in VICE (docs/SETTINGS.md): the Time
+"""GeoUltra Settings in VICE (docs/design/SETTINGS.md): the Time
 page. Started from the desktop as in s1.py, with an empty INI text
 (VICE): the defaults (no server, UTC+00:00, summer time off); the zone
 four quarters up (offset=3600, UTC+01:00) and below UTC (offset=-900);

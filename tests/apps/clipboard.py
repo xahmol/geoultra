@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""The shared clipboard in VICE (docs/DESIGN.md "Clipboard"; src/kernal/
+"""The shared clipboard in VICE (docs/design/DESIGN.md "Clipboard"; src/kernal/
 scrap.s): geoWrite on drive B types a line, selects it, copies it, closes
 the document and quits (geoWrite writes "Text  Scrap" then); the scrap is
 in the store (its blocks on tracks 246-247), FindFile finds it from
 drive A too, ReadFile through drive A reads the copied text, and
 DeleteFile through drive A removes it (FindFile: not found). A paste in
-another program is a hand test (docs/DESIGN.md "For the user"): the
+another program is a hand test (docs/design/DESIGN.md "For the user"): the
 harness's click on geoWrite's paste item does not arrive. Through
-tools/harness/apprun.py (h: hooks) with a copy of an applications disk
+tools/dev/harness/apprun.py (h: hooks) with a copy of an applications disk
 (GEOS_APPS_DISK, the user's own, default the neos-mouse-driver disk with
 geoWrite 1.1; never committed). Screens: build/harness/clip/*.png.
 Usage: tests/apps/clipboard.py
@@ -131,8 +131,8 @@ def main():
           + menu(30, 21) + ["w:6", "102,111,p", "w:1", "102,111,r", "w:12"]  # close, Quit
           + [hook(b"Text  Scrap", 9, "FindFile", 3), hook(b"Text  Scrap", 8, "FindFile", 3),
              readhook(8), delhook(8)])                                      # read, delete via A
-    env = dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "harness"))
-    apprun = [sys.executable, os.path.join(ROOT, "tools", "harness", "apprun.py"), "--wait", "12"]
+    env = dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness"))
+    apprun = [sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"), "--wait", "12"]
     r = subprocess.run(apprun + ["--out", os.path.join(OUT, "end.png"), "GEOWRITE"] + ev,
                        env=env, capture_output=True, text=True, timeout=590)
     print(r.stdout.strip())
