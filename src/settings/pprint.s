@@ -21,9 +21,10 @@ COL3            = 200           ; Letter" 42, 11 for the box, 6 between;
 COL4            = 247           ; to x 300)
 Y0              = PAGE_TOP + 20 ; the row's baseline (as the Desktop page)
 NOTE_X          = PAGE_LEFT + 2
-NOTE_Y          = Y0 + 26       ; the note's first baseline, 12 apart
+DY              = 14            ; the rows' distance (as the Desktop page)
+NOTE_Y          = Y0 + 2 * DY + 26 ; the note's first baseline, 12 apart
 NOTE_DY         = 12
-USE_Y           = NOTE_Y + 5 * NOTE_DY
+USE_Y           = NOTE_Y + 6 * NOTE_DY
 
         .segment "OV1"
 
@@ -73,7 +74,7 @@ Text:   sta r1H
         sta r11H
         jmp PutString
 
-Rows:   .byte 1
+Rows:   .byte 3
         .byte Y0
         .word LPrinter, SDesktop, KPrinter
         .byte 4, 0
@@ -81,16 +82,40 @@ Rows:   .byte 1
         .word COL2, TMps, VMps
         .word COL3, TPdfA4, VPdfA4
         .word COL4, TPdfLet, VPdfLet
+        .byte Y0 + DY                   ; the serial bus's timing (the GU
+        .word LTiming, SPrint, KFast    ; Epson and MPS drivers, from the
+        .byte 2, 0                      ; next start: prnserial.inc, the
+        .word COL1, TStandard, 0        ; info block's guPrnFast)
+        .word COL3, TFast, VOn
+        .byte Y0 + 2 * DY               ; the disks' fonts in the programs'
+        .word LFonts, SSystem, KDiskFonts ; lists (from the next start:
+        .byte 2, 0                      ; docs/DESKTOP_MANUAL.md "System
+        .word COL1, TAll, 0             ; fonts")
+        .word COL3, TSysOnly, VHide
 
-NoteLo: .byte <N1, <N2, <N3, <N4
-NoteHi: .byte >N1, >N2, >N3, >N4
+NoteLo: .byte <N1, <N2, <N3, <N4, <N5
+NoteHi: .byte >N1, >N2, >N3, >N4, >N5
 NoteY:  .byte NOTE_Y, NOTE_Y + NOTE_DY, NOTE_Y + 2 * NOTE_DY, NOTE_Y + 3 * NOTE_DY
+        .byte NOTE_Y + 4 * NOTE_DY
 NOTES   = * - NoteY
 N1:     .byte "Epson, MPS: GeoUltra switches on the", 0
 N2:     .byte "Ultimate's SoftIEC drive and printer and", 0
 N3:     .byte "sets its emulation (not saved there).", 0
 N4:     .byte "PDF: a file in GEOULTRA/print on the Ultimate.", 0
+N5:     .byte "Timing and fonts: from the next start.", 0
 LInUse: .byte "In use: ", 0
+LTiming:        .byte "Timing", 0
+LFonts:         .byte "Fonts", 0
+SPrint:         .byte "print", 0
+SSystem:        .byte "system", 0
+KFast:          .byte "fastbus", 0
+KDiskFonts:     .byte "diskfonts", 0
+TStandard:      .byte "standard", 0
+TFast:          .byte "fast", 0
+TAll:           .byte "all", 0
+TSysOnly:       .byte "system only", 0
+VOn:            .byte "on", 0
+VHide:          .byte "hide", 0
 SDesktop:       .byte "desktop", 0
 KPrinter:       .byte "printer", 0
 LPrinter:       .byte "Printer", 0

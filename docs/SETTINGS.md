@@ -360,7 +360,12 @@ there. The user's decisions are in docs/DESKTOP.md ("Settings tool",
   note that the Ultimate's printer emulation must match the first two
   (its menu, Printer settings) and where PDF files go; "In use:" and
   the printer in use (PrntFilename: also a user's own driver chosen in
-  the desktop). The network push comes here later. Test: s8.py (VICE,
-  6 checks).
+  the desktop). Since 2026-11-19 two more rows: "Timing" standard or
+  fast (`[print] fastbus=on`: the GU Epson and MPS drivers' serial
+  timing) and "Fonts" all or system only (`[system] diskfonts=hide`:
+  the disks' fonts left out of programs' font lists; docs/DESIGN.md
+  "System font folder", step F5); both read at the next start, which a
+  note says. The network push comes here later. Test: s8.py (VICE,
+  8 checks).
 
 Beta 1 needs S1-S6's first versions (docs/DESIGN.md, "Releases").

@@ -5,7 +5,9 @@ ninth in the side list; the printer row with GU Epson FX-80 in force
 (no printer= yet), the note, "In use:" and the printer the desktop set
 (PrntFilename); a click on MPS: [desktop] printer=GU Commodore MPS in
 the settings' text, the row following; PDF Letter: printer=GU PDF
-Letter. Screens:
+Letter; the timing row's "fast" and the fonts row's "system only":
+[print] fastbus=on, [system] diskfonts=hide; back to "standard" and
+"all": the keys taken out. Screens:
 build/harness/gush/settings-s8*.png.
 Usage: tests/settings/s8.py
 """
@@ -23,6 +25,8 @@ SIDE_TOP, SIDE_ROW = 24, 16
 ROW_Y = 16 + 20                 # the row's baseline (PAGE_TOP + 20)
 MPS_XY = (165 + 3, ROW_Y - 3)   # MPS's box
 PDF_XY = (247 + 3, ROW_Y - 3)   # PDF Letter's box
+FAST_XY = (200 + 3, ROW_Y + 14 - 3)     # the timing row's "fast"
+SYSONLY_XY = (200 + 3, ROW_Y + 28 - 3)  # the fonts row's "system only"
 
 
 def labels(path):
@@ -107,6 +111,15 @@ def main():
         press(*PDF_XY, t=4)
         check("PDF Letter: [desktop] printer=GU PDF Letter", settings_text(),
               b"[desktop]\r\nprinter=GU PDF Letter\r\n")
+        press(*FAST_XY, t=4)
+        press(*SYSONLY_XY, t=4)
+        g.png("settings-s8-keys")
+        check("fast timing, system fonts only: fastbus=on, diskfonts=hide", settings_text(),
+              b"[desktop]\r\nprinter=GU PDF Letter\r\n[print]\r\nfastbus=on\r\n[system]\r\ndiskfonts=hide\r\n")
+        press(124 + 3, ROW_Y + 14 - 3, t=4)                 # standard again: the key taken out
+        press(124 + 3, ROW_Y + 28 - 3, t=4)                 # all fonts again
+        check("standard, all: the keys taken out", b"fastbus" in settings_text() or b"diskfonts" in settings_text(),
+              False)
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

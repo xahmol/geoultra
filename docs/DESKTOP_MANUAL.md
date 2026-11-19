@@ -414,8 +414,9 @@ red, green and blue with - and +; you see it at once; "none" goes back
 to the Ultimate's own palette. Save or OK writes the theme file. The
 pages Drives and REU follow; their plan is in docs/SETTINGS.md.
 
-Two system keys have no page yet; add them to `SETTINGS.INI` by hand
-(read at the next start):
+Two keys are on Settings' Printing page ("Timing: standard / fast",
+"Fonts: all / system only"); in `SETTINGS.INI` they are (read at the
+next start):
 
 ```
 [system]
