@@ -15,6 +15,7 @@ pictures from Word or Markdown need Pillow.
     tools/gwtool.py fromdocx IN.docx OUT NAME [--wide]
     tools/gwtool.py md IMAGE OUT.md NAME [NAME ...] [--page-breaks=records]
     tools/gwtool.py frommd IN.md OUT NAME [--wide] [--font=NAME]
+    tools/gwtool.py ps IMAGE OUT.ps NAME [NAME ...] [--letter] [--fonts=DIR]
 
 - **IMAGE**: a D64, D71, D81 or DNP. On a DNP a name may include its
   folder: `Writing/Letter`.
@@ -148,6 +149,49 @@ Examples:
     tools/gwtool.py md bigbrother.d64 bigbrother.md "Big Brother"
     tools/gwtool.py frommd README.md readme.d64 "ReadMe" --font=Times
 
+## PostScript (ps)
+
+`ps` writes the document (several: joined first, as `merge`) as a
+PostScript file, laid out as geoWrite lays it out, so lines and pages
+break where they break in geoWrite (tools/gwps.py). `ps2pdf OUT.ps`
+makes a PDF of it; any PostScript printer prints it.
+
+    tools/gwtool.py ps "g03 geowrite.d64" letter.ps "Letter"
+    ps2pdf letter.ps
+
+- **Fonts:** the LaserWriter fonts and GeoUltra's GU fonts (font IDs
+  27-37: LW_Roma or GU Serif, LW_Cal or GU Sans, LW_Barrows or GU Mono
+  and the rest) become the printer's own fonts as real text: Times,
+  Helvetica, Courier, Avant Garde, Bookman, Helvetica Narrow, New
+  Century Schoolbook, Palatino, Zapf Chancery, Symbol, Zapf Dingbats,
+  in bold and italic where the document has them. Each word is placed
+  where geoWrite puts it and fitted to geoWrite's width for it.
+- Every other font is drawn from its own bitmap glyphs, at 80 dots an
+  inch as on the C64's printer, as GeoUltra draws them (bold,
+  underline, reverse; italic and outline plain). gwtool looks for the
+  font files on IMAGE, then in `--fonts=DIR` (CVT files), then among
+  GeoUltra's GU fonts (`build/fonts`, made by `make fonts`). A font
+  found nowhere is drawn in the system font, with a warning.
+- BSW (the system font, ID 0) and BSW128 (GEOS 128's, ID 128) are
+  drawn in GeoUltra's own system font, which has BSW's widths.
+- Pictures are drawn as they are, at 80 dots an inch.
+- The page: 480 or 640 dots wide (6 or 8 inches) and the document's
+  page height, centred on A4 (`--letter`: US Letter). The header and
+  footer are drawn on every page, not on a title page.
+
+Checked against geoWrite: tests/print/psref.py prints GeoUTools'
+manual with geoWrite 2.1 on GeoUltra (VICE, GU Epson FX-80) and compares
+every page dot for dot with gwtool's PostScript rendered by ghostscript
+(2026-11-19: all 11 pages the same, about 206,000 dots). What that
+document covers: the system fonts, plain, bold, underline and outline,
+tab stops, paragraph margins, pictures, left alignment, single spacing.
+What it learnt: geoWrite leaves 2 dots under every line, ends a line
+at a space that passes the right margin, and centres a picture between
+the margins, 2 rows up into the line above. Not yet checked against
+geoWrite: centred, right-aligned and justified text, 1.5 and 2 line
+spacing (taken as 1.5 and 2 times the line with its 2 dots), other
+bitmap fonts and sizes, real text, headers and footers.
+
 ## What a conversion changes
 
 A geoWrite 1.x page starts with a 20-byte ruler (margins and 8 tab
@@ -170,10 +214,14 @@ its result with gwtool's, which is the same byte for byte.
   when it meets them, as no 1.x document with them was available to
   check.
 - The disk name of a new image is "converted".
+- `ps`: geoWrite's page number, date and time fields in the header and
+  footer are not filled in yet; superscript and subscript are drawn on
+  the line.
 
 ## Sources
 
 The geoWrite 2.x format: Michael Steil, "Inside geoWrite - 7: File
-Format and Pagination", pagetable.com. The 1.x differences: observed by
+Format and Pagination", pagetable.com; how geoWrite measures a line
+(for `ps`): the same article, behaviour only. The 1.x differences: observed by
 comparing a document before and after geoWrite 2.1 converted it. Own
 code; the image reading is tools/mkappsdnp.py's.

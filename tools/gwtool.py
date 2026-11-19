@@ -8,6 +8,7 @@
     gwtool.py fromdocx IN.docx OUT NAME [--wide]
     gwtool.py md IMAGE OUT.md NAME [NAME ...] [--page-breaks=records]
     gwtool.py frommd IN.md OUT NAME [--wide] [--font=NAME]
+    gwtool.py ps IMAGE OUT.ps NAME [NAME ...] [--letter] [--fonts=DIR]
 
 IMAGE is a D64, D71, D81 or DNP (a name may carry a DNP folder,
 "Writing/Letter"). OUT is a folder (CVT files written there) or a new
@@ -30,6 +31,12 @@ lays the pages out again. `md` and `frommd` do the same with Markdown
 folder beside OUT.md; `frommd` reads pictures named in the Markdown from
 beside IN.md; --font=NAME sets the body font by a Word font name (as
 `fromdocx` maps them: "Times" gives GU Serif; GU Sans by default).
+`ps` writes the document as PostScript (tools/gwps.py) laid out as
+geoWrite lays it out: the LW and GU fonts (IDs 27-37) as the
+LaserWriter's fonts, real text; any other font drawn from its own
+bitmaps, found on IMAGE, in --fonts=DIR (CVT files) or GeoUltra's GU
+fonts (build/fonts); BSW and BSW128 as GeoUltra's system font. A4 by
+default, --letter for US Letter; ps2pdf makes a PDF of it.
 
 What a conversion does (geoWrite 1.x "Write Image V1.x" to 2.x, as
 geoWrite 2.1 itself converts a document when it opens one; observed by
@@ -64,7 +71,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mkappsdnp import Image, GeoFile   # noqa: E402
+from mkappsdnp import Image, GeoFile, read_cvt   # noqa: E402
 
 BLOCK = 254
 ESC_GRAPHICS, ESC_RULER, ESC_NEWCARDSET = 0x10, 0x11, 0x17
@@ -417,6 +424,36 @@ def main(argv):
                        {r: recs[r] for r in range(PIC_FIRST, PIC_LAST + 1) if recs[r]},
                        page_breaks=breaks, title=", ".join(args[3:]))
         print("%s: %d pages from %d document(s), %d picture(s)" % (args[2], len(pg), len(parts), n))
+        for w in warnings:
+            print("warning: " + w)
+        return
+    if cmd == "ps" and len(args) >= 4:
+        import glob
+        import gwps
+        img = Image(args[1])
+        docs = dict(documents(img))
+        for n in args[3:]:
+            if n not in docs:
+                die("%s: no geoWrite document of that name in %s" % (n, args[1]))
+        parts = [to_v2(n, docs[n], warn) for n in args[3:]]
+        gf = build("out", parts, warn)
+        recs = gf.records + [None] * (PIC_LAST + 1 - len(gf.records))
+        pg = [r for r in recs[:PAGES] if r]
+        files = font_files(img, fonts_of(parts))
+        extra = next((a[8:] for a in argv if a.startswith("--fonts=")), None)
+        for d in ([extra] if extra else []) + [os.path.join(os.path.dirname(os.path.dirname(
+                os.path.abspath(__file__))), "build", "fonts")]:
+            files += [read_cvt(f) for f in sorted(glob.glob(os.path.join(d, "*.cvt")))]
+        h = docs[args[3]].header
+        height = (h[0x90] | h[0x91] << 8) or 752
+        missing = gwps.write(args[2], pg, recs[HEADER_REC], recs[FOOTER_REC],
+                             {r: recs[r] for r in range(PIC_FIRST, PIC_LAST + 1) if recs[r]},
+                             gwps.Fonts(files), paper="letter" if "--letter" in argv else "a4",
+                             page_height=height, title_page=bool(h[0x8B] & 0x80),
+                             title=", ".join(args[3:]))
+        print("%s: %d pages from %d document(s)" % (args[2], len(pg), len(parts)))
+        for fid in missing:
+            warn("font ID %d, %d points: not found, drawn in the system font" % (fid >> 6, fid & 63))
         for w in warnings:
             print("warning: " + w)
         return
