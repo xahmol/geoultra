@@ -15,7 +15,8 @@
 
         .import MenuNeutral, Recover, Dialog, FileEngine, entryInfo, entryName
         .import cur, count, Fetch, IsDotDot, Back, IsImage, path
-        .export Ov_Popup, Ov_Info, Ov_About
+        .import RunE, appName, docShort, docDrive
+        .export Ov_Popup, Ov_Info, Ov_About, Ov_MakePS
 Ov_Popup = Popup
 Ov_Info = Info
 Ov_About = About
@@ -39,6 +40,9 @@ NONE            = $FF
 LINE_LEN        = 40            ; an Info line, at most
 NAME_SHOWN      = 26            ; Info's name: its first characters (bold,
                                 ; within the dialog's 176 pixels)
+
+O_CLASS         = $4D           ; a file header's class (permanent name)
+APPL_DATA       = 7             ; GEOS file type
 
         .segment "OV7"
 
@@ -189,6 +193,7 @@ IsPrinter:
         sta isPrn
         sta isImg
         sta isFont
+        sta isWrite
         lda count
         ora count+1
         beq @end
@@ -208,7 +213,14 @@ IsPrinter:
         lda entryInfo + FI_GTYPE
         cmp #FONT_TYPE
         beq @font
-        cmp #PRINTER_FILE
+        cmp #APPL_DATA          ; a geoWrite 2.x document: "make PostScript"
+        bne :+
+        jsr IsWrite
+        bcs @end
+        lda #$80
+        sta isWrite
+        rts
+:       cmp #PRINTER_FILE
         bne @end
         lda #$80
         sta isPrn
@@ -222,6 +234,74 @@ IsPrinter:
         lda #$C0
 :       sta isFont
         rts
+
+; IsWrite: C clear when the entry fetched (entryName in the current
+; folder) is a geoWrite 2.x document: its header's class "Write Image
+; V2" (FE_STAT reads the header into fileHeader).
+IsWrite:
+        lda #<entryName
+        sta r0L
+        lda #>entryName
+        sta r0H
+        lda #<statBuf
+        sta r1L
+        lda #>statBuf
+        sta r1H
+        lda #0
+        sta r2L
+        sta r2H
+        lda #FE_STAT
+        jsr FileEngine
+        txa
+        bne @no
+        ldx #WRITE_LEN - 1
+:       lda fileHeader + O_CLASS,x
+        cmp WriteClass,x
+        bne @no
+        dex
+        bpl :-
+        clc
+        rts
+@no:    sec
+        rts
+
+; Ov_MakePS (list.s TaskOrMount, item 1 on a document): a geoWrite 2.x
+; document written as PostScript: its drive and folder made current
+; (FE_SELECT: its short name in docShort, its drive in docDrive), then
+; GU PostScript started from drive E with it (open.s RunE, resident:
+; it leaves the desktop, which calls another overlay). C set: no
+; geoWrite document (the caller opens it in a new task).
+Ov_MakePS:
+        jsr IsWrite
+        bcc :+
+        rts
+:       lda #<entryName
+        sta r0L
+        lda #>entryName
+        sta r0H
+        lda #<docShort
+        sta r1L
+        lda #>docShort
+        sta r1H
+        lda #FE_SELECT
+        jsr FileEngine
+        txa
+        bne @end
+        lda curDrive
+        sta docDrive
+        ldx #PS_APP_LEN         ; appName = "GU PostScript"
+:       lda PsApp,x
+        sta appName,x
+        dex
+        bpl :-
+        jmp RunE                ; (back with C clear)
+@end:   clc
+        rts
+WriteClass:     .byte "Write Image V2"
+WRITE_LEN       = * - WriteClass
+PsApp:          .byte "GU PostScript", 0
+PS_APP_LEN      = * - PsApp - 1
+TPost:          .byte "make PostScript", 0
 
 ; ItemText: item `at`'s text in its place.
 ItemText:
@@ -252,8 +332,15 @@ ItemText:
         bne @put                ; (always)
 @img:   cpx #1                  ; a disk image's "open in new task":
         bne @put                ; "mount" (list.s TaskOrMount); a font's:
-        bit isFont              ; "install as system font", in /f
-        bpl @mnt                ; "uninstall" (fontact.s)
+        bit isWrite             ; "install as system font", in /f
+        bpl :+                  ; "uninstall" (fontact.s); a geoWrite
+        lda #<TPost             ; document's: "make PostScript" (the
+        sta r0L                 ; user, 2026-11-19: a new task is for
+        lda #>TPost             ; applications)
+        sta r0H
+        bne @put                ; (always)
+:       bit isFont
+        bpl @mnt
         lda #<TInstall
         ldx #>TInstall
         bvc :+
@@ -997,6 +1084,8 @@ bufSave:        .res 1
 isPrn:  .res 1                  ; IsPrinter: $80 a printer driver
 isImg:  .res 1                  ; IsPrinter: $80 a disk image
 isFont: .res 1                  ; IsPrinter: $80 a font, $C0 one in /f
+isWrite: .res 1                 ; IsPrinter: $80 a geoWrite 2.x document
+statBuf: .res 16                ; (IsWrite: FE_STAT's info)
 tmpX:   .res 1
 tmpY:   .res 1
 numL:   .res 1

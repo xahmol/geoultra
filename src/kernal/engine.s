@@ -37,7 +37,7 @@
 ;   50 enginelong.s  short names made
 ;   51 enginelong.s  names: a listing's entries, dropped, FE_GETLONG
 ;   54 enginelong.s  rename and mkdir with long names
-;   55 sysdrive.s    FE_RUNSYS: an application on drive E started
+;   55 sysdrive.s    FE_RUNSYS, FE_RUNDOC: an application on drive E started
 ;   52 enginelong.s  a copy's new entry (and its long name)
 ;   53 enginelong.s  GU.LONGNAMES made
 ;   56 enginecvt.s   a GEOS file onto the Ultimate as CVT (header, data)
@@ -137,6 +137,7 @@ Funcs:  .byte 22, 3             ; FE_VERSION
         .byte 99, 0             ; FE_TASK (task.s)
         .byte 114, 0            ; FE_SPOOL (spool.s)
         .byte 118, 0            ; FE_DRVSWAP (drvswap.s)
+        .byte 55, 3             ; FE_RUNDOC (sysdrive.s)
         .assert * - Funcs = 2 * FE_COUNT, error, "engine.s: Funcs and FE_COUNT differ"
 
 ; OvFileEngine: save the caller's state, call the function (Call),

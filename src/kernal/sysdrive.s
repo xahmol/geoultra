@@ -397,10 +397,12 @@ DLG_LEN         = * - dlgTemplate
         .include "engine.inc"
 
         jmp OvRunSys            ; entry 0
+        jmp OvRunDoc            ; entry 3
 
         .include "sysenter.inc"
 
 LdApplic        = $C21D         ; GEOS jump table
+ST_LD_DATA      = $80
 
 ; OvRunSys (FE_RUNSYS, from the file engine's dispatcher; gush at the cold
 ; start and from geoFolder): r0 = the name of an application on drive E,
@@ -408,7 +410,20 @@ LdApplic        = $C21D         ; GEOS jump table
 ; every drive, so they load from the current one). Back only with X =
 ; FILE_NOT_FOUND, STRUCT_MISMAT (no application), DEV_NOT_FOUND (E cannot
 ; be shown on this drive) or LdApplic's error.
+; OvRunDoc (FE_RUNDOC, 2026-11-19: GU PostScript from the desktop and
+; gush): the same with a document, as the deskTop passes one: r1 its
+; name, r2 its disk's name (LdApplic with ST_LD_DATA: dataFileName,
+; dataDiskName; the application finds the document's drive by the
+; disk's name). FE_RUNSYS stays as it was for its callers, which leave
+; r1 and r2 as they happen to be.
+; The option waits on the stack: Enter is a nested overlay call, after
+; which this module's own bytes are fetched again (overlay.s).
+OvRunDoc:
+        lda #ST_LD_DATA
+        .byte $2C               ; (bit abs: the next lda skipped)
 OvRunSys:
+        lda #0
+        pha
         ldx #DEV_NOT_FOUND
         jsr Usable
         bcs @end
@@ -429,10 +444,19 @@ OvRunSys:
         sta r9L
         lda #>dirEntryBuf
         sta r9H
-        lda #0                  ; (no data file)
+        lda argR1               ; (FE_RUNDOC: the document and its disk;
+        sta r3L                 ; LdApplic reads them only with
+        lda argR1+1             ; ST_LD_DATA)
+        sta r3H
+        lda argR2
+        sta r2L
+        lda argR2+1
+        sta r2H
+        pla                     ; (no data file, or ST_LD_DATA)
         sta r0L
         jmp LdApplic
-@end:   rts
+@end:   pla                     ; (the option; X kept)
+        rts
 
         .endscope
 

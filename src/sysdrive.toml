@@ -20,6 +20,7 @@ desktop = "../build/desktop"
 settings = "../build/settings"
 fonts = "../build/fonts"
 printer = "../build/printer"
+psw = "../build/psw"
 
 [[folder]]
 path = ""
@@ -31,7 +32,9 @@ files = ["tools:geofolder.cvt", "gush:gush.cvt", "desktop:desktop.cvt", "setting
          "fonts:guclassic.cvt", "fonts:guscript.cvt",
          # GeoUltra's printer drivers (docs/DESIGN.md "Printing")
          "printer:epson.cvt", "printer:mps.cvt", "printer:pdfa4.cvt", "printer:pdfa4data.cvt",
-         "printer:pdfletter.cvt", "printer:pdfletterdata.cvt"]
+         "printer:pdfletter.cvt", "printer:pdfletterdata.cvt",
+         # GU PostScript (docs/PSW.md)
+         "psw:psw.cvt"]
 
 [[folder]]
 path = "bin"

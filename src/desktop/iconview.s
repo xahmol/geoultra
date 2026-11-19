@@ -28,10 +28,11 @@ ICON_ROWS       = 21
 ICON_LEN        = 1 + ICON_W * ICON_ROWS ; a BitmapUp packet: $BF, 63
 ICON_PACKET     = $80 + ICON_W * ICON_ROWS ; (unique bytes, compacted)
 NAME_BASE       = 30            ; the name's baseline in a cell
-CACHE_BANK      = 6             ; (ovl.s: overlays $0000-$6FFF, history
-CACHE_PAGE      = $90           ; $8000-$8FFF; the icons from $9000)
+CACHE_BANK      = 6             ; (ovl.s: overlays $0000-$8FFF, history
+CACHE_PAGE      = $A0           ; $9000-$9FFF; the icons from $A000)
 CACHE_N         = (BIG_PAGE * 256 - CACHE_PAGE * 256) / 64 ; entries whose
-                                ; icon is kept: 440 (to the big icons)
+                                ; icon is kept: 376 (to the big icons; 440
+                                ; until 2026-11-19, the 9th overlay)
 SMALL_BYTES     = 9             ; icons.s: a packet byte and 8 rows
 H_ICON          = 4             ; its icon: a $BF packet and 63 bytes
 
@@ -481,7 +482,7 @@ Slot:   lda row
 @no:    sec
         rts
 
-; Regs: r0-r3L for the entry's icon in the REU (CACHE_BANK, $9000 +
+; Regs: r0-r3L for the entry's icon in the REU (CACHE_BANK, $A000 +
 ; number * 64) <-> icon.
 Regs:   lda #<icon
         sta r0L

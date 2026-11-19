@@ -278,7 +278,10 @@ a click outside closes the list. The status line shows the number of
 tasks at its right end; a click there opens the same list. "open in new
 task" (C=W, in the file menu and the context menu) opens the entry
 under the cursor in a new task: a fresh desktop that opens it there,
-while this one waits as it is. Each task keeps its own memory in the
+while this one waits as it is. On a geoWrite document the context
+menu's second item is **make PostScript** instead: GU PostScript
+(drive E, docs/PSW.md) starts with that document, asks for the paper
+and the look, and writes `GEOULTRA/print/<document>.ps`. Each task keeps its own memory in the
 REU, and hibernation keeps them all: after a power cycle every task
 is back, in the one you left. A
 document open in one task is saved when you leave that task and cannot
@@ -475,5 +478,5 @@ and find them when a document uses them.
 
 - Folders with more than 384 entries are shown in the order on disk;
   a folder holds at most 2048 entries in the list.
-- The icon view keeps the first 448 entries' icons in the REU; later
+- The icon view keeps the first 376 entries' icons in the REU; later
   ones are read again when shown.

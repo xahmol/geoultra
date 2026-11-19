@@ -14,6 +14,8 @@
         .import __BSS_RUN__, __BSS_SIZE__, real, Defaults, Options
 
 FindFile        = $C20B
+SetDevice       = $C2B0
+OpenDisk        = $C2A1
 GetFHdrInfo     = $C229
 dirEntryBuf     = $8400
 dispBufferOn    = $2F
@@ -77,13 +79,15 @@ ClearBss:
         bne :-
 @end:   rts
 
-; Choose: docName = the document (dataFileName when started with one,
-; else from a file box of geoWrite documents). C set: none.
+; Choose: docName = the document (dataFileName when started with one:
+; its drive made current, DocDrive; else from a file box of geoWrite
+; documents). C set: none.
 Choose: lda options
         and #ST_LD_DATA
         beq @box
         lda dataFileName
         beq @box
+        jsr DocDrive
         ldx #0
 :       lda dataFileName,x
         sta docName,x
@@ -119,6 +123,34 @@ Choose: lda options
         rts
 @none:  sec
         rts
+
+; DocDrive: the drive whose disk is dataDiskName (A-D: the disk names
+; GEOS keeps per drive, which GetFile copied the document's from) made
+; current and opened, as geoWrite finds its document's drive (started
+; from drive E, E is current). None: the current drive stays.
+DocDrive:
+        ldx #0
+@drive: lda NameLo,x
+        sta op
+        lda NameHi,x
+        sta op + 1
+        ldy #15
+:       lda (op),y
+        cmp dataDiskName,y
+        bne @next
+        dey
+        bpl :-
+        txa                     ; this one: 8 + X
+        clc
+        adc #8
+        jsr SetDevice
+        jmp OpenDisk
+@next:  inx
+        cpx #4
+        bcc @drive
+        rts
+NameLo: .byte <$841E, <$8430, <$88DC, <$88EE    ; DrACurDkNm .. DrDCurDkNm
+NameHi: .byte >$841E, >$8430, >$88DC, >$88EE
 
 ; Write: the document's file header read (version, title page, header,
 ; footer and page heights), the record file opened, the PostScript

@@ -1,11 +1,12 @@
 ; GeoUltra Desktop: overlays (docs/DESKTOP.md, "Structure"). The
 ; desktop is a VLIR file: record 0 the core at $0400-$4FFF, records 1
-; to 8 overlays at TRANS ($5000-$5FFF): 1 the theme files
+; to 9 overlays at TRANS ($5000-$5FFF): 1 the theme files
 ; (themefile.s), 2 the actions with the recursion into folders
 ; (actions.s, tree.s), 3 mounting (mount.s) and the clipboard (clip.s), 4 the INI files
 ; (inifile.s), 5 the toolbar's drawing and the clock (tooldraw.s), 6
 ; sorting the list (sort.s), 7 the context menu and Info (ctxmenu.s), 8
-; the list's mouse and key handling (listin.s)
+; the list's mouse and key handling (listin.s), 9 the system fonts'
+; install, uninstall and import (fontact.s)
 ; (sort.s). The loader and OvlGo are ovlcore.inc (shared with gush);
 ; this file names the bank and the stubs. Own code.
 
@@ -15,12 +16,13 @@
 TRANS           = $5000
 TRANS_SIZE      = $1000
 OVL_BANK        = 6             ; (1-4: the entry table, 5: the clipboard;
-                                ; bank 6: the overlays $0000-$7FFF, the
-                                ; history $8000 (history.s), icons $9000-
+                                ; bank 6: the overlays $0000-$8FFF, the
+                                ; history $9000 (history.s), icons $A000-
                                 ; $FDFF (iconview.s), the big icons $FE00
                                 ; (tooldraw.s))
-OVL_N           = 8
-        .assert OVL_N * TRANS_SIZE <= $8000, error, "overlays: into the history (history.s, $8000)"
+OVL_N           = 9             ; (9 since 2026-11-19: the icon cache gave
+                                ; 4 KB, the user's choice)
+        .assert OVL_N * TRANS_SIZE <= $9000, error, "overlays: into the history (history.s, $9000)"
 
         .segment "CODE"
 
@@ -75,8 +77,9 @@ OvlFail:
         Stub Popup, 7           ; overlay 7: ctxmenu.s
         Stub Info, 7
         Stub About, 7           ; (geos > GeoUltra info)
-        Stub FontAct, 7         ; (fontact.s: a system font in or out)
-        Stub FontImport, 7      ; (fontact.s: GEOULTRA/fonts' CVT files)
+        Stub MakePS, 7          ; (a geoWrite document to GU PostScript)
+        Stub FontAct, 9         ; overlay 9: fontact.s (a system font in
+        Stub FontImport, 9      ; or out; GEOULTRA/fonts' CVT files)
         Stub ListPress, 8       ; overlay 8: listin.s
         Stub PaneLetters, 8     ; (two panes: the drive letters)
         Stub ListKey, 8

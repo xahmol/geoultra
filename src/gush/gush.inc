@@ -46,6 +46,7 @@ FE_MOUNTINFO    = 23
 FE_MKIMG        = 24
 FE_REBOOT       = 28
 FE_RUNSYS       = 22
+FE_RUNDOC       = 35            ; (an application on E with a document)
 FE_NOT_SUPPORTED = $4E          ; (engine.inc)
 FE_UCI          = 30
 

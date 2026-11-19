@@ -481,7 +481,7 @@ colour is a property of an element, by name:
   rows under the toolbar), each the entry's 24 x 21 icon with its name
   centred under it and cut at the cell's edge; selected cells inverted,
   the cursor's cell framed. GEOS files show their header's own icon
-  (`FE_STAT`; kept in the REU, bank 6 from `$9000`, for the first 448
+  (`FE_STAT`; kept in the REU, bank 6 from `$A000` since 2026-11-19, for the first 376
   entries, read once per folder); folders, "..", drives, the
   Ultimate's roots, plain files and disk images get generic 24 x 21
   drawings (`tools/mkbigicons.py`, text art; put into the REU at the
@@ -632,7 +632,7 @@ colour is a property of an element, by name:
   PathPress, Double, Range, the strip's line and page steps); "open"
   goes back to the core through openReq (desktop.s OpenReq after Press
   and Key); REU bank 6 rearranged for an eighth overlay (overlays
-  `$0000-$7FFF`, history `$8000`, icon cache `$9000-$FDFF` for 440
+  `$0000-$7FFF`, history `$8000`, icon cache `$9000-$FDFF` for 440 (since 2026-11-19: overlays `$0000-$8FFF`, nine with fontact.s; history `$9000`; icon cache `$A000-$FDFF` for 376)
   icons, generic icons `$FE00`). The core ends at `$4CDE` (801 bytes
   free). **P2's places:** LIST_RIGHT (17 uses) and STRIP_LEFT (18) in
   list.s, listin.s and iconview.s become variables set by Derive; the

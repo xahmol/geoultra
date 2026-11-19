@@ -54,6 +54,7 @@ FE_RUNSYS       = 22
 FE_TASK         = 32            ; (engine.inc: the tasks, task.s)
 FE_SPOOL        = 33            ; (engine.inc: the print queue, spool.s)
 FE_SELECT       = 21
+FE_RUNDOC       = 35            ; an application on E started with a document
 FE_STAT         = 1
 FE_UMOUNT       = 18
 FE_WRITE        = 15

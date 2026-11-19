@@ -6,21 +6,23 @@ as geoWrite lays them out, so lines and pages break where they break in
 geoWrite. `ps2pdf` on a PC makes a PDF of it, and any PostScript printer
 prints it. Decisions and plan: docs/DESIGN.md, "PostScript writer".
 
-**State (2026-11-19): steps P1-P5 of six.** It writes documents in any
+**State (2026-11-19): all six steps.** It writes documents in any
 bitmap font (the system fonts, GeoUltra's GU fonts, the user's fonts:
 found as geoWrite finds them) with bold, underline, reverse and
 outline, tab stops, all alignments and line spacings, pictures, header
 and footer, on A4. The LW and GU fonts (IDs 27-37) become the
 printer's own fonts as real text: Times, Helvetica, Courier, Avant
 Garde, Bookman, Helvetica Narrow, New Century Schoolbook, Palatino,
-Zapf Chancery, Symbol, Zapf Dingbats (`realtext.s`). Next: the ways to
-start it with a document (the desktop, gush) and its place on drive E.
+Zapf Chancery, Symbol, Zapf Dingbats (`realtext.s`). It is on drive E
+and starts from the desktop and from gush with a document. Not yet
+tried on the U64.
 
 ## Use
 
-Start GU PostScript (drive E, once installed there) and choose a
-geoWrite document in its file box; or start it with a document (the
-desktop's "make PostScript" and a gush command follow in step P6). A
+In the desktop, the context menu of a geoWrite document has **make
+PostScript** (its second item). In gush: `"/e/GU PostScript"
+"/b/letter"` (the document's path). Or start GU PostScript on its own
+(drive E) and choose a geoWrite document in its file box. A
 short box then asks for the paper (**A4** or **Letter**) and the look:
 **Real** (the LW and GU fonts as the printer's own fonts: sharp at any
 size, the text searchable in a PDF) or **C64** (every font from its
@@ -75,5 +77,8 @@ written, then a picture record, in the background screen's place
   points, header and footer, alignments, spacings, decimal tabs)
   against `gwtool ps`, with real text. `--letter`, `--c64` click those
   in the options box (gwtool ps `--letter`, `--bitmap`).
+- `tests/print/psent.py`: started with a document from gush and from the
+  desktop's context menu (the engine's `FE_RUNDOC`: an application on
+  drive E with a document), each file the same as `gwtool ps`'s.
 - `tests/print/psref.py`: `gwtool ps` against geoWrite's own printout,
   dot for dot (docs/GWTOOL_MANUAL.md, "PostScript").

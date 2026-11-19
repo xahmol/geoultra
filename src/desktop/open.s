@@ -18,7 +18,7 @@
         .import cur, count, path, Redraw, RecentAdd, Mount, Leave, SideArrows
         .export Open, Up, Drive, Into, Document, Back
         .import HistAdd, IsImage, Error, UsePrinter, PrnUlt, AppFind, AppGo, OpenHere, Fonts
-        .export appName, appClass, docDrive
+        .export appName, appClass, docDrive, docShort, RunE
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
 ST_LD_DATA      = $80
@@ -277,6 +277,30 @@ Launch: ldx docDrive
 ; ended, or the start failed), the menu bar too: Redraw clears it.
 Back:   jsr Redraw
         jmp ReDoMenu
+
+; RunE (ctxmenu.s MakePS): appName on drive E started with docShort of
+; docDrive (FE_RUNDOC), as Launch for an application on E; resident,
+; as Leave calls an overlay. Back only after an error, the desktop drawn
+; again; C clear.
+RunE:   jsr Leave
+        lda #<appName
+        sta r0L
+        lda #>appName
+        sta r0H
+        lda #<docShort
+        sta r1L
+        lda #>docShort
+        sta r1H
+        ldx docDrive
+        lda DiskLo-8,x
+        sta r2L
+        lda DiskHi-8,x
+        sta r2H
+        lda #FE_RUNDOC
+        jsr FileEngine
+        jsr Back
+        clc
+        rts
 
 DiskLo: .byte <DrACurDkNm, <DrBCurDkNm, <DrCCurDkNm, <DrDCurDkNm
 DiskHi: .byte >DrACurDkNm, >DrBCurDkNm, >DrCCurDkNm, >DrDCurDkNm

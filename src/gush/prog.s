@@ -173,21 +173,17 @@ Try1:   lda r0L
 ; Found: the document's folder current (Doc), then the program's
 ; (FE_SELECT); GetFile by its short name. A program on drive E: no slot
 ; can stay E's for GetFile (the engine shows E only during a call), so an
-; application starts through FE_RUNSYS by its name, a desk accessory
-; through GetFile by its name (GetFile falls back to drive E); neither
-; takes a document there.
+; application starts through FE_RUNSYS by its name (FE_RUNDOC with a
+; document, since 2026-11-19: GU PostScript), a desk accessory through
+; GetFile by its name (GetFile falls back to drive E; it takes no
+; document).
 Found:  jsr Doc
         bcc :+
         ldy #1                  ; (about the document)
         rts
 :       jsr OnE
         bcc @sel
-        ldx #FE_NOT_SUPPORTED   ; (a document for a program on E)
-        ldy #1
-        lda loadOpt
-        beq :+
-        rts
-:       lda info + FI_GTYPE
+        lda info + FI_GTYPE
         cmp #APPLICATION
         bne :+
         jsr HistSave            ; (its history first: gush ends)
@@ -195,8 +191,20 @@ Found:  jsr Doc
         sta r0L
         lda #>short
         sta r0H
+        lda #<docShort          ; (FE_RUNDOC: r1 the document, r2 its
+        sta r1L                 ; disk's name)
+        lda #>docShort
+        sta r1H
+        ldx docDrive
+        lda DiskLo-8,x
+        sta r2L
+        lda DiskHi-8,x
+        sta r2H
         lda #FE_RUNSYS
-        jsr FileEngine          ; (back only with an error)
+        ldx loadOpt             ; (a document: FE_RUNDOC)
+        beq @run
+        lda #FE_RUNDOC
+@run:   jsr FileEngine          ; (back only with an error)
         jmp @end
 :       ldy #0
         jsr High

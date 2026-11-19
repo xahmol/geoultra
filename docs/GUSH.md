@@ -106,7 +106,9 @@ started the way the desktop starts one: its drive made current, its
 folder entered, `GetFile` by its short name. gush is replaced (as by the
 desktop); with the task switcher later it stays as a task. A document
 after the name (`geoWrite letter`) is passed as the desktop does
-(`r0`/`r2`/`r3`, the data disk's name). Desk accessories run on top of
+(`r0`/`r2`/`r3`, the data disk's name); for an application on drive E
+too since 2026-11-19 (the engine's `FE_RUNDOC`): `"/e/GU PostScript"
+"/b/letter"` writes the document as PostScript (docs/PSW.md). Desk accessories run on top of
 gush and come back to it.
 
 ## Where gush lives

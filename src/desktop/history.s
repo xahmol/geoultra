@@ -18,8 +18,8 @@
         .import path, text, Into
         .export HistAdd, HistBack, HistForward
 
-HIST_BANK       = 6             ; (ovl.s: the overlays at $0000-$6FFF)
-HIST_ADDR       = $80           ; the slots' first page in the bank
+HIST_BANK       = 6             ; (ovl.s: the overlays at $0000-$8FFF)
+HIST_ADDR       = $90           ; the slots' first page in the bank
 HIST_N          = 16            ; places kept
 HIST_MASK       = HIST_N - 1
         .assert HIST_N & HIST_MASK = 0, error, "HIST_N: a power of two"

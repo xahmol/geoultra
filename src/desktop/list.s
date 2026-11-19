@@ -36,7 +36,7 @@ PANE_DIV        = 159           ; two panes: the line between them
         .export TaskOrMount, ListRCard
         .export ThumbRows, SortArrow
         .import sortMode, boldOn
-        .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd, FontAct
+        .import Popup, Info, Copy, Cut, Paste, Rename, Delete, NewFolder, FavAdd, FontAct, MakePS
         .import CopyOther, MoveOther
         .import SortList
         .import topY, titleEnd
@@ -2044,12 +2044,17 @@ TaskOrMount:
         jsr Fetch
         lda entryInfo + FI_KIND
         cmp #K_GEOS             ; a font: installed as a system font, or
-        bne :+                  ; one in /f uninstalled (item 1's text:
-        lda entryInfo + FI_GTYPE ; ctxmenu.s; actions.s FontAct)
+        bne @ufile              ; one in /f uninstalled (item 1's text:
+        lda entryInfo + FI_GTYPE ; ctxmenu.s; fontact.s FontAct)
         cmp #FONT_TYPE
-        bne @task
+        bne @doc
         jmp FontAct
-:       cmp #K_UFILE
+@doc:   cmp #7                  ; APPL_DATA: a geoWrite 2.x document made
+        bne @task               ; PostScript (ctxmenu.s MakePS; C set:
+        jsr MakePS              ; none, a new task as before)
+        bcs @task
+        rts
+@ufile: cmp #K_UFILE
         bne @task
         jsr IsImage
         bcs @task
