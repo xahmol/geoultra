@@ -28,7 +28,9 @@ TAKE, VO_DIR, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 W, H, FPS = 1920, 1080, 50
 FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 FONTB = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
-LOGO = '/home/xahmol/git/idreamtin8bits-astro/src/assets/idi8b-logo-lowercase_large.png'
+sys.path.insert(0, os.path.dirname(HERE))
+import localcfg  # noqa: E402
+LOGO = localcfg.get("IDI8B_LOGO", os.path.join(os.path.dirname(HERE), "splash", "idi8b-logo.png"))
 U64_PAL = [(0x00, 0x00, 0x00), (0xF7, 0xF7, 0xF7), (0x8D, 0x2F, 0x34), (0x6A, 0xD4, 0xCD),
            (0x98, 0x35, 0xA4), (0x4C, 0xB4, 0x42), (0x2C, 0x29, 0xB1), (0xEF, 0xEF, 0x5D),
            (0x98, 0x4E, 0x20), (0x5B, 0x38, 0x00), (0xD1, 0x67, 0x6D), (0x4A, 0x4A, 0x4A),

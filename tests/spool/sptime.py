@@ -14,12 +14,13 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "spool")
-APPS_DISK = os.environ.get("GEOS_APPS_DISK", os.path.expanduser(
-    "~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
+APPS_DISK = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 ROWS = 94
 
 HOOK = r'''
 import time
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 jt = harness.jumptab()
 lbl = {}
 for line in open(%(lbl)r):
@@ -73,9 +74,9 @@ def main():
     o, b, c = (os.path.join(OUT, "logdrv" + x) for x in (".o", ".bin", ".cvt"))
     subprocess.run(["ca65", "-o", o, os.path.join(ROOT, "tests", "spool", "logdrv.s")], check=True)
     subprocess.run(["ld65", "-C", os.path.join(ROOT, "tests", "spool", "logdrv.cfg"), "-o", b, o], check=True)
-    subprocess.run([sys.executable, os.path.expanduser("~/git/geos-oscar64/tools/geosapp.py"),
+    subprocess.run([sys.executable, localcfg.GEOSAPP,
                     os.path.join(ROOT, "tests", "spool", "logdrv.toml"), b, c], check=True, capture_output=True)
-    subprocess.run([os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541"), disk, "-geoswrite", c],
+    subprocess.run([localcfg.C1541, disk, "-geoswrite", c],
                    check=True, capture_output=True)
     hook = os.path.join(OUT, "hook-sptime.py")
     open(hook, "w").write(HOOK % {"lbl": os.path.join(ROOT, "build", "kernal64.lbl"), "rows": ROWS, "wait": 300,

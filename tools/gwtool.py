@@ -73,6 +73,7 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mkappsdnp import Image, GeoFile, read_cvt   # noqa: E402
+import localcfg  # noqa: E402
 
 BLOCK = 254
 ESC_GRAPHICS, ESC_RULER, ESC_NEWCARDSET = 0x10, 0x11, 0x17
@@ -87,7 +88,7 @@ PAGES, HEADER_REC, FOOTER_REC, PIC_FIRST, PIC_LAST = 61, 61, 62, 64, 126
 PAGE_HEIGHT = 752
 CLASS_AT, VERSION_AT = 0x4D, 0x4D + 12         # "Write Image " and "V1.0"
 FONT = 8                                        # GEOS file type
-C1541 = shutil.which("c1541") or os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
+C1541 = shutil.which("c1541") or localcfg.C1541
 
 
 def die(msg):

@@ -23,9 +23,11 @@ from PIL import Image, ImageChops
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
 from feu64 import U64  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "e2e", "ludo")
-SHOT = os.path.expanduser("~/git/GeoUTools/tests/e2e/shot.py")
+SHOT = localcfg.GEOUTOOLS_SHOT
 APP = "/c/Games/GeoLudo"
 SAVE_NAME = "gutest"
 SAVE_FILE = SAVE_NAME.ljust(16)                # (GeoLudo pads with spaces)

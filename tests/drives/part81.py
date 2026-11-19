@@ -24,13 +24,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
 OUT = os.path.join(ROOT, "build", "harness", "part81")
 os.makedirs(OUT, exist_ok=True)
-VICEBIN = os.path.expanduser("~/.local/opt/vice-3.10/bin")
-X64HL = os.path.expanduser("~/.local/opt/vice-3.10-headless/bin/x64sc")
+VICEBIN = (localcfg.VICE_BIN or "")
+X64HL = localcfg.X64SC_HEADLESS
 REF = os.path.join(OUT, "ref.d81")
 os.environ["GEOS_APPS_DISK"] = REF
 import apprun  # noqa: E402
 import harness  # noqa: E402
 from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 PORT = 6546
 NAME, FOLDER, HDR, DATA, BACK, RES = 0x4F00, 0x4F40, 0x4000, 0x4400, 0x5000, 0x02F0

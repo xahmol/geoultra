@@ -17,6 +17,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 OUT = os.path.join(ROOT, "build", "harness", "engine")
 HOOK = r'''
 from vicemon import RESP_CHECKPOINT
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 lbl = {}
 for line in open(%(lbl)r):
     p = line.split(); lbl.setdefault(p[2].lstrip("."), int(p[1], 16))
@@ -69,7 +71,7 @@ def main():
     imgs = []
     for k in ("c", "d"):
         p = os.path.join(OUT, "e5-%s.d64" % k)
-        subprocess.run([os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541"), "-format",
+        subprocess.run([localcfg.C1541, "-format",
                         "drive %s,%s%s" % (k, k, k), "d64", p], capture_output=True)
         imgs.append(p)
     hook = os.path.join(OUT, "hook-e5.py")

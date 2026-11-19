@@ -19,8 +19,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
 from gushvice import Gush, OUT, harness, KEY_STUB  # noqa: E402
 from vicemon import RESP_CHECKPOINT  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
-APPS = os.environ.get("GEOS_APPS_DISK", os.path.expanduser("~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
+APPS = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 GD = [sys.executable, os.path.join(ROOT, "tools", "geosdisk.py")]
 
 

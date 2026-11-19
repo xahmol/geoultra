@@ -23,13 +23,15 @@ sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
 sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
 from feu64 import U64  # noqa: E402
 import apprun  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 HOME = "/USB0/GEOULTRA/"
 IMAGE = HOME + "test/pickup.d81"
 PS = HOME + "print/TEST.ps"
 MOUNTS = ("[drives]\r\nA=/USB0/GEOULTRA/test/GEOS64.D81\r\nB=" + IMAGE + "\r\n").encode()
 OUT = os.path.join(ROOT, "build", "harness", "print")
-C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
+C1541 = localcfg.C1541
 KEEP = ("MOUNTS.INI", "SETTINGS.INI", "RECENT.INI", "HIBERNAT.BIN", "FONTS.DNP", "gush_history")
 
 

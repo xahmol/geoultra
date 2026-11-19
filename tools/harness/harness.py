@@ -60,22 +60,22 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT = os.path.join(ROOT, "build", "harness")
 # Headless VICE 3.10 (no window, no sound) when built, else the GTK one.
 VICE = os.environ.get("VICE_HARNESS") or next(
-    (p for p in (os.path.expanduser("~/.local/opt/vice-3.10-headless/bin/x64sc"),
-                 os.path.expanduser("~/.local/opt/vice-3.10/bin/x64sc"))
+    (p for p in (localcfg.X64SC_HEADLESS,
+                 localcfg.X64SC)
      if os.path.exists(p)))
 # Disk sets (--set): the GEOS 2.0 oracle boot disk (the user's own, never
 # committed), its GeoUltra drive type, its size and VICE's drive 8 type.
 DISK_SETS = {
-    "d64": dict(oracle=os.environ.get("GEOS_ORACLE", os.path.expanduser(
-                    "~/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64")),
+    "d64": dict(oracle=localcfg.disk("GEOS_ORACLE", "GEOS64-v2.0-unkeyed.d64"),
                 type=1, size=683 * 256, drive=[], suffix=""),
-    "d81": dict(oracle=os.environ.get("GEOS_ORACLE81", os.path.expanduser(
-                    "~/geos-dev/u64-usb/GEOS64.D81")),
+    "d81": dict(oracle=localcfg.disk("GEOS_ORACLE81", "GEOS64.D81"),
                 type=3, size=3200 * 256, drive=["-drive8type", "1581"], suffix="-d81"),
 }
 DRIVE_BANK = 31

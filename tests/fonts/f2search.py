@@ -17,11 +17,13 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "fonts")
-APPS = os.environ.get("GEOS_APPS_DISK", os.path.expanduser("~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
+APPS = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 GD = [sys.executable, os.path.join(ROOT, "tools", "geosdisk.py")]
 
 HOOK = r'''
 from vicemon import RESP_CHECKPOINT
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 lbl = {}
 for line in open(%(lbl)r):
     p = line.split(); lbl.setdefault(p[2].lstrip("."), int(p[1], 16))

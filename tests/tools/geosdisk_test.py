@@ -18,9 +18,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import geosdisk  # noqa: E402
 from mkappsdnp import Image, read_cvt  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "harness", "tools")
-C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
+C1541 = localcfg.C1541
 TOOL = [sys.executable, os.path.join(ROOT, "tools", "geosdisk.py")]
 CVTS = [os.path.join(ROOT, "build", p) for p in ("desktop/desktop.cvt", "printer/epson.cvt", "gush/gush.cvt")]
 

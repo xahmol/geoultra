@@ -20,14 +20,15 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "clip")
-APPS_DISK = os.environ.get("GEOS_APPS_DISK", os.path.expanduser(
-    "~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
+APPS_DISK = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 SCRAP_TRACKS = (246, 247)
 
 # A hook: code at the harness's trampoline (SetDevice DRIVE, OpenDisk,
 # then FindFile or GetFile of the name at $4F00), results at $02F0.
 HOOK = '''
 import time
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 jt = harness.jumptab()
 def jsr(n):
     a = jt[n]; return [0x20, a & 0xFF, a >> 8]

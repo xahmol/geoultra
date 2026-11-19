@@ -17,12 +17,13 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "spool")
-APPS_DISK = os.environ.get("GEOS_APPS_DISK", os.path.expanduser(
-    "~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
+APPS_DISK = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 DRIVER = b"Epson MX-80"
 
 HOOK = r'''
 import time
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 jt = harness.jumptab()
 lbl = {}
 for line in open(%(lbl)r):

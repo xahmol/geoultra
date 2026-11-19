@@ -20,6 +20,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
 from gushvice import Gush, OUT, harness, KEY_STUB  # noqa: E402
 from vicemon import RESP_CHECKPOINT  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 FE_SPOOL = 33
 WIN_L, WIN_TOP, ROW0, ROW_STEP, BTN_Y = 48, 24, 22, 18, 122
@@ -29,7 +31,7 @@ def logdrv():
     o, b, c = (os.path.join(OUT, "logdrv" + x) for x in (".o", ".bin", ".cvt"))
     subprocess.run(["ca65", "-o", o, os.path.join(ROOT, "tests", "spool", "logdrv.s")], check=True)
     subprocess.run(["ld65", "-C", os.path.join(ROOT, "tests", "spool", "logdrv.cfg"), "-o", b, o], check=True)
-    subprocess.run([sys.executable, os.path.expanduser("~/git/geos-oscar64/tools/geosapp.py"),
+    subprocess.run([sys.executable, localcfg.GEOSAPP,
                     os.path.join(ROOT, "tests", "spool", "logdrv.toml"), b, c], check=True, capture_output=True)
     return c
 

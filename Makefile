@@ -4,12 +4,12 @@
 #   make              build build/geoultra64.crt
 #   make vice         run it in VICE 3.10 (16 MB REU, 1351 mouse in port 1)
 #   make vice-shot    run unattended, screenshot to build/vice.png
-#   make deploy       the cartridge to the Ultimate's /SD/idi8b/geoultra/
-#                     (ULTIP1 in .env), to start it from there
+#   make deploy       the cartridge to the Ultimate's DEPLOYDIR
+#                     (ULTIP1 and DEPLOYDIR in .env), to start it from there
 #   make conformance81  the same for 1581 images (GEOS 2.0 on a 1581)
 #   make conformance  compare kernal routines with GEOS 2.0 in VICE
 #                     (tests/conformance/*.py; your own GEOS 2.0 disk:
-#                     GEOS_ORACLE=path, default ~/geos-dev/u64-usb/
+#                     GEOS_ORACLE=path, default $(GEOS_DEV)/
 #                     GEOS64-v2.0-unkeyed.d64; CONF_REBUILD=1 makes new
 #                     snapshots of both systems)
 #
@@ -21,28 +21,38 @@
 #                     Interface switched on temporarily, not saved;
 #                     restore with make smoke-u64-restore)
 
+# This PC's settings: .env (gitignored; copy .env.example and fill it
+# in). Every key has a default that needs nothing of a particular PC;
+# the scripts read the same file (tools/localcfg.py).
 -include .env
 ULTIP1 ?= <set_ULTIP1_in_.env>
+VICE_BIN ?=
+VICE_HEADLESS_BIN ?=
+OSCAR64 ?= oscar64
+GEOS_OSCAR64 ?= ../geos-oscar64
+GEOUTOOLS ?= ../GeoUTools
+GEOS_DEV ?= private
+export VICE_BIN VICE_HEADLESS_BIN GEOS_OSCAR64 GEOUTOOLS GEOS_DEV
 
 CA65    = ca65
 LD65    = ld65
-OSCAR64 = /home/xahmol/oscar64/bin/oscar64
-VICE    = $(HOME)/.local/opt/vice-3.10/bin/x64sc
-# Headless VICE 3.10 (no window, no sound) for unattended runs
-VICEHL  = $(HOME)/.local/opt/vice-3.10-headless/bin/x64sc
-C1541   = $(HOME)/.local/opt/vice-3.10/bin/c1541
-GEOSAPP = $(HOME)/git/geos-oscar64/tools/geosapp.py
+# VICE 3.10 or later (the Megabyter cartridge): from VICE_BIN, else the PATH
+VICE    = $(if $(VICE_BIN),$(VICE_BIN)/,)x64sc
+# A headless VICE (no window, no sound) for unattended runs, if there is one
+VICEHL  = $(if $(VICE_HEADLESS_BIN),$(VICE_HEADLESS_BIN)/x64sc,$(VICE))
+C1541   = $(if $(VICE_BIN),$(VICE_BIN)/,)c1541
+GEOSAPP = $(GEOS_OSCAR64)/tools/geosapp.py
 PYTHON  = python3
 
 UCILIB  = lib/ultimate-uci-oscar64/include
 SMOKE   = build/smoke
 REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
-DEPLOYDIR = /SD/idi8b/geoultra/
+DEPLOYDIR ?= /SD/geoultra/
 
-.PHONY: all docs checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all docs samples checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
-GEOS_ORACLE ?= $(HOME)/geos-dev/u64-usb/GEOS64-v2.0-unkeyed.d64
+GEOS_ORACLE ?= $(GEOS_DEV)/GEOS64-v2.0-unkeyed.d64
 
 all: build/geoultra64.crt build/geoultra64.cfg
 
@@ -365,7 +375,7 @@ conformance: build/geoultra64.crt
 	$(PYTHON) tools/harness/harness.py $(if $(CONF_REBUILD),--rebuild) tests/conformance/*.py
 
 # The same against GEOS 2.0 on a 1581 (GEOS_ORACLE81, default
-# ~/geos-dev/u64-usb/GEOS64.D81): GeoUltra's 1581 image drive.
+# $(GEOS_DEV)/GEOS64.D81): GeoUltra's 1581 image drive.
 conformance81: build/geoultra64.crt
 	$(PYTHON) tools/harness/harness.py --set d81 $(if $(CONF_REBUILD),--rebuild) \
 		tests/conformance81/*.py
@@ -426,6 +436,11 @@ docs: $(DOCPDFS)
 		echo "WARNING: pandoc not found -- $@ not updated (install: sudo apt install pandoc texlive-xetex)"; \
 	fi
 
+# The sample documents (samples/build.py): brochure, quick start guide,
+# letter and logo on build/samples/geoultra-samples.d81, and the PDFs.
+samples: build/geoultra64.crt fonts
+	$(PYTHON) samples/build.py
+
 # The private applications image to the test folder, only on request: it
 # is drive C there, and a new copy replaces what was written to it (the
 # user's test files) at the next boot (2026-11-13: deploy did it each time).
@@ -469,7 +484,7 @@ smoke-u64-restore: check-deploy
 	curl -s -X PUT "$(REST)/machine:reset" >/dev/null
 
 # Writing to a native (DNP) drive (tests/drives/write.py native; GEOS_NATIVE_DISK,
-# default the user's own ~/geos-dev/u64-usb/ramapps.DNP, is only read).
+# default $(GEOS_DEV)/ramapps.DNP, is only read).
 test-native: all
 	$(PYTHON) tests/drives/write.py native
 

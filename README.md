@@ -46,7 +46,10 @@ For users:
 | [`docs/TOOLS_MANUAL.md`](docs/TOOLS_MANUAL.md) | **The PC tools**: geosdisk (disk images), gwtool (geoWrite documents: convert, merge, Word, Markdown, PostScript), gptool (geoPaint pictures), mkappsdnp (an applications image), mkgeosfont (GEOS fonts) |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Rules for pull requests and what a bug report needs |
 
-`make docs` makes PDFs of them (pandoc and XeLaTeX).
+`make docs` makes PDFs of them (pandoc and XeLaTeX). `make samples`
+makes the sample geoWrite documents (a brochure, a quick start guide, a
+letter) on a D81 image, and PDFs of the brochure and the guide
+(`samples/`, made with `tools/gwgen.py`).
 
 Design and internals:
 
@@ -65,8 +68,12 @@ Design and internals:
 
 ## Building from source
 
-Needs cc65 (`ca65`, `ld65`), Python 3.11 or later with Pillow, and for
-the tests VICE 3.10 (for the Megabyter cartridge) and Oscar64.
+Needs cc65 (`ca65`, `ld65`), Python 3.11 or later with Pillow,
+[geos-oscar64](https://github.com/xahmol/geos-oscar64)'s `geosapp.py`
+(a checkout next to this one), and for the tests VICE 3.10 or later (for
+the Megabyter cartridge) and Oscar64. Copy `.env.example` to `.env` and
+set what differs on your PC: the Ultimate's address, VICE's folder,
+where your GEOS disk images are (`.env` is never committed).
 
     make                 # build/geoultra64.crt and build/geoultra64.cfg
     make vice            # run it in VICE 3.10

@@ -20,9 +20,11 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import epsonstream                               # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "harness", "print")
-D81 = os.environ.get("GEOS_ORACLE81", os.path.expanduser("~/geos-dev/u64-usb/GEOS64.D81"))
+D81 = localcfg.disk("GEOS_ORACLE81", "GEOS64.D81")
 
 
 def main():

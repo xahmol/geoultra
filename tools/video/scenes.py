@@ -25,10 +25,12 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
-sys.path.insert(0, os.path.expanduser("~/git/GeoUTools/tests/e2e"))
+sys.path.insert(0, os.path.join(localcfg.GEOUTOOLS, "tests", "e2e"))
 import pilot  # noqa: E402
 from ultimate import Ultimate  # noqa: E402
 import png  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 IP = "192.168.1.148"
 STREAM_PORT = 11002             # (11000 is OBS's on the Windows side: WSL shares

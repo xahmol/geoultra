@@ -24,10 +24,12 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from feu64 import U64  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "engine")
-GEOSAPP = os.path.expanduser("~/git/geos-oscar64/tools/geosapp.py")
+GEOSAPP = localcfg.GEOSAPP
 HOME = "/USB0/GEOULTRA"
 CVTS = HOME + "/test/guauto"
 FE_COPY, FE_DELETE = 5, 7

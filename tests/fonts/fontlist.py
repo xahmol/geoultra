@@ -15,13 +15,15 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "fonts")
-C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
-SRC = os.environ.get("GEOS_FONTS_DISK", os.path.expanduser("~/geos-dev/u64-usb/GEOS64.D81"))
+C1541 = localcfg.C1541
+SRC = localcfg.disk("GEOS_FONTS_DISK", "GEOS64.D81")
 GU = ["GU Serif", "GU Sans", "GU Symbol", "GU Mono", "GU Geometric", "GU Book", "GU Narrow",
       "GU School", "GU Classic", "GU Script"]
 
 HOOK = r'''
 import time
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 jt = harness.jumptab()
 def jsr(a):
     a = jt.get(a, a) if isinstance(a, str) else a

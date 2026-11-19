@@ -23,7 +23,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
 sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
 sys.path.insert(0, os.path.join(ROOT, "tests", "desktop"))
-C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
+C1541 = localcfg.C1541
 DOC = "ReadMe 1581"
 KEY_DOWN, KEY_HOME, CR = 17, 18, 13
 

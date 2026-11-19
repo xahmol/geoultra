@@ -31,8 +31,7 @@ import harness                                   # noqa: E402
 import epsonstream                               # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "harness", "print")
-APPS_DISK = os.environ.get("GEOS_APPS_DISK", os.path.expanduser(
-    "~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
+APPS_DISK = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 BANDS = 10
 TEXT = b"Hello GeoUltra\rsecond line\r"
 
@@ -48,6 +47,8 @@ PAT_ODD = [0x00, 0x22, 0x55, 0xFF]
 
 HOOK = r'''
 import time
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 v.mem_set(0x4E00, %(name)r + b"\0")
 v.mem_set(0x4E80, %(text)r + b"\0")
 v.mem_set(0x5000, %(data)r)
@@ -141,7 +142,7 @@ def disk_with(driver):
     if driver is None:
         return
     subprocess.run(["make", "-s", "build/printer/%s.cvt" % driver], cwd=ROOT, check=True)
-    subprocess.run([os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541"), disk, "-geoswrite",
+    subprocess.run([localcfg.C1541, disk, "-geoswrite",
                     os.path.join(ROOT, "build", "printer", driver + ".cvt")], check=True, capture_output=True)
 
 

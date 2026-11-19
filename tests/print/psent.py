@@ -20,9 +20,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(ROOT, "tests", "gush"))
 from gushvice import Gush, harness, KEY_STUB  # noqa: E402
 from vicemon import RESP_CHECKPOINT  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "harness", "print")
-DOC = os.environ.get("GEOUTOOLS_MANUAL", os.path.expanduser("~/git/GeoUTools/docs/geowrite-manual-en.cvt"))
+DOC = localcfg.get("GEOUTOOLS_MANUAL", os.path.join(localcfg.GEOUTOOLS, "docs", "geowrite-manual-en.cvt"))
 NAME = "GeoUTools UK"
 HANDLE = 0x66
 

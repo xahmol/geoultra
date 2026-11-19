@@ -22,7 +22,9 @@ for geoWrite, build/fonts for gwps) drawn from their bitmaps on both
 sides (gwps real=False), so the layout is compared dot for dot.
 The printout is kept (build/harness/print/psref[-features].raw) and
 made again only with --print.
-Usage: tests/print/psref.py [--print] [--pages=N] [--doc=features]
+--doc=FILE.cvt: any geoWrite document (gwgen's brochure and quick start
+guide, samples/), its GU fonts from their bitmaps as for features.
+Usage: tests/print/psref.py [--print] [--pages=N] [--doc=features|FILE.cvt]
 """
 import os
 import re
@@ -36,11 +38,13 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import epsonstream                               # noqa: E402
 import gwps                                      # noqa: E402
 from mkappsdnp import read_cvt                   # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "harness", "print")
-D81 = os.environ.get("GEOS_ORACLE81", os.path.expanduser("~/geos-dev/u64-usb/GEOS64.D81"))
-DOC = os.environ.get("GEOUTOOLS_MANUAL", os.path.expanduser("~/git/GeoUTools/docs/geowrite-manual-en.cvt"))
-C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
+D81 = localcfg.disk("GEOS_ORACLE81", "GEOS64.D81")
+DOC = localcfg.get("GEOUTOOLS_MANUAL", os.path.join(localcfg.GEOUTOOLS, "docs", "geowrite-manual-en.cvt"))
+C1541 = localcfg.C1541
 
 
 def ruler(left, right, para=None, align=0, spacing=0, tabs=()):
@@ -192,10 +196,15 @@ def best_offset(a, b):
 def main():
     os.makedirs(OUT, exist_ok=True)
     feat = "--doc=features" in sys.argv
-    doc = features_doc() if feat else DOC
-    raw = os.path.join(OUT, "psref-features.raw" if feat else "psref.raw")
+    other = next((a[6:] for a in sys.argv if a.startswith("--doc=") and a != "--doc=features"), None)
+    doc = features_doc() if feat else os.path.abspath(other) if other else DOC
+    raw = os.path.join(OUT, "psref-features.raw" if feat else
+                       "psref-%s.raw" % re.sub(r"\W", "_", os.path.basename(other)) if other else "psref.raw")
+    feat = feat or bool(other)          # (another document: its fonts drawn from bitmaps,
+                                        # as the features document's GU fonts)
     if "--print" in sys.argv or not os.path.exists(raw):
-        printout(raw, doc, 600 if feat else 1500)
+        printout(raw, doc, 3000 if other else 600 if feat else 1500)   # (pictures print
+                                                    # slowly: the brochure's seven take long)
     n = next((int(a[8:]) for a in sys.argv if a.startswith("--pages=")), 99)
     theirs = oracle_pages(raw)[:n]
     mine = ours(len(theirs), doc, real=not feat)

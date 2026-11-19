@@ -14,11 +14,12 @@ import subprocess
 import sys
 
 from PIL import Image, ImageChops
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "gw")
-APPS_DISK = os.environ.get("GEOS_APPS_DISK", os.path.expanduser(
-    "~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
+APPS_DISK = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 DOC = "GU test"
 TEXT = (0, 56, 640, 110)                # the first two lines (2x pixels)
 

@@ -19,10 +19,12 @@ import subprocess
 import sys
 
 from PIL import Image, ImageChops
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "ludo")
-LUDO_DISK = os.environ.get("LUDO_DISK", os.path.expanduser("~/git/ludo/GEOS/GeoLudo.d81"))
+LUDO_DISK = localcfg.get("LUDO_DISK", "~/git/ludo/GEOS/GeoLudo.d81")
 SAVE_NAME = "gutest"           # (GeoLudo pads it with spaces to 16)
 GREEN = (85, 160, 73)
 BOARD = (0, 26, 640, 400)               # below the menu bar (2x pixels)

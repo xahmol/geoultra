@@ -36,9 +36,10 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import harness  # noqa: E402
 from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
-APPS_DISK = os.environ.get("GEOS_APPS_DISK", os.path.expanduser(
-    "~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
+APPS_DISK = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 REU_IMAGE = os.path.join(harness.OUT, "reu-apps.bin")
 CARTRIDGE = os.environ.get("GEOULTRA_CRT", os.path.join(harness.ROOT, "build", "geoultra64.crt"))
 PORT = 6504

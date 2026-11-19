@@ -21,12 +21,14 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
-SOURCE = os.environ.get("GEOS_NATIVE_DISK", os.path.expanduser("~/geos-dev/u64-usb/ramapps.DNP"))
+SOURCE = localcfg.disk("GEOS_NATIVE_DISK", "ramapps.DNP")
 TEST_DISK = os.path.join(ROOT, "build", "harness", "filedialog-test.dnp")
 os.environ["GEOS_APPS_DISK"] = TEST_DISK
 import apprun  # noqa: E402
 import harness  # noqa: E402
 from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 PORT = 6527
 FILE_TAB = 0x8300                               # fileTrScTab: the list's names

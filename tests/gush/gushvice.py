@@ -17,9 +17,11 @@ sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
 import apprun  # noqa: E402
 import harness  # noqa: E402
 from vicemon import Vice, RESP_CHECKPOINT  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "harness", "gush")
-C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
+C1541 = localcfg.C1541
 COLS, ROWS_TEXT = 53, 24
 KEY_STUB = 0xC0A0               # unused bytes in GeoUltra's information block
 NAME = 0x4F00

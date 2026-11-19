@@ -22,6 +22,8 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from feu64 import U64  # noqa: E402
 from e2 import Image  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 (FE_VERSION, FE_STAT, FE_OPENDIR, FE_READDIR, FE_CLOSE, FE_COPY, FE_MOVE, FE_DELETE,
  FE_MKDIR, FE_RMDIR, FE_RENAME, FE_CD, FE_PWD, FE_OPEN, FE_READ, FE_WRITE) = range(16)
@@ -35,7 +37,7 @@ INFO, NAME = 0x5300, 0x5320
 HOME = "/usb0/geoultra/test/e4"
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "engine")
-C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
+C1541 = localcfg.C1541
 IMAGE_A = "/USB0/GEOULTRA/test/GEOS64.D81"
 IMAGE_B = "/USB0/GEOULTRA/test/neos.d64"
 SAFE = set(b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ")

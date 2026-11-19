@@ -19,6 +19,8 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from feu64 import U64  # noqa: E402
 from e2 import Image  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 FE_STAT, FE_OPENDIR, FE_READDIR, FE_CLOSE = 1, 2, 3, 4
 FE_COPY, FE_DELETE, FE_OPEN, FE_WRITE = 5, 7, 13, 15
@@ -36,7 +38,7 @@ OUT = os.path.join(ROOT, "build", "harness", "engine")
 D64, DNP = "geopub.d64", "gumnt.dnp"           # (DNP: build/sysdrive-plain.dnp, 8
                                                 # tracks, put there and removed: room
                                                 # in the REU beside an 8 MB drive C)
-C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
+C1541 = localcfg.C1541
 
 
 class Test:

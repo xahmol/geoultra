@@ -25,8 +25,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness", "print")
-C1541 = os.path.expanduser("~/.local/opt/vice-3.10/bin/c1541")
-DOC = os.environ.get("GEOUTOOLS_MANUAL", os.path.expanduser("~/git/GeoUTools/docs/geowrite-manual-en.cvt"))
+C1541 = localcfg.C1541
+DOC = localcfg.get("GEOUTOOLS_MANUAL", os.path.join(localcfg.GEOUTOOLS, "docs", "geowrite-manual-en.cvt"))
 HANDLE = 0x66
 
 HOOK = r'''
@@ -36,6 +36,8 @@ entry = (ext[0] | ext[1] << 8) + 30
 v.mem_set(0x033F, b"\x60")                  # rts: the answered calls
 v.checkpoint(entry, temporary=False)
 import time
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 def press(x, y):                            # a press (GEOS's icons act on it)
     v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))
     v.mem_set(0x8505, b"\x00")

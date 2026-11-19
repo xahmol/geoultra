@@ -20,10 +20,12 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import gptool  # noqa: E402
 from mkappsdnp import Image  # noqa: E402
 from PIL import Image as PImage, ImageDraw  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "harness", "tools", "paint")
 TOOL = [sys.executable, os.path.join(ROOT, "tools", "gptool.py")]
-REAL = os.environ.get("GEOS_PAINT_IMAGE", os.path.expanduser("~/geos-dev/u64-usb/mp3-64.d81"))
+REAL = localcfg.disk("GEOS_PAINT_IMAGE", "mp3-64.d81")
 
 
 def main():

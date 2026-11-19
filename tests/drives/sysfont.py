@@ -17,13 +17,14 @@ import re
 import subprocess
 import sys
 import tomllib
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools"))
+import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness")
-FONT_DISK = os.environ.get("SYSFONT_DISK", os.path.expanduser("~/geos-dev/u64-usb/GEOS64.D81"))
+FONT_DISK = localcfg.disk("SYSFONT_DISK", "GEOS64.D81")
 FONT_NAME = os.environ.get("SYSFONT_NAME", "LW_Cal")
-APPS_DISK = os.environ.get("GEOS_APPS_DISK", os.path.expanduser(
-    "~/geos-dev/u64-usb/neos-mouse-driver-for-geos.d64"))
+APPS_DISK = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
 
 
 def build():
