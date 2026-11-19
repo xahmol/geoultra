@@ -500,7 +500,7 @@ colour is a property of an element, by name:
   from drives A-E: copy it to one of them first." (the user kept this
   wording); the detailed view leaves an Ultimate file's size empty
   (the Ultimate's listings give none; it showed 0), the Info dialog will
-  show the real size. A user manual, docs/DESKTOP_MANUAL.md, gets a
+  show the real size. A user manual, docs/GEOULTRA_MANUAL.md, gets a
   section on what works on which kind of drive.
 - **Drive C for testing (the user, 2026-11-11):** the user's own GEOS
   software sorted into folders, `private/geoultra-apps.dnp` from
@@ -565,7 +565,7 @@ colour is a property of an element, by name:
   choice made there is the plain order. Test tests/desktop/d18.py.
 - **Done 2026-11-12 (night):** copy, paste, move and delete onto drive
   C tested on the U64 (tests/desktop/d10u64.py); sorting (sort.s,
-  overlay 6; tests/desktop/d11.py); docs/DESKTOP_MANUAL.md. The core ends
+  overlay 6; tests/desktop/d11.py); docs/GEOULTRA_MANUAL.md. The core ends
   at `$4FDC`: the context menu needs room made first.
 - **Context menu and Info (2026-11-12):** `src/desktop/ctxmenu.s`,
   overlay 7. The right button (guMouse2's press bit, read in ClockTick

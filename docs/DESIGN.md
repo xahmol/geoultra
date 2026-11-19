@@ -262,6 +262,17 @@ version (phase 4, mostly the same cartridge), and later the C128
 
 **Releases and documentation (the user, 2026-11-12):**
 
+**Documentation round before Beta 1 (the user, 2026-11-19):** user
+documents first: one user manual (docs/GEOULTRA_MANUAL.md: install,
+boot, desktop, Settings, gush, printing, fonts, serials, known limits;
+gathered from the per-topic manuals), docs/TOOLS_MANUAL.md (the PC
+tools users benefit from: gwtool, gptool, mkappsdnp), the README up to
+date, PDFs through pandoc; the technical reference and developer guide
+after Beta 1. The sample brochure and the quick start guide are geoWrite
+2.1 documents generated directly by a script from a description (text,
+GU fonts, pictures such as the splash logo and screenshots), not through
+Word.
+
 - **Beta 1, at the end of the desktop work in phase 3** (confirmed by the
   user 2026-11-12; Ultimate 64
   family only): after two panes with drag and drop, the settings tool's
@@ -314,7 +325,7 @@ version (phase 4, mostly the same cartridge), and later the C128
   s7.py).
 - **User manuals** (when design and functions are stable): system (boot,
   drives and images, MOUNTS.INI, hibernation, turbo, the REU), desktop
-  (docs/DESKTOP_MANUAL.md), gush (docs/GUSH_MANUAL.md), settings,
+  (docs/GEOULTRA_MANUAL.md), gush (docs/GEOULTRA_MANUAL.md), settings,
   geoFolder.
 - **Technical reference** (before 1.0): GeoUltra's additions to and
   changes from the Hitchhiker's Guide to GEOS, as a delta document: the

@@ -186,7 +186,7 @@ GeoUltra's own desktop.
    `more`, `df`, with the questions and the progress line.
 5. Starting applications; `help`, `clear`; the boot setting and the
    gush button in geoFolder.
-6. U64 run, code sweep, docs (a gush manual: `docs/GUSH_MANUAL.md`).
+6. U64 run, code sweep, docs (a gush manual: `docs/GEOULTRA_MANUAL.md`).
 
 ## State of the work
 
@@ -503,7 +503,7 @@ no ICMP and no name lookup of its own (it resolves names only when
 opening a socket). No HTTPS (no TLS on the Ultimate's sockets), no
 redirects followed (a 301/302 shows its status). Tests g19.py (VICE:
 help, words, URLs), gu64.py (`ifconfig`, `wget` of example.com, a 404). **3.10 (2026-11-06)**: the fifth code sweep
-(docs/DESIGN.md, "Code sweeps"). Step 3 is complete. The user manual: docs/GUSH_MANUAL.md
+(docs/DESIGN.md, "Code sweeps"). Step 3 is complete. The user manual: docs/GEOULTRA_MANUAL.md
 (2026-11-06), planned in step 1's order of work.
 
 After step 3 (user, 2026-11-06): gush's commands all stay built in

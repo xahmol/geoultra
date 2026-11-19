@@ -31,14 +31,13 @@ decisions are in [`docs/DESIGN.md`](docs/DESIGN.md), the structure in
 
 | File | Contents |
 | --- | --- |
+| [`docs/GEOULTRA_MANUAL.md`](docs/GEOULTRA_MANUAL.md) | **The user manual**: installing and starting, the desktop, drives and disk images, programs and tasks, Settings, themes, printing, fonts, serial numbers, gush, the files on the stick, limits, what was tested |
 | [`docs/FEASIBILITY.md`](docs/FEASIBILITY.md) | Feasibility analysis: Ultimate features, compatibility contract, routes, architecture, storage design, C64/C128, build chain, testing, phases, risks |
 | [`docs/GEOS_REFERENCE.md`](docs/GEOS_REFERENCE.md) | GEOS technical reference (memory and zero page maps, kernal, file formats, GEOS 128, MegaPatch3/GDOS64/Wheels differences) |
 | [`docs/GEOS_API_REFERENCE.md`](docs/GEOS_API_REFERENCE.md) | Per-routine kernal API (from The Hitchhiker's Guide to GEOS v2022) |
 | [`docs/DESKTOP.md`](docs/DESKTOP.md) | GeoUltra's own desktop: design, plan, state of the work |
-| [`docs/DESKTOP_MANUAL.md`](docs/DESKTOP_MANUAL.md) | Using the desktop: screen, views, files and folders, toolbar, disk images, drives (what works where), themes, settings |
 | [`docs/SETTINGS.md`](docs/SETTINGS.md) | GeoUltra Settings, the settings application: decisions, structure, steps |
 | [`docs/GUSH.md`](docs/GUSH.md) | gush, the GeoUltra shell: design, commands, state of the work |
-| [`docs/GUSH_MANUAL.md`](docs/GUSH_MANUAL.md) | Using gush: keys, paths, command lines, control flow, scripts, commands |
 | [`docs/GUSH_COMMANDS.md`](docs/GUSH_COMMANDS.md) | Writing external gush commands: format, calling convention, the routines gush offers, building |
 | [`docs/PSW.md`](docs/PSW.md) | GU PostScript, the C64 application that writes geoWrite documents as PostScript files (in development) |
 | [`docs/GWTOOL_MANUAL.md`](docs/GWTOOL_MANUAL.md) | gwtool, a PC tool for geoWrite documents in disk images: list, convert geoWrite 1.x to 2.x, join several documents into one, to and from Word and Markdown, PostScript laid out as geoWrite prints it |

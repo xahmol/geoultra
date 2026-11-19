@@ -93,7 +93,7 @@ Rows:   .byte 5
         .word COL3, TFast, VOn
         .byte Y0 + 2 * DY               ; the disks' fonts in the programs'
         .word LFonts, SSystem, KDiskFonts ; lists (from the next start:
-        .byte 2, 0                      ; docs/DESKTOP_MANUAL.md "System
+        .byte 2, 0                      ; docs/GEOULTRA_MANUAL.md "System
         .word COL1, TAll, 0             ; fonts")
         .word COL3, TSysOnly, VHide
         .byte Y0 + 3 * DY               ; GU PostScript's paper (src/psw
