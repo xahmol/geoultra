@@ -159,10 +159,10 @@ OvlGo:  sta keepA
         bpl @back
 @go:    ldy #2
         lda (ovlP),y
-        sta ovlJmp
+        sta z:ovlJmp
         iny
         lda (ovlP),y
-        sta ovlJmp + 1
+        sta z:ovlJmp + 1
         lda keepP
         pha
         lda keepA
@@ -190,8 +190,13 @@ keepA:          .byte 0
 keepX:          .byte 0
 keepY:          .byte 0
 keepP:          .byte 0
-ovlJmp:         .word 0
 keepR:          .res 8          ; r0-r3 across a fetch
 ovlTS:          .res OVL_N * 2
+
+        .segment "ZEROPAGE"
+ovlJmp:         .res 2          ; the overlay routine (jmp (ovlJmp)): in the
+                                ; zero page, so never on a page's last byte
+                                ; (the 6502's jmp ($xxFF) takes the high
+                                ; byte from $xx00; ld65 warned, 2026-11-19)
 
         .segment "CODE"

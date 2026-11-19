@@ -7,7 +7,7 @@
         .include "kcalls.inc"
         .include "engine.inc"
 
-        .import OvlCall, SysRAMOp, folderT, folderS, FindFile
+        .import OvlCall, SysRAMOp, folderT, folderS, FindFile, sysActive, natLoaded
 
         .segment "OVL25"
         .scope Mod25
@@ -94,11 +94,13 @@ OvDf:   jsr Path
         jsr EnterName
         txa
         bne @end
-@here:  lda #<curDirHead
+@here:  jsr Fresh               ; (drive E or /f shown: their own BAM)
+        lda #<curDirHead
         sta r5L
         lda #>curDirHead
         sta r5H
         jsr CalcBlksFree
+        jsr Fresh
         lda r4L
         sta argR1
         lda r4H
@@ -108,6 +110,18 @@ OvDf:   jsr Path
         lda r3H
         sta argR2+1
         ldx #0
+@end:   rts
+
+; Fresh: while drive E or the system fonts (/f) are shown in a slot
+; (sysActive), the native BAM working copy is marked as no drive's
+; (natLoaded $FF), so CalcBlksFree reads the shown image's own BAM and no
+; copy of it stays filed under the slot's number (both were shown in the
+; same empty slot and counted each other's: FE_DF /f gave E's free
+; blocks, 2026-11-19). Destroys A.
+Fresh:  lda sysActive
+        beq @end
+        lda #$FF
+        sta natLoaded
 @end:   rts
 
 ; Path: the path at the caller's r0 resolved; Z clear and X = the error

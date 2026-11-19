@@ -17,7 +17,7 @@
         .import FileEngine, ListRead, ListDraw, Fetch, entryInfo, entryName
         .import cur, count, path, Redraw, RecentAdd, Mount, Leave, SideArrows
         .export Open, Up, Drive, Into, Document, Back
-        .import HistAdd, IsImage, Error, UsePrinter, PrnUlt, AppFind, AppGo, OpenHere
+        .import HistAdd, IsImage, Error, UsePrinter, PrnUlt, AppFind, AppGo, OpenHere, Fonts
         .export appName, appClass, docDrive
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
@@ -41,8 +41,11 @@ Open:   lda count               ; (an empty folder: nothing)
         cmp #K_UDIR
         beq @enter
         cmp #K_DRIVE
-        beq @enter
-        cmp #K_UFILE            ; a disk image: gone into like a folder
+        bne :+
+        lda path + 1            ; a drive below "/": the system fonts'
+        beq @enter              ; entry in drive E (list.s ReadList)
+        jmp Fonts               ; (toolbar.s: /f)
+:       cmp #K_UFILE            ; a disk image: gone into like a folder
         bne @geos               ; (the user, 2026-11-13; the engine's
         jsr IsImage             ; engineimg.s); another file: Mount says
         bcs @mount              ; it is not opened here

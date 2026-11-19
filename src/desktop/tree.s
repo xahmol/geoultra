@@ -19,7 +19,9 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import FileEngine, Error, Dialog, ProgressStart, ProgressBlock
+        .import FileEngine, Error, Dialog, ProgressBlock
+        .import Words, Dec16, stBuf, progLen, StatusShow, OfWord, ColonWord
+        .importzp PROG_NAME_END
         .import deskPrefs
         .import progN, progTotal, entryName, entryInfo, path, text
         .export TreeStart, PasteItem, DeleteItem
@@ -43,6 +45,57 @@ PATH_END        = 254           ; a path's last place (with its zero)
 qLine:          .res 2          ; Ask3's question (DBVARSTR)
 
         .segment "OV2"
+
+; ProgressStart (moved from list.s, 2026-11-19: the core was full; only
+; this overlay calls it): "Copying 3 of 12: name" on the status line (A = the
+; verb: 0 copying, 1 moving, 2 deleting; progN of progTotal, "Copying
+; 14: name" when progTotal is 0; the name in entryName), its length kept
+; for ProgressBlock.
+ProgressStart:
+        tax
+        ldy VerbAt,x
+        ldx #0
+@verb:  lda Verbs,y
+        beq :+
+        sta stBuf,x
+        inx
+        iny
+        bne @verb
+:       txa
+        tay
+        lda progN
+        ldx progN+1
+        jsr Dec16
+        lda progTotal           ; (a total not known: "Copying 14: name")
+        ora progTotal+1
+        beq :+
+        ldx #<OfWord
+        jsr Words
+        lda progTotal
+        ldx progTotal+1
+        jsr Dec16
+:       ldx #<ColonWord
+        jsr Words
+        ldx #0
+@name:  lda entryName,x
+        beq :+
+        sta stBuf,y
+        iny
+        inx
+        cpy #PROG_NAME_END
+        bcc @name
+:       sty progLen
+        lda #0
+        sta stBuf,y
+        jmp StatusShow
+
+Verbs:          .byte "Copying ", 0
+VERB_MOVE = * - Verbs
+                .byte "Moving ", 0
+VERB_DELETE = * - Verbs
+                .byte "Deleting ", 0
+VerbAt:         .byte 0, VERB_MOVE, VERB_DELETE
+
 
 ; TreeStart: a new paste or delete: no "Yes to all" given yet, no file
 ; counted.

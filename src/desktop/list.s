@@ -40,7 +40,9 @@ PANE_DIV        = 159           ; two panes: the line between them
         .import CopyOther, MoveOther
         .import SortList
         .import topY, titleEnd
-        .export ProgressStart, ProgressBlock, progN, progTotal
+        .export ProgressBlock, progN, progTotal, Words, Dec16, stBuf, progLen, StatusShow
+        .export OfWord, ColonWord
+        .exportzp PROG_NAME_END
         .import Busy, Idle
         .import text            ; (side.s's INI text, PathPress's path: not
                                 ; in use while a folder is entered)
@@ -90,6 +92,54 @@ ListRead:
 :       inc sortPending
 :       jmp Idle
 
+; FontsEntry (ReadList, ".." placed): in drive E's root ("/e"), when the
+; file engine has /f (the system fonts, FONTS.DNP), an entry "installed
+; fonts" of kind K_DRIVE after "..": Open goes to /f (open.s), the sort
+; keeps it with ".." (sort.s). The user's choice, 2026-11-19.
+FontsEntry:
+        lda path + 1
+        cmp #'e'
+        bne @end
+        lda path + 2
+        bne @end
+        lda #<FPath             ; is there a /f?
+        sta r0L
+        lda #>FPath
+        sta r0H
+        lda #<entryInfo
+        sta r1L
+        lda #>entryInfo
+        sta r1H
+        lda #0
+        sta r2L
+        sta r2H
+        lda #FE_STAT
+        jsr FileEngine
+        txa
+        bne @end
+        ldx #INFO_LEN - 1
+        lda #0
+@info:  sta entryInfo,x
+        dex
+        bpl @info
+        lda #K_DRIVE
+        sta entryInfo + FI_KIND
+        ldx #FNAME_LEN
+@name:  lda FName,x
+        sta entryName,x
+        dex
+        bpl @name
+        lda count
+        ldx count+1
+        jsr Place
+        jsr StashRAM
+        inc count
+@end:   rts
+
+FPath:          .byte "/f", 0
+FName:          .byte "installed fonts", 0
+FNAME_LEN       = * - FName - 1
+
 ; SortNow (theme.s, ClockTick, from MainLoop: the list marked by
 ; ListRead): sorted (sort.s, overlay 6), then drawn.
 SortNow:
@@ -132,6 +182,7 @@ ReadList:
         jsr Place
         jsr StashRAM
         inc count
+        jsr FontsEntry          ; (drive E's root: "installed fonts")
 @read:  lda #<path
         sta r0L
         lda #>path
@@ -1530,48 +1581,6 @@ StatusSpan:
 :       dec r4L
 @end:   rts
 
-; ProgressStart: "Copying 3 of 12: name" on the status line (A = the
-; verb: 0 copying, 1 moving, 2 deleting; progN of progTotal, "Copying
-; 14: name" when progTotal is 0; the name in entryName), its length kept
-; for ProgressBlock.
-ProgressStart:
-        tax
-        ldy VerbAt,x
-        ldx #0
-@verb:  lda Verbs,y
-        beq :+
-        sta stBuf,x
-        inx
-        iny
-        bne @verb
-:       txa
-        tay
-        lda progN
-        ldx progN+1
-        jsr Dec16
-        lda progTotal           ; (a total not known: "Copying 14: name")
-        ora progTotal+1
-        beq :+
-        ldx #OfWord
-        jsr Words
-        lda progTotal
-        ldx progTotal+1
-        jsr Dec16
-:       ldx #ColonWord
-        jsr Words
-        ldx #0
-@name:  lda entryName,x
-        beq :+
-        sta stBuf,y
-        iny
-        inx
-        cpy #PROG_NAME_END
-        bcc @name
-:       sty progLen
-        lda #0
-        sta stBuf,y
-        jmp StatusShow
-
 ; ProgressBlock (FE_COPY's and FE_MOVE's progress routine, r3): ", 40
 ; blocks" after ProgressStart's text (r4 = the blocks done); C set when
 ; RUN/STOP is held (the engine stops: FE_CANCELLED). Keeps r0-r15 and the
@@ -1863,12 +1872,6 @@ SizeWord = * - StatusWords
 DateWord = * - StatusWords
         .byte "Date", 0
 RootTitle:      .byte "GeoUltra", 0
-Verbs:          .byte "Copying ", 0
-VERB_MOVE = * - Verbs
-                .byte "Moving ", 0
-VERB_DELETE = * - Verbs
-                .byte "Deleting ", 0
-VerbAt:         .byte 0, VERB_MOVE, VERB_DELETE
 
 ; --- The selection -----------------------------------------------------
 

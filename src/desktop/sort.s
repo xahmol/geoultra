@@ -16,7 +16,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import count, Fetch, Place, entryInfo, entryName, text, IsDotDot, sortMode
+        .import count, Fetch, Place, entryInfo, entryName, text, IsDotDot, sortMode, path
         .export Ov_SortList
 Ov_SortList = SortList
 
@@ -80,8 +80,12 @@ Keys:   lda #<text
         sta grp
         jsr IsDotDot            ; (Z set: "..")
         beq @group
-        inc grp                 ; a folder or drive,
-        ldx entryInfo + FI_KIND
+        ldx entryInfo + FI_KIND ; (a drive below "/": the system fonts'
+        cpx #K_DRIVE            ; entry in drive E, list.s; with "..")
+        bne :+
+        lda path + 1
+        bne @group
+:       inc grp                 ; a folder or drive,
         cpx #K_FOLDER
         beq @group
         cpx #K_UDIR

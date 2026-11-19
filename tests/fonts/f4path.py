@@ -5,7 +5,8 @@ modules 81 and 125): FONTS.DNP with "F Roma" (Roma from GEOS_APPS_DISK,
 the user's own, renamed) relocated and put into REU banks 180-187 as in
 f2search.py, fontsOn set. Checks: FE_OPENDIR /f and FE_READDIR in
 separate calls (the handle shows /f again: HDrive) give "F Roma", then
-the end; FE_STAT /f/F Roma: a font; after the calls drive E is shown
+the end; FE_STAT /f/F Roma: a font; FE_DF /f and /e each their own
+free blocks (the BAM working copy shared one count, 2026-11-19); after the calls drive E is shown
 again for programs (sysShow 4: FindFile still finds E's "GU Sans"
 through its fallback); with fontsOn 0, /f is not there.
 Usage: tests/fonts/f4path.py
@@ -79,6 +80,12 @@ print("F4 dir %%02x %%s" %% (x, "|".join(names)))
 v.mem_set(0x4E60, b"/f/F Roma\0")
 fecall(r(0x02, 0x4E60) + r(0x04, 0x6200) + r(0x06, 0) + [0xA9, 1, 0x20, fe & 0xFF, fe >> 8, 0x8E, 0xF3, 0x02])
 print("F4 stat %%02x" %% v.mem_get(0x2F3, 0x2F3)[0])
+for pth in (b"/f\0", b"/e\0"):
+    v.mem_set(0x4E80, pth)
+    fecall(r(0x02, 0x4E80) + [0xA9, 16, 0x20, fe & 0xFF, fe >> 8, 0x8E, 0xF4, 0x02,
+                              0xA5, 0x04, 0x8D, 0xF5, 0x02, 0xA5, 0x05, 0x8D, 0xF6, 0x02])
+    fr = v.mem_get(0x2F5, 0x2F6)
+    print("F4 df%%s %%02x %%d" %% (pth[1:2].decode(), v.mem_get(0x2F4, 0x2F4)[0], fr[0] | fr[1] << 8))
 print("F4 show %%d" %% v.mem_get(lbl["sysShow"], lbl["sysShow"])[0])
 xe, de = find(b"GU Sans")
 print("F4 efind %%02x track %%d" %% (xe, de[1]))
@@ -130,6 +137,9 @@ def main():
     e = lines.get("efind", "").split()
     check("FindFile: E's GU Sans still found (tracks 248-255)", len(e) > 4 and e[2] == "00" and int(e[4]) >= 248, e)
     check("fontsOn 0: /f not there", not lines.get("off", "").endswith("00"), lines.get("off"))
+    df = (lines.get("dff", "").split()[-1:], lines.get("dfe", "").split()[-1:])
+    check("FE_DF: /f and /e each their own free blocks (not one shared count)",
+          df[0] and df[1] and df[0] != df[1] and int(df[0][0]) > int(df[1][0]), df)
     print("f4path: %s" % ("all passed" if ok else "FAILED"))
     sys.exit(0 if ok else 1)
 

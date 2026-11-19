@@ -29,7 +29,7 @@ dropPath = text + 1024           ; a drop's target folder (listin.s; text's
                                 ; start is Paste's "full"; 256 bytes)
         .export openReq
         .import TaskOrMount
-        .import Root, Home, Top, ListEnd, Up
+        .import Root, Home, Top, ListEnd, Up, Fonts
         .import Eject, HasImage, EjectIcon, IconUp
         .import ThemeName, Paint, px0, px1, py0, py1, pcol
         .import ThemeUse, themeNames, themeCount, curName, hasPal, PalReset
@@ -50,8 +50,7 @@ NAME_DX         = 10            ; a drive's disk name after its letter
 DA_MAX          = 8             ; desk accessories in the geos menu
 GEOS_FIXED      = 4             ; its items before them: info, settings,
                                 ; gush, print queue
-GO_N            = 7             ; the go menu's items (GoTexts, GoDo)
-GO_TEXT         = 8             ; each one's text: 8 bytes
+GO_N            = 8             ; the go menu's items (GoTexts, GoDo)
 DA_NAME_LEN     = 17            ; a GEOS name and its zero
 THEME_ITEM      = 16            ; a view menu theme item: "* " and a name
 THEME_NAME      = 15            ; a theme's name (themefile.s NAME_MAX)
@@ -317,7 +316,8 @@ MAll:   jsr GotoFirstMenu
         jmp SelAll
 
 ; GoItem (the go menu: A = the item): the menus closed, then back,
-; forward, up, root, home, top or end (as the toolbar's buttons).
+; forward, up, root, home (as the toolbar's buttons), the system fonts
+; (/f; the user, 2026-11-19), top or end.
 GoItem: asl a
         tax
         lda GoDo+1,x
@@ -325,7 +325,7 @@ GoItem: asl a
         lda GoDo,x
         pha
         jmp GotoFirstMenu       ; (its rts: the action)
-GoDo:   .word HistBack-1, HistForward-1, Up-1, Root-1, Home-1, Top-1, ListEnd-1
+GoDo:   .word HistBack-1, HistForward-1, Up-1, Root-1, Home-1, Fonts-1, Top-1, ListEnd-1
         .assert (* - GoDo) / 2 = GO_N, error, "an action per go item"
 
 ; FileEngine: A = function, Y = handle, r0-r4 (FILE_ENGINE.md).
@@ -1481,13 +1481,32 @@ toolbarMenu:
 
 goMenu:
         .byte MENU_BOTTOM, MENU_BOTTOM + GO_N * 14
-        .word 80, 139
+        .word 80, 159
         .byte VERTICAL | UN_CONSTRAINED | GO_N
-        .repeat GO_N, i
-        .word GoTexts + i * GO_TEXT
+        .word GoBack
         .byte MENU_ACTION
         .word GoItem
-        .endrepeat
+        .word GoFwd
+        .byte MENU_ACTION
+        .word GoItem
+        .word GoUp
+        .byte MENU_ACTION
+        .word GoItem
+        .word GoRoot
+        .byte MENU_ACTION
+        .word GoItem
+        .word GoHome
+        .byte MENU_ACTION
+        .word GoItem
+        .word GoFonts
+        .byte MENU_ACTION
+        .word GoItem
+        .word GoTop
+        .byte MENU_ACTION
+        .word GoItem
+        .word GoEnd
+        .byte MENU_ACTION
+        .word GoItem
 
 clipMenu:                               ; (was "disk", refresh only; the
         .byte MENU_BOTTOM, MENU_BOTTOM + 3 * 14 ; user, 2026-11-15: refresh
@@ -1556,13 +1575,14 @@ InfoItem:       .byte "info", GOTOX, 0, 0, "C=I", 0
 CopyOtherItem:  .byte "copy to other", GOTOX, 0, 0, "C=T", 0
 MoveOtherItem:  .byte "move to other", GOTOX, 0, 0, "C=M", 0
 AllItem:        .byte "select all", GOTOX, 0, 0, "C=A", 0
-GoTexts:        .byte "back", 0, 0, 0, 0
-                .byte "forward", 0
-                .byte "up", 0, 0, 0, 0, 0, 0
-                .byte "root /", 0, 0
-                .byte "home", 0, 0, 0, 0
-                .byte "top", 0, 0, 0, 0, 0
-                .byte "end", 0, 0, 0, 0, 0
+GoBack:         .byte "back", 0
+GoFwd:          .byte "forward", 0
+GoUp:           .byte "up", 0
+GoRoot:         .byte "root /", 0
+GoHome:         .byte "home", 0
+GoFonts:        .byte "system fonts", 0
+GoTop:          .byte "top", 0
+GoEnd:          .byte "end", 0
 OpenItem:       .byte "open", GOTOX, 0, 0, "C=O", 0
 TaskItem:       .byte "open in new task", GOTOX, 0, 0, "C=W", 0
 CopyItem:       .byte "copy", GOTOX, 0, 0, "C=C", 0

@@ -21,7 +21,7 @@
         .import View, viewMode, NewFolder, Copy, Paste, Delete, FileEngine
         .import HistBack, HistForward, text, Info, Gush, TwoPanes, Settings
 homePath        = text          ; (side.s's text buffer: free between actions)
-        .export ToolPress, ToolPaint, Cards, Root, Home, Top
+        .export ToolPress, ToolPaint, Cards, Root, Home, Top, Fonts
         .export Refresh
 
         .segment "CODE"
@@ -88,6 +88,13 @@ ToolPress:
 Root:   lda #<RootPath
         ldx #>RootPath
         jmp Into
+; Fonts (go > system fonts): the installed system fonts, /f (the file
+; engine: FONTS.DNP, read-only; "not found" without it). The user's
+; choice, 2026-11-19.
+Fonts:  lda #<FontsPath
+        ldx #>FontsPath
+        jmp Into
+FontsPath:      .byte "/f", 0
 ; Home: GeoUltra's folder on the Ultimate (FE_HOME, its last "/"
 ; dropped); nothing without an Ultimate.
 Home:   lda #<homePath          ; FE_HOME ("/USB0/GEOULTRA/"; none
