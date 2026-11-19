@@ -11,7 +11,7 @@
 
         .import guClockFresh    ; (info.s, $C0FB)
         .import OvlCall, SysRAMOp, turboWant, turboNow
-        .import WriteBackNow, hibState, drvFlags
+        .import WriteBackNow, hibState, drvFlags, HibSuspend, hibResumed
         .include "drvflags.inc"
 
 U_SET_TIME      = $27           ; (no longer sent: OvSetTime)
@@ -123,6 +123,9 @@ OvSetTime:
 ; FE_REBOOT: every drive written back, the hibernated session dropped
 ; (HIBERNAT.BIN in the home folder deleted: the boot would resume it),
 ; then the C64 restarted through the Ultimate (GeoUltra boots afresh).
+; Y = 1: the session saved instead (HibSuspend) and resumed by the boot,
+; which comes back here with X = 0 (with this boot's system fonts and
+; settings keys: hibernate.s Resumed).
 ; Back only when a drive could not be written back (FE_ULTIMATE), or
 ; without an Ultimate (DEV_NOT_FOUND). The write-back uses the overlay
 ; scratch, the engine's work area, as in FE_UMOUNT (enginemount.s): kept
@@ -148,7 +151,19 @@ OvReboot:
         beq :+
         ldx #FE_ULTIMATE
         rts
-:       jsr Home                ; the session file away (none: fine)
+:       lda feY                 ; Y = 1: the session kept (the user,
+        beq @fresh              ; 2026-11-19: a font installed, then
+        ldy #REU_STASH          ; restarted): saved, the reboot resumes
+        jsr WorkOp              ; it; the engine's work area kept around
+        jsr HibSuspend          ; the save (its write-back uses it)
+        ldy #REU_FETCH
+        jsr WorkOp
+        txa
+        bne @end                ; (not saved: X its error, no reboot)
+        lda hibResumed
+        beq @reboot             ; (saved: now the reboot)
+        rts                     ; (the session resumed here: X = 0)
+@fresh: jsr Home                ; the session file away (none: fine)
         txa
         bne @end
         lda #U_DELETE
@@ -161,6 +176,7 @@ OvReboot:
         bne @name
 :       jsr UNoData
         jsr UExec
+@reboot:
         lda #CTRL_REBOOT        ; (does not come back)
         jsr UBegin
         lda #U_TARGET_CTRL

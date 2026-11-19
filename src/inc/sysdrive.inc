@@ -21,6 +21,14 @@ SCRAP_TRACKS    = 2
 ; on and relocated there to tracks FONT_TRACK+1 to SCRAP_TRACK, read-only
 ; for programs as E is (reudrv.s Locate).
 FONT_BANK       = 180           ; banks 180-187 (the drives' area ends below)
+COLD_BANK       = 17            ; fontsOn and guPrnFast as the cold start
+COLD_KEYS       = $FF00         ; set them (mount.s module 122), for a
+                                ; resumed session (hibernate.s Resumed: its
+                                ; RAM holds the saved session's, older
+                                ; ones): the ROM mirror's last bank, unused
+                                ; (E ends at 11) and not in HIBERNAT.BIN,
+                                ; whose bank 1 the resume loads after the
+                                ; cold start (bank 1 did not work)
 FONT_TRACK      = 237
 FONT_TRACKS     = 8
         .assert FONT_TRACK + FONT_TRACKS = SCRAP_TRACK, error, "sysdrive.inc: the fonts' tracks end below the scrap store's"

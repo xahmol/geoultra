@@ -20,12 +20,14 @@
         .include "geos.inc"
         .include "hw.inc"
         .include "kcalls.inc"
+        .include "sysdrive.inc"
 
         .export HibSuspend, HibResumeOvl, Resume, hibSP, hibResumed, HibTick
         .export hibState, RtcClockOvl, hibLimit, RtcCheck, hibBank, hibIdle
         .import taskCur, taskReq
 hibBank         = ramBank + 1   ; RamSetup's bank: 19 + the current task
-        .import guClockFresh    ; (info.s, $C0FB)
+        .import guClockFresh, guPrnFast    ; (info.s, $C0FB, $C0FC)
+        .import fontsOn
         .import WbTick, wbPending
         .import OvlCall, uciPresent, WriteBackNow, TodMode, WbCheck, turboNow
         .import Begin, Put, Simple, cmdLen, dmaCmd, DmaGo
@@ -283,6 +285,27 @@ Resumed:
         lda #REU_FETCH
         sta dmaCmd
         jsr ChipDma
+        lda #<coldKeys          ; the cold start's fontsOn and guPrnFast
+        sta reuC64              ; (this boot's FONTS.DNP and SETTINGS.INI,
+        lda #>coldKeys          ; not the saved session's: mount.s module
+        sta reuC64+1            ; 122 Keep; bank COLD_BANK, as bank 1
+        lda #<COLD_KEYS         ; comes from the file)
+        sta reuAddr
+        lda #>COLD_KEYS
+        sta reuAddr+1
+        lda #COLD_BANK
+        sta reuAddr+2
+        lda #2
+        sta reuLen
+        lda #0
+        sta reuLen+1
+        sta reuCtrl
+        lda #REU_FETCH
+        sta reuCmd
+        lda coldKeys
+        sta fontsOn
+        lda coldKeys+1
+        sta guPrnFast
         lda #$0F
         sta $D019               ; no pending VIC interrupt
         jsr TodMode             ; the TOD on again: the Ultimate's time
@@ -303,6 +326,9 @@ Resumed:
         ldx #0
         stx imgFlags            ; (a disk image's copy in the REU: not
         rts                     ; in the file, gone)
+
+coldKeys:       .res 2          ; (Resumed: COLD_KEYS read; no nested call
+                                ; before they are used)
 
 ; Parts: the tasks in use (module 98): the snapshot into the current
 ; task's bank, the file's parts and header bytes for every slot up to

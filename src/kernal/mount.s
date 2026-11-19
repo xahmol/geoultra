@@ -1737,7 +1737,11 @@ Load:   jsr Keys                ; fontsOn $40 (diskfonts=hide), guPrnFast
         ora #$80
         sta fontsOn
 @close: jsr CloseFile
-@end:   rts
+@end:   jmp KeepKeys            ; (the values for a resumed session)
+
+KeepKeys:                               ; (module 122, entry 3)
+        jsr OvlCall
+        .byte 122, 3
 
 fontsName:      .byte "FONTS.DNP", 0
 
@@ -1881,8 +1885,36 @@ hdrFields:      .byte 0, $20, $22, $24, $AB
         .scope Mod122
 
         jmp Entries                     ; entry 0 (module 121)
+        jmp Keep                        ; entry 3 (module 121, Load's end)
 
         .include "fontblk.inc"
+
+; Keep (Load's end, the keys read and the fonts loaded or not): fontsOn
+; and guPrnFast to REU bank COLD_BANK at COLD_KEYS, where a resumed session finds
+; them (hibernate.s Resumed: its RAM brings the saved session's values;
+; a font installed before a restart would not be seen).
+Keep:   lda fontsOn
+        sta FV + 20
+        lda guPrnFast
+        sta FV + 21
+        lda #<(FV + 20)
+        sta reuC64
+        lda #>(FV + 20)
+        sta reuC64+1
+        lda #<COLD_KEYS
+        sta reuAddr
+        lda #>COLD_KEYS
+        sta reuAddr+1
+        lda #COLD_BANK
+        sta reuAddr+2
+        lda #2
+        sta reuLen
+        lda #0
+        sta reuLen+1
+        sta reuCtrl
+        lda #REU_STASH
+        sta reuCmd
+        rts
 
 ; Entries: the 8 entries of DBUF: each file's chains moved, then its
 ; entry's start and header addresses. C set: a reference out of range.
