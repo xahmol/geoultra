@@ -1,4 +1,4 @@
-; GeoUltra Desktop: system fonts installed and uninstalled (overlay 3,
+; GeoUltra Desktop: system fonts installed and uninstalled (overlay 7,
 ; ovl.s; docs/DESIGN.md "System font folder", step F; the user's
 ; decisions of 2026-11-19). Own code.
 
@@ -14,7 +14,9 @@
 askLine:        .res 2          ; (DBVARSTR: zero page pointers)
 line2:          .res 2
 
-        .segment "OV3"
+        .segment "OV7"          ; (with ctxmenu.s, where install and
+                                ; uninstall start; overlay 3 was full,
+                                ; 2026-11-19)
 
 ; --- System fonts (docs/DESIGN.md "System font folder"; the user's
 ; decisions of 2026-11-19) ---------------------------------------------
@@ -154,8 +156,11 @@ Import:
         jsr FileEngine
         bit mounted
         bpl @end
-        jsr UMount
-        jsr Idle
+        jsr UMount              ; (not written back: no question, the
+        txa                     ; fonts are not in FONTS.DNP; the next
+        beq :+                  ; start tries again)
+        lsr acted
+:       jsr Idle
         bit acted
         bpl @end
         lda #<FromDir
@@ -330,11 +335,15 @@ Out:    lda #<fPath
         jmp Cvt                 ; (none: fine)
 @end:   rts
 
-; Fin: X (the change's error) into status, FONTS.DNP unmounted; acted
-; $80 when the change worked.
+; Fin: X (the change's error) into status, FONTS.DNP unmounted (written
+; back: its error into status when the change worked); acted $80 when
+; both worked.
 Fin:    stx status
         jsr UMount
         lda status
+        bne :+
+        stx status
+        txa
         bne :+
         lda #$80
         sta acted
@@ -451,15 +460,12 @@ Join:   sta r0L
         sta src,y
         iny
         ldx #0
-:       lda entryName,x
-        sta src,y
+:       lda entryName,x         ; (a GEOS name: 16 characters at most,
+        sta src,y               ; from a GEOS directory)
         beq :+
         iny
         inx
-        cpx #NAME_KEEP
-        bcc :-
-        lda #0
-        sta src,y
+        bne :-
 :       lda #<src
         sta r0L
         lda #>src
@@ -490,8 +496,7 @@ Cvt:    ldy #0
         sta fPath,y
         iny
         inx
-        cpx #NAME_KEEP
-        bcc :-
+        bne :-
 :       ldx #0
 :       lda CvtExt,x
         sta fPath,y
@@ -549,7 +554,6 @@ StoreFile:      .byte "FONTS.DNP", 0
 StoreName:      .byte "System fonts", 0
 CvtDir:         .byte "fonts/", 0
 CvtExt:         .byte ".cvt", 0
-NAME_KEEP       = 16            ; a GEOS name's characters
 
 letter:         .byte "/x", 0   ; the free drive letter's path
 status:         .byte 0
@@ -559,7 +563,8 @@ cvtName:        .res 61         ; FE_READDIR's name (its long names)
 FPath:          .byte "/f/"
 FromDir:        .byte "Fonts from GEOULTRA/fonts", 0
 acted:          .byte 0         ; $80: a font installed or uninstalled
-fPath:          .res 48         ; FONTS.DNP's path, then its CVT's
+fPath:          .res 64         ; FONTS.DNP's path, then its CVT's (a home of
+                                ; up to 31, "fonts/", 16, ".cvt", 0: 58)
 src:            .res 63 + 18    ; (a path, "/", a GEOS name)
 info:           .res 16         ; (FE_STAT's info block)
         .endscope

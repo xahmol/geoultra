@@ -64,7 +64,6 @@ print("E5 types %%s open X=%%02x read X=%%02x n=%%d close X=%%02x same=%%s data 
 def main():
     os.makedirs(OUT, exist_ok=True)
     sys.path.insert(0, os.path.join(ROOT, "tools", "harness"))
-    import harness
     import apprun
     d = os.path.join(OUT, "e5")
     imgs = []

@@ -33,7 +33,6 @@ Own code (GeoUltra, 2026).
 """
 import io
 import math
-import re
 import unicodedata
 import zipfile
 import xml.etree.ElementTree as ET

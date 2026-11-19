@@ -64,7 +64,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mkappsdnp import Image, GeoFile, read_cvt   # noqa: E402
+from mkappsdnp import Image, GeoFile   # noqa: E402
 
 BLOCK = 254
 ESC_GRAPHICS, ESC_RULER, ESC_NEWCARDSET = 0x10, 0x11, 0x17

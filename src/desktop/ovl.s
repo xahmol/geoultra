@@ -44,10 +44,7 @@ OvlFail:
         Stub Ask, 2
         Stub OpenTask, 2        ; (actions.s: task.s's FE_TASK)
         Stub TaskTake, 2
-
         Stub Mount, 3           ; overlay 3: mount.s
-        Stub FontAct, 3         ; (fontact.s: a system font in or out)
-        Stub FontImport, 3      ; (fontact.s: GEOULTRA/fonts' CVT files)
         Stub Eject, 3
         Stub ClipShow, 3        ; (clip.s: the clipboard menu)
         Stub ClipSave, 3
@@ -78,6 +75,8 @@ OvlFail:
         Stub Popup, 7           ; overlay 7: ctxmenu.s
         Stub Info, 7
         Stub About, 7           ; (geos > GeoUltra info)
+        Stub FontAct, 7         ; (fontact.s: a system font in or out)
+        Stub FontImport, 7      ; (fontact.s: GEOULTRA/fonts' CVT files)
         Stub ListPress, 8       ; overlay 8: listin.s
         Stub PaneLetters, 8     ; (two panes: the drive letters)
         Stub ListKey, 8

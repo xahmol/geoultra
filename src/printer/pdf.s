@@ -219,13 +219,17 @@ Line:   inc lines
         inc lines+1
 :       rts
 
-; End: the buffer written, the file closed. X = 0 or the error, carry
+; End: the buffer written, the file closed. X = 0 or the error (the
+; first one; a failed close counts too: the file not complete), carry
 ; set with an error.
 End:    jsr Flush
         ldy handle
         lda #FE_CLOSE
         jsr Fe
-        ldx error
+        lda error
+        bne :+
+        stx error
+:       ldx error
         cpx #1
         rts
 
