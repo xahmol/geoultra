@@ -1,6 +1,6 @@
 ---
 title: GeoUltra PC tools
-subtitle: "Version 0.1 (Beta 1): geosdisk, gwtool, gwgen, gptool, mkappsdnp, mkgeosfont"
+subtitle: "Version 0.9 (Beta 1): geosdisk, gwtool, gwgen, gptool, mkappsdnp, mkgeosfont"
 ---
 
 # About these tools

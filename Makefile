@@ -266,7 +266,7 @@ $(GEN)/jumptab.s: src/kernal/jumptab.txt tools/dev/genjumptab.py $(KSRCS) $(INPS
 # clock also starts at the build date (VICE; on the Ultimate the cold
 # start then reads its real-time clock).
 VERSION_MAJOR = 0
-VERSION_MINOR = 1
+VERSION_MINOR = 9
 VERSION_PATCH = 0
 BUILD_STAMP  := $(shell date "+%y %m %d %H %M")
 BUILDDATE    := $(shell echo $(BUILD_STAMP) | awk '{printf "-D BUILD_YEAR=%d -D BUILD_MONTH=%d -D BUILD_DAY=%d -D BUILD_HOUR=%d -D BUILD_MINUTE=%d", $$1, $$2, $$3, $$4, $$5}') \

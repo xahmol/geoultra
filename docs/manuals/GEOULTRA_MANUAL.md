@@ -1,6 +1,6 @@
 ---
 title: GeoUltra user manual
-subtitle: Version 0.1 (Beta 1), Ultimate 64 family
+subtitle: Version 0.9 (Beta 1), Ultimate 64 family
 ---
 
 # About GeoUltra
@@ -142,7 +142,7 @@ From top to bottom:
   the left, the date and time on the right (unless the theme or the
   clock setting leaves them out). Everything the toolbar does is in the
   menus too. GeoUltra info shows the version with the build's time
-  stamp (v0.1.0-20261113-1310: version 0.1.0, built 13 November 2026
+  stamp (v0.9.0-20261120-1310: version 0.9.0, built 20 November 2026
   at 13:10); its "splash" button shows the start picture again. Drive
   E's desk accessories (geoFolder) come first in the geos menu, in
   every application's too.

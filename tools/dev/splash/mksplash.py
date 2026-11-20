@@ -347,7 +347,7 @@ def version():
     """The version line's number: from the built kernal's info block when
     GU_KERNAL names it (the boot splash: vMAJOR.MINOR.PATCH-YYYYMMDD-HHMM
     as GeoUltra info shows it; $C0E2 major, minor; $C0F5 patch, then the
-    build's year, month, day, hour, minute), else GU_VERSION, else v0.1
+    build's year, month, day, hour, minute), else GU_VERSION, else v0.9
     (the user, 2026-11-14: the full version on the splash)."""
     path = os.environ.get("GU_KERNAL")
     if path:
@@ -355,7 +355,7 @@ def version():
         major, minor = k[0xE2], k[0xE3]
         patch, yy, mm, dd, hh, mi = k[0xF5:0xFB]
         return "v%d.%d.%d-20%02d%02d%02d-%02d%02d" % (major, minor, patch, yy, mm, dd, hh, mi)
-    return os.environ.get("GU_VERSION", "v0.1")
+    return os.environ.get("GU_VERSION", "v0.9")
 
 
 VERSION = version() + "   (C) 2026 Xander Mol"
