@@ -33,6 +33,11 @@ CASES = [
     dict(name="Ddec 1", routine="Ddec", x=0x02, r={"r0": 1}, after=FLAGS,
          compare=["r0", "mem:$4380-$4380"]),
     dict(name="Ddec $0100", routine="Ddec", x=0x02, r={"r0": 0x100}, compare=["r0"]),
+    # GetSerialNumber: r0 differs by design (GeoUltra's number or the one
+    # [serials] lists); HG2G: it destroys A only (the sixteenth sweep found
+    # r1-r3 changed; the [serials] lookup is tests/engine/serials.py's)
+    dict(name="GetSerialNumber keeps r1-r3, X, Y", routine="GetSerialNumber", x=0x5A, y=0xA5,
+         r={"r1": 0x1122, "r2": 0x3344, "r3": 0x5566}, compare=["r1", "r2", "r3", "X", "Y"]),
     # memory
     dict(name="FillRam", routine="FillRam", r={"r0": 300, "r1": A + 5, "r2L": 0x5A},
          mem={A: [0x11] * 320}, compare=["mem:$4000-$413F", "r2L"]),
