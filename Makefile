@@ -49,7 +49,7 @@ REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 DEPLOYDIR ?= /SD/geoultra/
 
-.PHONY: all docs samples release checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: all docs samples release test-samples checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(GEOS_DEV)/GEOS64-v2.0-unkeyed.d64
 
@@ -583,6 +583,11 @@ build/uciprobe.bin: tests/engine/uciprobe.s tests/engine/uciprobe.cfg src/inc/uc
 
 # A font on drive E in geoWrite (the user's own disks: SYSFONT_DISK,
 # GEOS_APPS_DISK); screens in build/harness/sysfont-*.png.
+# The sample documents in geoWrite 2.1 (your own GEOS 2.0 disk:
+# GEOS_ORACLE81), and the refusal question without the serial.
+test-samples: all samples
+	$(PYTHON) tests/apps/samples.py
+
 test-sysfont: all
 	$(PYTHON) tests/drives/sysfont.py
 

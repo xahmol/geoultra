@@ -32,7 +32,8 @@ the guide and the screen disagree.
 
 ## 2. Untested on hardware so far (about 30 min)
 
-- [ ] **Refusal notice (serials S5):** start a geoWrite that is keyed
+- [ ] **Refusal notice (serials S5)** (works in VICE with geoWrite's
+      real refusal, `make test-samples`; now on the U64): start a geoWrite that is keyed
       to another GEOS disk ("Please reboot your system using the same
       GEOS disk ..."). After OK the desktop asks "Set it in Settings?";
       Yes opens Settings on the Serials page with the class filled in;
@@ -61,8 +62,8 @@ the guide and the screen disagree.
 - [ ] The samples D81: open **Brochure**, **Quick start** and **Letter**
       in geoWrite 2.1: pages break as in the PDFs, pictures and fonts
       right, nothing garbled; scroll through all pages.
-      (Not yet checked in geoWrite at all: VICE stopped at geoWrite's
-      copy check.)
+      (Checked in VICE on 2026-11-20, `make test-samples`: geoWrite 2.1
+      opens all three, page 1 right; the other pages not yet looked at.)
 - [ ] **GeoUltra logo** in geoPaint.
 - [ ] **Clipboard:** copy text in one geoWrite document, paste it in
       another; copy in geoPaint, paste in geoWrite (the harness cannot
