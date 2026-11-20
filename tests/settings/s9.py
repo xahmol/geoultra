@@ -132,6 +132,18 @@ def main():
         g.queue("geoCalc\r", settle=4)
         check("from disk: [serials] geoCalc=58B5 (the GEOS disk on A)",
               b"geoCalc=58B5\r\n" in settings_text(), True)
+        # a SETTINGS.INI edited on a PC: LF only, a line without "=", no
+        # newline at the end; "remove" finds its key with the same line
+        # reader the rows are drawn with (pser.s NextLine)
+        lf = b"[serials]\nnote\ngeoWrite=4321\ngeoPaint=1234"
+        v.mem_set(s["iniText"], lf)
+        v.mem_set(s["iniLen"], bytes([len(lf), 0]))
+        # (the page is not drawn again: Remove reads the text itself)
+        press(LIST_X + 20, LIST_TOP + 6, t=3)               # the first row removed
+        press(BTN_X + 10, LIST_TOP + 25, t=3)
+        txt = settings_text()
+        check("LF text: geoWrite's line removed, the others kept",
+              (b"geoWrite=" in txt, b"geoPaint=1234" in txt, b"note" in txt), (False, True, True))
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

@@ -313,6 +313,7 @@ Section:
 NextLine:
 @line:  jsr AtEnd
         bcs @no
+        jsr Rest                ; rest: the bytes left (255 at most)
         ldy #0
         lda (tp),y
         cmp #'['
@@ -322,11 +323,15 @@ NextLine:
         cmp #LF
         beq @blank
         ldx #0                  ; the class
-@cls:   lda (tp),y
+@cls:   cpy rest            ; (the text's end, no "=": not a line of it)
+        bcs @blank
+        lda (tp),y
         cmp #'='
         beq @val
         cmp #CR
-        beq @blank              ; (no "=": not a line of it)
+        beq @blank              ; (no "=": not a line of it; CR or LF,
+        cmp #LF                 ; as the kernal's parser, serials.s)
+        beq @blank
         cpx #KEY_MAX
         bcs :+
         sta key,x
@@ -343,7 +348,9 @@ NextLine:
         inx
         bne :-
 :       iny                     ; the value
-@v:     lda (tp),y
+@v:     cpy rest                ; (the last line without CR or LF)
+        bcs @done
+        lda (tp),y
         cmp #CR
         beq @done
         cmp #LF
@@ -388,6 +395,19 @@ EndLine:
 Step:   inc tp
         bne :+
         inc tp + 1
+:       rts
+
+; Rest: rest = the text's bytes from tp on, 255 at most (after AtEnd:
+; tmp = the text's end, C clear).
+Rest:   lda tmp
+        sec
+        sbc tp
+        sta rest
+        lda tmp + 1
+        sbc tp + 1
+        beq :+
+        lda #$FF
+        sta rest
 :       rts
 
 ; AtEnd: C set when tp has reached the text's end (iniBase + iniLen).
@@ -982,6 +1002,7 @@ sel:            .byte $FF
 count:          .byte 0
 at:             .byte 0
 tmp:            .res 2
+rest:           .byte 0         ; NextLine: bytes left in the text
 wasOn:          .byte 0
 askLen:         .byte 0
 home:           .byte 8
