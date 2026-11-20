@@ -4,7 +4,7 @@
 
         .include "psw.inc"
 
-        .export OutOpen, OutClose, PutC, PutI, PutZ, PutDec, PutDecN, PutHund, PutHex
+        .export OutOpen, OutClose, OutDelete, PutC, PutI, PutZ, PutDec, PutDecN, PutHund, PutHex
         .export PutSp, PutNL, FileEngine, outErr, EngineInit
         .import docName
 
@@ -120,6 +120,17 @@ OutClose:
         stx outErr
 :       ldx outErr
         rts
+
+; OutDelete: the output file deleted after a failed run (no partial
+; .ps left in the print folder; when it was never opened there is
+; nothing to delete and the engine's error is not minded). Destroys all.
+OutDelete:
+        lda #<path
+        sta r0L
+        lda #>path
+        sta r0H
+        lda #FE_DELETE
+        jmp FileEngine
 
 ; PutC: A to the output. Keeps A, X, Y.
 PutC:   stx keepX

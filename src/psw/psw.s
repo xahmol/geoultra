@@ -9,7 +9,7 @@
         .include "psw.inc"
 
         .export docName, paperW, paperH
-        .import FontInit, Prescan, Prolog, Pages, OutOpen, OutClose, outErr, FindFonts
+        .import FontInit, Prescan, Prolog, Pages, OutOpen, OutClose, OutDelete, outErr, FindFonts
         .import docWidth, hdrFlags, headH, footH, pageH, docV20
         .import __BSS_RUN__, __BSS_SIZE__, real, Defaults, Options
 
@@ -188,14 +188,17 @@ Write:  lda #<docName
         jsr CloseRecordFile
         jsr OutClose
         txa
-        bne @out
+        bne @outDel             ; (not all written: the partial file goes)
         lda #0
         sta status
         rts
-@read2: jsr OutClose
+@read2: jsr OutClose            ; (the document not read again: the
+        jsr OutDelete           ; partial file goes)
 @read:  lda #MSG_READ
         sta status
         rts
+@outDel:
+        jsr OutDelete
 @out:   lda #MSG_OUT
         sta status
         rts

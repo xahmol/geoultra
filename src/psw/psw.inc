@@ -40,7 +40,9 @@ curHeight       = $29
 curIndexTable   = $2A           ; word
 cardDataPntr    = $2C           ; word
 
-; --- The file engine (docs/design/FILE_ENGINE.md)
+; --- The file engine (docs/design/FILE_ENGINE.md; the numbers as in
+; src/inc/engine.inc, which this application does not include)
+FE_DELETE       = 7
 FE_OPEN         = 13
 FE_WRITE        = 15
 FE_CLOSE        = 4
