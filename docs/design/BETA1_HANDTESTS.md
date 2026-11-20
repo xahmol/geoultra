@@ -108,13 +108,16 @@ the guide and the screen disagree.
       a PC (geosdisk list, gwtool docx, gptool export).
 - [ ] README: the "Use of AI" section still says what the AI does.
 
-## 8. Screenshots, after the hand tests (the user, 2026-11-20)
+## 8. Screenshots (taken 2026-11-20 on the U64)
 
-All from the U64 (VIC stream, as the video), once the hand tests' fixes
-are in: the README (a main picture, the desktop with two panes, and a
-row of three) and one per chapter of the user manual. To decide first:
-may a picture show your own geoWrite or geoPaint running on GeoUltra
-(Berkeley's screen design), or only GeoUltra's own screens as so far?
+14 pictures in docs/images, in the README and the manual, from
+`python3 tools/dev/docshots.py` (a demo state, your files put back).
+- [ ] Look at them in the README and `GEOULTRA_MANUAL.pdf`; say which to
+      change, drop or add (printing queue, fonts folder, gush commands).
+- [ ] After fixes from the hand tests: `tools/dev/docshots.py NAME ...`
+      retakes only those pictures.
+- [ ] Still to decide: may a picture show your own geoWrite or geoPaint
+      running on GeoUltra (Berkeley's screen design)?
 
 ## 9. Decisions for the release
 
