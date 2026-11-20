@@ -22,6 +22,10 @@ import localcfg  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "build", "harness")
+# Drive E's files the test drive leaves out, so that the font fits in the
+# tracks the cartridge stores for E (E fills them since GU PostScript;
+# this test needs none of them)
+ROOM_FOR_FONT = ("psw:psw.cvt", "printer:pdfa4data.cvt", "printer:pdfletterdata.cvt")
 FONT_DISK = localcfg.disk("SYSFONT_DISK", "GEOS64.D81")
 FONT_NAME = os.environ.get("SYSFONT_NAME", "LW_Cal")
 APPS_DISK = localcfg.disk("GEOS_APPS_DISK", "neos-mouse-driver-for-geos.d64")
@@ -40,7 +44,8 @@ def build():
         lines.append('%s = "%s"' % (key, os.path.normpath(os.path.join(ROOT, "src", path))))
     lines.append('font = "%s"' % FONT_DISK)
     for folder in sysdrive["folder"]:
-        files = list(folder["files"]) + (["font:" + FONT_NAME] if not folder["path"] else [])
+        files = [f for f in folder["files"] if f not in ROOM_FOR_FONT] \
+            + (["font:" + FONT_NAME] if not folder["path"] else [])
         lines += ["", "[[folder]]", 'path = "%s"' % folder["path"],
                   "files = [%s]" % ", ".join('"%s"' % f for f in files)]
     open(manifest, "w").write("\n".join(lines) + "\n")
@@ -63,9 +68,10 @@ def build():
     start = rom.find(old[head:head + 256]) - head
     if start < 0 or rom[start:start + len(old)] != old:
         sys.exit("sysfont.py: the system drive is not in the cartridge")
-    if len(new) != len(old):
+    if len(new) > len(old):
         sys.exit("sysfont.py: the test drive has %d tracks stored, the cartridge's %d"
                  % (len(new) // 65536, len(old) // 65536))
+    new += bytes(len(old) - len(new))           # (unused tracks: free in its BAM)
     rom[start:start + len(new)] = new
     at = 0
     for p, n in packets:

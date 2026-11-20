@@ -21,8 +21,9 @@ def main():
     g = Gush("g20", 6598, [path])
     check = g.check
 
-    # drive E's root (the splash file since 2026-11-13: two lines of ls)
-    E_NAMES = ["Desktop", "GU", "GeoUltra", "Settings", "bin", "geoFolder", "gush", "splash"]
+    # some of drive E's files (its whole root, with fonts and printer
+    # drivers, no longer fits on the screen in one ls)
+    E_FILES = ["gush", "GeoUltra Desktop", "GU Settings", "geoFolder", "splash", "GU PostScript"]
 
     def out(line, n=1, settle=4.0):
         g.run(line, settle=settle)
@@ -31,7 +32,10 @@ def main():
     try:
         g.start()
         check("/ lists drive e", "e" in out("ls /").split(), True)
-        check("ls /e", sorted(" ".join(out("ls /e", 2)).split()), E_NAMES)
+        for name in E_FILES:
+            check("test -f /e/" + name, out('test -f "/e/%s"; echo $?' % name), "0")
+        e_count = out("ls /e | wc")
+        check("ls /e | wc: a count", len(e_count.split()) >= 2, True)
         check("ls /e/bin", out("ls /e/bin"), "wc")
         check("cd /e/bin, pwd, ls", out("cd /e/bin; pwd; ls", 2), ["/e/bin", "wc"])
         g.run("cd /b")
@@ -41,7 +45,7 @@ def main():
         check("cp from drive E", out("/b/wc2 WORDS").split(), ["2", "5", "28", "WORDS"])
         check("rm on drive E: refused", out("rm -f /e/gush").startswith("gush: rm: /e/gush: "), True)
         check("mkdir on drive E: refused", out("mkdir /e/x").startswith("gush: mkdir: /e/x: "), True)
-        check("ls /e unchanged", sorted(" ".join(out("ls /e", 2)).split()), E_NAMES)
+        check("ls /e unchanged", out("ls /e | wc"), e_count)
         check("test -f /e/bin/wc", out("test -f /e/bin/wc; echo $?"), "0")
         g.run("/e/gush", settle=12)                       # FE_RUNSYS: a fresh gush
         rows = g.lines()
