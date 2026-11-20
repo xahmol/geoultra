@@ -45,6 +45,8 @@ def main():
     packets = all(len(gptool.compress(x)) < len(x) for x in samples[1:3])
     check("compression: back the same (random, blank, cards, runs)", good)
     check("compression: blank and patterned strips shrink", packets)
+    check("every stream ends with geoPaint's end byte 0 (without it geoPaint reads on)",
+          all(gptool.compress(x).endswith(b"\0") for x in samples))
     pic = os.path.join(OUT, "shapes.png")
     im = PImage.new("RGB", (320, 200), "white")
     d = ImageDraw.Draw(im)

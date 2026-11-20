@@ -111,6 +111,13 @@ def main():
     check("the picture: record 64, 2 inches = 160 dots (20 cards), 80 high",
           rec is not None and rec[0] == 20 and rec[1] | rec[2] << 8 == 80, rec[:3] if rec else None)
     check("its graphics escape in the text", bytes([0x10, 20, 80, 0, 64]) in text)
+    if rec is not None:                             # the colours after the bitmap
+        import gwdocx                               # (20 x 10 cards), as geoWrite's own
+        packed = docxgw.compact(gwdocx.decompact(rec[3:], 20 * 80))
+        check("the picture's colours follow its bitmap (200 cards of $BF)",
+              rec[3 + len(packed):] == docxgw.compact(bytes([0xBF]) * 200))
+    check("pictures are at most PIC_MAX_H (168) lines, proportions kept",
+          docxgw.fit_height(320, 200) == (264, 165) and docxgw.fit_height(160, 100) == (160, 100))
     check("every page starts with a ruler and a font", all(pg[0] == 0x11 and pg[27] == 0x17 for pg in pages))
     check("no warnings", not warns, warns)
     img = os.path.join(OUT, "wordtest.d64")                # through gwtool into an image:

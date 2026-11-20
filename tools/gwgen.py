@@ -145,6 +145,7 @@ def picture(path, spec, width):
     w = int(spec.get("width", min(width, im.width))) // 8 * 8
     w = max(8, min(w, width))
     h = max(1, round(im.height * w / im.width))
+    w, h = docxgw.fit_height(w, h)          # (geoWrite's limit: PIC_MAX_H lines)
     im = im.resize((w, h), Image.LANCZOS)
     if spec.get("invert"):
         im = ImageOps.invert(im)
@@ -161,7 +162,7 @@ def picture(path, spec, width):
                 if bw.getpixel((xc * 8 + bit, y)) == 0:
                     b |= 0x80 >> bit
             rows.append(b)
-    return w // 8, h, bytes([w // 8, h & 0xFF, h >> 8]) + docxgw.compact(bytes(rows))
+    return w // 8, h, docxgw.picture_record(w // 8, h, bytes(rows))
 
 
 def fonts():

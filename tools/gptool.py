@@ -107,7 +107,8 @@ def decompress(data):
 
 
 def compress(raw):
-    """1448 bytes as a geoPaint stream (cards, bytes, else literal runs)."""
+    """1448 bytes as a geoPaint stream (cards, bytes, else literal runs),
+    ended by a 0 byte as geoPaint ends its own records."""
     out = bytearray()
     lit = bytearray()
 
@@ -140,7 +141,9 @@ def compress(raw):
             lit.append(raw[i])
             i += 1
     flush()
-    return bytes(out)
+    out.append(0)                               # the end: a run of 0 literal bytes
+    return bytes(out)                           # (geoPaint stops there, as its own
+                                                # files do; without it it reads on)
 
 
 def find(img, name):

@@ -22,7 +22,7 @@ default header and footer, the pictures. geoWrite 2.x (Michael Steil,
   paragraph of 6 points or more as an empty line; list items with "- "
   or their number; a table row as one paragraph, its cells at tab stops;
 - pictures: dithered to black and white at 80 dpi, at most the text
-  width and PIC_MAX_H high, as GEOS compacted bitmaps in records 64-126;
+  width and PIC_MAX_H high (scaled down to it), as GEOS compacted bitmaps in records 64-126;
 - the default header and footer as records 61 and 62 (text only).
 Pages: geoWrite keeps one page per record and repaginates on "update"
 (and when printing for another page height): the text is cut into
@@ -47,7 +47,20 @@ EMU_DOT = 914400 // 80
 PAGE_H = 752
 FILL = 0.7
 PAGE_BYTES = 5500
-PIC_MAX_H = 600
+PIC_MAX_H = 168                     # lines: geoWrite 2.1 draws pictures up to
+                                    # about its text window's height; a taller
+                                    # one crashes genuine GEOS 2.0 when scrolled
+                                    # back to (measured 2026-11-20: 168 works,
+                                    # 176 does not); taller ones are scaled down
+
+
+def fit_height(w, h):
+    """Width (a multiple of 8) and height of a picture w x h scaled down,
+    proportions kept, to at most PIC_MAX_H lines."""
+    if h <= PIC_MAX_H:
+        return w, h
+    nw = max(8, (w * PIC_MAX_H // h) // 8 * 8)
+    return nw, max(1, min(PIC_MAX_H, round(h * nw / w)))
 PAGES, HEADER_REC, FOOTER_REC, PIC_FIRST, PIC_LAST = 61, 61, 62, 64, 126
 
 GU_SIZES = (9, 10, 12, 14, 18, 24)
@@ -262,13 +275,26 @@ def compact(data):
     return bytes(out)
 
 
+PIC_COLOUR = 0xBF                   # dark grey on light grey, GEOS's own colours
+
+
+def picture_record(wc, h, rows):
+    """A geoWrite picture record: width in cards, height, the compacted
+    bitmap, then the compacted colours, one byte per card (wc x h/8,
+    rounded up), as geoWrite 2.x writes its pictures: it reads the colours
+    after the bitmap, and without them it reads on into whatever follows
+    (a crash in genuine GEOS 2.0 when such a picture is drawn again)."""
+    cards = wc * ((h + 7) // 8)
+    return bytes([wc, h & 0xFF, h >> 8]) + compact(rows) + compact(bytes([PIC_COLOUR]) * cards)
+
+
 def picture(blob, cx, cy, width):
     from PIL import Image
     im = Image.open(io.BytesIO(blob)).convert("L")
     w = max(8, min(width, int(round(cx / EMU_DOT)))) if cx else min(width, im.width)
     h = int(round(cy / EMU_DOT)) if cy else im.height * w // im.width
     w = w // 8 * 8
-    h = max(1, min(PIC_MAX_H, h))
+    w, h = fit_height(w, max(1, h))
     bw = im.resize((w, h)).convert("1")             # (Floyd-Steinberg)
     rows = bytearray()
     for y in range(h):
@@ -278,7 +304,7 @@ def picture(blob, cx, cy, width):
                 if bw.getpixel((xc * 8 + bit, y)) == 0:
                     b |= 0x80 >> bit
             rows.append(b)
-    return w // 8, h, bytes([w // 8, h & 0xFF, h >> 8]) + compact(bytes(rows))
+    return w // 8, h, picture_record(w // 8, h, bytes(rows))
 
 
 class Reader:

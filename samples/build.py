@@ -48,7 +48,10 @@ def gwgen(stem, ps=None):
 
 def logo_picture():
     subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gptool.py"), "import",
-                    os.path.join(BUILD, "logo.png"), CVT, "GeoUltra logo", "--colour"], check=True)
+                    os.path.join(BUILD, "logo.png"), CVT, "GeoUltra logo", "--no-dither",
+                    "--threshold=150"], check=True)   # (black and white: geoPaint shows
+                                                      # set pixels; a colour import's
+                                                      # solid areas would look empty)
 
 
 def disk(path, names):
