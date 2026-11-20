@@ -214,8 +214,8 @@ FillRam:
         iny
         bne @full
         inc r1H
-        dec r0H
-        jmp @page
+        dec r0H                 ; (more whole pages: on; Y is 0 again)
+        bne @full
 @rest:  ldx r0L
         beq @end
 @byte:  sta (r1),y
@@ -274,8 +274,8 @@ InitRam:
         inc r0H
 @hi:    lda r2L
         bne @block
-        inc r0H
-        jmp @block
+        inc r0H                 ; (never 0: the table would end past $FFFF)
+        bne @block
 @end:   rts
 
 ; --- Strings ------------------------------------------------------------

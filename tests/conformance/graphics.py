@@ -7,6 +7,11 @@ SCREENS = ["fore", "back"]
 CASES = [
     dict(name="GetScanLine y=0", routine="GetScanLine", x=0, compare=["r5", "r6", "X"]),
     dict(name="GetScanLine y=77", routine="GetScanLine", x=77, compare=["r5", "r6", "X"]),
+    # past the screen (geoWrite's Rectangle to y 202 when a page scrolls back):
+    # GEOS 2.0's $A2A0/$62A0, not into the driver area and the menu bar
+    dict(name="GetScanLine y=200 (past the screen)", routine="GetScanLine", x=200,
+         compare=["r5", "r6", "X"]),
+    dict(name="GetScanLine y=202", routine="GetScanLine", x=202, compare=["r5", "r6", "X"]),
     dict(name="GetScanLine y=199 fore only", routine="GetScanLine", x=199, disp=0x80,
          compare=["r5", "r6"]),
     dict(name="GetScanLine y=100 back only", routine="GetScanLine", x=100, disp=0x40,

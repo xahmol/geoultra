@@ -33,14 +33,26 @@ OP_IMPRINT      = 3
 
         .segment "RODATA"
 
+; The card rows' offsets in the screen. A 26th for y 200-207, which
+; programs reach when they draw past the screen's end (geoWrite's
+; Rectangle to y 202 when a page scrolls back): GEOS 2.0's tables give
+; that row $A2A0 (its line table read one entry on: the high bytes' first
+; and the next table's), inside the screen where geoWrite redraws; the
+; same here. Without it the address came out at $9F00: the overlay
+; scratch and the menu bar's first line were overwritten (a blank
+; rectangle, then a hang; the user's hand test 2026-11-20). Rows from 208
+; on (GEOS 2.0: zero page and variables) are clamped to this one.
+LAST_ROW        = 25
 rowLo:
         .repeat 25, row
         .byte <(row * 320)
         .endrepeat
+        .byte <$02A0
 rowHi:
         .repeat 25, row
         .byte >(row * 320)
         .endrepeat
+        .byte >$02A0
 leftMask:
         .byte $FF, $7F, $3F, $1F, $0F, $07, $03, $01
 rightMask:
@@ -60,7 +72,10 @@ GetScanLine:
         lsr
         lsr
         tay
-        txa
+        cpy #LAST_ROW           ; (past the screen: row 25, as GEOS 2.0)
+        bcc :+
+        ldy #LAST_ROW
+:       txa
         and #7
         clc
         adc rowLo,y
@@ -83,14 +98,14 @@ GetScanLine:
         sta r6L
         lda r5H
         sta r6H
-        jmp @done
+        bne @done               ; (always: a high byte of the screen)
 @noFore:
         bvc @none
         lda r6L                 ; background only
         sta r5L
         lda r6H
         sta r5H
-        jmp @done
+        bne @done               ; (always)
 @none:  lda #<(SCREEN_BASE + 12 * 320 + 160)
         sta r5L
         sta r6L
