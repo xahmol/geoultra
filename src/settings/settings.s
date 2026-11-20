@@ -12,7 +12,7 @@
         .import FirstLoad, ReadChrome, Colours, PageColours
         .import TitleBar, MarkOn, MarkOff, RowTop, Dialog
         .import OvlInit, DeskDraw, DeskPress, PtrDraw, PtrPress, SysDraw, SysPress
-        .import TimeDraw, TimePress, ThemeDraw, ThemePress, ReuDraw, ReuPress
+        .import TimeDraw, TimePress, ThemeDraw, ThemePress, ThemeAsk, ReuDraw, ReuPress
         .import DriveDraw, DrivePress, StartDraw, StartPress, PrintDraw, PrintPress
         .import SerDraw, SerPress, SerFor
         .export FileEngine, dirty, NoRoom, Write, UseSettings, UseTheme, themeDirty
@@ -324,13 +324,15 @@ Press:  lda mouseData
 
 ; DoOk: the settings written (when changed), then back to the desktop;
 ; a failed write keeps the application open (the error said).
-DoOk:   jsr Write
+DoOk:   jsr ThemeAsk        ; (the theme shown, not used: asked; ptheme.s)
+        jsr Write
         bcs :+
         jmp EnterDeskTop
 :       rts
 
 ; DoSave: the settings written, the application stays.
-DoSave: jmp Write
+DoSave: jsr ThemeAsk
+        jmp Write
 
 ; DoCancel: back to the desktop without writing; asked first when
 ; something was changed.

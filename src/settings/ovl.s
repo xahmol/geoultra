@@ -39,6 +39,7 @@ OvlFail:
         Stub TimePress, 4
         Stub ThemeDraw, 5       ; overlay 5: ptheme.s
         Stub ThemePress, 5
+        Stub ThemeAsk, 5
         Stub ReuDraw, 6         ; overlay 6: preu.s
         Stub ReuPress, 6
         Stub DriveDraw, 7       ; overlay 7: pdrives.s

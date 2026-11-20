@@ -23,7 +23,7 @@
         .import KeyLo, KeyHi, LColKind, ColourNames
         .importzp LINES_N, CK_NONE, CK_PAIR, CK_INK, CK_PAPER, LINE_ITYPES, ITYPES_N, LINE_BYTYPE
         .import PalKey, IniDel
-        .export Ov_ThemeDraw, Ov_ThemePress, row, SWATCH_X
+        .export Ov_ThemeDraw, Ov_ThemePress, Ov_ThemeAsk, row, SWATCH_X
         .import BarOn, BarOff, ThemesFull, Ask2, repaint, ReadChrome
         .import FirstLoad, AddName, NameAt, LoadTheme
         .import ReadLine, LineKey, HasWords, NextWord, Colour
@@ -119,11 +119,17 @@ Ov_ThemePress:
 
 ; --- the theme: its file, its name
 
-; NameDraw: the theme's name between its buttons.
+; NameDraw: the theme's name between its buttons; "*" before it when it
+; is the theme in use (as the desktop's theme menu marks it).
 NameDraw:
         lda #THEME_Y
         ldx #NAME_X
         jsr Clear
+        lda themeCount          ; (none listed: no mark)
+        cmp #1
+        bcc :+
+        jsr InUse               ; (chrome.s: C clear for the one in use)
+:       php
         jsr NameAt
         lda vp
         sta r0L
@@ -141,7 +147,60 @@ NameDraw:
         sta r11H
         lda #THEME_Y
         sta r1H
-        jmp PutString
+        plp
+        bcs @name
+        lda r0L
+        pha
+        lda r0H
+        pha
+        lda #'*'
+        jsr PutChar
+        pla
+        sta r0H
+        pla
+        sta r0L
+@name:  jmp PutString
+
+; Ov_ThemeAsk (OK and Save, settings.s): when the Theme page was shown
+; and the theme on it is not the one in use, "Use the theme <name> for
+; the desktop?"; Yes as "use" (the user's decision of 2026-11-20: - and
+; + only showing a theme was easy to mistake for choosing it).
+Ov_ThemeAsk:
+        lda themeLoaded         ; (the page not shown: nothing to ask)
+        beq @end
+        lda themeCount
+        beq @end
+        jsr InUse
+        bcc @end                ; (it is the one in use)
+        ldx #0
+@txt:   lda UseAsk,x
+        beq :+
+        sta buf,x
+        inx
+        bne @txt
+:       jsr NameAt
+        ldy #0
+@nm:    lda (vp),y
+        beq :+
+        sta buf,x
+        inx
+        iny
+        bne @nm
+:       lda #PLAINTEXT
+        sta buf,x
+        lda #0
+        sta buf + 1,x
+        lda #<buf
+        sta askText
+        lda #>buf
+        sta askText+1
+        lda #<UseDlg
+        ldx #>UseDlg
+        jsr Ask2
+        cmp #YES
+        bne @end
+        jmp UseIt
+@end:   rts
 
 ; Clear: the text's place at baseline A from x X to NEXT_X - 2 (a
 ; name's room, before its [+]); ClearRow: to the frame round the screen.
@@ -1681,6 +1740,13 @@ DelDlg:         .byte DEF_DB_POS | 1
                 .byte YES, 1, DBI_Y_2
                 .byte NO, DBI_X_2, DBI_Y_2
                 .byte 0
+UseDlg:         .byte DEF_DB_POS | 1
+                .byte DBVARSTR, TXT_LN_X, TXT_LN_1_Y + 6, askText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word UseText2
+                .byte YES, 1, DBI_Y_2
+                .byte NO, DBI_X_2, DBI_Y_2
+                .byte 0
 UsedDlg:        .byte DEF_DB_POS | 1
                 .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
                 .word UsedText
@@ -1735,6 +1801,8 @@ TUse:           .byte "use", 0
 TCopy:          .byte "copy", 0
 SaveText:       .byte BOLDON, "Save this theme first?", PLAINTEXT, 0
 DelText:        .byte BOLDON, "Delete the theme ", 0
+UseAsk:         .byte BOLDON, "Use the theme ", 0
+UseText2:       .byte "for the desktop?", 0
 DelText2:       .byte "Its file goes at once.", 0
 UsedText:       .byte BOLDON, "This theme is in use.", PLAINTEXT, 0
 UsedText2:      .byte "Use another one first.", 0

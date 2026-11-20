@@ -9,6 +9,7 @@ FrameRectangle  = $C127
 InvertRectangle = $C12A
 SetPattern      = $C139
 BitmapUp        = $C142
+PutChar         = $C145
 PutString       = $C148
 UseSystemFont   = $C14B
 DoIcons         = $C15A
