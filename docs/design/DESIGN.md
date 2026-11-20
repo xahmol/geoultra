@@ -288,6 +288,14 @@ guide as PDFs. The screenshots (samples/shots, by samples/shots.py in
 VICE) show only GeoUltra's own content: no Berkeley icons, and not the
 user's serial number.
 
+**The geos menu (the user, 2026-11-20):** one fixed line, "GeoUltra ▸",
+a submenu with GeoUltra info, settings, gush, print queue, reboot (the
+session kept, FE_REBOOT Y = 1), reboot fresh (as C= at the start) and
+BASIC (ToBASIC, the drives written back); reboot fresh and BASIC ask
+first. Three more lines for desk accessories; settings and gush stay on
+the toolbar, the print queue on its indicator. No kernal room needed
+(desktop overlay code). To build after the clean-room rewrites.
+
 **Version of the beta (the user, 2026-11-20):** 0.9.0-beta1 ("close to 1.0, not there yet"; the sneak peek said 0.1); fixes before 1.0 are 0.9.x, then 1.0.0.
 
 - **Beta 1, at the end of the desktop work in phase 3** (confirmed by the
