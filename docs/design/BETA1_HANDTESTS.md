@@ -47,6 +47,11 @@ the guide and the screen disagree.
       drives and the open document come back.
 - [ ] **Recent entries** of an unmounted image: "Not mounted. Mount
       it?" then it opens.
+- [ ] **geoLaser pickup** (changed in the sweep of 2026-11-20):
+      `python3 tests/print/pickupu64.py` (automated, on the U64; tell
+      Claude when the U64 is free), or by hand: a `PS.<name>` SEQ file
+      from geoLaser on drive A or B is moved to `GEOULTRA/print/<name>.ps`
+      at the next desktop start, with a note.
 - [ ] **Open a document** whose program is on another drive: the
       newest version starts and finds the document (drive B swapped
       with the document's drive while it runs, back afterwards).
