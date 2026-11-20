@@ -432,6 +432,7 @@ release: build/geoultra64.crt build/geoultra64.cfg docs samples
 	rm -rf build/release && mkdir -p build/release/$(RELEASE_NAME)/samples
 	cp build/geoultra64.crt build/geoultra64.cfg LICENSE README.pdf \
 	   docs/manuals/GEOULTRA_MANUAL.pdf docs/manuals/TOOLS_MANUAL.pdf build/release/$(RELEASE_NAME)/
+	sed 's/$$/\r/' docs/release/READ_ME_FIRST.txt > build/release/$(RELEASE_NAME)/READ_ME_FIRST.txt
 	cp build/samples/geoultra-samples.d81 build/samples/brochure.pdf build/samples/quickstart.pdf \
 	   build/release/$(RELEASE_NAME)/samples/
 	cd build/release && zip -qr ../../$(RELEASE_NAME).zip $(RELEASE_NAME)

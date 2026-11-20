@@ -58,10 +58,25 @@ fonts.
 
 ## Installing
 
+The download (`geoultra-<version>.zip`) holds:
+
+- `geoultra64.crt` and `geoultra64.cfg`: the system;
+- `GEOULTRA_MANUAL.pdf` (this manual) and `TOOLS_MANUAL.pdf` (the PC
+  tools);
+- `samples/geoultra-samples.d81`: sample geoWrite documents (a
+  brochure, a quick start guide, a letter) and the GeoUltra logo as a
+  geoPaint picture; `samples/brochure.pdf` and `samples/quickstart.pdf`
+  are the brochure and the guide as PDF;
+- `README.pdf`, `LICENSE` and `READ_ME_FIRST.txt`.
+
+To install:
+
 1. Copy `geoultra64.crt` and `geoultra64.cfg` into one folder on the
    stick or the SD card, for example `/USB0/GEOULTRA/`. Keep both
    names: the Ultimate finds the `.cfg` by the `.crt`'s name.
-2. Copy your GEOS disk images onto the stick.
+2. Copy your GEOS disk images onto the stick, and if you like
+   `samples/geoultra-samples.d81`: mounted on a drive (see "Your first
+   disk images" below), its documents open in your geoWrite 2.1.
 
 That is all. At the first start GeoUltra makes its home folder
 `GEOULTRA` on the first of `/USB0`, `/USB1` and `/SD` it finds, with
