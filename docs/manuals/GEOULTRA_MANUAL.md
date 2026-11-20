@@ -69,6 +69,10 @@ an empty list of disk images to mount.
 
 ## Starting
 
+![The desktop after the start: the drives, the Ultimate's roots, a favourite and the recent documents in the sidebar.](../images/start.png)
+
+*The desktop after the start: the drives, the Ultimate's roots, a favourite and the recent documents in the sidebar.*
+
 In the Ultimate's file browser, select `geoultra64.crt` and run it. The
 firmware then loads `geoultra64.cfg` with it: REU 16 MB, the Command
 Interface, the turbo registers, the printer emulation (Epson FX-80 on
@@ -88,6 +92,10 @@ REU, then the desktop. Keys held while it starts:
 - **C=**: a hibernated session is not resumed; GeoUltra starts fresh.
 
 ## Your first disk images
+
+![A folder on the Ultimate: disk images with the mount icon at the right end of their lines.](../images/mount-icons.png)
+
+*A folder on the Ultimate: disk images with the mount icon at the right end of their lines.*
 
 The desktop's sidebar lists the drives A-E and the Ultimate's own
 roots (usb0, usb1, sd). To put a disk image on a drive:
@@ -134,6 +142,10 @@ are started from. GeoUltra always starts its own desktop (or gush, see
 only when GeoUltra's cannot.
 
 ## The screen
+
+![The desktop's list view of drive A.](../images/desktop-list.png)
+
+*The desktop's list view of drive A.*
 
 From top to bottom:
 
@@ -189,6 +201,10 @@ Opening an entry:
 
 ## Views and sorting
 
+![The icon view (drive E, the system drive).](../images/desktop-icons.png)
+
+*The icon view (drive E, the system drive).*
+
 view > view chooses how the list shows the entries (the toolbar's view
 button goes through them in turn):
 
@@ -217,6 +233,10 @@ each also reversed.
 Folders with more than 384 entries keep the order they have on disk.
 
 ## Two panes
+
+![Two panes: drive B on the left, drive A on the right.](../images/two-panes.png)
+
+*Two panes: drive B on the left, drive A on the right.*
 
 view > two panes (C=P, or the toolbar's button between view and
 refresh) shows two folders side by side, the sidebar hidden. Each pane
@@ -254,6 +274,10 @@ On the same drive the entries are moved, to another drive copied. Hold
 copy). Folders are taken with everything in them.
 
 ## Files and folders
+
+![The context menu of a geoWrite document.](../images/context-menu.png)
+
+*The context menu of a geoWrite document.*
 
 All in the file menu, with their keys:
 
@@ -329,6 +353,10 @@ drivers. It cannot be written to.
 
 ## Mounting and unmounting
 
+![Mounting an image: the drive asked.](../images/mount-dialog.png)
+
+*Mounting an image: the drive asked.*
+
 - **Mount**: the mount icon at the right end of an image's line, or
   **mount** in its context menu; then choose the drive.
 - **Unmount**: the eject icon on a drive's line in the sidebar (after
@@ -400,6 +428,10 @@ runs and swaps them back when the program ends.
 
 ## Tasks
 
+![The task list (C= + RUN/STOP).](../images/task-list.png)
+
+*The task list (C= + RUN/STOP).*
+
 GeoUltra can keep several programs running, each in its own task, and
 switch between them.
 
@@ -429,6 +461,10 @@ box from inside any application, with a button for gush.
 
 # Settings
 
+![GeoUltra Settings, the Desktop page.](../images/settings-desktop.png)
+
+*GeoUltra Settings, the Desktop page.*
+
 **GeoUltra Settings** (geos > settings, or the toolbar's settings
 button) changes GeoUltra's settings without editing files: a list of
 pages on the left, the page on the right, and three buttons: **OK**
@@ -455,6 +491,10 @@ text file you can also edit on a PC ("Files on the stick" lists the
 keys).
 
 ## Themes
+
+![The Theme page: a theme, its parts and colours, with a preview.](../images/settings-theme.png)
+
+*The Theme page: a theme, its parts and colours, with a preview.*
 
 view > theme chooses the look: **GeoUltra** (the default), **GEOS
 classic**, **Flat**, **Detailed**, **Night**, **Mono**, and **Custom**
@@ -501,6 +541,10 @@ in `SETTINGS.INI` (Desktop page) for every theme.
 # Printing
 
 ## Choosing a printer
+
+![The Printing page.](../images/settings-printing.png)
+
+*The Printing page.*
 
 GeoUltra has four printer drivers of its own on drive E:
 
@@ -593,6 +637,10 @@ them when a document uses them.
 
 # Serial numbers
 
+![The Serials page.](../images/settings-serials.png)
+
+*The Serials page.*
+
 GEOS applications from Berkeley Softworks key themselves to the serial
 number of the GEOS boot disk they were installed under, and refuse to
 run under another one. GeoUltra gives each application a serial
@@ -632,6 +680,10 @@ using these measures is allowed depends on the law where you live; you
 use them at your own responsibility.
 
 # gush, the shell
+
+![A gush session.](../images/gush.png)
+
+*A gush session.*
 
 gush is GeoUltra's shell: a text console with commands for files and
 folders on the GEOS drives and on the Ultimate, scripts with variables

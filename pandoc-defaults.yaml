@@ -2,6 +2,7 @@
 # (make docs; ~/.claude/makefile_conventions.md)
 from: markdown-implicit_figures
 standalone: true
+resource-path: [".", "docs/manuals"]   # (the manuals' pictures: ../images)
 pdf-engine: xelatex
 number-sections: false
 toc: true

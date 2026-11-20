@@ -8,6 +8,8 @@ printing to the Ultimate's printer emulation and to PDF, and on the
 Ultimate 64 family turbo speed and the palette. Versions for the
 Ultimate II+ on a C64 and for the C128 are planned.
 
+![GeoUltra's desktop with two panes: drive B's folders on the left, the sample documents on drive A on the right](docs/images/two-panes.png)
+
 GeoUltra aims to run existing GEOS applications: it keeps the GEOS 2.0
 jump table, variables and zero page contract, and every kernal routine is
 checked against GEOS 2.0's behaviour. It does not promise that every GEOS
@@ -35,6 +37,13 @@ lists what was tested.
   commands), serial numbers per application;
 - **PC tools** for disk images, geoWrite documents (Word, Markdown,
   PostScript) and geoPaint pictures.
+
+| The icon view | gush, the shell | GeoUltra Settings |
+| --- | --- | --- |
+| ![The desktop's icon view of the system drive E](docs/images/desktop-icons.png) | ![A gush session: cd, ls -l, df, free, date](docs/images/gush.png) | ![GeoUltra Settings, the Theme page](docs/images/settings-theme.png) |
+
+The pictures are taken on an Ultimate 64 (its video stream,
+`tools/dev/docshots.py`).
 
 ## Documents
 
