@@ -1,6 +1,7 @@
 # GeoUltra Settings (docs/design/SETTINGS.md): on drive E (src/sysdrive.toml),
 # started from the desktop's geos menu and toolbar, and from gush.
 [file]
+icon = "../../build/icons/settings.icon"     # tools/dev/mkappicon.py
 name = "GU Settings"
 type = "APPLICATION"
 cbmtype = "USR"

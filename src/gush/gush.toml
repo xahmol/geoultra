@@ -1,4 +1,5 @@
 [file]
+icon = "../../build/icons/gush.icon"     # tools/dev/mkappicon.py
 name    = "gush"
 type    = "APPLICATION"
 class   = "gush"

@@ -1,4 +1,5 @@
 [file]
+icon = "../../build/icons/splash.icon"     # tools/dev/mkappicon.py
 name    = "splash"
 type    = "APPL_DATA"
 class   = "GU splash"

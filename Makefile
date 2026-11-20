@@ -89,7 +89,15 @@ build/gen/gushicon.inc: tools/dev/mkicons.py tools/fonts/system9.py
 
 build/tools/geofolder.bin: build/gen/gushicon.inc
 
-build/tools/%.cvt: build/tools/%.bin src/tools/%.toml
+# The file icons of GeoUltra's own programs (tools/dev/mkappicon.py: a
+# picture of what each does with the logo's U as a badge; splash the U).
+APPICONS = build/icons/desktop.icon build/icons/settings.icon build/icons/gush.icon \
+           build/icons/postscript.icon build/icons/folder.icon build/icons/splash.icon
+build/icons/%.icon: tools/dev/mkappicon.py
+	@mkdir -p build/icons
+	$(PYTHON) tools/dev/mkappicon.py $* $@
+
+build/tools/%.cvt: build/tools/%.bin src/tools/%.toml $(APPICONS)
 	$(PYTHON) $(GEOSAPP) src/tools/$*.toml $< $@
 
 # GU PostScript (src/psw, docs/design/DESIGN.md "PostScript writer"): psw.s
@@ -115,7 +123,7 @@ build/psw/options.o: build/gen/pswicons.inc
 build/psw/psw.bin: $(PSWOBJS) src/psw/psw.cfg
 	$(LD65) -C src/psw/psw.cfg -m build/psw/psw.map -Ln build/psw/psw.lbl -o $@ $(PSWOBJS)
 
-build/psw/psw.cvt: build/psw/psw.bin src/psw/psw.toml
+build/psw/psw.cvt: build/psw/psw.bin src/psw/psw.toml $(APPICONS)
 	$(PYTHON) $(GEOSAPP) src/psw/psw.toml $< $@
 
 # The boot splash as a data file on drive E (bitmap, then colours), which
@@ -143,7 +151,7 @@ build/gush/%.o: src/gush/%.s src/gush/gush.inc $(wildcard src/inc/*.inc) build/g
 build/gush/gush.bin: $(GUSHOBJS) src/gush/gush.cfg
 	$(LD65) -C src/gush/gush.cfg -m build/gush/gush.map -Ln build/gush/gush.lbl -o $@ $(GUSHOBJS)
 
-build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/dev/vlircvt.py
+build/gush/gush.cvt: build/gush/gush.bin src/gush/gush.toml tools/dev/vlircvt.py $(APPICONS)
 	$(PYTHON) $(GEOSAPP) src/gush/gush.toml $< build/gush/gush-seq.cvt
 	$(PYTHON) tools/dev/vlircvt.py build/gush/gush-seq.cvt $@ $<.1 $<.2 $<.3 $<.4
 
@@ -177,7 +185,7 @@ build/gen/splashicon.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
 	$(PYTHON) tools/dev/mkicons.py --icon $@ SplashIcon splash
 
-build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) build/gen/yesall.inc build/gen/splashicon.inc build/gen/qicons.inc build/gen/bigicons.inc src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
+build/desktop/desktop.cvt: $(DESKSRCS) src/desktop/desktop.inc $(DRVICONS) $(APPICONS) build/gen/yesall.inc build/gen/splashicon.inc build/gen/qicons.inc build/gen/bigicons.inc src/desktop/desktop.cfg src/desktop/desktop.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/desktop
 	for f in $(DESKSRCS); do $(CA65) -g -I src/inc -I build/gen -o build/desktop/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/desktop/desktop.cfg -m build/desktop/desktop.map -Ln build/desktop/desktop.lbl -o build/desktop/desktop.bin build/desktop/desktop.o $(patsubst src/desktop/%.s,build/desktop/%.o,$(filter-out src/desktop/desktop.s,$(DESKSRCS)))
@@ -198,7 +206,7 @@ build/gen/saveicon.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
 	$(PYTHON) tools/dev/mkicons.py --icon $@ SaveIcon Save
 
-build/settings/settings.cvt: $(SETSRCS) src/settings/settings.inc $(SETICONS) build/gen/pointers.inc src/settings/settings.cfg src/settings/settings.toml $(wildcard src/inc/*.inc)
+build/settings/settings.cvt: $(SETSRCS) src/settings/settings.inc $(SETICONS) $(APPICONS) build/gen/pointers.inc src/settings/settings.cfg src/settings/settings.toml $(wildcard src/inc/*.inc)
 	@mkdir -p build/settings
 	for f in $(SETSRCS); do $(CA65) -g -I src/inc -I src/settings -I build/gen -o build/settings/$$(basename $$f .s).o $$f || exit 1; done
 	$(LD65) -C src/settings/settings.cfg -m build/settings/settings.map -Ln build/settings/settings.lbl -o build/settings/settings.bin build/settings/settings.o $(patsubst src/settings/%.s,build/settings/%.o,$(filter-out src/settings/settings.s,$(SETSRCS)))
@@ -419,9 +427,15 @@ APPS_DNP := $(if $(wildcard private/apps.toml),private/geoultra-apps.dnp)
 private/geoultra-apps.dnp: private/apps.toml tools/mkappsdnp.py
 	$(PYTHON) tools/mkappsdnp.py private/apps.toml
 
-deploy: check-deploy build/geoultra64.crt build/geoultra64.cfg
-	curl -sS --max-time 120 --ftp-create-dirs -T build/geoultra64.crt ftp://$(ULTIP1)$(DEPLOYDIR)
-	curl -sS --max-time 60 --ftp-create-dirs -T build/geoultra64.cfg ftp://$(ULTIP1)$(DEPLOYDIR)
+# make deploy: the release as a user installs it (the manual's
+# "Installing"): every file of the release archive, in its folders, into
+# DEPLOYDIR on the Ultimate (the cartridge and its .cfg, the manuals,
+# READ_ME_FIRST.txt, the samples).
+deploy: check-deploy release
+	cd build/release/$(RELEASE_NAME) && for f in $$(find . -type f | sed 's|^\./||' | sort); do \
+		echo "  $(DEPLOYDIR)$$f"; \
+		curl -sS --max-time 120 --ftp-create-dirs -T "$$f" "ftp://$(ULTIP1)$(DEPLOYDIR)$$f" || exit 1; \
+	done
 
 # The release archive (make release): what a user needs, nothing of the
 # design record; the PC tools are used from the repository (tools
@@ -443,7 +457,7 @@ release: build/geoultra64.crt build/geoultra64.cfg docs samples
 DOCPDFS = README.pdf docs/manuals/GEOULTRA_MANUAL.pdf docs/manuals/TOOLS_MANUAL.pdf
 docs: $(DOCPDFS)
 
-%.pdf: %.md pandoc-defaults.yaml pandoc-header.tex
+%.pdf: %.md pandoc-defaults.yaml pandoc-header.tex $(wildcard docs/images/*.png)
 	@if which pandoc >/dev/null 2>&1; then \
 		pandoc --defaults=pandoc-defaults.yaml $< -o $@; \
 	else \

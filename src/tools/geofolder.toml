@@ -1,4 +1,5 @@
 [file]
+icon = "../../build/icons/folder.icon"     # tools/dev/mkappicon.py
 name    = "geoFolder"
 type    = "DESK_ACC"
 class   = "geoFolder"

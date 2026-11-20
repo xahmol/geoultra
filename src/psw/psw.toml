@@ -1,4 +1,5 @@
 [file]
+icon = "../../build/icons/postscript.icon"     # tools/dev/mkappicon.py
 name    = "GU PostScript"
 type    = "APPLICATION"
 class   = "GUPostScript"

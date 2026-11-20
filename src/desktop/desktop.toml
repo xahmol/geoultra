@@ -1,6 +1,7 @@
 # GeoUltra's desktop (docs/design/DESKTOP.md): on drive E (src/sysdrive.toml),
 # started by EnterDeskTop (always since 2026-11-13).
 [file]
+icon = "../../build/icons/desktop.icon"     # tools/dev/mkappicon.py
 name = "GeoUltra Desktop"
 type = "APPLICATION"
 cbmtype = "USR"
