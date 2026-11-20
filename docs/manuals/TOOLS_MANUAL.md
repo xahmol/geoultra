@@ -360,9 +360,24 @@ picture = "shot.png"
 width = 320                # dots, a multiple of 8
 threshold = 128            # black below it (0-255); or dither = true
 
+[[block]]                  # a part of a C64 screenshot, pixel for pixel
+picture = "desktop.png"
+crop = [0, 0, 320, 168]    # x, y, width, height (on 8-pixel cards)
+scale = 1                  # no scaling (0.5 for a doubled screenshot)
+colour = true              # each card's two colours from the picture
+
 [[block]]
 pagebreak = true
 ```
+
+Pictures are at most 168 lines high: geoWrite 2.1 draws a taller one
+wrongly and genuine GEOS 2.0 crashes when it is scrolled back to, so
+gwgen scales them down (keeping their proportions); with `scale` a
+picture that does not fit is an error. Each picture carries a colour
+byte for every 8 x 8 card, as geoWrite's own pictures do (`colour` takes
+them from the picture; else dark grey on light grey). geoWrite shows and
+prints the pixels; a crop of a C64 screen on card boundaries with
+`scale = 1` keeps its exact pixels.
 
 `\t` in a text is a TAB, `\n` a new line with the same ruler. Text is
 ASCII. gwgen lays every page out as geoWrite does, with the GU fonts
@@ -407,6 +422,9 @@ VICE's `c1541`, as `gwtool` does.
     fit its pixels best, each pixel the nearer of the two. As on the C64
     itself a card has only two colours, so photos show blocks where
     colours meet; drawings with large areas of colour come out best.
+    The picture's most common colour counts as its background: it fills
+    the page around the picture, and shapes in other colours become set
+    pixels, so they also show where geoPaint shows no colour.
 
 Examples:
 

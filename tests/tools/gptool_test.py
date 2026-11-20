@@ -89,7 +89,8 @@ def main():
           and px.getpixel((60, 30)) == gptool.PALETTE[6], (px.getpixel((30, 30)), px.getpixel((4, 4))))
     cb = os.path.join(OUT, "colour-back.png")
     subprocess.run(TOOL + ["export", cimg, "Colour", cb, "--crop"], capture_output=True, check=True)
-    check("colour exported, cropped to the picture", PImage.open(cb).size == (64, 64), PImage.open(cb).size)
+    check("colour exported, cropped to the drawing: the square (its blue background fills the page",
+          PImage.open(cb).size == (32, 32), PImage.open(cb).size)  # since the import keeps it as paper)
     if os.path.exists(REAL):
         real = Image(REAL)
         names = [l.split()[0] for l in subprocess.run(TOOL + ["list", REAL], capture_output=True,

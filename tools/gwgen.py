@@ -38,6 +38,14 @@ The description (TOML; paths relative to it):
     width = 320                # dots (a multiple of 8); height in proportion
     threshold = 140            # black below it (0-255); or dither = true
     invert = false
+    crop = [0, 0, 640, 336]    # a part of the source picture (x, y, w, h)
+    scale = 0.5                # instead of width: pixel for pixel (1), or
+                               # 0.5 for docs/images' doubled screenshots
+    colour = true              # one colour byte a card from the picture
+                               # (a C64 screen's crop on card boundaries:
+                               # its exact colours); its darker colour as
+                               # the set pixels. At most 168 lines high:
+                               # geoWrite's limit; taller ones scaled down
 
     [[block]]
     pagebreak = true
@@ -140,20 +148,43 @@ def runs(text, fid, size):
 
 
 def picture(path, spec, width):
+    """(cards wide, height, record) of a picture block. Keys: width (dots,
+    scaled with its proportions, at most PIC_MAX_H lines), or scale (1:
+    pixel for pixel, 0.5 for docs/images' doubled shots; nearest pixel,
+    nothing blurred), crop = [x, y, w, h] (of the source, first),
+    threshold / dither / invert (black and white), colour = true (one
+    colour byte a card from the picture: for a crop of a C64 screen at
+    its own size, on card boundaries, its exact colours; the darker colour
+    of a card is its set pixels, so it prints and shows in black and white
+    as it should)."""
     from PIL import Image, ImageOps
-    im = Image.open(path).convert("L")
-    w = int(spec.get("width", min(width, im.width))) // 8 * 8
-    w = max(8, min(w, width))
-    h = max(1, round(im.height * w / im.width))
-    w, h = docxgw.fit_height(w, h)          # (geoWrite's limit: PIC_MAX_H lines)
-    im = im.resize((w, h), Image.LANCZOS)
+    im = Image.open(path).convert("RGB")
+    if "crop" in spec:
+        x, y, cw, ch = (int(v) for v in spec["crop"])
+        im = im.crop((x, y, x + cw, y + ch))
+    if "scale" in spec:
+        f = float(spec["scale"])
+        w, h = round(im.width * f) // 8 * 8, max(1, round(im.height * f))
+        if w > width or h > docxgw.PIC_MAX_H:
+            die("%s: %d x %d at scale %s: more than %d dots wide or %d lines high"
+                % (path, w, h, spec["scale"], width, docxgw.PIC_MAX_H))
+        im = im.resize((w, h), Image.NEAREST)
+    else:
+        w = int(spec.get("width", min(width, im.width))) // 8 * 8
+        w = max(8, min(w, width))
+        h = max(1, round(im.height * w / im.width))
+        w, h = docxgw.fit_height(w, h)      # (geoWrite's limit: PIC_MAX_H lines)
+        im = im.resize((w, h), Image.LANCZOS)
+    if spec.get("colour") or spec.get("color"):
+        return colour_picture(im, w, h)
+    grey = im.convert("L")
     if spec.get("invert"):
-        im = ImageOps.invert(im)
+        grey = ImageOps.invert(grey)
     if spec.get("dither"):
-        bw = im.convert("1")
+        bw = grey.convert("1")
     else:
         t = int(spec.get("threshold", 128))
-        bw = im.point(lambda v: 255 if v >= t else 0).convert("1", dither=Image.NONE)
+        bw = grey.point(lambda v: 255 if v >= t else 0).convert("1", dither=Image.NONE)
     rows = bytearray()
     for y in range(h):
         for xc in range(w // 8):
@@ -163,6 +194,43 @@ def picture(path, spec, width):
                     b |= 0x80 >> bit
             rows.append(b)
     return w // 8, h, docxgw.picture_record(w // 8, h, bytes(rows))
+
+
+def colour_picture(im, w, h):
+    """A picture in its colours: each 8 x 8 card its two most frequent C64
+    colours (the darker the ink, its pixels set), as on the C64's screen."""
+    import gptool
+    px = im.load()
+    index = {}
+
+    def colour(x, y):
+        p = px[x, y]
+        if p not in index:
+            index[p] = gptool.nearest(p, range(16))
+        return index[p]
+    lum = lambda k: sum(gptool.PALETTE[k])
+    wc = w // 8
+    rows = bytearray(wc * h)
+    colours = bytearray()
+    for cy in range(0, h, 8):
+        for cx in range(wc):
+            cells = [(x, y, colour(x, y)) for y in range(cy, min(h, cy + 8))
+                     for x in range(cx * 8, cx * 8 + 8)]
+            counts = {}
+            for _, _, k in cells:
+                counts[k] = counts.get(k, 0) + 1
+            order = sorted(counts, key=lambda k: -counts[k])
+            if len(order) == 1:                 # one colour: dark ones as ink
+                k = order[0]
+                ink, paper = (k, k) if lum(k) < 384 else (0, k)
+            else:
+                a, b = order[0], order[1]
+                ink, paper = (a, b) if lum(a) < lum(b) else (b, a)
+            for x, y, k in cells:
+                if k == ink or (k != paper and gptool.nearest(gptool.PALETTE[k], (ink, paper)) == ink):
+                    rows[y * wc + cx] |= 0x80 >> (x - cx * 8)
+            colours.append(ink << 4 | paper)
+    return wc, h, docxgw.picture_record(wc, h, bytes(rows), bytes(colours))
 
 
 def fonts():

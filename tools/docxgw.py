@@ -278,14 +278,18 @@ def compact(data):
 PIC_COLOUR = 0xBF                   # dark grey on light grey, GEOS's own colours
 
 
-def picture_record(wc, h, rows):
+def picture_record(wc, h, rows, colours=None):
     """A geoWrite picture record: width in cards, height, the compacted
     bitmap, then the compacted colours, one byte per card (wc x h/8,
-    rounded up), as geoWrite 2.x writes its pictures: it reads the colours
-    after the bitmap, and without them it reads on into whatever follows
-    (a crash in genuine GEOS 2.0 when such a picture is drawn again)."""
+    rounded up, row by row; ink in the high half), as geoWrite 2.x writes
+    its pictures: it reads the colours after the bitmap, and without them
+    it reads on into whatever follows (a crash in genuine GEOS 2.0 when
+    such a picture is drawn again). COLOURS: those bytes; else PIC_COLOUR."""
     cards = wc * ((h + 7) // 8)
-    return bytes([wc, h & 0xFF, h >> 8]) + compact(rows) + compact(bytes([PIC_COLOUR]) * cards)
+    if colours is None:
+        colours = bytes([PIC_COLOUR]) * cards
+    assert len(colours) == cards
+    return bytes([wc, h & 0xFF, h >> 8]) + compact(rows) + compact(bytes(colours))
 
 
 def picture(blob, cx, cy, width):

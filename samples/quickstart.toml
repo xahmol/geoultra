@@ -1,5 +1,6 @@
 # GeoUltra's quick start guide, a geoWrite 2.1 document made by
-# tools/gwgen.py (make samples). Pictures: samples/shots (samples/shots.py).
+# tools/gwgen.py (make samples). Pictures: crops of the U64 screenshots in
+# docs/images at their own size and in their colours (see brochure.toml).
 
 [document]
 name = "Quick start"
@@ -52,9 +53,10 @@ after = 1
 keep = true
 
 [[block]]
-picture = "shots/desktop-list.png"
-width = 256
-threshold = 128
+picture = "../docs/images/start.png"
+crop = [0, 0, 640, 336]
+scale = 0.5
+colour = true
 
 [[block]]
 text = ""
@@ -100,9 +102,10 @@ after = 1
 keep = true
 
 [[block]]
-picture = "shots/context-menu.png"
-width = 256
-threshold = 128
+picture = "../docs/images/context-menu.png"
+crop = [160, 48, 480, 336]
+scale = 0.5
+colour = true
 
 [[block]]
 text = ""
@@ -135,9 +138,10 @@ after = 1
 keep = true
 
 [[block]]
-picture = "shots/settings-desktop.png"
-width = 256
-threshold = 128
+picture = "../docs/images/settings-desktop.png"
+crop = [0, 0, 640, 336]
+scale = 0.5
+colour = true
 
 [[block]]
 text = ""

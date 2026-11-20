@@ -776,6 +776,31 @@ does since 2026-11-16).
 
 ---
 
+## 17c. geoPaint and geoWrite picture files written by tools
+
+Measured 2026-11-20 (GeoUltra, VICE with genuine GEOS 2.0, geoPaint 2.0,
+geoWrite 2.1). Files a PC tool writes must follow what the programs write
+themselves, or the programs crash:
+- **geoPaint strip records end with a 0 byte** (a literal run of length 0).
+  geoPaint's unpacker stops there, not at 1448 bytes: without it it reads
+  on and overwrote its own table of program modules ($5F58), giving "Disk
+  error encountered" (a module read from block $BF/$BF) or a hang.
+- geoPaint's own files cross the boundaries between a strip's parts (each
+  card row 640 bytes, the 8 gap bytes, 160 colour bytes) only with byte
+  runs, never with runs of 8-byte cards: pack each part on its own.
+- geoPaint colour bytes: ink in the high nybble, paper in the low ($FB in
+  a real file: light grey ink on dark grey paper). geoPaint without colour
+  shows only set pixels: an import must make solid shapes set pixels, not
+  paper in a card colour.
+- **geoWrite 2.x picture records (64-126)**: width in cards, height (word),
+  the compacted bitmap, then the **compacted colours, one byte per 8x8 card**
+  (cards wide x height/8 rounded up), e.g. `06 BF`. Without the colours
+  geoWrite reads on into whatever follows.
+- **geoWrite pictures at most about 168 lines high** (its text window): a
+  176-line picture crashes genuine GEOS 2.0 ("System error near $A73C")
+  when scrolled back to; 168 works. Scale taller pictures down.
+- geoWrite 2.1 does not show picture colours on screen; pixels only.
+
 ## 17b. GEOS 2.0 (C64) layout facts applications depend on
 
 (Measured in GeoUltra, 2026-10-29, on a running GEOS 2.0 in VICE.)

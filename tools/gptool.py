@@ -25,7 +25,11 @@ threshold, --threshold=N, 0-255, 128 by default), ink and paper colours
 --ink=N and --paper=N (C64 colour numbers, 0 black and 1 white by
 default). --colour: each 8 x 8 card gets the two C64 colours (of the 16)
 that fit its pixels best, each pixel the nearer of them; as on the C64
-itself only two colours a card.
+itself only two colours a card. The picture's most common colour is its
+background: it fills the page around the picture and is the paper of
+every card that has it, so solid shapes become set pixels in their own
+colour (they also show in black and white, as geoPaint without colour
+shows them).
 
 The format (HG2G, appendix F "geoPaint"): a VLIR file of 45 records,
 each two card rows: 2 x 80 cards of 8 bytes (top to bottom, bit 7 the
@@ -108,7 +112,18 @@ def decompress(data):
 
 def compress(raw):
     """1448 bytes as a geoPaint stream (cards, bytes, else literal runs),
-    ended by a 0 byte as geoPaint ends its own records."""
+    ended by a 0 byte as geoPaint ends its own records. Each part of the
+    strip (the two card rows, the 8 gap bytes, the colours) is packed on
+    its own, so no run of cards crosses from one into the next: geoPaint's
+    own files never do, and geoPaint draws such strips wrongly (the same
+    stripes in every strip, measured in genuine GEOS 2.0 as in GeoUltra)."""
+    parts = (raw[:CARDS * 8], raw[CARDS * 8:2 * CARDS * 8], raw[2 * CARDS * 8:2 * CARDS * 8 + 8],
+             raw[2 * CARDS * 8 + 8:])
+    return b"".join(pack(part) for part in parts) + b"\0"
+
+
+def pack(raw):
+    """One part of a strip as geoPaint packets (no end byte)."""
     out = bytearray()
     lit = bytearray()
 
@@ -141,9 +156,7 @@ def compress(raw):
             lit.append(raw[i])
             i += 1
     flush()
-    out.append(0)                               # the end: a run of 0 literal bytes
-    return bytes(out)                           # (geoPaint stops there, as its own
-                                                # files do; without it it reads on)
+    return bytes(out)
 
 
 def find(img, name):
@@ -221,7 +234,14 @@ def from_picture(path, colour=False, dither=True, fit=False, ink=0, paper=1, thr
     if fit or w > W or h > H:
         f = min(W / w, H / h)
         im = im.resize((max(1, round(w * f)), max(1, round(h * f))), PImage.LANCZOS)
-    page = PImage.new("RGB", (W, H), PALETTE[paper] if not colour else (255, 255, 255))
+    back = paper
+    if colour:                                  # the picture's most common colour:
+        hist = {}                               # its background, also around it
+        for p, n in ((p, n) for n, p in im.getcolors(1 << 20) or []):
+            k = nearest(p, range(16))
+            hist[k] = hist.get(k, 0) + n
+        back = max(hist, key=hist.get) if hist else paper
+    page = PImage.new("RGB", (W, H), PALETTE[back])
     page.paste(im, (0, 0))
     bits = [[None] * CARDS for _ in range(ROWS)]
     cols = [[0] * CARDS for _ in range(ROWS)]
@@ -245,20 +265,31 @@ def from_picture(path, colour=False, dither=True, fit=False, ink=0, paper=1, thr
                 cols[row][c] = ink << 4 | paper
         return bits, cols
     px = page.load()
+    index = {}                                  # each pixel colour's index, once
+    lum = lambda k: sum(PALETTE[k])
     for row in range(ROWS):
         for c in range(CARDS):
             pixels = [px[c * 8 + x, row * 8 + y] for y in range(8) for x in range(8)]
             counts = {}
             for p in pixels:
-                k = nearest(p, range(16))
+                k = index.get(p)
+                if k is None:
+                    k = index[p] = nearest(p, range(16))
                 counts[k] = counts.get(k, 0) + 1
             order = sorted(counts, key=lambda k: -counts[k])
             a = order[0]
-            b = order[1] if len(order) > 1 else (0 if a != 0 else 1)
             card = bytearray(8)
-            # the lighter colour is the background (paper), the darker the ink
-            lum = lambda k: sum(PALETTE[k])
-            fg, bg = (a, b) if lum(a) < lum(b) else (b, a)
+            # Paper is the picture's background where the card has it, so a
+            # solid shape becomes set pixels in its own colour (it shows in
+            # black and white too); else the lighter colour is the paper.
+            if len(order) == 1:
+                fg, bg = (ink, back) if a == back else (a, back)
+            else:
+                b = order[1]
+                if back in (a, b):
+                    fg, bg = (b if a == back else a), back
+                else:
+                    fg, bg = (a, b) if lum(a) < lum(b) else (b, a)
             for y in range(8):
                 v = 0
                 for x in range(8):

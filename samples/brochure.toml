@@ -1,6 +1,9 @@
 # GeoUltra's sample brochure, a geoWrite 2.1 document made by
-# tools/gwgen.py (make samples). Pictures: samples/shots (samples/shots.py)
-# and the start picture (build/samples/logo.png).
+# tools/gwgen.py (make samples). Pictures: the U64 screenshots in docs/images
+# (tools/dev/docshots.py, stored doubled: scale 0.5 gives their pixels back),
+# cropped on card boundaries, in their colours; the start picture
+# (build/samples/logo.png, 3x: scale 1/3). geoWrite shows pictures up to
+# 168 lines high.
 
 [document]
 name = "Brochure"
@@ -19,8 +22,8 @@ after = 3
 
 [[block]]
 picture = "../build/samples/logo.png"
-width = 400
-threshold = 150
+scale = 0.3333333333333333
+colour = true
 
 [[block]]
 text = ""
@@ -69,9 +72,10 @@ after = 1
 keep = true
 
 [[block]]
-picture = "shots/desktop-list.png"
-width = 320
-threshold = 128
+picture = "../docs/images/desktop-list.png"
+crop = [0, 0, 640, 336]
+scale = 0.5
+colour = true
 
 [[block]]
 text = ""
@@ -83,9 +87,10 @@ after = 1
 keep = true
 
 [[block]]
-picture = "shots/two-panes.png"
-width = 320
-threshold = 128
+picture = "../docs/images/two-panes.png"
+crop = [0, 0, 640, 336]
+scale = 0.5
+colour = true
 
 [[block]]
 pagebreak = true
@@ -105,9 +110,10 @@ after = 1
 keep = true
 
 [[block]]
-picture = "shots/context-menu.png"
-width = 320
-threshold = 128
+picture = "../docs/images/context-menu.png"
+crop = [160, 48, 480, 336]
+scale = 0.5
+colour = true
 
 [[block]]
 text = ""
@@ -119,9 +125,10 @@ after = 1
 keep = true
 
 [[block]]
-picture = "shots/task-list.png"
-width = 320
-threshold = 128
+picture = "../docs/images/task-list.png"
+crop = [0, 0, 480, 208]
+scale = 0.5
+colour = true
 
 [[block]]
 pagebreak = true
@@ -141,9 +148,10 @@ after = 1
 keep = true
 
 [[block]]
-picture = "shots/settings-printing.png"
-width = 320
-threshold = 128
+picture = "../docs/images/settings-printing.png"
+crop = [0, 0, 640, 336]
+scale = 0.5
+colour = true
 
 [[block]]
 text = ""
@@ -161,9 +169,10 @@ after = 1
 keep = true
 
 [[block]]
-picture = "shots/gush.png"
-width = 320
-threshold = 100
+picture = "../docs/images/gush.png"
+crop = [0, 0, 640, 240]
+scale = 0.5
+colour = true
 
 [[block]]
 pagebreak = true
