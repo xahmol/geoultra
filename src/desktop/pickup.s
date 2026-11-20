@@ -179,8 +179,8 @@ Collect:
         bne @read
         dex
         bpl :-
-        lda found
-        cmp #KEEP_N
+        ldx found
+        cpx #KEEP_N
         bcs @read
         jsr NameAt              ; names[found] = name
         ldy #SHORT_LEN - 1
@@ -198,12 +198,12 @@ Collect:
         jsr FileEngine
 @end:   rts
 
-; NameAt: pp = names + found * SHORT_LEN.
+; NameAt: pp = names + X * SHORT_LEN (X < KEEP_N). Destroys A, X.
 NameAt: lda #<names
         sta pp
         lda #>names
         sta pp + 1
-        ldx found
+        txa
         beq @end
 :       lda pp
         clc
@@ -227,14 +227,8 @@ MoveAll:
 @each:  lda at
         cmp found
         bcs @end
-        sta tmpN
-        lda found               ; (NameAt counts with found)
-        pha
-        lda tmpN
-        sta found
+        tax
         jsr NameAt
-        pla
-        sta found
         jsr Paths               ; src, dst
         lda #<src
         sta r0L
@@ -257,8 +251,8 @@ MoveAll:
         sta r0L
         lda #>src
         sta r0H
-        lda #FE_DELETE
-        jsr FileEngine
+        lda #FE_DELETE          ; (an error not minded: the copy is made;
+        jsr FileEngine          ; the next start copies it again, over it)
         inc moved
 @skip:  inc at
         bne @each
