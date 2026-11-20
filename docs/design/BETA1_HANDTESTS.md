@@ -108,7 +108,15 @@ the guide and the screen disagree.
       a PC (geosdisk list, gwtool docx, gptool export).
 - [ ] README: the "Use of AI" section still says what the AI does.
 
-## 8. Decisions for the release
+## 8. Screenshots, after the hand tests (the user, 2026-11-20)
+
+All from the U64 (VIC stream, as the video), once the hand tests' fixes
+are in: the README (a main picture, the desktop with two panes, and a
+row of three) and one per chapter of the user manual. To decide first:
+may a picture show your own geoWrite or geoPaint running on GeoUltra
+(Berkeley's screen design), or only GeoUltra's own screens as so far?
+
+## 9. Decisions for the release
 
 - [ ] The pre-flight check (repository public): read the report and
       say go or no-go (the visibility is changed only after that).
