@@ -1914,6 +1914,23 @@ Keep:   lda fontsOn
         sta reuCtrl
         lda #REU_STASH
         sta reuCmd
+        lda #<Zero              ; no refusal noted (serials.s, SERIALS_REFUSED:
+        sta reuC64              ; after a power-on the REU holds random bytes,
+        lda #>Zero              ; and the desktop's first tick asked about a
+        sta reuC64+1            ; garbled class; VICE's REU starts zeroed)
+        lda #<SERIALS_REFUSED
+        sta reuAddr
+        lda #>SERIALS_REFUSED
+        sta reuAddr+1
+        lda #SERIALS_BANK
+        sta reuAddr+2
+        lda #1
+        sta reuLen
+        lda #0
+        sta reuLen+1
+        sta reuCtrl
+        lda #REU_STASH
+        sta reuCmd
         lda #<TEXT              ; [serials] from the same text (serials.s
         sta r2L                 ; module 126)
         lda #>TEXT
@@ -1924,6 +1941,7 @@ Keep:   lda fontsOn
         sta r3H
         jsr OvlCall
         .byte 126, 0
+Zero:   .byte 0
 
 ; Entries: the 8 entries of DBUF: each file's chains moved, then its
 ; entry's start and header addresses. C set: a reference out of range.
