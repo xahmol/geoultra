@@ -84,6 +84,7 @@ def cvt_parts(data):
 class Test:
     def __init__(self, crt):
         self.u = U64()
+        self.u.require_test_drives("A")        # (it writes onto drive A)
         self.ok = True
         self.u.boot(crt)
 

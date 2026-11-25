@@ -59,6 +59,7 @@ def make_cvt(n):
 def main():
     crt = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build", "geoultra64.crt")
     u = U64()
+    u.require_test_drives("A")                  # (it writes onto drive A)
     ok = True
 
     def check(title, got, want):

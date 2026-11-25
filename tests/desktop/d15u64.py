@@ -33,6 +33,7 @@ def main():
         p = line.split()
         k.setdefault(p[2].lstrip("."), int(p[1], 16))
     u = U64()
+    u.require_test_drives("A")                  # (it writes onto drive A)
     ok = True
 
     def check(title, got, want):

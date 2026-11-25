@@ -66,6 +66,26 @@ class U64:
     def ftp_put(self, src, path):
         subprocess.run(["curl", "-s", "-T", src, "ftp://%s%s" % (self.ip, path)], check=True)
 
+    def require_test_drives(self, letters="A"):
+        """Stop the test unless each drive letter in LETTERS is mounted
+        from the test folder (/USB0/GEOULTRA/test/): tests that write
+        onto the drives MOUNTS.INI gives them must never write onto the
+        user's own images (2026-11-25: with the samples D81 from the SD on
+        drive A, e3u64 and e4u64 copied their test files into it)."""
+        r = subprocess.run(["curl", "-s", "ftp://%s/USB0/GEOULTRA/MOUNTS.INI" % self.ip],
+                           capture_output=True, timeout=30)
+        mounts = {}
+        for line in r.stdout.decode("latin1").splitlines():
+            if "=" in line and not line.startswith("["):
+                k, v = line.split("=", 1)
+                mounts[k.strip().upper()] = v.strip()
+        for letter in letters:
+            path = mounts.get(letter, "")
+            if not path.lower().startswith("/usb0/geoultra/test/"):
+                raise SystemExit("stopped: drive %s is %r in MOUNTS.INI, not an image in "
+                                 "/USB0/GEOULTRA/test/; this test writes onto it (set MOUNTS.INI's "
+                                 "%s to a test copy first)" % (letter, path or "(none)", letter))
+
     CART = "/configs/C64%20and%20Cartridge%20Settings/Cartridge"
 
     def boot(self, crt=None):
