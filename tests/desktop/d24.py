@@ -22,6 +22,9 @@ P_COUNT, P_ITEMS = 0x9FF0, 0x9FF5
 SIZES = {"a": 1, "bb": 5, "ccc": 3}                 # blocks (254 bytes each)
 
 
+YES_XY = (64 + 8 + 20, 32 + 72 + 8)                # (DEF_DB_POS at 64, 32; YES at card 1)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     k, kern = {}, {}
@@ -179,7 +182,8 @@ def main():
         settle(3)
         key(KEY_DOWN)
         key(KEY_DOWN)
-        key(CR, s=8)                                        # close task 1
+        key(CR, s=5)                                        # close task 1:
+        press(*YES_XY, s=8)                                 # its question, Yes
         check("task 1 closed: task 0", kbyte("taskCur"), 0)
         g.png("desktop-d24-closed")
     finally:

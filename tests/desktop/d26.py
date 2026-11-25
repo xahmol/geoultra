@@ -152,10 +152,10 @@ def main():
         check("the window's title", text(k["title"], 32), b"Print queue|paused")
         rows = [text(k["rowText"] + 44 * i, 44) for i in range(3)]
         check("its lines: the jobs, a page each, paused, waiting", rows,
-              [b"1|GU Desktop|1 page|paused", b"2|GU Desktop|1 page|waiting", b"3|GU Desktop|1 page|waiting"])
+              [b"1|desktop|1 page|paused", b"2|desktop|1 page|waiting", b"3|desktop|1 page|waiting"])
         press(WIN_L + 20, WIN_TOP + ROW0 + ROW_STEP + 8, s=6)        # cancel line 2
         g.png("desktop-d26-cancel")
-        check("cancel on line 2: it shows cancelled", text(k["rowText"] + 44, 44), b"2|GU Desktop|1 page|cancelled")
+        check("cancel on line 2: it shows cancelled", text(k["rowText"] + 44, 44), b"2|desktop|1 page|cancelled")
         press(WIN_L + 24, WIN_TOP + BTN_Y + 8, s=10)                 # resume
         g.png("desktop-d26-resumed")
         check("resumed: the window follows the queue (empty)", v.mem_get(k["qCount"], k["qCount"])[0], 0)

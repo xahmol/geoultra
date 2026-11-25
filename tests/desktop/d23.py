@@ -4,7 +4,8 @@ task.s): the desktop in /b; a request (taskReq, as C= + RUN/STOP sets
 it) opens the popup: the desktop, new task, close task. "new task": a
 fresh desktop in slot 1, moved to /a there; the popup again: back to
 task 0, its desktop still in /b (its own RAM); to task 1 again: /a;
-"close task" in task 1: back in task 0, the popup's list one shorter;
+"close task" in task 1: "Close this task?", Yes: back in task 0, the
+popup's list one shorter (no "close task" with the desktop alone);
 with tasks=1 "new task" is refused. Each task's legacy REU area checked;
 a VLIR file open in task 0 cannot be deleted, renamed or opened in task 1
 until task 0 closes it.
@@ -24,6 +25,9 @@ from vicemon import RESP_CHECKPOINT  # noqa: E402
 KEY_UP, KEY_DOWN, CR, KEY_STOP = 16, 17, 13, 22
 P_COUNT, P_ITEMS = 0x9FF0, 0x9FF5
 SIZES = {"a": 1, "bb": 5, "ccc": 3}                 # blocks (254 bytes each)
+
+
+YES_XY = (64 + 8 + 20, 32 + 72 + 8)                # (DEF_DB_POS at 64, 32; YES at card 1)
 
 
 def main():
@@ -163,8 +167,8 @@ def main():
         check("task 0 opens the VLIR file", run(open_v), 0)
         popup()
         g.png("desktop-d23-popup")
-        check("the popup: the desktop, new task, close task",
-              (v.mem_get(P_COUNT, P_COUNT)[0], list(v.mem_get(P_ITEMS, P_ITEMS + 2))), (3, [0, 0x80, 0x81]))
+        check("the popup: the desktop, new task (no close: the desktop alone)",
+              (v.mem_get(P_COUNT, P_COUNT)[0], list(v.mem_get(P_ITEMS, P_ITEMS + 1))), (2, [0, 0x80]))
         key(KEY_DOWN)
         key(CR, s=12)                                       # new task
         check("new task: slot 1, a fresh desktop", kbyte("taskCur"), 1)
@@ -182,7 +186,8 @@ def main():
         settle(6)
         check("task 1 in /a", here(), "/a")
         popup()
-        check("the popup: two tasks now", v.mem_get(P_COUNT, P_COUNT)[0], 4)
+        check("the popup: two tasks now, close offered", (v.mem_get(P_COUNT, P_COUNT)[0],
+              v.mem_get(P_ITEMS + 3, P_ITEMS + 3)[0]), (4, 0x81))
         key(KEY_UP)
         key(CR, s=8)                                        # to task 0
         g.png("desktop-d23-task0")
@@ -197,10 +202,13 @@ def main():
         popup()
         key(KEY_DOWN)
         key(KEY_DOWN)
-        key(CR, s=8)                                        # close task (task 1)
+        key(CR, s=5)                                        # close task (task 1):
+        g.png("desktop-d23-ask")                            # "Close this task?"
+        check("close task asks first (still task 1)", kbyte("taskCur"), 1)
+        press(*YES_XY, s=8)                                 # Yes
         check("close task: back in task 0 (/b)", (kbyte("taskCur"), here()), (0, "/b"))
         popup()
-        check("one task left", v.mem_get(P_COUNT, P_COUNT)[0], 3)
+        check("one task left (the desktop: no close)", v.mem_get(P_COUNT, P_COUNT)[0], 2)
         key(KEY_STOP, s=3)
         v.mem_set(kern["taskSlots"], b"\x01")             # tasks=1: no room
         popup()

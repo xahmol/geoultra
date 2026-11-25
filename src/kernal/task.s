@@ -17,7 +17,7 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .import OvlCall, HibTick, RtcCheck, SysRAMOp, EnterDeskTop
+        .import OvlCall, HibTick, RtcCheck, SysRAMOp, EnterDeskTop, DoDlgBox
         .import legacyBase, taskSlots, SysFindFile, indexTS
         .include "kcalls.inc"
         .include "engine.inc"
@@ -150,6 +150,8 @@ Names:  jsr OvlCall             ; (module 98: the table to TBLBUF)
         .byte 98, 3
 Draw:   jsr OvlCall             ; (module 97: the popup drawn)
         .byte 97, 0
+Ask:    jsr OvlCall             ; (module 97: "Close this task?"; Z set
+        .byte 97, 3             ; for YES)
 SpoolStep:
         jsr OvlCall             ; (module 109: a record of the print queue
         .byte 109, 0            ; played, spool.s)
@@ -210,9 +212,20 @@ Popup:  pha                     ; the spooler's playback: a record each
         lda #ITEM_NEW
         sta P_ITEMS,x
         inx
-        lda #ITEM_CLOSE
+        cpx #2                  ; one task, the desktop: nothing to close
+        bne @close              ; (its name empty; the user, 2026-11-25)
+        lda taskCur
+        asl a
+        asl a
+        asl a
+        asl a
+        tay
+        lda TBLBUF + 1,y
+        beq @noClose
+@close: lda #ITEM_CLOSE
         sta P_ITEMS,x
         inx
+@noClose:
         stx P_COUNT
         jsr Draw
 @loop:  cli
@@ -276,9 +289,11 @@ Popup:  pha                     ; the spooler's playback: a record each
         jmp @fresh
 :       cmp #ITEM_CLOSE
         bne :+
+        jsr Ask                 ; "Close this task?" (the user, 2026-11-25)
+        bne @done
         lda taskCur
-        jsr Close
-        jmp @fresh
+        jsr Close               ; (another task: switched to it, no return)
+        jmp EnterDeskTop        ; the last one: its program ended, the desktop
 :       cmp taskCur
         beq @done
         jsr Switch
@@ -374,6 +389,98 @@ ScreenOp:
         .scope Mod97
 
         jmp Draw                ; entry 0 (module 95)
+        jmp AskClose            ; entry 3 (module 95)
+
+; AskClose: "Close this task?", the current task's program (TBLBUF, the
+; table's copy; "the desktop" when its name is empty), "Changes not saved
+; are lost.", YES and NO. Z set for YES. Built in the stack page above the
+; stack pointer, as sysdrive.s OvRefused: DoDlgBox calls overlays, which
+; replace this module's bytes. Destroys A, X, Y, r0-r4.
+AskClose:
+        tsx                     ; ASK_LEN bytes of stack room
+        txa
+        sec
+        sbc #ASK_LEN
+        tax
+        txs
+        inx
+        stx r0L                 ; r0 = the block ($0100 + SP + 1)
+        lda #>$0100
+        sta r0H
+        ldy #ASK_FIXED - 1
+@copy:  lda askTemplate,y
+        sta (r0),y
+        dey
+        bpl @copy
+        lda taskCur             ; the name after the fixed part
+        asl a
+        asl a
+        asl a
+        asl a
+        tax
+        ldy #ASK_FIXED
+@name:  lda TBLBUF + 1,x
+        sta (r0),y
+        beq @named
+        inx
+        iny
+        cpy #ASK_FIXED + NAME_LEN
+        bcc @name
+        lda #0
+        sta (r0),y
+@named: cpy #ASK_FIXED          ; empty: the desktop
+        bne @ptrs
+        ldx #0
+@desk:  lda DeskName,x
+        sta (r0),y
+        beq @ptrs
+        inx
+        iny
+        bne @desk
+@ptrs:  ldy #ASK_P1             ; the text pointers into the copy (the
+        lda #ASK_T1             ; block ends at most at $01FF: no carry)
+        jsr @ptr
+        ldy #ASK_P2
+        lda #ASK_FIXED
+        jsr @ptr
+        ldy #ASK_P3
+        lda #ASK_T3
+        jsr @ptr
+        jsr DoDlgBox
+        tsx                     ; the room given back
+        txa
+        clc
+        adc #ASK_LEN
+        tax
+        txs
+        lda r0L
+        cmp #YES
+        rts
+@ptr:   clc
+        adc r0L
+        sta (r0),y
+        rts
+
+askTemplate:    .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+ASK_P1          = * - askTemplate
+                .byte 0, >$0100
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+ASK_P2          = * - askTemplate
+                .byte 0, >$0100
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_3_Y + 6
+ASK_P3          = * - askTemplate
+                .byte 0, >$0100
+                .byte YES, DBI_X_0, DBI_Y_2
+                .byte NO, DBI_X_2, DBI_Y_2
+                .byte 0
+ASK_T1          = * - askTemplate
+                .byte BOLDON, "Close this task?", PLAINTEXT, 0
+ASK_T3          = * - askTemplate
+                .byte "Changes not saved are lost.", 0
+ASK_FIXED       = * - askTemplate
+ASK_LEN         = ASK_FIXED + NAME_LEN + 1
+DeskName:       .byte "the desktop", 0
 
 TEXT_X          = BOX_CARD * 8 + 12
 

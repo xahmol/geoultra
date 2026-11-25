@@ -4,7 +4,8 @@ kernal/task.s, modules 95-98): the desktop as task 0 marks a RAM byte
 ($0334) $AA; a request (taskReq, as C= + RUN/STOP sets it) opens the
 popup; "new task": slot 1, a fresh desktop, the byte set to $BB there;
 back to task 0: $AA again (its own 64 KB from the REU); to task 1: $BB;
-"close task" in task 1: task 0 again, the popup's list one shorter.
+"close task" in task 1 (asked first, Yes): task 0 again, the popup's
+list one shorter.
 Keys go straight into the kernal's key queue. The user's HIBERNAT.BIN
 is set aside first (a fresh start) and put back.
 Usage: tests/desktop/tasku64.py [build/geoultra64.crt]
@@ -47,6 +48,15 @@ def main():
         u.write(kern["taskReq"], b"\x80")
         time.sleep(t)
 
+    def press_yes(t=8):                                 # the close question's Yes
+        x, y = 64 + 8 + 20, 32 + 72 + 8                 # (DEF_DB_POS 64, 32; card 1)
+        u.write(0x3A, bytes([x & 0xFF, x >> 8, y]))
+        u.write(0x8505, b"\x00")
+        u.write(0x39, bytes([u.read(0x39, 1)[0] | 0x20]))
+        time.sleep(0.5)
+        u.write(0x8505, b"\x80")
+        time.sleep(t)
+
     def key(c, t=1.5):
         head = kbyte("qHead")
         u.write(kern["keyQueue"] + head, bytes([c]))
@@ -70,7 +80,7 @@ def main():
         u.write(MARK, b"\xAA")
         check("task 0", kbyte("taskCur"), 0)
         popup()
-        check("the popup: the desktop, new task, close task", u.read(P_COUNT, 1)[0], 3)
+        check("the popup: the desktop, new task (no close: the desktop alone)", u.read(P_COUNT, 1)[0], 2)
         key(KEY_DOWN)
         key(CR, t=12)
         check("new task: slot 1", kbyte("taskCur"), 1)
@@ -89,10 +99,11 @@ def main():
         popup()
         key(KEY_DOWN)
         key(KEY_DOWN)
-        key(CR, t=6)
+        key(CR, t=4)                                # close task: asked first,
+        press_yes()                                 # Yes
         check("close task: task 0 again", (kbyte("taskCur"), u.read(MARK, 1)[0]), (0, 0xAA))
         popup()
-        check("one task left", u.read(P_COUNT, 1)[0], 3)
+        check("one task left (no close: the desktop alone)", u.read(P_COUNT, 1)[0], 2)
         key(KEY_STOP, t=3)
     finally:
         if hib is not None:

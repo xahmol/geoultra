@@ -89,7 +89,6 @@ ERR_PRINTER     = $63           ; (no error: a printer driver chosen)
 
 ; Layout (docs/design/DESKTOP.md, "Screen"), the entry name, dialogs, modifiers
 BASELINE        = 7             ; a row's baseline below its top
-DBI_X_0         = 1             ; the left icon's place in a dialog
 LIST_LEFT       = 82
 LIST_TOP        = 28            ; the list: rows of ROW_H pixels
 MENU_BOTTOM     = 14
@@ -178,6 +177,7 @@ SEL_LEN         = ENTRY_MAX / 8 ; the selection's bytes
 DROP_OTHER_COPY = 2             ; a drop (listin.s -> desktop.s DropDo; 0
                                 ; none): into the other pane, or into the
 DROP_PATH_COPY  = 4             ; folder dropPath; + 1: moved (bit 0)
+DROP_TRASH      = 6             ; onto the toolbar's delete button: deleted
 CODE_REC        = $90           ; sidebar codes: favourites $80 + the slot,
                                 ; recent documents CODE_REC + the slot
 TB_TWO          = 0             ; the toolbar (tbMode): two lines, 16 px,

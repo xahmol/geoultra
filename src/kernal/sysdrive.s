@@ -304,14 +304,21 @@ OvAppGate:
         lda #$80                ; refused
         sta sysRefused
         jmp EnterDeskTop        ; (resets the stack)
-@speed: ldx #NAME_LEN - 2       ; its permanent name: the task's (task.s)
+@speed: ldx #3                  ; GeoUltra's desktop ("GU D"esktop: no
+@desk:  lda fileHeader + O_GHFNAME,x    ; other class starts so): its
+        cmp deskClass,x         ; name stays empty, as EnterDeskTop set it
+        bne @own                ; (the task popup shows "the desktop" and
+        dex                     ; offers no "close task" when it is the only
+        bpl @desk               ; task, task.s; the user, 2026-11-25)
+        bmi @named
+@own:   ldx #NAME_LEN - 2       ; its permanent name: the task's (task.s)
 @nm:    lda fileHeader + O_GHFNAME,x
         sta taskName,x
         dex
         bpl @nm
         lda #0
         sta taskName + NAME_LEN - 1
-        jsr SpeedFor            ; its turbo speed (speed.s)
+@named: jsr SpeedFor            ; its turbo speed (speed.s)
         lda screencolors        ; the colour matrix in GEOS's colours, as
         ldx #0                  ; GEOS 2.0's deskTop leaves it: a program
 @col:   sta COLOR_MATRIX,x      ; started another way (gush, a test) found
@@ -378,6 +385,7 @@ OvRefused:
         txs
 @end:   rts
 
+deskClass:      .byte "GU D"
 refuseName:     .byte "Configure"
 REFUSE_LEN      = * - refuseName
 dlgTemplate:    .byte DEF_DB_POS | 1
