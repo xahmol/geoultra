@@ -51,8 +51,15 @@ def read_path(spec):
     inner = None
     if not os.path.exists(spec) and ":" in spec:
         spec, inner = spec.split(":", 1)
-        if os.path.exists(inner) or not os.path.exists(spec):
-            spec, inner = spec + ":" + inner, None
+        if (len(spec) == 1 and spec.isalpha()) or not os.path.exists(spec):
+            spec, inner = spec + ":" + inner, None      # (a Windows drive
+                                                        # letter, "C:\x.d64";
+                                                        # until 2026-11-25 an
+                                                        # inner name that also
+                                                        # existed beside the
+                                                        # zip, as after
+                                                        # unpacking it, was
+                                                        # taken for this)
     data = open(spec, "rb").read()
     if data[:2] == b"\x1f\x8b":
         data = gzip.decompress(data)

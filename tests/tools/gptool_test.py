@@ -73,6 +73,10 @@ def main():
     pairs = [(idx[2 + 2 * k], idx[3 + 2 * k]) for k in range(127)]
     check("all 127 index entries exist (45 strips, the rest empty)", (0, 0) not in pairs
           and sum(1 for p in pairs if p[0]) == 45)
+    subprocess.run(TOOL + ["import", pic, img, "Shapes 2", "--no-dither"], capture_output=True, check=True)
+    listed = subprocess.run(TOOL + ["list", img], capture_output=True, text=True).stdout
+    check("a second import into the same image: both there (the tools manual's example;"
+          " the image was made anew until 2026-11-25)", "Shapes " in listed and "Shapes 2" in listed, listed)
     cpic = os.path.join(OUT, "colour.png")
     im = PImage.new("RGB", (64, 64), gptool.PALETTE[6])
     ImageDraw.Draw(im).rectangle((16, 16, 47, 47), fill=gptool.PALETTE[2])

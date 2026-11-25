@@ -8,8 +8,9 @@ GIF, BMP (any format Pillow reads or writes).
                      [--ink=N] [--paper=N] [--threshold=N]
 
 IMAGE is a D64, D71, D81 or DNP (a name may carry a DNP folder). OUT is
-a new .d64 / .d81 image (made with VICE's c1541) or a folder that gets a
-CVT file, as with gwtool.py.
+a new .d64 / .d81 image (made with VICE's c1541), an image that is there
+already (the picture added, one of the same name replaced), or a folder
+that gets a CVT file, as with gwtool.py.
 
 `export` writes the document's 640 x 720 pixels in the C64's colours
 (each 8 x 8 card its foreground and background colour); --mono in black

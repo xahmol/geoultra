@@ -403,7 +403,9 @@ def main(argv):
             else:
                 names += ["%s:%s" % (key, en[3:19].split(b"\xa0")[0].decode("latin1"))
                           for en in src.entries() if en[0] & 0x07 != 6]
-        for spec in names:
+        names = list(dict.fromkeys(names))  # (a file named and also in "all": once;
+        taken = {}                          # the tools manual's example put it in
+        for spec in names:                  # twice until 2026-11-25)
             key, _, name = spec.partition(":")
             src = srcs.get(key)
             if src is None:
@@ -417,6 +419,11 @@ def main(argv):
             if gf is None:
                 missing.append(spec)
                 continue
+            if gf.name in taken:            # the same name from another source:
+                print("warning: %s: %r is there from %s already; %s skipped"
+                      % (folder or "(root)", gf.name, taken[gf.name], spec))
+                continue
+            taken[gf.name] = spec
             plan.append((folder, gf))
     dnp_cfg = m["dnp"]
     tracks = dnp_cfg.get("tracks", 0)

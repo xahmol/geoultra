@@ -119,6 +119,17 @@ def main():
     run("new", m)
     run("add", m, vc)
     check("we read c1541's CVT: the same content", content(Image(m), names[0]) == content(ours, names[0]))
+    import zipfile                                  # an image inside a zip, its
+    zp = os.path.join(OUT, "z.zip")                 # name also beside the zip (as
+    with zipfile.ZipFile(zp, "w") as z:             # after unpacking it: the tools
+        z.write(m, "m.d64")                         # manual's example failed, 2026-11-25)
+    here = os.getcwd()
+    os.chdir(OUT)
+    try:
+        out = run("extract", "z.zip:m.d64", "--out=" + os.path.join(OUT, "x-zip"))
+    finally:
+        os.chdir(here)
+    check("extract z.zip:m.d64 (m.d64 beside it too)", names[0] in out, out.strip())
     print("geosdisk_test: %s" % ("all passed" if ok else "FAILED"))
     sys.exit(0 if ok else 1)
 

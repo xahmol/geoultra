@@ -134,8 +134,10 @@ pictures from Word or Markdown need Pillow.
 - **IMAGE**: a D64, D71, D81 or DNP. On a DNP a name may include its
   folder: `Writing/Letter`.
 - **OUT**: a new `.d64` or `.d81` image (made with `c1541`, from the PATH
-  or `~/.local/opt/vice-3.10/bin`), or else a folder that gets one CVT
-  file per document (for GEOS converters, or `c1541 -geoswrite`).
+  or `~/.local/opt/vice-3.10/bin`); an image that is there already (D64,
+  D71, D81 or DNP: the documents added, one of the same name replaced);
+  or else a folder that gets one CVT file per document (for GEOS
+  converters, or `c1541 -geoswrite`).
 - **list** shows each geoWrite document: its version (1.x or 2.x), its
   pages and pictures.
 - **convert** turns the named documents (all of them when no name is
@@ -362,7 +364,8 @@ Makes a geoWrite 2.1 document from a text description: paragraphs with
 their font, size, style, alignment, margins, tabs and spacing; pictures;
 page breaks; a header and a footer. GeoUltra's sample brochure and quick
 start guide are made with it (`samples/`, `make samples`). OUT is a new
-D64 or D81, or a folder for a CVT; `--ps` also writes the document as
+D64 or D81, an image that is there already (the document added), or a
+folder for a CVT; `--ps` also writes the document as
 PostScript (as `gwtool ps`), to check it or to make a PDF.
 
 ```
@@ -433,8 +436,9 @@ VICE's `c1541`, as `gwtool` does.
 
 - **IMAGE**: a D64, D71, D81 or DNP; on a DNP a name may include its
   folder (`Art/Logo`).
-- **OUT** (import): a new `.d64` or `.d81` image, or a folder that gets a
-  CVT file.
+- **OUT** (import): a new `.d64` or `.d81` image, an image that is there
+  already (the picture added; one of the same name replaced), or a
+  folder that gets a CVT file.
 - **list** shows each geoPaint document and how many of its 45 strips
   (two card rows each) hold something.
 - **export** writes the whole page, 640 x 720 pixels, in the C64's

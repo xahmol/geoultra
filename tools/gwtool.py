@@ -11,9 +11,10 @@
     gwtool.py ps IMAGE OUT.ps NAME [NAME ...] [--letter] [--fonts=DIR] [--bitmap]
 
 IMAGE is a D64, D71, D81 or DNP (a name may carry a DNP folder,
-"Writing/Letter"). OUT is a folder (CVT files written there) or a new
+"Writing/Letter"). OUT is a folder (CVT files written there), a new
 .d64 / .d81 image (made with VICE's c1541, which must be on the PATH or
-in VICE_BIN from .env). `convert` turns geoWrite 1.x documents
+in VICE_BIN from .env), or an image that is there already (D64, D71,
+D81, DNP: the documents added, one of the same name replaced). `convert` turns geoWrite 1.x documents
 (all of them without NAMEs) into geoWrite 2.x documents and copies 2.x
 ones as they are; `merge` joins the documents NAME... in that order into
 one 2.x document NEWNAME: their pages one after another (each starts on
@@ -334,7 +335,8 @@ def font_files(img, ids):
 
 def save_new(out, name, pg, head, foot, pics, info):
     """A new geoWrite 2.1 document NAME from page records (fromdocx,
-    frommd) into OUT (output: a folder of CVTs or a new image)."""
+    frommd, gwgen) into OUT (output: a folder of CVTs, a new image, or added
+    to an image that is there)."""
     import datetime
     recs = list(pg) + [None] * (PIC_LAST + 1 - len(pg))
     recs[HEADER_REC], recs[FOOTER_REC] = head, foot
@@ -361,8 +363,26 @@ def save_new(out, name, pg, head, foot, pics, info):
 
 
 def output(files, out):
-    """files (GeoFiles) to a folder of CVTs, or into a new D64/D81."""
+    """files (GeoFiles) to a folder of CVTs, into a new D64/D81, or added
+    to an image that exists (geosdisk.py add --replace: a file of the
+    same name replaced; until 2026-11-25 the image was made anew, and the
+    tools manual's two gptool imports into one image kept only the
+    second)."""
     ext = os.path.splitext(out)[1].lower()
+    if ext in (".d64", ".d71", ".d81", ".dnp") and os.path.exists(out):
+        tmp = tempfile.mkdtemp()
+        paths = []
+        for gf in files:
+            p = os.path.join(tmp, gf.name.replace("/", "_") + ".cvt")
+            write_cvt(gf, p)
+            paths.append(p)
+        r = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "geosdisk.py"),
+                            "add", out] + paths + ["--replace"], capture_output=True, text=True)
+        shutil.rmtree(tmp)
+        if r.returncode:
+            die((r.stderr or r.stdout).strip()[-300:])
+        print("%s: %d files added" % (out, len(files)))
+        return
     if ext in (".d64", ".d81"):
         tmp = tempfile.mkdtemp()
         cmd = [C1541, "-format", "converted,gw", ext[1:], out]
