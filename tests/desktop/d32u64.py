@@ -7,7 +7,9 @@ cursor on Roma, item 1 of the context menu (FontAct): FONTS.DNP made and
 Roma in it (read back from the stick); "Restart now?" YES: the session
 resumed (the desktop in /b again), now with /f listing Roma. In /f, the
 cursor on Roma, FontAct again (uninstall), NO to the restart: Roma gone
-from FONTS.DNP. The user's MOUNTS.INI, SETTINGS.INI, RECENT.INI,
+from FONTS.DNP. Then drive C an empty 128-track DNP (8 MB: the REU's
+drives' area full, as on the user's U64) and install again: "Not enough
+free REU for it." (not the disk's "not enough room on the drive"). The user's MOUNTS.INI, SETTINGS.INI, RECENT.INI,
 HIBERNAT.BIN, FONTS.DNP and gush_history are set aside and put back as
 they were. Screens: build/harness/gush/d32u64-*.png.
 Usage: tests/desktop/d32u64.py [build/geoultra64.crt]
@@ -30,6 +32,7 @@ MOUNTS = b"[drives]\r\nA=/USB0/GEOULTRA/test/GEOS64.D81\r\nB=/USB0/GEOULTRA/test
 KEY_STUB = 0xC0A0
 DLG_X, DLG_Y = 64, 32
 OUT = os.path.join(ROOT, "build", "harness", "gush")
+BIG = "/USB0/GEOULTRA/test/d32big.dnp"
 KEEP = ("MOUNTS.INI", "SETTINGS.INI", "RECENT.INI", "HIBERNAT.BIN", "FONTS.DNP", "gush_history")
 
 
@@ -155,7 +158,24 @@ def main():
         shot("asked2")
         press(DLG_X + 17 * 8 + 20, DLG_Y + 72 + 8, 8)       # NO
         check("uninstalled: Roma out of FONTS.DNP", stored(), [])
+        big = os.path.join(OUT, "d32-big.dnp")                 # the REU full (the user's
+        subprocess.run([sys.executable, os.path.join(ROOT, "tools", "geosdisk.py"), "new", big, "--replace",
+                        "--tracks=128"], check=True, capture_output=True)   # U64, 2026-11-21:
+        put(BIG, open(big, "rb").read())                       # an 8 MB drive C)
+        put(HOME + "FONTS.DNP", None)
+        put(HOME + "MOUNTS.INI", MOUNTS + b"C=" + BIG.encode() + b"\r\n")
+        u.boot()
+        time.sleep(30)
+        into("/b")
+        lst = names()
+        u.write(k["cur"], bytes([lst.index("Roma"), 0]))
+        call(k["TaskOrMount"], s=25)                        # install: no room in the REU
+        shot("noreu")
+        line = int.from_bytes(bytes(u.read(k["errLine"], 2)), "little")   # the error's line
+        check("the REU full: \"Not enough free REU for it.\"", line, k["ENoReu"])
+        press(DLG_X + 17 * 8 + 20, DLG_Y + 72 + 8, 4)       # OK
     finally:
+        put(BIG, None)
         for n, d in kept.items():
             put(HOME + n, d)
         back = all(get(HOME + n) == d for n, d in kept.items())

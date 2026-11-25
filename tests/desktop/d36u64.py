@@ -7,19 +7,14 @@ submenu's hibernate now, reboot and BASIC.
 - reboot: the session kept, the desktop back.
 - BASIC (Yes): BASIC's READY. on the screen; a reboot brings GeoUltra.
 The user's SETTINGS.INI, MOUNTS.INI, RECENT.INI and HIBERNAT.BIN are kept
-first and put back byte for byte; the Cartridge setting is set to the
-flash copy for the test and put back (the user's is empty: the .crt is
-run from the file browser; d37u64.py tests that way). Screens: build/harness/desktop/d36-*.png.
+first and put back byte for byte (the Cartridge setting: feu64's boot). Screens: build/harness/desktop/d36-*.png.
 Usage: tests/desktop/d36u64.py [build/geoultra64.crt]
 """
 import ftplib
 import io
-import json
 import os
 import sys
 import time
-import urllib.parse
-import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "tests", "engine"))
@@ -30,7 +25,6 @@ import apprun  # noqa: E402
 HOME = "/USB0/GEOULTRA/"
 KEEP = ("SETTINGS.INI", "MOUNTS.INI", "RECENT.INI", "HIBERNAT.BIN")
 OUT = os.path.join(ROOT, "build", "harness", "desktop")
-CART = "/v1/configs/C64%20and%20Cartridge%20Settings/Cartridge"
 MENU_BOTTOM, ROW = 14, 14
 GEOS_XY = (12, 5)
 GEOULTRA_XY = (30, MENU_BOTTOM + 7)
@@ -103,15 +97,8 @@ def main():
     def message():                                  # the saved message's words
         return b"switch off" in bytes(u.read(0x5000, 0x1000))
 
-    def rest(method, path):
-        req = urllib.request.Request("http://%s%s" % (u.ip, path), method=method)
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return r.read()
-
-    cart = json.loads(rest("GET", CART))["C64 and Cartridge Settings"]["Cartridge"]["current"]
     kept = {n: fetch(n) for n in KEEP}
     try:
-        rest("PUT", CART + "?value=geoultra64.crt")         # (the flash copy: u.boot)
         store("HIBERNAT.BIN", None)
         u.boot(crt)
         time.sleep(20)
@@ -139,7 +126,6 @@ def main():
         time.sleep(35)
         check("a reboot: GeoUltra again", running(), True)
     finally:
-        rest("PUT", CART + "?value=" + urllib.parse.quote(cart))   # (the user's: empty)
         for n, d in kept.items():
             store(n, d)
         back = all(fetch(n) == d for n, d in kept.items())

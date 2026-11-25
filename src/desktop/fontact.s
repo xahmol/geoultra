@@ -311,9 +311,9 @@ Make:   lda #<fPath
         sta r1H
         lda #8
         sta r2L
-        lda #FE_MKIMG
+        lda #FE_MKIMG           ; (made in the REU first: may not fit)
         jsr FileEngine
-        txa
+        jmp NoRoom
 @end:   rts
 
 ; Out (uninstall): the font deleted from FONTS.DNP (mounted on letter for
@@ -440,7 +440,15 @@ MountIt:
         sta r1H
         lda #FE_MOUNT
         jsr FileEngine
-        txa
+                                ; (falls through)
+; NoRoom: X from FE_MOUNT or FE_MKIMG: INSUFF_SPACE means no room in the
+; REU there (both put the image in it): ERR_REU, "Not enough free REU for
+; it." (the user's U64, 2026-11-21: an 8 MB drive C left no room for
+; FONTS.DNP, and the disk's "not enough room" misled); Z set when X = 0.
+NoRoom: cpx #INSUFF_SPACE
+        bne :+
+        ldx #ERR_REU
+:       txa
         rts
 
 ; UMount: letter unmounted (written back); its error left for status.

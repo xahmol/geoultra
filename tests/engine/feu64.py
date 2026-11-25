@@ -8,10 +8,13 @@ small program written to C64 memory and run by MainLoop through appMain:
 it switches appMain off, loads r0-r3, calls FileEngine and leaves X, A,
 r0-r4 and a done flag where the REST interface reads them.
 """
+import atexit
+import json
 import os
 import subprocess
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -63,13 +66,34 @@ class U64:
     def ftp_put(self, src, path):
         subprocess.run(["curl", "-s", "-T", src, "ftp://%s%s" % (self.ip, path)], check=True)
 
+    CART = "/configs/C64%20and%20Cartridge%20Settings/Cartridge"
+
     def boot(self, crt=None):
         """The cartridge into flash (when given) and a reboot; back at
-        the banner (MainLoop running)."""
+        the banner (MainLoop running). With crt the Ultimate's Cartridge
+        setting is set to that flash copy for the test (the user's is
+        empty: the user runs the .crt from the file browser) and the
+        user's setting is put back when the test ends."""
         if crt:
             self.ftp_put(crt, "/Flash/carts/geoultra64.crt")
+            self.cart_hold()
         self._req("PUT", self.rest + "/machine:reboot")
         time.sleep(15)
+
+    def cart_hold(self):
+        """The Cartridge setting geoultra64.crt until the test ends (once)."""
+        if getattr(self, "cart_kept", None) is not None:
+            return
+        got = json.loads(self._req("GET", self.rest + self.CART))
+        self.cart_kept = got["C64 and Cartridge Settings"]["Cartridge"]["current"]
+        if self.cart_kept != "geoultra64.crt":
+            self._req("PUT", self.rest + self.CART + "?value=geoultra64.crt")
+            atexit.register(self.cart_back)
+
+    def cart_back(self):
+        """The user's Cartridge setting again (not saved to flash: it is
+        the setting of the session)."""
+        self._req("PUT", self.rest + self.CART + "?value=" + urllib.parse.quote(self.cart_kept))
 
     def text(self, addr, s):
         self.write(addr, s.encode("latin1") + b"\0")
