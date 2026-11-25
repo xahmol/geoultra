@@ -16,6 +16,7 @@ DoMenu          = $C151
 MoveData        = $C17E
 ReDoMenu        = $C193
 GotoFirstMenu   = $C1BD
+ToBasic         = $C241
 GetCharWidth    = $C1C9
 GetFile         = $C208
 FindFTypes      = $C23B

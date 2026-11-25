@@ -77,6 +77,12 @@ OvlFail:
         Stub Popup, 7           ; overlay 7: ctxmenu.s
         Stub Info, 7
         Stub About, 7           ; (geos > GeoUltra info)
+        Stub GeosMenu, 9        ; (the geos menu, view > theme, geos >
+        Stub ThemeMenu, 9       ; GeoUltra's actions: desktop.s)
+        Stub MHibernate, 9
+        Stub MReboot, 9
+        Stub MFresh, 9
+        Stub MBasic, 9
         Stub MakePS, 7          ; (a geoWrite document to GU PostScript)
         Stub FontAct, 9         ; overlay 9: fontact.s (a system font in
         Stub FontImport, 9      ; or out; GEOULTRA/fonts' CVT files)

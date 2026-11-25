@@ -9,4 +9,4 @@ load = 0x0400
 class = "GU Desktop"
 version = "V0.1"
 author = "Xander Mol"
-info = "GeoUltra's own desktop (in development)."
+info = "GeoUltra's own desktop."

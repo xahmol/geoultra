@@ -144,9 +144,18 @@ whole session (every task, the screen, the drives) to the stick. After
 a power cycle it comes back where you were. Hold **C=** while it starts
 to begin fresh instead.
 
-Before switching off, wait until the drive activity has stopped (a
-write-back takes a few seconds); with hibernation on, wait until the
-session has been saved.
+To switch off at once, choose **geos > GeoUltra > hibernate now**: the
+drives are written back and the session is saved, and the message
+"GeoUltra is saved. You can switch off now." appears. Switch off then,
+or press OK to carry on. Otherwise, before switching off, wait until the
+drive activity has stopped (a write-back takes a few seconds); with
+hibernation on, wait until the session has been saved.
+
+The same submenu has **reboot** (GeoUltra starts again and comes back
+where you were), **reboot fresh** (it starts afresh, as with C= held;
+other tasks and the saved session go: asked first) and **BASIC** (the
+drives written back, then BASIC as after a power-on; asked first; a
+reset brings GeoUltra back).
 
 # The desktop
 
@@ -164,14 +173,14 @@ only when GeoUltra's cannot.
 
 From top to bottom:
 
-- **The menu bar**: the menus geos (GeoUltra info, settings, gush, the
-  print queue and the desk accessories), file, view, go and clipboard on
+- **The menu bar**: the menus geos (the GeoUltra submenu and the desk
+  accessories; see "The menus"), file, view, go and clipboard on
   the left, the date and time on the right (unless the theme or the
   clock setting leaves them out). Everything the toolbar does is in the
   menus too. GeoUltra info shows the version with the build's time
   stamp (v0.9.0-20261120-1310: version 0.9.0, built 20 November 2026
   at 13:10); its "splash" button shows the start picture again. Drive
-  E's desk accessories (geoFolder) come first in the geos menu, in
+  E's desk accessories (geoFolder) come first after GeoUltra in the geos menu, in
   every application's too.
 - **The toolbar**: buttons for the things done most (see "The
   toolbar").
@@ -322,6 +331,88 @@ the Ultimate 64's USB mouse works as one.) Some entries get an item of
 their own as the menu's first or second item: **mount** on a disk
 image, **use as printer** on a printer driver, **make PostScript** on a
 geoWrite document, **install as system font** on a font.
+
+## The menus
+
+The menu bar's menus, left to right. A key after an item works without
+opening the menu (C= is the Commodore key). Everything the toolbar and
+the context menu do is in these menus too.
+
+![The geos menu with its GeoUltra submenu.](../images/menu-geos.png)
+
+*The geos menu with its GeoUltra submenu.*
+
+**geos**: the first line, **GeoUltra**, opens GeoUltra's own submenu;
+the desk accessories follow (drive E's first, then those of the drives
+A-D).
+
+| geos > GeoUltra | |
+| --- | --- |
+| GeoUltra info | the version and its build date; "splash" shows the start picture |
+| settings | GeoUltra Settings (see "Settings") |
+| gush (C=G) | the shell (see "gush, the shell") |
+| print queue | the print queue's window (see "The print queue") |
+| hibernate now | drives written back, the session saved: "You can switch off now"; OK carries on |
+| reboot | GeoUltra starts again and comes back where you were |
+| reboot fresh | starts afresh, as with C= held; other tasks and the saved session go (asked first) |
+| BASIC | drives written back, then BASIC as after a power-on (asked first); a reset brings GeoUltra back |
+
+![The file menu.](../images/menu-file.png)
+
+*The file menu.*
+
+| file | |
+| --- | --- |
+| open (C=O) | opens the selected entry, as a double click |
+| open in new task (C=W) | starts the program (or a document's program) in a task of its own |
+| info (C=I) | the entry's information: type, size, dates, its GEOS file header's details |
+| copy (C=C), cut (C=X), paste (C=V) | the selection to GeoUltra's clipboard and back (see "Clipboard") |
+| copy to other (C=T), move to other (C=M) | the selection to the other pane (two panes) |
+| delete (DEL) | deletes the selection (asked first, see Settings' Desktop page) |
+| rename (C=R) | a new name for the selected entry |
+| new folder (C=N) | a folder in the current one (on drives with folders) |
+| select all (C=A) | every entry in the list |
+| favourite (C=F) | the current folder to the sidebar's favourites |
+
+![The view menu.](../images/menu-view.png)
+
+*The view menu.*
+
+| view | |
+| --- | --- |
+| theme | the themes; "*" marks the one in use; a click uses another |
+| view | list, icons or detailed (sizes and dates) |
+| clock | the menu bar's clock: 24-hour, 12-hour or off |
+| toolbar | two lines, one line, or off |
+| two panes (C=P) | one list or two side by side |
+| refresh | reads the current folder again |
+
+![view > view.](../images/menu-view-view.png) ![view > theme.](../images/menu-view-theme.png)
+
+*view > view and view > theme: "*" marks the choice in use.*
+
+![The go menu.](../images/menu-go.png)
+
+*The go menu.*
+
+| go | |
+| --- | --- |
+| back, forward | the folders visited before and after |
+| up | the folder above |
+| root / | all drives and the Ultimate's roots |
+| home | GeoUltra's folder on the Ultimate (GEOULTRA) |
+| system fonts | the installed system fonts (see "System fonts") |
+| top, end | the list's first or last entry |
+
+![The clipboard menu.](../images/menu-clipboard.png)
+
+*The clipboard menu.*
+
+| clipboard | |
+| --- | --- |
+| show | what the clipboard holds |
+| save as file | the clipboard's text or picture as a file in the current folder |
+| clear | empties the clipboard |
 
 ## The toolbar
 
@@ -480,7 +571,7 @@ box from inside any application, with a button for gush.
 
 *GeoUltra Settings, the Desktop page.*
 
-**GeoUltra Settings** (geos > settings, or the toolbar's settings
+**GeoUltra Settings** (geos > GeoUltra > settings, or the toolbar's settings
 button) changes GeoUltra's settings without editing files: a list of
 pages on the left, the page on the right, and three buttons: **OK**
 (save and leave), **Cancel** (leave; it asks when something was
@@ -587,7 +678,7 @@ may not, so leave it on standard for one.
 Programs print into a queue in the REU and can go on at once; the
 queue sends the pages to the printer in the background. The menu bar
 shows "printing 2/5, 45%" (job 2 of 5, 45% printed) or "print paused".
-A click on it, or geos > print queue, opens the queue window: a line
+A click on it, or geos > GeoUltra > print queue, opens the queue window: a line
 per job with its cancel button, the program, its pages and its state,
 and pause or resume. The queue survives hibernation; its size is set on
 the REU page.
@@ -707,7 +798,7 @@ run as they would from the desktop.
 
 ## Starting and leaving
 
-- From the desktop: geos > gush (C=G), or the toolbar's last button.
+- From the desktop: geos > GeoUltra > gush (C=G), or the toolbar's last button.
 - From any application: geoFolder's gush button.
 - At the start instead of the desktop: `start=gush` in the `[system]`
   section of `SETTINGS.INI`.

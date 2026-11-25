@@ -754,7 +754,7 @@ Decimal:
 
 ; About (geos > GeoUltra info): the name, the version with the build's
 ; time stamp (vMAJOR.MINOR.PATCH-YYYYMMDD-HHMM, from the kernal's info
-; block, as the Makefile set it), "in development" and the copyright;
+; block, as the Makefile set it), the release ("Beta 1") and the copyright;
 ; OK and "splash" (the boot splash from drive E, ShowSplash). The user,
 ; 2026-11-13.
 About:  jsr GotoFirstMenu
@@ -937,7 +937,7 @@ splashRec:
         .word SplashBtn
 
 NameText:       .byte BOLDON, "GeoUltra", PLAINTEXT, 0
-DevText:        .byte "in development", 0
+DevText:        .byte "Beta 1", 0     ; (the release: "Beta 1", none at 1.0)
 ByText:         .byte "(C) 2026 Xander Mol, idreamtin8bits", 0
 SplashPath:     .byte "/e/splash", 0
 

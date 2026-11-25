@@ -12,7 +12,7 @@
         .include "geos.inc"
         .include "desktop.inc"
 
-        .import About
+        .import About, GeosMenu, ThemeMenu, MHibernate, MReboot, MFresh, MBasic, Dialog
         .import ListRead, ListDraw, ListPress, ListKey, Drive, Open, Back
         .import OvlInit, clipCount
         .import Copy, Cut, Paste, Delete, Rename, NewFolder, path
@@ -48,8 +48,9 @@ HEAD_STEP       = 10            ; a heading's lines and the gap after it
 SECTION_GAP     = 3             ; between the sidebar's sections
 NAME_DX         = 10            ; a drive's disk name after its letter
 DA_MAX          = 8             ; desk accessories in the geos menu
-GEOS_FIXED      = 4             ; its items before them: info, settings,
-                                ; gush, print queue
+GEOS_FIXED      = 1             ; its items before them: "GeoUltra" (the
+                                ; submenu: info, settings, gush, print
+                                ; queue, hibernate, reboots, BASIC)
 GO_N            = 8             ; the go menu's items (GoTexts, GoDo)
 DA_NAME_LEN     = 17            ; a GEOS name and its zero
 THEME_ITEM      = 16            ; a view menu theme item: "* " and a name
@@ -939,6 +940,7 @@ DiskName:
 GEOS_R          = 99            ; the menus' right edges (their tables)
 FILE_R          = 163
 VIEW_R          = 129
+SYS_R           = GEOS_R + 92     ; geos > GeoUltra
 SC_MARGIN       = 4             ; the key's room before the frame
 Shortcuts:
         ldx #SC_N - 1
@@ -979,58 +981,6 @@ Shortcuts:
         bpl @item
         rts
 
-; GeosMenu: "GeoUltra info" and the desk accessories (FindFTypes; drive
-; E's added by the kernal) into geosMenu. r0 = it.
-GeosMenu:
-        lda #<daNames
-        sta r6L
-        lda #>daNames
-        sta r6H
-        lda #DESK_ACC
-        sta r7L
-        lda #DA_MAX
-        sta r7H
-        lda #0
-        sta r10L
-        sta r10H
-        jsr FindFTypes
-        lda #DA_MAX             ; found: DA_MAX - what was left
-        sec
-        sbc r7H
-        sta daCount
-        clc                     ; items: info, gush and the accessories
-        adc #GEOS_FIXED
-        ora #VERTICAL | UN_CONSTRAINED
-        sta geosMenu + 6
-        lda daCount             ; its bottom: MENU_BOTTOM + 14 per item
-        clc
-        adc #GEOS_FIXED
-        jsr MenuBottom
-        sta geosMenu + 1
-        ldx #0                  ; the accessories' items
-        ldy #0
-@item:  cpx daCount
-        bcs @done
-        lda DaLo,x
-        sta geosItems + GEOS_FIXED * 5 + 0,y
-        lda DaHi,x
-        sta geosItems + GEOS_FIXED * 5 + 1,y
-        lda #MENU_ACTION
-        sta geosItems + GEOS_FIXED * 5 + 2,y
-        lda #<RunDA
-        sta geosItems + GEOS_FIXED * 5 + 3,y
-        lda #>RunDA
-        sta geosItems + GEOS_FIXED * 5 + 4,y
-        tya
-        clc
-        adc #5
-        tay
-        inx
-        bne @item
-@done:  lda #<geosMenu
-        ldx #>geosMenu
-        jmp MenuR0
-
 ; MenuBottom: A = MENU_BOTTOM + 14 * A (a menu of A items).
 MenuBottom:
         asl a
@@ -1063,51 +1013,6 @@ ViewMenu:
 MenuR0: sta r0L
         stx r0H
         jmp MenuNeutral
-
-; ThemeMenu (view > theme): the theme files in THEMES (themefile.s), or
-; the built-in themes without them; each item "* " (the one in use,
-; curName) or "  " and its name.
-ThemeMenu:
-        lda themeCount
-        bne :+
-        lda #THEMES_N
-:       sta nThemes
-        jsr MenuBottom
-        sta themeMenu + 1
-        lda nThemes
-        ora #VERTICAL | UN_CONSTRAINED
-        sta themeMenu + 6
-        ldx #0
-@theme: stx at
-        txa
-        jsr ThemeAt             ; r1 = its name
-        lda at
-        asl a                   ; its item: themeItems + at * THEME_ITEM
-        asl a
-        asl a
-        asl a
-        tax
-        jsr IsCurrent           ; (A: "*" or " "; keeps X)
-        sta themeItems,x
-        lda #' '
-        sta themeItems + 1,x
-        ldy #0
-@ch:    lda (r1),y
-        sta themeItems + 2,x
-        beq :+
-        inx
-        iny
-        cpy #THEME_ITEM - 3
-        bcc @ch
-        lda #0
-        sta themeItems + 2,x
-:       ldx at
-        inx
-        cpx nThemes
-        bcc @theme
-        lda #<themeMenu
-        ldx #>themeMenu
-        jmp MenuR0
 
 ; ViewsMenu (view > view), ClockMenu (view > clock): "*" before the
 ; choice in use.
@@ -1349,11 +1254,23 @@ geosMenu:
         .word 0, GEOS_R
         .byte VERTICAL | UN_CONSTRAINED | GEOS_FIXED
 geosItems:
+        .word GeoUltraItem      ; (one fixed line, the rest in its submenu:
+        .byte SUB_MENU          ; the user, 2026-11-20)
+        .word sysMenu
+        .res DA_MAX * 5         ; (the accessories, GeosMenu)
+
+; geos > GeoUltra: info, settings, gush, the print queue, hibernate now,
+; reboot (the session kept), reboot fresh, BASIC.
+SYS_N           = 8
+sysMenu:
+        .byte MENU_BOTTOM, MENU_BOTTOM + SYS_N * 14
+        .word GEOS_R - 4, SYS_R
+        .byte VERTICAL | UN_CONSTRAINED | SYS_N
         .word InfoText
         .byte MENU_ACTION
         .word About
-        .word SettingsItem      ; (settings and gush beside the desk
-        .byte MENU_ACTION       ; accessories: the user, 2026-11-12)
+        .word SettingsItem
+        .byte MENU_ACTION
         .word Settings
         .word GushItem
         .byte MENU_ACTION
@@ -1361,7 +1278,18 @@ geosItems:
         .word QueueItem         ; (the print spooler, spool.s)
         .byte MENU_ACTION
         .word MQueue
-        .res DA_MAX * 5         ; (the accessories, GeosMenu)
+        .word HibItem
+        .byte MENU_ACTION
+        .word MHibernate
+        .word RebootItem
+        .byte MENU_ACTION
+        .word MReboot
+        .word FreshItem
+        .byte MENU_ACTION
+        .word MFresh
+        .word BasicItem
+        .byte MENU_ACTION
+        .word MBasic
 
 fileMenu:
         .byte MENU_BOTTOM, MENU_BOTTOM + 13 * 14
@@ -1545,7 +1473,7 @@ ScItems:
         .word FavItem
         .word PanesItem
 ScRight:
-        .byte GEOS_R - SC_MARGIN
+        .byte SYS_R - SC_MARGIN         ; (gush: in geos > GeoUltra)
         .byte FILE_R - SC_MARGIN
         .byte FILE_R - SC_MARGIN
         .byte FILE_R - SC_MARGIN
@@ -1571,6 +1499,11 @@ ClipSaveItem:   .byte "save as file", 0
 ClipClearItem:  .byte "clear", 0
 GoText:         .byte "go", 0
 InfoText:       .byte "GeoUltra info", 0
+GeoUltraItem:   .byte "GeoUltra", 0
+HibItem:        .byte "hibernate now", 0
+RebootItem:     .byte "reboot", 0
+FreshItem:      .byte "reboot fresh", 0
+BasicItem:      .byte "BASIC", 0
 GushItem:       .byte "gush", GOTOX, 0, 0, "C=G", 0
 SettingsItem:   .byte "settings", 0
 QueueItem:      .byte "print queue", 0
@@ -1644,3 +1577,222 @@ dname:          .res 64
 uInfo:          .res 16
 daNames:        .res DA_MAX * DA_NAME_LEN
 themeItems:     .res THEMES_MAX * THEME_ITEM
+
+; --- Overlay 9: the geos menu's parts (the core is full) ---------------
+
+        .segment "OV9"
+        .export Ov_GeosMenu, Ov_ThemeMenu, Ov_MHibernate, Ov_MReboot, Ov_MFresh, Ov_MBasic
+
+; Ov_GeosMenu (overlay 9: the core is full): "GeoUltra" and the desk accessories (FindFTypes; drive
+; E's added by the kernal) into geosMenu. r0 = it.
+Ov_GeosMenu:
+        lda #<daNames
+        sta r6L
+        lda #>daNames
+        sta r6H
+        lda #DESK_ACC
+        sta r7L
+        lda #DA_MAX
+        sta r7H
+        lda #0
+        sta r10L
+        sta r10H
+        jsr FindFTypes
+        lda #DA_MAX             ; found: DA_MAX - what was left
+        sec
+        sbc r7H
+        sta daCount
+        clc                     ; items: info, gush and the accessories
+        adc #GEOS_FIXED
+        ora #VERTICAL | UN_CONSTRAINED
+        sta geosMenu + 6
+        lda daCount             ; its bottom: MENU_BOTTOM + 14 per item
+        clc
+        adc #GEOS_FIXED
+        jsr MenuBottom
+        sta geosMenu + 1
+        ldx #0                  ; the accessories' items
+        ldy #0
+@item:  cpx daCount
+        bcs @done
+        lda DaLo,x
+        sta geosItems + GEOS_FIXED * 5 + 0,y
+        lda DaHi,x
+        sta geosItems + GEOS_FIXED * 5 + 1,y
+        lda #MENU_ACTION
+        sta geosItems + GEOS_FIXED * 5 + 2,y
+        lda #<RunDA
+        sta geosItems + GEOS_FIXED * 5 + 3,y
+        lda #>RunDA
+        sta geosItems + GEOS_FIXED * 5 + 4,y
+        tya
+        clc
+        adc #5
+        tay
+        inx
+        bne @item
+@done:  lda #<geosMenu
+        ldx #>geosMenu
+        jmp MenuR0
+
+; Ov_ThemeMenu (overlay 9; view > theme): the theme files in THEMES (themefile.s), or
+; the built-in themes without them; each item "* " (the one in use,
+; curName) or "  " and its name.
+Ov_ThemeMenu:
+        lda themeCount
+        bne :+
+        lda #THEMES_N
+:       sta nThemes
+        jsr MenuBottom
+        sta themeMenu + 1
+        lda nThemes
+        ora #VERTICAL | UN_CONSTRAINED
+        sta themeMenu + 6
+        ldx #0
+@theme: stx at
+        txa
+        jsr ThemeAt             ; r1 = its name
+        lda at
+        asl a                   ; its item: themeItems + at * THEME_ITEM
+        asl a
+        asl a
+        asl a
+        tax
+        jsr IsCurrent           ; (A: "*" or " "; keeps X)
+        sta themeItems,x
+        lda #' '
+        sta themeItems + 1,x
+        ldy #0
+@ch:    lda (r1),y
+        sta themeItems + 2,x
+        beq :+
+        inx
+        iny
+        cpy #THEME_ITEM - 3
+        bcc @ch
+        lda #0
+        sta themeItems + 2,x
+:       ldx at
+        inx
+        cpx nThemes
+        bcc @theme
+        lda #<themeMenu
+        ldx #>themeMenu
+        jmp MenuR0
+
+
+; Ov_MHibernate (geos > GeoUltra > hibernate now): the session saved
+; (FE_REBOOT Y = 2: the drives written back, HIBERNAT.BIN), then "you can
+; switch off now"; OK carries on. A resume of that session comes back
+; here with A = 1: nothing to show then (the user, 2026-11-20).
+Ov_MHibernate:
+        jsr GotoFirstMenu
+        ldy #2
+        lda #FE_REBOOT
+        jsr FileEngine
+        cpx #0
+        bne SysFail
+        tax                     ; (A = 1: resumed)
+        bne SysEnd
+        lda #<SavedDlg
+        ldx #>SavedDlg
+        bne SysDlg              ; (always)
+
+; Ov_MReboot (geos > GeoUltra > reboot): the session kept (FE_REBOOT
+; Y = 1); back here only after its resume, or when it failed.
+Ov_MReboot:
+        jsr GotoFirstMenu
+        ldy #1
+SysReboot:
+        lda #FE_REBOOT
+        jsr FileEngine
+        txa
+        beq SysEnd
+SysFail:
+        lda #<FailDlg
+        ldx #>FailDlg
+SysDlg: sta r0L
+        stx r0H
+        jmp Dialog
+SysEnd: rts
+
+; Ov_MFresh (geos > GeoUltra > reboot fresh): asked first (the programs
+; in other tasks and the saved session go), then FE_REBOOT Y = 0.
+Ov_MFresh:
+        jsr GotoFirstMenu
+        lda #<FreshDlg
+        ldx #>FreshDlg
+        jsr SysAsk
+        bne SysEnd
+        ldy #0
+        beq SysReboot           ; (always)
+
+; Ov_MBasic (geos > GeoUltra > BASIC): asked first, then ToBASIC (no
+; file, no command): the drives written back, the cartridge off, BASIC
+; as after a power-on; a reset starts GeoUltra again.
+Ov_MBasic:
+        jsr GotoFirstMenu
+        lda #<BasicDlg
+        ldx #>BasicDlg
+        jsr SysAsk
+        bne SysEnd
+        lda #<NoCmd
+        sta r0L
+        lda #>NoCmd
+        sta r0H
+        lda #0
+        sta r5L
+        sta r5H
+        lda #<$0803             ; (no BASIC program in memory)
+        sta r7L
+        lda #>$0803
+        sta r7H
+        jmp ToBasic
+
+; SysAsk: the yes/no dialog at A/X; Z set when YES was chosen.
+SysAsk: sta r0L
+        stx r0H
+        jsr Dialog
+        lda r0L
+        cmp #YES
+        rts
+
+SavedDlg:       .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word SavedText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word SavedText2
+                .byte OK, DBI_X_2, DBI_Y_2
+                .byte 0
+FailDlg:        .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word FailText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word FailText2
+                .byte OK, DBI_X_2, DBI_Y_2
+                .byte 0
+FreshDlg:       .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word FreshText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word FreshText2
+                .byte YES, DBI_X_0, DBI_Y_2
+                .byte NO, DBI_X_2, DBI_Y_2
+                .byte 0
+BasicDlg:       .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word BasicText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word BasicText2
+                .byte YES, DBI_X_0, DBI_Y_2
+                .byte NO, DBI_X_2, DBI_Y_2
+                .byte 0
+SavedText:      .byte BOLDON, "GeoUltra is saved.", PLAINTEXT, 0
+SavedText2:     .byte "You can switch off now.", 0
+FailText:       .byte BOLDON, "Not saved:", PLAINTEXT, 0
+FailText2:      .byte "a drive could not be written.", 0
+FreshText:      .byte BOLDON, "Reboot fresh?", PLAINTEXT, 0
+FreshText2:     .byte "Other tasks and the session go.", 0
+BasicText:      .byte BOLDON, "Leave GeoUltra for BASIC?", PLAINTEXT, 0
+BasicText2:     .byte "A reset brings it back.", 0
+NoCmd:          .byte 0

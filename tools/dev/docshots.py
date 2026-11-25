@@ -123,7 +123,7 @@ def main():
             f.storbinary("STOR " + path, io.BytesIO(data))
         f.quit()
 
-    def shot(name, pointer=None):
+    def shot(name, pointer=None, crop=None):
         if pointer:                                     # the pointer out of the way
             u.write(0x3A, bytes([pointer[0] & 0xFF, pointer[0] >> 8, pointer[1]]))
             time.sleep(0.5)
@@ -141,8 +141,10 @@ def main():
         else:
             return
         x0, y0 = SCREEN                                 # the screen, every pixel
-        rows = [[c for c in row[x0:x0 + 320] for _ in (0, 1)]  # doubled (sharp in
-                for row in frame[y0:y0 + 200] for _ in (0, 1)]   # the PDF and on GitHub)
+        cx0, cy0, cx1, cy1 = crop or (0, 0, 320, 200)   # (a part: C64 coordinates)
+        cx1, cy1 = min(cx1, 320), min(cy1, 200)
+        rows = [[c for c in row[x0 + cx0:x0 + cx1] for _ in (0, 1)]  # doubled (sharp
+                for row in frame[y0 + cy0:y0 + cy1] for _ in (0, 1)]   # in the PDF)
         path = os.path.join(OUT, name + ".png")
         png.write(path, rows, U64_PAL)
         from PIL import Image                           # 144 dpi: the PDFs print
@@ -218,6 +220,22 @@ def main():
         call(k["Popup"], 0, s=3)
         shot("context-menu")
         press(250, 170, 2)                              # (closed: a click outside)
+        # --- the menus, each cropped to it and some desktop around it
+        # (the user, 2026-11-20); right edges and item counts from the tables
+        # (desktop.s: GEOS_R 99, SYS_R 191, FILE_R 163, VIEW_R 129; 14 a row)
+        def menu(name, title_x, right, items, sub=None):
+            press(title_x, 5, 2)
+            if sub:                                     # a submenu: its item
+                press(sub[0], 14 + sub[1] * 14 + 7, 2)
+            shot("menu-" + name, crop=(0, 0, right + 24, 14 + items * 14 + 16))
+            press(250, 190, 2)                          # (closed)
+        menu("geos", 12, 191, 8, sub=(30, 0))           # geos > GeoUltra
+        menu("file", 38, 163, 13)
+        menu("view", 66, 129, 6)
+        menu("view-view", 66, 200, 6, sub=(80, 1))
+        menu("view-theme", 66, 230, 10, sub=(80, 0))
+        menu("go", 88, 180, 8)
+        menu("clipboard", 120, 200, 3)
         call(k["Drive"], ord("e"))
         call(k["View"], VIEW_ICONS, s=8)
         shot("desktop-icons", pointer=(300, 190))

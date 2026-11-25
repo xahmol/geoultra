@@ -125,7 +125,9 @@ OvSetTime:
 ; then the C64 restarted through the Ultimate (GeoUltra boots afresh).
 ; Y = 1: the session saved instead (HibSuspend) and resumed by the boot,
 ; which comes back here with X = 0 (with this boot's system fonts and
-; settings keys: hibernate.s Resumed).
+; settings keys: hibernate.s Resumed). Y = 2: saved, no reboot: back with
+; X = 0 and A = 0; after a later resume of that session back again with
+; A = 1.
 ; Back only when a drive could not be written back (FE_ULTIMATE), or
 ; without an Ultimate (DEV_NOT_FOUND). The write-back uses the overlay
 ; scratch, the engine's work area, as in FE_UMOUNT (enginemount.s): kept
@@ -161,8 +163,12 @@ OvReboot:
         txa
         bne @end                ; (not saved: X its error, no reboot)
         lda hibResumed
-        beq @reboot             ; (saved: now the reboot)
-        rts                     ; (the session resumed here: X = 0)
+        bne @end                ; (the session resumed here: X = 0, A = 1)
+        lda feY                 ; Y = 2 (hibernate now, the desktop's
+        cmp #2                  ; GeoUltra menu): saved, back with A = 0,
+        bne @reboot             ; no reboot (the user, 2026-11-20)
+        lda #0
+        rts
 @fresh: jsr Home                ; the session file away (none: fine)
         txa
         bne @end

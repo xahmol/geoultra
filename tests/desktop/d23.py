@@ -148,7 +148,7 @@ def main():
 
         FE = kern["ExtTable"] + 30
         STX = [0x8E, 0x3F, 0x4F]
-        VNAME, VPATH, NEWN, BPATH = 0x4F80, 0x4FA0, 0x4FC0, 0x4FD0
+        VNAME, VPATH, NEWN, BPATH = 0x7F40, 0x7F60, 0x7F80, 0x7F90   # (free above GEOS's background screen; the desktop's own variables reach $4Fxx)
         v.mem_set(VNAME, b"GU Settings\0")
         v.mem_set(VPATH, b"/b/GU Settings\0")
         v.mem_set(NEWN, b"renamed\0")
