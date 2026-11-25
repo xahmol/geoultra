@@ -88,6 +88,7 @@ letter) on a D81 image, and PDFs of the brochure and the guide
 | [`ARCHITECTURE.md`](docs/reference/ARCHITECTURE.md) | How it is built: cartridge, boot, kernal, overlays, REU map, drivers, tests |
 | [`GUSH_COMMANDS.md`](docs/reference/GUSH_COMMANDS.md) | Writing external gush commands |
 | [`PSW.md`](docs/reference/PSW.md) | GU PostScript inside: how it works, its tests |
+| [`CLEAN_ROOM.md`](docs/reference/CLEAN_ROOM.md) | How GeoUltra's code was checked against GEOS 2.0's: method, findings, what was rewritten |
 | [`GEOS_REFERENCE.md`](docs/reference/GEOS_REFERENCE.md), [`GEOS_API_REFERENCE.md`](docs/reference/GEOS_API_REFERENCE.md) | GEOS technical reference and per-routine API (from The Hitchhiker's Guide to GEOS v2022) |
 | [`OSCAR64_MANUAL.md`](docs/reference/OSCAR64_MANUAL.md) | Oscar64 compiler reference (the smoke tests) |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Rules for pull requests and what a bug report needs |

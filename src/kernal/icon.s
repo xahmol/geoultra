@@ -31,23 +31,26 @@ DoIcons:
         lda #0
         sta r10L
         sta iconBusy
-@draw:  lda r10L                ; r0-r2 = picture, x, y, width, height
-        jsr EntryOffset
-        ldx #0
+@draw:  lda r10L                ; r0-r2 = picture, x, y, width, height,
+        jsr EntryOffset         ; copied from the entry's last byte back
+        tya
+        clc
+        adc #5
+        tay
+        ldx #5
 @copy:  lda (IconDescVec),y
         sta r0,x
-        iny
-        inx
-        cpx #6
-        bne @copy
-        lda r0L
-        ora r0H
+        dey
+        dex
+        bpl @copy
+        lda r0H                 ; (no picture: not drawn)
+        ora r0L
         beq @skip
         jsr BitmapUp
-@skip:  inc r10L
-        lda r10L
-        ldy #OFF_NM_ICNS
-        cmp (IconDescVec),y
+@skip:  ldy #OFF_NM_ICNS        ; the next, while there are more
+        inc r10L
+        lda (IconDescVec),y
+        cmp r10L
         bne @draw
         lda #0                  ; full-screen mouse limits
         sta mouseTop

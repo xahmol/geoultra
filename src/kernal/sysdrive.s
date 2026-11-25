@@ -196,14 +196,8 @@ OvFTypes:
         jsr FFTypes             ; the installed fonts first: they win
         lda r7H                 ; over E's (module 123); where their part
         sta ftAfterF            ; ends (module 116)
-        beq @list               ; (no room left for E's)
-        clc                     ; FindFTypes moved r6 back by the name's
-        lda r6L                 ; offset: forward again for E's run
-        adc #OFF_FNAME
-        sta r6L
-        bcc @e
-        inc r6H
-@e:     jsr Enter
+        beq @list               ; (no room left for E's; r6 at the next
+        jsr Enter               ; free name: files.s FindFTypes)
         jsr FindFTypes
         jsr Leave
 @list:  lda ftAll               ; (an application's list only)
@@ -787,14 +781,8 @@ FTypes: lda r7L
         lda r7H
         beq @end
         jsr Here
-        bcs @end
-        clc                             ; forward again by the name's
-        lda r6L                         ; offset, as module 15 does for E
-        adc #OFF_FNAME
-        sta r6L
-        bcc :+
-        inc r6H
-:       jsr Show
+        bcs @end                        ; (r6 at the next free name:
+        jsr Show                        ; files.s FindFTypes)
         jsr FindFTypes
         jsr Gone
 @end:   rts

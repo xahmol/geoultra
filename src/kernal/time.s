@@ -220,33 +220,32 @@ AlarmTick:
 
 ; NextDay: day + 1, then month and year (leap years every fourth year).
 NextDay:
-        ldy month
-        lda daysInMonth-1,y
-        cpy #2
-        bne @last
-        tax
-        lda year
+        inc day                 ; the next day; past the month's last one:
+        ldx month               ; the first of the next month (own design,
+        lda daysInMonth-1,x     ; clean-room rewrite 2026-11-25)
+        cpx #2
+        bne @check
+        lda year                ; February: 29 days in every fourth year
         and #3
-        bne @feb
-        inx
-@feb:   txa
-@last:  cmp day
-        beq @month
-        inc day
-        rts
-@month: ldy #1
-        sty day
+        beq @leap
+        lda #28
+        bne @check              ; (always)
+@leap:  lda #29
+@check: cmp day                 ; the month's length >= the day: done
+        bcs @end
+        lda #1
+        sta day
+        cpx #12                 ; (X = month)
+        bcs @year
         inc month
-        lda month
-        cmp #13
-        bne @end
-        sty month
-        inc year
-        lda year
-        cmp #100
-        bne @end
-        dey
-        sty year
+        rts
+@year:  sta month               ; January
+        ldx year
+        inx
+        cpx #100                ; (99 + 1: 0, as GEOS 2.0 counts)
+        bcc :+
+        ldx #0
+:       stx year
 @end:   rts
 
 daysInMonth:

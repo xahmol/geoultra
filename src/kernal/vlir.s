@@ -72,22 +72,25 @@ OpenRecordFile:
         jsr GetBlock
         txa
         bne Closed
-        sta usedRecords         ; records up to the first 0/0 entry
-        ldy #2
+        tax                     ; X: records up to the first 0/0 entry
+        ldy #2                  ; (own design, clean-room rewrite 2026-11-20)
 @count: lda fileHeader,y
         ora fileHeader+1,y
-        beq @first
-        inc usedRecords
+        beq @counted
+        inx
         iny
         iny
         bne @count
-@first: ldy #0
-        lda usedRecords
-        bne @cur
-        dey
-@cur:   sty curRecord
-        ldx #0
-        stx fileWritten
+@counted:
+        stx usedRecords
+        lda #0
+        sta fileWritten
+        cpx #1                  ; curRecord: 0 with records, -1 without
+        sbc #0                  ; (C clear for none: 0 - 1)
+        sta curRecord
+        tay                     ; left as GEOS 2.0 leaves them (programs
+        txa                     ; may use them): Y = curRecord, A = the
+        ldx #0                  ; records (tests/conformance/vlir.py)
         rts
 
 ; CloseRecordFile: UpdateRecordFile, then the file is closed. X = error.
@@ -120,13 +123,13 @@ UpdateRecordFile:
         sta r5L
         lda dirOffset+1
         sta r5H
-        jsr CopyDate
-        ldy #OFF_SIZE
-        lda fileSize
-        sta (r5),y
-        iny
+        ldy #OFF_SIZE + 1       ; the size, then the date
         lda fileSize+1
         sta (r5),y
+        dey
+        lda fileSize
+        sta (r5),y
+        jsr CopyDate
         jsr WriteBuff
         txa
         bne @end
@@ -153,12 +156,16 @@ IndexBlock:
 
 ; NextRecord / PreviousRecord / PointRecord (A = record): make it current.
 ; Returns A = curRecord, X = 0 or INV_RECORD, Y = the record's first
-; track (0: empty), r1 = its first block.
+; track (0: empty), r1 = its first block. (NextRecord in CODE: IOCODE was
+; full, 2026-11-25; it needs I/O off like the rest, CODE the KERNAL ROM
+; off, which GEOS has whenever I/O is off.)
+        .segment "CODE"
 NextRecord:
         lda curRecord
         clc
         adc #1
         jmp PointRecord
+        .segment "IOCODE"
 PreviousRecord:
         lda curRecord
         sec
@@ -184,7 +191,7 @@ RecordTS:
         tay
         lda fileHeader+2,y
         sta r1L
-        lda fileHeader+3,y
+        lda fileHeader+3,y      ; (A = r1H left, as GEOS 2.0)
         sta r1H
         rts
 
@@ -195,8 +202,8 @@ SetRecordTS:
         tay
         lda r1L
         sta fileHeader+2,y
-        lda r1H
-        sta fileHeader+3,y
+        lda r1H                 ; (A = r1H left, as GEOS 2.0: $FF for an
+        sta fileHeader+3,y      ; emptied record)
         rts
 
 ; Changing: the BAM is read once before the first change of an open file.
@@ -221,22 +228,18 @@ DeleteRecord:
         txa
         bne @end
         jsr RecordTS
-        lda curRecord           ; close the gap in the index
-        asl
-        tay
-        lda #MAX_RECORDS - 1
-        sec
-        sbc curRecord
-        asl
-        tax
-        beq @last
-@move:  lda fileHeader+4,y
+        lda curRecord           ; close the gap in the index: the bytes
+        asl                     ; after it two places down, to the end
+        tay                     ; (own design, clean-room rewrite
+@move:  cpy #$FC                ; 2026-11-20)
+        bcs @last
+        lda fileHeader+4,y
         sta fileHeader+2,y
         iny
-        dex
         bne @move
-@last:  stx fileHeader+$FE
-        stx fileHeader+$FF
+@last:  lda #0                  ; the last entry empty
+        sta fileHeader+$FE
+        sta fileHeader+$FF
         dec usedRecords
         lda curRecord
         cmp usedRecords
@@ -291,37 +294,41 @@ Open:   sta r0L
         ldx #INV_RECORD
         lda r0L
         bmi @end
-        ldy #$FE
-        lda #MAX_RECORDS - 1
-        sec
-        sbc r0L
-        asl
+        lda #MAX_RECORDS - 1    ; X entries, from r0L on, move up one
+        sec                     ; place, the last but one first (own
+        sbc r0L                 ; design, clean-room rewrite 2026-11-20)
         tax
-        beq @new
-@move:  lda fileHeader-1,y
+        ldy #$FE                ; (Y: the place each entry moves to)
+@move:  dex
+        bmi @new
+        lda fileHeader-2,y
+        sta fileHeader,y
+        lda fileHeader-1,y
         sta fileHeader+1,y
         dey
-        dex
-        bne @move
-@new:   txa
-        sta fileHeader,y
+        dey
+        bne @move               ; (always: Y stays 2 * r0L + 2 or above)
+@new:   lda #0                  ; the new entry, empty (0, $FF), at Y (Y
+        sta fileHeader,y        ; left there, as GEOS 2.0 leaves it)
         lda #$FF
         sta fileHeader+1,y
         inc usedRecords
+        ldx #0
 @end:   rts
 
 ; ReadRecord: the current record into r7 (r2 = buffer size), as ReadFile.
 ; A = $FF when the record has data, 0 when empty. X = error.
 ReadRecord:
-        ldx #INV_RECORD
         lda curRecord
-        bmi @end
+        bmi @bad
         jsr RecordTS
-        lda r1L
-        tax
+        ldx #0
+        lda r1L                 ; (track 0: an empty record, A = 0)
         beq @end
         jsr ReadFile
         lda #$FF
+        rts
+@bad:   ldx #INV_RECORD
 @end:   rts
 
 ; WriteRecord: r7 = data, r2 = bytes (0: the record becomes empty).

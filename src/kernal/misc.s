@@ -167,9 +167,8 @@ DSdiv:  lda $01,x
         ldx saveX
         jsr Ddiv
         bit sign
-        bpl @end
-        jmp Dnegate
-@end:   rts
+        bmi Dnegate             ; (just below, after Dabs)
+        rts
 
 ; Dabs: X = word = |word|. Destroys A.
 Dabs:   lda $01,x

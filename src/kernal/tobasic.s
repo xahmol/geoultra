@@ -45,20 +45,20 @@ ToBASIC:
         beq @toBasic            ; rather than into BASIC
         jmp EnterDeskTop
 @toBasic:
-        ldy #39
-@cmd:   lda (r0),y
+        ldy #40                 ; the command, 40 characters (the last
+@cmd:   dey                     ; first), letters as screen codes 1-26
+        lda (r0),y              ; (and #$3F)
         cmp #'A'
         bcc @keep
         cmp #'Z' + 1
         bcs @keep
-        sbc #$3F                ; C clear: letters to screen codes 1-26
+        and #$3F
 @keep:  sta basicCmd,y
-        dey
-        bpl @cmd
-        lda r5H
-        beq @basic
-        iny                     ; Y = 0: an empty BASIC start page
         tya
+        bne @cmd
+        lda r5H                 ; (Y = 0 from here)
+        beq @basic
+        lda #0                  ; an empty BASIC start page
 @clear: sta basicStart,y
         iny
         bne @clear

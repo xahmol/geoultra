@@ -14,7 +14,7 @@
 
         .export WriteFile, SaveFile, SetGDirEntry, BldGDirEntry, FreeFile
         .export DeleteFile, FastDelFile, RenameFile, FreeChain, CopyDate
-        .import FindFile, saveFlag
+        .import FindFile, DirName, saveFlag
 
 OFF_FNAME       = 3
 
@@ -194,11 +194,11 @@ SetGDirEntry:
 ; CopyDate: date and time (year, month, day, hour, minute) into the
 ; directory entry at r5.
 CopyDate:
-        ldy #23
+        ldy #27                 ; (from the minute back to the year)
 @date:  lda year - 23,y
         sta (r5),y
-        iny
-        cpy #28
+        dey
+        cpy #22
         bne @date
         rts
 
@@ -218,29 +218,32 @@ BldGDirEntry:
         iny
         lda (r9),y
         sta r3H
+        txa                     ; (X kept: one loop, the flag on the stack's
+        pha                     ; place in X; own design, clean-room rewrite
+        ldx #0                  ; 2026-11-20)
         ldy #0
-@name:  lda (r3),y
-        beq @pad
-        sta dirEntryBuf + OFF_FNAME,y
+@char:  txa
+        bne @put
+        lda (r3),y
+        bne @put
+        lda #$A0
+        tax
+@put:   sta dirEntryBuf + OFF_FNAME,y
         iny
         cpy #16
-        bne @name
-        beq @type
-@pad:   lda #$A0
-@fill:  sta dirEntryBuf + OFF_FNAME,y
-        iny
-        cpy #16
-        bne @fill
-@type:  ldy #O_GHCMDR_TYPE
+        bne @char
+        pla
+        tax
+        ldy #O_GHCMDR_TYPE
         lda (r9),y
         sta dirEntryBuf
         ldy #O_GHSTR_TYPE
         lda (r9),y
         sta dirEntryBuf + OFF_GSTRUC_TYPE
-        ldy #0
-        sty fileHeader
-        dey
-        sty fileHeader+1
+        lda #0                  ; the header block's link: 0, $FF
+        sta fileHeader
+        lda #$FF
+        sta fileHeader+1
         ldy #0                  ; header block
         lda (r6),y
         sta dirEntryBuf + OFF_GHDR_PTR
@@ -440,24 +443,18 @@ RenameFile:
         sta r0L
         txa
         bne @end
-        clc
-        lda r5L
-        adc #OFF_FNAME
-        sta r5L
-        bcc @copy
-        inc r5H
-@copy:  ldy #0
-@name:  lda (r0),y
-        beq @pad
-        sta (r5),y
+        jsr DirName             ; r4 = the entry's name (own design,
+        ldx #0                  ; clean-room rewrite 2026-11-20): one loop,
+        ldy #0                  ; X = $A0 once the new name has ended
+@char:  txa
+        bne @put
+        lda (r0),y
+        bne @put
+        lda #$A0
+        tax
+@put:   sta (r4),y
         iny
         cpy #16
-        bcc @name
-        bcs @write
-@pad:   lda #$A0
-@fill:  sta (r5),y
-        iny
-        cpy #16
-        bcc @fill
-@write: jmp WriteBuff
+        bne @char
+        jmp WriteBuff
 @end:   rts

@@ -105,14 +105,11 @@ StringKey:
         bmi @end                ; shortcuts: ignored (prompt stays off)
         cmp #CR
         beq Done
-        cmp #BACKSPACE
+        ldx #EDIT_KEYS - 1      ; the keys that take the last character back
+@edit:  cmp EditKeys,x
         beq @delete
-        cmp #KEY_DELETE
-        beq @delete
-        cmp #KEY_INSERT
-        beq @delete
-        cmp #KEY_RIGHT
-        beq @delete
+        dex
+        bpl @edit
         cmp #' '
         bcc @end                ; other control keys: ignored
         cpy stringMaxLen
@@ -141,6 +138,10 @@ StringKey:
         jsr SaveX
         jmp PromptOn
 @end:   rts
+
+; The keys that delete the last character (as GEOS 2.0's GetString).
+EditKeys:       .byte BACKSPACE, KEY_DELETE, KEY_INSERT, KEY_RIGHT
+EDIT_KEYS       = * - EditKeys
 
 SaveX:  lda r11L
         sta stringX

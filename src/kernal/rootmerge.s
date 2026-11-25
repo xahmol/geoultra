@@ -122,14 +122,8 @@ OvRootFTypes:
         bcs @ok
         jsr ToRoot
         bcs @back
-        inc rootBusy
-        clc                     ; FindFTypes moved r6 back by the name's
-        lda r6L                 ; offset: forward again (as module 15)
-        adc #OFF_FNAME
-        sta r6L
-        bcc :+
-        inc r6H
-:       jsr FindFTypes          ; (an error in the root is dropped: the
+        inc rootBusy            ; (r6 at the next free name: files.s
+        jsr FindFTypes          ; FindFTypes; an error in the root is dropped: the
         dec rootBusy            ; folder's own list stands, drive E next)
 @back:  jsr Back
 @ok:    ldx #0

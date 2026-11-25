@@ -25,7 +25,7 @@ JT_START        = $C100         ; the GEOS 2.0 jump table
 JT_SIZE         = $01D7
 JT_COPY         = $1000         ; its copy in REU bank 1
         .import FindFile, ReadFile, GetFHdrInfo, CopyFString
-        .import Ddec, SysRAMOp, SaveState, RestoreState, InitGEOEnv
+        .import SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
         .import taskName
@@ -438,26 +438,28 @@ panicAddr:
         .segment "CODE"
 
 ; Sleep: r0 = frames. Returns to the caller's caller now; the caller
-; continues after its jsr Sleep from MainLoop when the time is up (at most
-; MAX_SLEEP at once). Destroys A, X, Y.
-Sleep:  php
-        pla
-        tay
-        sei
-        ldx numSleep
-        lda r0L
-        sta sleepLo,x
+; continues after its jsr Sleep from MainLoop when the time is up. With
+; MAX_SLEEP sleepers already waiting the caller simply continues. Destroys
+; A, X, Y. Own design (clean-room rewrite, 2026-11-20): the entry is
+; filled first and then made visible to SleepTick by one inc (a single
+; instruction, so the interrupt never sees half an entry); the caller's
+; return address is read off the stack, then dropped.
+Sleep:  ldy numSleep
+        cpy #MAX_SLEEP
+        bcs @full
+        tsx                     ; the caller's return address: $0101,x/$0102,x
+        lda $0102,x
+        sta sleepRtnHi,y
+        lda $0101,x
+        sta sleepRtnLo,y
         lda r0H
-        sta sleepHi,x
-        pla
-        sta sleepRtnLo,x
-        pla
-        sta sleepRtnHi,x
-        inc numSleep
-        tya
-        pha
-        plp
-        rts
+        sta sleepHi,y
+        lda r0L
+        sta sleepLo,y
+        inc numSleep            ; (now SleepTick counts it down)
+        pla                     ; the caller's return address dropped:
+        pla                     ; back to the caller's caller
+@full:  rts
 
 ; SleepTick (interrupt level): count the sleepers down.
 SleepTick:
@@ -760,32 +762,38 @@ panicDlg:
         .byte 0
 
 ; CRC: CRC-16 (polynomial $1021, start $FFFF, high bit first) of r1 bytes
-; from r0 in r2. Destroys A, Y, r0, r1, r3L.
-OvCRC:  ldy #$FF
-        sty r2L
-        sty r2H
-        iny
-@byte:  lda #$80
-        sta r3L
-@bit:   asl r2L                 ; feedback = old top bit xor data bit
-        rol r2H
-        lda (r0),y
-        and r3L
-        bcc @fb
-        eor r3L
-@fb:    beq @next
-        lda r2L
-        eor #$21
+; from r0 in r2 (at least one byte: r1 is counted down after each, as
+; HG2G's CRC). Destroys A, X, Y, r0, r1. Own design (clean-room rewrite,
+; 2026-11-20): the byte-at-a-time form of the checksum (each byte xored
+; into the high half, then eight shifts), not the bit-serial one.
+OvCRC:  lda #$FF
         sta r2L
-        lda r2H
-        eor #$10
         sta r2H
-@next:  lsr r3L
-        bcc @bit
-        iny
-        bne @count
+@byte:  ldy #0
+        lda (r0),y              ; the byte into the high half
+        eor r2H
+        sta r2H
+        ldx #8
+@shift: asl r2L                 ; one shift; the polynomial when a 1 left
+        rol r2H
+        bcc @nopoly
+        lda r2H
+        eor #>$1021
+        sta r2H
+        lda r2L
+        eor #<$1021
+        sta r2L
+@nopoly:
+        dex
+        bne @shift
+        inc r0L                 ; the next byte
+        bne @left
         inc r0H
-@count: ldx #r1
-        jsr Ddec
+@left:  lda r1L                 ; r1 - 1; on while not 0
+        bne @dec
+        dec r1H
+@dec:   dec r1L
+        lda r1L
+        ora r1H
         bne @byte
         rts

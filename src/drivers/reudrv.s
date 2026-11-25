@@ -1178,51 +1178,52 @@ Alloc:  lda r9L                 ; Ddiv destroys r9
         lda r4L
         cmp r2L
 @cmp:   bcc @end
-        lda r6L
-        sta r4L
-        lda r6H
-        sta r4H
-        lda r2L
-        sta r5L
-        lda r2H
-        sta r5H
+        ldx r6L                 ; r4: the table, r5: the blocks still to get
+        stx r4L
+        ldx r6H
+        stx r4H
+        ldx r2L
+        stx r5L
+        ldx r2H
+        stx r5H
 @block: jsr SetNextFree
         txa
         bne @end
-        ldy #0
-        lda r3L
-        sta (r4),y
-        iny
+        ldy #1                  ; the block's place, high byte first
         lda r3H
         sta (r4),y
-        clc
-        lda r4L
-        adc #2
-        sta r4L
-        bcc @first
+        dey
+        lda r3L
+        sta (r4),y
+        inc r4L                 ; on to the next pair
+        bne :+
         inc r4H
-@first: lda firstTwo
+:       inc r4L
+        bne :+
+        inc r4H
+:       lda firstTwo            ; (1581: after two blocks back to 35)
         beq @count
         dec firstTwo
         bne @count
         lda #35
         sta r3L
-@count: lda r5L
-        bne @low
+@count: lda r5L                 ; one fewer to get (always at least the
+        sec                     ; first: r2 = 0 runs on, as GEOS 2.0)
+        sbc #1
+        sta r5L
+        bcs :+
         dec r5H
-@low:   dec r5L
-        lda r5L
-        ora r5H
+:       ora r5H
         bne @block
-        ldy #0
-        tya
+        ldy #1                  ; the end: track 0, then the last block's
+        ldx r8L                 ; bytes + 1 (a whole block: 254 + 1)
+        bne :+
+        ldx #254
+:       inx
+        txa
         sta (r4),y
-        iny
-        lda r8L
-        bne @last
-        lda #254
-@last:  clc
-        adc #1
+        dey
+        tya
         sta (r4),y
         ldx #0
 @end:   pla
@@ -1861,41 +1862,46 @@ D71Find:
         tax
         lda bamBit,x
         sta r8H
+        lda r6H                 ; the bitmap's byte within the track
+        lsr
+        lsr
+        lsr
+        sta d71Byte
         lda r6L
         cmp #36
-        bcc @side1
-        sbc #36                 ; (carry set)
+        bcs @side2
+        asl                     ; side 0 (curDirHead): the count at 4 * track,
+        asl                     ; the bitmap after it
         sta r7H
-        lda r6H
-        lsr
-        lsr
-        lsr
-        clc
-        adc r7H
-        asl r7H                 ; X = 3 * (track - 36) + sector / 8
-        clc
-        adc r7H
-        tax
-        lda r6L
-        clc
-        adc #$DD - 36
-        sta r7H
-        lda dir2Head,x
-        and r8H
-        rts
-@side1: asl
-        asl
-        sta r7H
-        lda r6H
-        lsr
-        lsr
-        lsr
         sec
-        adc r7H
+        adc d71Byte
         tax
         lda curDirHead,x
         and r8H
         rts
+@side2: adc #$DD - 36 - 1       ; side 1: the count at $DD + track - 36
+        sta r7H                 ; (carry set), the bitmap in dir2Head, three
+        lda r6L                 ; bytes a track
+        sec
+        sbc #36
+        sta d71Track
+        asl a
+        adc d71Track            ; (carry clear: 3 * 34 at most)
+        adc d71Byte
+        tax
+        lda dir2Head,x
+        and r8H
+        rts
+d71Byte:        .byte 0
+d71Track:       .byte 0
+
+; DirTrk71: Z set when track A is a 1571 directory track (18: the
+; directory and BAM, 53: the second side's BAM). A kept.
+DirTrk71:
+        cmp #DIR_TRACK
+        beq :+
+        cmp #53
+:       rts
 
 ; D71Alloc / D71Free (AllocateBlock / FreeBlock after FindBAMBit): flip the
 ; bit, count down / up. X = 0.
@@ -1926,21 +1932,19 @@ D71Free:
 ; D71Next (SetNextFree): the next free block after r3, allocated. r3 =
 ; the block, X = 0 or INSUFF_SPACE. Destroys A, Y, r6, r7, r8H.
 D71Next:
+        lda r3L                 ; the search from r3, an interleave on
+        sta r6L
         lda r3H
         clc
         adc interleave
         sta r6H
-        lda r3L
-        sta r6L
-        cmp #DIR_TRACK
-        beq @count
-        cmp #53
+        lda r6L                 ; started on a directory track: it may be
+        jsr DirTrk71            ; used (as GEOS 2.0); reached later: skipped
         beq @count
 @track: lda r6L
-        cmp #DIR_TRACK
+        jsr DirTrk71
         beq @advance
-        cmp #53
-        beq @advance
+        lda r6L
 @count: cmp #36                 ; free blocks on the track
         bcc @c1
         adc #$DD - 36 - 1       ; (carry set)
