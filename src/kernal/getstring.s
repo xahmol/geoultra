@@ -9,7 +9,8 @@
         .include "geos.inc"
         .include "hw.inc"
 
-        .export GetString, InitTextPrompt, PromptOn, PromptOff, PromptTick
+        .export GetString, InitTextPrompt, PromptOn, PromptOff, PromptTick, OvTextPrompt
+        .import OvlCall
         .import PutString, PutChar, DeleteChar, PosSprite, EnablSprite
         .import DisablSprite
 
@@ -206,10 +207,35 @@ Rearm:  lda alphaFlag           ; blink counter back to PROMPT_DELAY
         sta alphaFlag
         rts
 
-; InitTextPrompt: A = height. Sprite 1 becomes a one-pixel vertical line
+; InitTextPrompt: A = height; its work in overlay module 100 (entry 3,
+; OvTextPrompt below: moved out of resident code on 2026-11-25 for the
+; room DrawRow's print-band clamp needed, text.s). Destroys A, X, Y.
+InitTextPrompt:
+        jsr OvlCall
+        .byte 100, 3
+
+; Interrupt level: blink the prompt while input is active (alphaFlag bit
+; 7), toggling every PROMPT_DELAY frames.
+PromptTick:
+        lda alphaFlag
+        bpl @end
+        dec alphaFlag
+        lda alphaFlag
+        and #$3F
+        bne @end
+        bit alphaFlag
+        bvc @on
+        jmp PromptOff
+@on:    jmp PromptOn
+@end:   rts
+
+; Module 100 is dialog.s's (its entry table first: dialog.o links before
+; getstring.o, the Makefile's alphabetical wildcard); this part follows it.
+        .segment "OVL100"
+; OvTextPrompt: A = height. Sprite 1 becomes a one-pixel vertical line
 ; of height + 1 rows, as GEOS 2.0 draws it (double height above 21
 ; lines, at most 42) in the pointer's colour. Destroys A, X, Y.
-InitTextPrompt:
+OvTextPrompt:
         tay
         php
         sei
@@ -252,18 +278,3 @@ InitTextPrompt:
         sta CPU_PORT
         plp
         rts
-
-; Interrupt level: blink the prompt while input is active (alphaFlag bit
-; 7), toggling every PROMPT_DELAY frames.
-PromptTick:
-        lda alphaFlag
-        bpl @end
-        dec alphaFlag
-        lda alphaFlag
-        and #$3F
-        bne @end
-        bit alphaFlag
-        bvc @on
-        jmp PromptOff
-@on:    jmp PromptOn
-@end:   rts

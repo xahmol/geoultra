@@ -20,6 +20,7 @@
         .export gfLeft, gfTop, dbIndex, gfDrvOn                  ; (module 87,
                                                                  ; drvlist.s)
         .export gfDrvPick
+        .import OvTextPrompt
         .import OvlCall
         .import DoIcons, StartMouseMode, UseSystemFont, PutString
         .import SetPattern, Rectangle, FrameRectangle, RecoverRectangle
@@ -1372,6 +1373,9 @@ OvRestoreState:
         .segment "OVL100"
 
         jmp OvGfPress           ; entry 0
+        jmp OvTextPrompt        ; entry 3 (InitTextPrompt, getstring.s: its
+                                ; code follows this module's, as getstring.o
+                                ; links after dialog.o)
 
 ; OvGfPress (module 100, from GfPress): a press on a row selects its file
 ; (below the last row: nothing); a second press on the same row in time

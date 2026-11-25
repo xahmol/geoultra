@@ -310,7 +310,20 @@ DrawRow:
         sta r3L
         lda #<SC_BYTE_LEN
         sta r12L
+        lda r10H                ; screen lines 152-159 drawn into the
+        sec                     ; background: nothing past their card row
+        sbc #152                ; (r12 = the background's base + $1900).
+        cmp #8                  ; geoWrite prints a line in two bands, lines
+        bcs :+                  ; 144-151 and 152-159 ($7680-$78FF); a
+        bit dispBufferOn        ; character of the second past x 319 wrapped
+        bvc :+                  ; into the printer driver at $7900 (its jump
+        lda r12H                ; table: the user's brochure hung on page 3,
+        and #$E0                ; 2026-11-21; tests/print/gwbroch.py)
+        ora #>$1900
+        sta r12H
         lda #0
+        sta r12L
+:       lda #0
         sta column
         sta prevBit
 @col:   lda #0                  ; font bit of this column
