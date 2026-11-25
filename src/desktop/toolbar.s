@@ -21,7 +21,7 @@
         .import View, viewMode, NewFolder, Copy, Paste, Delete, FileEngine
         .import HistBack, HistForward, text, Info, Gush, TwoPanes, Settings
 homePath        = text          ; (side.s's text buffer: free between actions)
-        .export ToolPress, ToolPaint, Cards, Root, Home, Top, Fonts
+        .export ToolPress, ToolPaint, Cards, Root, Home, Top, Fonts, TB_DELETE
         .export Refresh
 
         .segment "CODE"
@@ -144,9 +144,12 @@ Refresh:
 Acts:   .word HistBack-1, HistForward-1, Up-1, Root-1
         .word Top-1, ListEnd-1
         .word ViewNext-1, TwoPanes-1, Refresh-1
-        .word NewFolder-1, Info-1, SelAll-1, Copy-1, Paste-1, Delete-1
+        .word NewFolder-1, Info-1, SelAll-1, Copy-1, Paste-1
+ActDelete:
+        .word Delete-1
         .word Settings-1, Gush-1
         .assert (* - Acts) / 2 = TB_BUTTONS, error, "an action per button"
+TB_DELETE = (ActDelete - Acts) / 2      ; (listin.s Drag: a drop on it)
 
 ; The buttons' cards: 16 px apart from x 8, 8 px between the groups.
 Cards:  .byte 1, 3, 5, 7

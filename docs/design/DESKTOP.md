@@ -605,7 +605,10 @@ colour is a property of an element, by name:
   drive) or moves (same drive), C= held the other way. Drag and drop
   works on folders (with everything in them) and on selections of
   several files and folders (the user, 2026-11-12), through the same
-  copy and move code as paste.
+  copy and move code as paste. A release over the toolbar's delete
+  button deletes the selection, asked first as the button asks (the
+  user's hand test 2026-11-21, "drag to trash: where?"; listin.s Drag,
+  DROP_TRASH, desktop.s DropDo; tests/desktop/d39.py).
 - **Settings tool (the user, 2026-11-12):** its own application
   "GeoUltra Settings" on drive E in assembler, started from the geos
   menu, a toolbar button (the user, 2026-11-12: both; the button takes

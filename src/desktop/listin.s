@@ -16,6 +16,7 @@
         .import rows, listL, listTop, pathY, bottom, topY, stY0, stY1, tScroll
         .import openReq, text, rowH, IsSelected, stripL, sel
         .import panes, active, PaneAt, dropReq, Fetch, entryInfo, IconFor, Icons
+        .import Cards, TB_DELETE, tbMode
         .import dropPath, entryName, path, sideW, sideCount, sideTops, sideLetters, Setup, Slot
         .import counts
         .import RowY, RowBox, ry, row, viewMode, ListRCard, IsImage
@@ -1256,7 +1257,8 @@ ListKey:
 ; dragged (its icon as sprite DRAG_SPR) until the button is released;
 ; dropped on the other pane, on a folder of this list that is not
 ; selected, or on a sidebar drive or favourite, the core copies or moves
-; it there (dropReq; dropPath the target folder; desktop.s DropDo): the
+; it there; dropped on the toolbar's delete button, it is deleted (asked
+; first, as the button does) (dropReq; dropPath the target folder; desktop.s DropDo): the
 ; same drive moves, another
 ; copies, C= held the other way. An entry not selected becomes the
 ; selection when the drag starts (the user's test 2026-11-13: press and
@@ -1340,7 +1342,27 @@ Drag:   lda pick
         lda mods
         and #MOD_CBM
         sta flip
-        lda panes               ; the other pane?
+        lda mouseYPos           ; on the toolbar: its delete button
+        cmp topY                ; deletes (the user's hand test, 2026-11-21:
+        bcs @list               ; "drag to trash: where?"); the others,
+        lda tbMode              ; and the menu bar without a toolbar:
+        cmp #TB_OFF             ; nothing
+        beq @none
+        lda mouseXPos+1         ; the card: x / 8
+        lsr a
+        lda mouseXPos
+        ror a
+        lsr a
+        lsr a
+        sec
+        sbc Cards + TB_DELETE
+        cmp #2                  ; (its two cards)
+        bcs @none
+        lda #DROP_TRASH
+        sta dropReq
+        clc
+        rts
+@list:  lda panes               ; the other pane?
         beq @side
         jsr PaneAt
         cmp active

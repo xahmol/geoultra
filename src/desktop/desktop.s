@@ -208,7 +208,10 @@ DropDo: lda dropReq
         beq @end
         ldx #0
         stx dropReq
-        cmp #DROP_PATH_COPY
+        cmp #DROP_TRASH         ; onto the delete button: as a press on it
+        bne :+
+        jmp Delete
+:       cmp #DROP_PATH_COPY
         bcs @path
         lsr a                   ; (bit 0: a move)
         bcs :+

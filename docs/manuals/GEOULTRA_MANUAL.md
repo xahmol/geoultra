@@ -367,6 +367,9 @@ selection is dragged (its icon follows the pointer).
   or sidebar line it would go into is shown inverted.
 - Released over **a drive or a favourite** in the sidebar: it goes
   into that drive's top folder or that favourite folder.
+- Released over **the delete button** in the toolbar (the waste bin;
+  GeoUltra has no trash can on the desktop): it is deleted, asked first
+  as with the button itself. Other toolbar buttons take no drops.
 
 On the same drive the entries are moved, to another drive copied. Hold
 **C=** while releasing to copy instead of move (or move instead of

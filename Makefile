@@ -725,6 +725,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d33.py
 	$(PYTHON) tests/desktop/d35.py
 	$(PYTHON) tests/desktop/d38.py
+	$(PYTHON) tests/desktop/d39.py
 	$(PYTHON) tests/spool/sp1.py
 	$(PYTHON) tests/spool/sp2.py
 	$(PYTHON) tests/spool/sp3.py
