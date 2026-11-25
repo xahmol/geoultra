@@ -779,6 +779,26 @@ the stack resident, before the overlay call) and `CRC`.
 | 17 | fonts and desk accessories from the root folder | rootmerge.s |
 | 18-21 | 1581 partitions: entered and left, created, formatted, removed | folders.s |
 | 22-80 | file engine: dispatcher; path made absolute, walked; stat and free space; directory opened; delete, rename, folders, cd; directory read; copy and move (source, target, blocks); stream opened, new file, read, written; the Ultimate: exchange and listing, stat, listing opened, entries, `/`, delete/folders/rename/cd; raw copies onto and from it; long names (`GU.LONGNAMES`): looked up, kept, short names, listing entries, rename/mkdir, new entries; (55: `FE_RUNSYS`, sysdrive.s); CVT onto and from the Ultimate (out, VLIR out, in, VLIR in, recognised); streams on the Ultimate (open, read, write, their setup); mounting (mount, umount, MOUNTS.INI); new images; turbo, home folder, clock for gush; NTP; the Ultimate's command interface for gush's network commands (`FE_UCI`) | engine.s, enginepath.s, enginedir.s, enginefile.s, enginecopy.s, enginestream.s, engineult.s, enginexfer.s, enginelong.s, enginecvt.s, enginestreamu.s, enginemount.s, enginemkimg.s, enginesys.s, enginentp.s, enginenet.s ([FILE_ENGINE.md](../design/FILE_ENGINE.md)) |
+| 81 | drive E shown in a slot and hidden again (Enter, Leave, ShowE, HideE, a free slot) | sysenter.s |
+| 82 | OpenDisk | reudrv.s |
+| 83-85 | moves and copies between the Ultimate and GEOS drives | engineuu.s |
+| 86 | the pointer's design and colour (boot, `FE_POINTER`) | pointer.s |
+| 87 | the drive letters in the file box | drvlist.s |
+| 88-90 | disk images gone into like folders: recognised, shown, entered, dropped | engineimg.s |
+| 91 | a native image's size on mounting (`tracks=`) | enginesize.s |
+| 92, 93 | auto-exec files and SETTINGS.INI's `[system]` at the cold start | autoexec.s |
+| 94 | the date's roll-over (NextDay) | time.s |
+| 95-99 | tasks: the popup (and the close question), the switch and a new task, the table and closing, `FE_TASK` | task.s |
+| 100 | the file box's press; the text prompt's set-up (InitTextPrompt, from getstring.s, linked after dialog.s) | dialog.s, getstring.s |
+| 101-104 | the scrap store: find, delete, save (data, entry) | scrap.s |
+| 105-114, 120 | the print queue: set-up, the driver caught, recording, writing, playing, the driver lent, waiting for room, a job played or passed over, `FE_SPOOL`; "is the queue playing?" for the write-back | spool.s |
+| 115 | the hibernation file's parts | hibernate.s |
+| 116, 123, 124 | the system fonts: one entry per font ID, searched, their rules | sysdrive.s |
+| 117 | a folder's (or 1581 partition's) first directory block | folders.s |
+| 118 | drive B swapped with a document's drive (`FE_DRVSWAP`) and back | drvswap.s |
+| 119, 125 | drive E in an occupied slot; a handle's drive, also `/f` | sysenter.s |
+| 121, 122 | FONTS.DNP loaded and relocated at the cold start | mount.s |
+| 126, 127 | serial numbers per application: SETTINGS.INI's `[serials]`, `FE_SERIALS`, the lookup | serials.s |
 
 The scratch `$9F70-$9FFF` after the slot is shared by write-back and
 hibernation (from MainLoop) and the file engine (its work area during a
