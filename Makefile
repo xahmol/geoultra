@@ -432,6 +432,13 @@ private/geoultra-apps.dnp: private/apps.toml tools/mkappsdnp.py
 # DEPLOYDIR on the Ultimate (the cartridge and its .cfg, the manuals,
 # READ_ME_FIRST.txt, the samples).
 deploy: check-deploy release
+	@if [ -z "$(DEPLOY_FORCE)" ] && curl -s --max-time 10 \
+	     "http://$(ULTIP1)/v1/machine:readmem?address=C006&length=9" | grep -q "GEOS BOOT"; then \
+	  echo "deploy: GEOS (GeoUltra) runs on the U64: a disk image mounted there would get"; \
+	  echo "        the old copy's changed blocks written into the new file (the samples"; \
+	  echo "        D81, 2026-11-25). Switch the U64 off and on without starting GeoUltra,"; \
+	  echo "        then deploy again (DEPLOY_FORCE=1 when only the RAM still holds GEOS)."; \
+	  exit 1; fi
 	cd build/release/$(RELEASE_NAME) && for f in $$(find . -type f | sed 's|^\./||' | sort); do \
 		echo "  $(DEPLOYDIR)$$f"; \
 		curl -sS --max-time 120 --ftp-create-dirs -T "$$f" "ftp://$(ULTIP1)$(DEPLOYDIR)$$f" || exit 1; \

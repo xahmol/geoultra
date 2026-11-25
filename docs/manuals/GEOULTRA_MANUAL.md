@@ -471,6 +471,12 @@ drivers. It cannot be written to.
 - At the start, the images in `GEOULTRA/MOUNTS.INI` are mounted
   (`A=/USB0/GEOS/apps.d81`, one line per drive). Mounting and
   unmounting keep this file up to date.
+- **Do not replace a mounted image** on the stick or SD card from a PC
+  (FTP, the Ultimate's file browser) while GeoUltra runs: GeoUltra
+  works on its own copy in the REU and writes the changed blocks back
+  into the file, which would then mix the old disk with the new one.
+  Unmount the image first, or switch off and copy before starting
+  GeoUltra again.
 
 ## Going into an image without mounting it
 
