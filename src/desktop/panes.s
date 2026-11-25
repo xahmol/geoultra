@@ -19,7 +19,7 @@
         .import SwapPane, ListRead, ListDraw, FileEngine, path, sortPending
         .import SortList, Derive, viewMode, tTitle, listL, stripL, listR
         .import paneR, iconCard, nameX, tIcons, Back, FreeRead
-        .export SetGeom, DrawPanes, PaneSwitch, TwoPanes, PaneAt, panes, active
+        .export SetGeom, DrawPanes, Reread, PaneSwitch, TwoPanes, PaneAt, panes, active
         .export paneDim, CopyOther, MoveOther, CdPath, PanesOn
         .import PanesSave
         .import Copy, Cut, Paste
@@ -98,6 +98,18 @@ DrawPanes:
         jsr CdPath
         jsr ListRead
         jmp ListDraw            ; (waits for the sort: SortNow draws it)
+
+; Reread (actions.s, after a change in the current folder: paste,
+; delete, rename, new folder): the list read and drawn again; with two
+; panes both (the other may show the same folder: the user's hand test,
+; 2026-11-21, a new folder not in it; tests/desktop/d38.py). It may
+; fetch overlay 6 (SortList through Sorted): an overlay calls it last
+; (jmp), never to return into its own code.
+Reread: lda panes
+        beq :+
+        jmp DrawPanes
+:       jsr ListRead
+        jmp ListDraw
 
 ; Sorted: the pane in list.s sorted now if it was read since (SortNow,
 ; from MainLoop, only sorts the active pane; this one is about to be the

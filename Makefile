@@ -659,6 +659,7 @@ test-print: all
 	$(PYTHON) tests/print/pdfsim.py
 	$(PYTHON) tests/print/pdf1.py
 	$(PYTHON) tests/print/gwcross.py
+	$(PYTHON) tests/print/gwbroch.py
 	$(PYTHON) tests/print/psref.py
 	$(PYTHON) tests/print/psc64.py
 
@@ -706,6 +707,12 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d25.py
 	$(PYTHON) tests/desktop/d26.py
 	$(PYTHON) tests/desktop/d27.py
+	$(PYTHON) tests/desktop/d28.py
+	$(PYTHON) tests/desktop/d30.py
+	$(PYTHON) tests/desktop/d31.py
+	$(PYTHON) tests/desktop/d33.py
+	$(PYTHON) tests/desktop/d35.py
+	$(PYTHON) tests/desktop/d38.py
 	$(PYTHON) tests/spool/sp1.py
 	$(PYTHON) tests/spool/sp2.py
 	$(PYTHON) tests/spool/sp3.py

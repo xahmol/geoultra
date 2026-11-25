@@ -18,7 +18,7 @@
         .import FileEngine, ListRead, ListDraw, Fetch, IsSelected
         .import deskPrefs
         .import entryName, cur, count, path, IsDotDot
-        .import Busy, Idle
+        .import Busy, Idle, Reread
         .import TreeStart, PasteItem, DeleteItem   ; (tree.s, the same overlay)
         .import text            ; (side.s's INI text holds `full` while one
 full = text                     ; engine call copies, moves or mounts it)
@@ -303,9 +303,8 @@ Paste:  jsr Busy                ; (the hourglass, the progress line)
         sta clipCount
         sta clipCount+1
 @reread:
-        jsr ListRead
-        jsr ListDraw
-        jmp Idle
+        jsr Idle
+        jmp Reread              ; (last: it may fetch overlay 6, sort.s)
 
 ; Source: full = srcPath, "/" (unless it ends in one), entryName.
 Source: ldy #0
@@ -363,9 +362,8 @@ Delete: jsr AnySelected
         inc n+1
         bne @entry
 @reread:
-        jsr ListRead
-        jsr ListDraw
-        jmp Idle
+        jsr Idle
+        jmp Reread              ; (last: it may fetch overlay 6, sort.s)
 
 ; Rename: the cursor's entry gets the name asked for.
 Rename: lda count
@@ -401,8 +399,7 @@ Rename: lda count
         beq @reread
         jsr Error
 @reread:
-        jsr ListRead
-        jmp ListDraw
+        jmp Reread
 @end:   rts
 
 ; NewFolder: a folder of the name asked for in the current folder.
@@ -430,8 +427,7 @@ NewFolder:
         bne @name
         jsr Error
 @reread:
-        jsr ListRead
-        jmp ListDraw
+        jmp Reread
 @end:   rts
 
 ; Ask: a question (the text at A/X, entryName on the second line):

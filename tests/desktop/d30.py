@@ -74,11 +74,13 @@ def main():
         ref = os.path.join(out, "desktop-d3doc.png")
         if os.path.exists(ref):
             from PIL import Image
-            a = Image.open(os.path.join(out, "desktop-d30.png")).convert("1")
-            b = Image.open(ref).convert("1")
+            a = Image.open(os.path.join(out, "desktop-d30.png")).convert("RGB")   # (not "1":
+            b = Image.open(ref).convert("RGB")   # its dithering carries the rows above along)
             same = all(a.crop(box).tobytes() == b.crop(box).tobytes()   # the title and
-                       for box in ((0, 0, a.width, 30), (0, 74, a.width, 94)))  # the first line
-                                                    # (geoWrite may still be drawing the rest)
+                       for box in ((0, 0, a.width, 14), (0, 74, a.width, 94)))  # the first line
+                                                    # (geoWrite may still be drawing the rest,
+                                                    # the ruler too: d3doc's screen can be
+                                                    # taken before its marks are drawn)
             check("the document's first page, as opened from drive A", same, True)
         def name(a):
             return bytes(v.mem_get(a, a + 15)).split(b"\xa0")[0]
