@@ -182,14 +182,27 @@ OvReboot:
         bne @name
 :       jsr UNoData
         jsr UExec
-@reboot:
-        lda #CTRL_REBOOT        ; (does not come back)
-        jsr UBegin
-        lda #U_TARGET_CTRL
-        sta uCmd
-        jsr UNoData
-        jsr UExec
+@reboot:                        ; GeoUltra restarts itself: the cartridge's
+        sei                     ; ROM on (bank 0) and the C64's reset vector,
+        ldx #RESTART_LEN - 1    ; so the KERNAL starts the boot ROM as at
+:       lda Restart,x           ; power-on. Not the Ultimate's reboot: that
+        sta RESTART_AT,x        ; drops a cartridge started from its file
+        dex                     ; browser (BASIC came up; the user's hand
+        bpl :-                  ; test 2026-11-21). From $0340: this module
+        jmp RESTART_AT          ; is in the ROM's window ($8000-$9FFF).
 @end:   rts
+
+; Restart: copied to RESTART_AT and run there (see @reboot).
+Restart:
+        lda #$37                ; I/O, BASIC and KERNAL ROM in
+        sta CPU_PORT
+        lda #0
+        sta mbBank
+        lda #MB_ON8K
+        sta mbCtrl
+        jmp ($FFFC)
+RESTART_LEN     = * - Restart
+RESTART_AT      = $0340
 
 HibName:        .byte "HIBERNAT.BIN", 0
 
