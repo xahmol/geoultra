@@ -10,13 +10,6 @@
         .export Defaults, Options, Paper
         .import docName, paperW, paperH, real, FileEngine, EngineInit
 
-SetPattern      = $C139
-Rectangle       = $C124
-PutString       = $C148
-r4L = $0A
-r4H = $0B
-r11L = $18
-r11H = $19
 FE_READ         = 14
 FO_READ         = 0
 DBUSRICON       = 18

@@ -64,7 +64,7 @@ def zp(n):
     return b[0] | b[1] << 8
 def string(a):
     return bytes(v.mem_get(a, a + 80)).split(b"\0")[0].decode("latin1")
-log, out = [], bytearray()
+log, out, busy = [], bytearray(), []
 while True:
     v.events.clear()
     v.resume()
@@ -90,6 +90,13 @@ while True:
             a = zp(4)
             out += bytes(v.mem_get(a, a + n - 1))
         answer = (0, 0)
+        if len(out) > 30000 and not busy:           # the progress box (psw.s
+            busy.append(1)                          # Busy, ShowPage): its frame
+            import apprun
+            apprun.render(bytes(v.mem_get(0xA000, 0xBF3F)), bytes(v.mem_get(0x8C00, 0x8FE7)),
+                          %(busyshot)r)
+            row = bytes(v.mem_get(0xA000 + 8 * 320 + 9 * 8, 0xA000 + 8 * 320 + 30 * 8))   # line 64
+            print("PSC64 busy %%d" %% sum(row[i] == 0xFF for i in range(0, len(row), 8)), flush=True)
     elif f == 4 and y == %(handle)d:                 # FE_CLOSE
         log.append("close")
         answer = (0, 0)
@@ -132,7 +139,8 @@ def main():
         clicks.append((150, 84))            # Letter (A4 at 90, OK at 220)
     if "--c64" in sys.argv:
         clicks.append((150, 104))           # C64 look (real text at 90)
-    open(hook, "w").write(HOOK % {"raw": raw, "handle": HANDLE, "clicks": clicks})
+    open(hook, "w").write(HOOK % {"raw": raw, "handle": HANDLE, "clicks": clicks,
+                                  "busyshot": os.path.join(OUT, "psc64-busy.png")})
     env = dict(os.environ, GEOS_APPS_DISK=disk, PYTHONPATH=os.path.join(ROOT, "tools", "dev", "harness"))
     r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "dev", "harness", "apprun.py"),
                         "--wait", "8", "--out", os.path.join(OUT, "psc64.png"), "GU PostScript",
@@ -156,8 +164,13 @@ def main():
     same = a == b
     print("%s GU PostScript's file and gwtool ps's: %d and %d bytes%s" % (
         "pass" if same else "FAIL", len(a), len(b), "" if same else first_diff(a, b)))
-    print("psc64: %s" % ("all passed" if same else "FAILED"))
-    sys.exit(0 if same else 1)
+    busy = next((int(l.split()[2]) for l in r.stdout.splitlines() if l.startswith("PSC64 busy")), 0)
+    shown = busy >= 20                              # (the frame's top line, line 64:
+    print("%s the progress box while it writes (psc64-busy.png): %d of 22 cards of its"
+          " frame" % ("pass" if shown else "FAIL", busy))   # x 72-247)
+    ok = same and shown
+    print("psc64: %s" % ("all passed" if ok else "FAILED"))
+    sys.exit(0 if ok else 1)
 
 
 def first_diff(a, b):

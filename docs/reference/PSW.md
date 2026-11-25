@@ -57,7 +57,7 @@ open at a time, so the document is closed after the first pass while
 the fonts are looked for and their images read for the Type 3 glyphs,
 and opened again for the pages.
 
-Memory: the application at `$0400`, the page record at `$2D00` (7 KB),
+Memory: the application at `$0400`, the page record at `$2D80` (7 KB),
 header and footer, the fonts' widths and names, the output buffer, the
 line's characters and the variables up to `$5FFF`; a font image while the prolog is
 written, then a picture record, in the background screen's place

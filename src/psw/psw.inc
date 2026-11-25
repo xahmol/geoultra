@@ -6,6 +6,13 @@
 
 ; --- GEOS 2.0 jump table and variables (HG2G; docs/reference/GEOS_API_REFERENCE.md)
 UseSystemFont   = $C14B
+SetPattern      = $C139
+Rectangle       = $C124
+i_Rectangle     = $C19F
+i_FrameRectangle = $C1A2
+i_PutString     = $C1AE
+PutString       = $C148
+PutDecimal      = $C184
 DoDlgBox        = $C256
 EnterDeskTop    = $C22C
 OpenRecordFile  = $C274
@@ -28,12 +35,16 @@ r2L = $06
 r2H = $07
 r3L = $08
 r3H = $09
+r4L = $0A
+r4H = $0B
 r5L = $0C
 r5H = $0D
 r7L = $10
 r7H = $11
 r10L = $16
 r10H = $17
+r11L = $18
+r11H = $19
 baselineOffset  = $26
 curSetWidth     = $27           ; word
 curHeight       = $29
@@ -62,7 +73,7 @@ TXT_LN_1_Y      = 16
 TXT_LN_2_Y      = 32
 DBI_X_0         = 1
 DBI_X_2         = 17
-DBI_Y_2         = 88
+DBI_Y_2         = 72            ; (HG2G; was 88: the OK icon below the box)
 APPL_DATA       = 7             ; GEOS file type (geoWrite documents)
 
 ; --- geoWrite's text (Michael Steil, "Inside geoWrite - 7")
@@ -104,7 +115,7 @@ PIC_DOWN        = 2             ; a picture 2 rows up into the line above
 
 ; --- Memory ($0400 the application; buffers above it, each after the
 ; one before; the variables up to $5FFF: psw.cfg's APP and VARS agree)
-PAGEBUF         = $2D00         ; a page record (geoWrite: 7000 bytes at most)
+PAGEBUF         = $2D80         ; a page record (geoWrite: 7000 bytes at most)
 PAGE_MAX        = $1B60
 HEADBUF         = PAGEBUF + PAGE_MAX    ; the header record
 HF_MAX          = $0200
@@ -121,7 +132,7 @@ CHW             = CHX_HI + $100         ; combination (font and style)
 CHC             = CHW + $100
 CHK             = CHC + $100
 VARS_AT         = CHK + $100    ; the variables (BSS, psw.cfg) to $5FFF
-        .assert VARS_AT <= $5970, error, "psw.inc: the buffers reach psw.cfg's VARS"
+        .assert VARS_AT <= $5A00, error, "psw.inc: the buffers reach psw.cfg's VARS"
 PICBUF          = $6000         ; a picture record (compacted): the background
 PIC_MAX         = $1B40         ; screen's place, unused (dialogs draw on the
                                 ; foreground only, dispBufferOn)

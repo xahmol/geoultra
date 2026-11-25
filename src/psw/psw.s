@@ -8,7 +8,7 @@
 
         .include "psw.inc"
 
-        .export docName, paperW, paperH
+        .export docName, paperW, paperH, ShowPage
         .import FontInit, Prescan, Prolog, Pages, OutOpen, OutClose, OutDelete, outErr, FindFonts
         .import docWidth, hdrFlags, headH, footH, pageH, docV20
         .import __BSS_RUN__, __BSS_SIZE__, real, Defaults, Options
@@ -49,9 +49,84 @@ Start:  lda r0L                 ; (before ClearBss: options is in BSS)
         bcs @quit
         jsr Options             ; the box: paper, look; OK or Cancel
         bcs @quit
-        jsr Write
+        jsr Busy                ; (the progress box: the user's hand test,
+        jsr Write               ; 2026-11-21: nothing showed while it wrote)
         jsr Report
 @quit:  jmp EnterDeskTop
+
+; Busy: a box in the middle of the screen, "Writing PostScript:", the
+; document's name and the progress line ("reading", then ShowPage's
+; "page n"). Destroys A, X, Y, r0-r4, r11, r1H.
+BOX_T = 64
+BOX_B = 111
+BOX_L = 72
+BOX_R = 247
+TEXT_X = BOX_L + 8
+LINE_Y = 102                    ; the progress line's baseline
+Busy:   lda #0
+        jsr SetPattern
+        jsr i_Rectangle
+        .byte BOX_T, BOX_B
+        .word BOX_L, BOX_R
+        jsr i_FrameRectangle
+        .byte BOX_T, BOX_B
+        .word BOX_L, BOX_R
+        .byte $FF
+        jsr UseSystemFont
+        jsr i_PutString
+        .word TEXT_X
+        .byte BOX_T + 13
+        .byte "Writing PostScript:", 0
+        lda #<docName
+        sta r0L
+        lda #>docName
+        sta r0H
+        lda #<TEXT_X
+        sta r11L
+        lda #>TEXT_X
+        sta r11H
+        lda #BOX_T + 25
+        sta r1H
+        jsr PutString
+        jsr i_PutString
+        .word TEXT_X
+        .byte LINE_Y
+        .byte "reading", 0
+        rts
+
+; ShowPage (emit.s Pages, each page): "page n" (A = n) on the progress
+; line. The layout's state is kept: r0-r11 and the font ($26-$2E: it
+; measures text with the document's fonts loaded).
+ShowPage:
+        sta shown
+        ldx #SAVE_LEN - 1
+@save:  lda $02,x
+        sta saved,x
+        dex
+        bpl @save
+        lda #0                  ; the line cleared
+        jsr SetPattern
+        jsr i_Rectangle
+        .byte LINE_Y - 8, BOX_B - 1
+        .word BOX_L + 1, BOX_R - 1
+        jsr UseSystemFont
+        jsr i_PutString
+        .word TEXT_X
+        .byte LINE_Y
+        .byte "page ", 0
+        lda shown
+        sta r0L
+        lda #0
+        sta r0H
+        lda #%11000000          ; left-aligned, no leading zeros
+        jsr PutDecimal
+        ldx #SAVE_LEN - 1
+@back:  lda saved,x
+        sta $02,x
+        dex
+        bpl @back
+        rts
+SAVE_LEN = $2F - $02            ; r0-r15, a0... up to the font's $26-$2E
 
 ; ClearBss: the BSS segment zeroed (GEOS loads the file only: tables
 ; and counts there start as whatever the memory held). Destroys A, X, Y.
@@ -288,6 +363,8 @@ msgDlg: .byte DEF_DB_POS | 1
 
 options: .res 1
 status: .res 1
+shown:  .res 1                  ; (ShowPage)
+saved:  .res $2F - $02
 docName: .res 17
 paperW: .res 3
 paperH: .res 3

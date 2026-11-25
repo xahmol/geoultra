@@ -9,7 +9,7 @@
 
         .export Prescan, Prolog, Pages, ReadRec, Down, FindFonts, runAt, runEnd, lineY, real
         .export docWidth, nPages, hdrFlags, headH, footH, pageH, docV20, top, dry
-        .import Measure, Token, Next, StateInit, nch, lineH, lineB, ended, first, recEnd
+        .import ShowPage, Measure, Token, Next, StateInit, nch, lineH, lineB, ended, first, recEnd
         .import curFid, curStyle, comboFid, comboFidH, comboStyle
         .import PutC, PutI, PutZ, PutDec, PutHund, PutSp
         .import GlyphSetup, GlyphBits, glyphW, fHeight, fBase, docName, paperW, paperH
@@ -670,6 +670,8 @@ Pages:  lda #0
         bcc :+
         jmp @next
 :       inc pageNo
+        lda pageNo              ; (the progress box: psw.s)
+        jsr ShowPage
         jsr PutI
         .byte "%%Page: ", 0
         lda pageNo
