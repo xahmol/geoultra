@@ -52,7 +52,7 @@ dir3Head        = $9C80         ; third BAM block (1581), end of the driver
         .word InitForIO, DoneWithIO, NoTurbo, NoTurbo, NoTurbo
         .word ChangeDiskDevice, NewDisk, ReadBlock, WriteBlock, VerWriteBlock
         .word OpenDisk, ReadBlock, WriteBlock, DrvGetDirHead, DrvPutDirHead
-        .word GetFreeDirBlk, CalcBlksFree, FreeBlock, SetNextFree
+        .word GetFreeDirBlk, CalcBlksFree, FreeBlock, SnfOwner
         .word FindBAMBit, NxtBlkAlloc, BlkAlloc, ChkDkGEOS, SetGEOSDiskOvl
 
 ; $9030: entries applications call directly
@@ -645,7 +645,11 @@ DirHead:
         jsr Head
         pla
         sta CPU_PORT
-        rts
+        txa                     ; read (or written): this drive's BAM is
+        bne :+                  ; the one in memory now (SnfOwner)
+        lda curDrive
+        sta bamDrive
+:       rts
 Head:   ldy curDrive
         lda driveType-8,y
         and #$0F
@@ -2052,3 +2056,31 @@ OvOpenDisk:
 
 
         .endscope
+
+; bamDrive: the drive whose BAM the last GetDirHead or PutDirHead left in
+; memory (curDirHead and on), 0 before the first (DirHead).
+        .segment "DRVEXT"
+bamDrive:       .byte 0
+
+; SnfOwner (the jump table's SetNextFree): allocates on the disk whose BAM
+; is in memory, as GEOS 2.0's drivers do (curDrive switched for the call
+; and back; X and r3 as SetNextFree leaves them). geoWrite pastes a photo
+; scrap with its own drive current while it allocates on its document's
+; (geoWrite-3.s copyPhotoScrapData): the user's hand test, 2026-11-21,
+; "Error I:00 copying photoScrap into data file". The kernal's own
+; callers (BlkAlloc and on) call SetNextFree directly, after a
+; GetDirHead of the current drive. Destroys A, Y, r6, r7, r8H.
+        .segment "CODE"
+SnfOwner:
+        lda curDrive
+        pha
+        lda bamDrive
+        beq :+                  ; (no BAM read yet: the current drive's)
+        jsr @set
+:       jsr SetNextFree
+        pla
+@set:   sta curDrive
+        tay
+        lda driveType-8,y
+        sta curType
+        rts
