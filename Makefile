@@ -49,7 +49,7 @@ REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 DEPLOYDIR ?= /SD/geoultra/
 
-.PHONY: all docs samples release test-samples checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: doctoc all docs samples release test-samples checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(GEOS_DEV)/GEOS64-v2.0-unkeyed.d64
 
@@ -462,7 +462,12 @@ release: build/geoultra64.crt build/geoultra64.cfg docs samples
 # The PDFs of the README and the user documents (pandoc with XeLaTeX;
 # ~/.claude/makefile_conventions.md); committed, so they ship in releases.
 DOCPDFS = README.pdf docs/manuals/GEOULTRA_MANUAL.pdf docs/manuals/TOOLS_MANUAL.pdf
-docs: $(DOCPDFS)
+docs: doctoc $(DOCPDFS)
+
+# doctoc: the contents lists in the Markdown files (tools/dev/mdtoc.py: raw
+# HTML for GitHub; the PDFs have pandoc's own).
+doctoc:
+	$(PYTHON) tools/dev/mdtoc.py $(DOCPDFS:.pdf=.md)
 
 %.pdf: %.md pandoc-defaults.yaml pandoc-header.tex $(wildcard docs/images/*.png)
 	@if which pandoc >/dev/null 2>&1; then \
@@ -728,6 +733,7 @@ test-desktop: all
 	$(PYTHON) tests/apps/geoludo.py
 	$(PYTHON) tests/apps/geowrite.py
 	$(PYTHON) tests/apps/clipboard.py
+	$(PYTHON) tests/apps/pastepic.py
 
 test-desktop-u64: check-deploy all
 	$(PYTHON) tests/desktop/du64.py build/geoultra64.crt

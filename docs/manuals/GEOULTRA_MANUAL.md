@@ -3,6 +3,81 @@ title: GeoUltra user manual
 subtitle: Version 0.9 (Beta 1), Ultimate 64 family
 ---
 
+<!-- toc -->
+<ul>
+<li><a href="#about-geoultra">About GeoUltra</a>
+</li>
+<li><a href="#getting-started">Getting started</a>
+<ul>
+<li><a href="#what-you-need">What you need</a></li>
+<li><a href="#installing">Installing</a></li>
+<li><a href="#starting">Starting</a></li>
+<li><a href="#your-first-disk-images">Your first disk images</a></li>
+<li><a href="#serial-numbers-of-your-applications">Serial numbers of your applications</a></li>
+<li><a href="#hibernation-and-switching-off">Hibernation and switching off</a></li>
+</ul></li>
+<li><a href="#the-desktop">The desktop</a>
+<ul>
+<li><a href="#the-screen">The screen</a></li>
+<li><a href="#moving-around">Moving around</a></li>
+<li><a href="#views-and-sorting">Views and sorting</a></li>
+<li><a href="#two-panes">Two panes</a></li>
+<li><a href="#drag-and-drop">Drag and drop</a></li>
+<li><a href="#files-and-folders">Files and folders</a></li>
+<li><a href="#the-menus">The menus</a></li>
+<li><a href="#the-toolbar">The toolbar</a></li>
+<li><a href="#clipboard">Clipboard</a></li>
+</ul></li>
+<li><a href="#disk-images-and-drives">Disk images and drives</a>
+<ul>
+<li><a href="#drives-a-to-e">Drives A to E</a></li>
+<li><a href="#mounting-and-unmounting">Mounting and unmounting</a></li>
+<li><a href="#going-into-an-image-without-mounting-it">Going into an image without mounting it</a></li>
+<li><a href="#drives-what-works-where">Drives: what works where</a></li>
+</ul></li>
+<li><a href="#programs-and-documents">Programs and documents</a>
+<ul>
+<li><a href="#opening-documents">Opening documents</a></li>
+<li><a href="#tasks">Tasks</a></li>
+<li><a href="#desk-accessories">Desk accessories</a></li>
+</ul></li>
+<li><a href="#settings">Settings</a>
+<ul>
+<li><a href="#themes">Themes</a></li>
+</ul></li>
+<li><a href="#printing">Printing</a>
+<ul>
+<li><a href="#choosing-a-printer">Choosing a printer</a></li>
+<li><a href="#the-print-queue">The print queue</a></li>
+<li><a href="#postscript">PostScript</a></li>
+</ul></li>
+<li><a href="#fonts">Fonts</a>
+<ul>
+<li><a href="#geoultras-fonts">GeoUltra&#x27;s fonts</a></li>
+<li><a href="#system-fonts">System fonts</a></li>
+</ul></li>
+<li><a href="#serial-numbers">Serial numbers</a>
+<ul>
+<li><a href="#the-bypass">The bypass</a></li>
+</ul></li>
+<li><a href="#gush-the-shell">gush, the shell</a>
+<ul>
+<li><a href="#starting-and-leaving">Starting and leaving</a></li>
+<li><a href="#the-screen-and-keys">The screen and keys</a></li>
+<li><a href="#paths">Paths</a></li>
+<li><a href="#command-lines">Command lines</a></li>
+<li><a href="#control-flow-and-scripts">Control flow and scripts</a></li>
+<li><a href="#commands">Commands</a></li>
+</ul></li>
+<li><a href="#files-on-the-stick">Files on the stick</a>
+</li>
+<li><a href="#limits-and-known-problems">Limits and known problems</a>
+</li>
+<li><a href="#what-was-tested">What was tested</a>
+</li>
+</ul>
+<!-- /toc -->
+
 # About GeoUltra
 
 GeoUltra is a GEOS-compatible system for the Commodore 64 with an

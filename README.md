@@ -45,6 +45,25 @@ lists what was tested.
 The pictures are taken on an Ultimate 64 (its video stream,
 `tools/dev/docshots.py`).
 
+<!-- toc -->
+<ul>
+<li><a href="#documents">Documents</a>
+</li>
+<li><a href="#building-from-source">Building from source</a>
+</li>
+<li><a href="#related-projects">Related projects</a>
+</li>
+<li><a href="#serial-numbers-and-copy-protection">Serial numbers and copy protection</a>
+</li>
+<li><a href="#licence">Licence</a>
+<ul>
+<li><a href="#fonts">Fonts</a></li>
+</ul></li>
+<li><a href="#use-of-ai">Use of AI</a>
+</li>
+</ul>
+<!-- /toc -->
+
 ## Documents
 
 The documents are in three groups: `docs/manuals/` for users,

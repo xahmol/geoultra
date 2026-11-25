@@ -1,6 +1,6 @@
 # pandoc-defaults.yaml: the PDFs of the README and the user documents
 # (make docs; ~/.claude/makefile_conventions.md)
-from: markdown-implicit_figures
+from: markdown-implicit_figures-markdown_in_html_blocks   # (raw HTML, the contents lists for GitHub: left out)
 standalone: true
 resource-path: [".", "docs/manuals"]   # (the manuals' pictures: ../images)
 pdf-engine: xelatex

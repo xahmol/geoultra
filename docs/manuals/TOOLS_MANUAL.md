@@ -3,6 +3,38 @@ title: GeoUltra PC tools
 subtitle: "Version 0.9 (Beta 1): geosdisk, gwtool, gwgen, gptool, mkappsdnp, mkgeosfont"
 ---
 
+<!-- toc -->
+<ul>
+<li><a href="#about-these-tools">About these tools</a>
+</li>
+<li><a href="#geosdisk-geos-disk-images">geosdisk: GEOS disk images</a>
+</li>
+<li><a href="#gwtool-geowrite-documents">gwtool: geoWrite documents</a>
+<ul>
+<li><a href="#commands">Commands</a></li>
+<li><a href="#word-docx">Word (docx)</a></li>
+<li><a href="#from-word-fromdocx">From Word (fromdocx)</a></li>
+<li><a href="#markdown-md-frommd">Markdown (md, frommd)</a></li>
+<li><a href="#postscript-ps">PostScript (ps)</a></li>
+<li><a href="#what-a-conversion-changes">What a conversion changes</a></li>
+<li><a href="#restrictions">Restrictions</a></li>
+<li><a href="#sources">Sources</a></li>
+</ul></li>
+<li><a href="#gwgen-geowrite-documents-from-a-description">gwgen: geoWrite documents from a description</a>
+</li>
+<li><a href="#gptool-geopaint-pictures">gptool: geoPaint pictures</a>
+<ul>
+<li><a href="#commands-1">Commands</a></li>
+<li><a href="#the-format">The format</a></li>
+<li><a href="#checked">Checked</a></li>
+</ul></li>
+<li><a href="#mkappsdnp-an-applications-image">mkappsdnp: an applications image</a>
+</li>
+<li><a href="#mkgeosfont-geos-fonts-from-outline-fonts">mkgeosfont: GEOS fonts from outline fonts</a>
+</li>
+</ul>
+<!-- /toc -->
+
 # About these tools
 
 GeoUltra comes with a few programs for a PC (Windows, macOS, Linux) that

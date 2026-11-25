@@ -534,6 +534,9 @@ Smoke tests in `tests/smoke/` (`make smoke-vice`, `make smoke-u64`), run
 | 1351 input driver with a real Commodore 1351 in port 1 | Pass: smooth movement, clamped to 0-319 / 0-199, button presses, no drift while the mouse lies still (15 s of identical samples) |
 | Keyboard driver (matrix scan, repeat, queue, GEOS key codes) | Pass on the U64: letters, Shift, `C=` shortcuts (`$80` + key), F1/F7/F2, cursor keys, RETURN, DEL; repeat after holding; space with the 1351 in port 1 arrives as a key, not as a click |
 | Processes and MainLoop dispatch | Pass in VICE (blinking process, injected mouse press reaches `otherPressVec`) |
+| Printing the sample brochure from geoWrite 2.1 (the user's U64, 2026-11-25, after the fixes of that day: text past x 319 kept out of the printer driver, pictures at most 144 lines) | Pass: GU PDF A4 (5 pages right), GU Epson FX-80 (PNGs), make PostScript (ps2pdf: 5 pages right); before, the print hung on page 3 and the text after the first picture was garbled |
+| The geos > GeoUltra submenu (the user's U64 and tests/desktop/d36u64.py, d37u64.py, 2026-11-25) | Pass: hibernate now, reboot (also with the .crt run from the file browser: GeoUltra restarts through its own ROM), reboot fresh, BASIC; two tasks back after hibernate now and a restart |
+| Themes chosen in Settings, the blank rectangle when geoWrite scrolls up (the user's U64, 2026-11-21) | Pass |
 
 Still to check: on the C128, REU DMA from the external function ROM
 (DMA reaches bank 0 RAM only, UCILIB manual) and the maximum C128
