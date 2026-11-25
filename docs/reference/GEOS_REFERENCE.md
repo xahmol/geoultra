@@ -796,9 +796,12 @@ themselves, or the programs crash:
   the compacted bitmap, then the **compacted colours, one byte per 8x8 card**
   (cards wide x height/8 rounded up), e.g. `06 BF`. Without the colours
   geoWrite reads on into whatever follows.
-- **geoWrite pictures at most about 168 lines high** (its text window): a
-  176-line picture crashes genuine GEOS 2.0 ("System error near $A73C")
-  when scrolled back to; 168 works. Scale taller pictures down.
+- **geoWrite pictures at most 144 lines high** (geoWrite's own limit for
+  pasting a photo scrap): taller ones up to 168 lines still show on screen,
+  but printing garbles the text after them and lets later lines run past
+  the page (measured with GeoUltra's brochure, 2026-11-25); a 176-line
+  picture crashes genuine GEOS 2.0 ("System error near $A73C") when
+  scrolled back to. Scale taller pictures down.
 - geoWrite 2.1 does not show picture colours on screen; pixels only.
 
 ## 17b. GEOS 2.0 (C64) layout facts applications depend on

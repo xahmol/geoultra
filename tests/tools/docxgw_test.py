@@ -116,8 +116,8 @@ def main():
         packed = docxgw.compact(gwdocx.decompact(rec[3:], 20 * 80))
         check("the picture's colours follow its bitmap (200 cards of $BF)",
               rec[3 + len(packed):] == docxgw.compact(bytes([0xBF]) * 200))
-    check("pictures are at most PIC_MAX_H (168) lines, proportions kept",
-          docxgw.fit_height(320, 200) == (264, 165) and docxgw.fit_height(160, 100) == (160, 100))
+    check("pictures are at most PIC_MAX_H (144) lines, proportions kept",
+          docxgw.fit_height(320, 200) == (224, 140) and docxgw.fit_height(160, 100) == (160, 100))
     check("every page starts with a ruler and a font", all(pg[0] == 0x11 and pg[27] == 0x17 for pg in pages))
     check("no warnings", not warns, warns)
     img = os.path.join(OUT, "wordtest.d64")                # through gwtool into an image:

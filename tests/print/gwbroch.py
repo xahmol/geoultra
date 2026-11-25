@@ -27,7 +27,7 @@ import localcfg  # noqa: E402
 
 OUT = os.path.join(ROOT, "build", "harness", "print")
 D81 = localcfg.disk("GEOS_ORACLE81", "GEOS64.D81")
-BROCHURE = os.path.join(ROOT, "build", "samples", "cvt", "Brochure.cvt")
+BROCHURE = os.environ.get("GWBROCH_CVT", os.path.join(ROOT, "build", "samples", "cvt", "Brochure.cvt"))
 PAGES = 5
 
 

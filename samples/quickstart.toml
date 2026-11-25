@@ -54,7 +54,7 @@ keep = true
 
 [[block]]
 picture = "../docs/images/start.png"
-crop = [0, 0, 640, 336]
+crop = [0, 0, 640, 288]
 scale = 0.5
 colour = true
 
@@ -103,7 +103,7 @@ keep = true
 
 [[block]]
 picture = "../docs/images/context-menu.png"
-crop = [160, 48, 480, 336]
+crop = [160, 48, 480, 288]
 scale = 0.5
 colour = true
 
@@ -139,7 +139,7 @@ keep = true
 
 [[block]]
 picture = "../docs/images/settings-desktop.png"
-crop = [0, 0, 640, 336]
+crop = [0, 0, 640, 288]
 scale = 0.5
 colour = true
 

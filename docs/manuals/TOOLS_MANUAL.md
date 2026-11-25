@@ -362,7 +362,7 @@ threshold = 128            # black below it (0-255); or dither = true
 
 [[block]]                  # a part of a C64 screenshot, pixel for pixel
 picture = "desktop.png"
-crop = [0, 0, 320, 168]    # x, y, width, height (on 8-pixel cards)
+crop = [0, 0, 320, 144]    # x, y, width, height (on 8-pixel cards)
 scale = 1                  # no scaling (0.5 for a doubled screenshot)
 colour = true              # each card's two colours from the picture
 
@@ -370,8 +370,9 @@ colour = true              # each card's two colours from the picture
 pagebreak = true
 ```
 
-Pictures are at most 168 lines high: geoWrite 2.1 draws a taller one
-wrongly and genuine GEOS 2.0 crashes when it is scrolled back to, so
+Pictures are at most 144 lines high: geoWrite 2.1 prints a taller one
+wrongly (the text after it is garbled) and genuine GEOS 2.0 crashes on
+taller ones still when they are scrolled back to, so
 gwgen scales them down (keeping their proportions); with `scale` a
 picture that does not fit is an error. Each picture carries a colour
 byte for every 8 x 8 card, as geoWrite's own pictures do (`colour` takes

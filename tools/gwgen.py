@@ -44,7 +44,7 @@ The description (TOML; paths relative to it):
     colour = true              # one colour byte a card from the picture
                                # (a C64 screen's crop on card boundaries:
                                # its exact colours); its darker colour as
-                               # the set pixels. At most 168 lines high:
+                               # the set pixels. At most 144 lines high:
                                # geoWrite's limit; taller ones scaled down
 
     [[block]]

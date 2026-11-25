@@ -47,11 +47,14 @@ EMU_DOT = 914400 // 80
 PAGE_H = 752
 FILL = 0.7
 PAGE_BYTES = 5500
-PIC_MAX_H = 168                     # lines: geoWrite 2.1 draws pictures up to
-                                    # about its text window's height; a taller
-                                    # one crashes genuine GEOS 2.0 when scrolled
-                                    # back to (measured 2026-11-20: 168 works,
-                                    # 176 does not); taller ones are scaled down
+PIC_MAX_H = 144                     # lines: geoWrite 2.1 prints pictures of at
+                                    # most 144 lines (its own photo scrap paste
+                                    # limit): a taller one garbled the text after
+                                    # it, and its next lines ran past the page
+                                    # into the printer driver (the user's
+                                    # brochure, 2026-11-25; 168 lines still
+                                    # show on screen, 176 crash GEOS 2.0 when
+                                    # scrolled back to); taller ones scaled down
 
 
 def fit_height(w, h):
