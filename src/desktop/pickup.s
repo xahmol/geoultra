@@ -15,7 +15,6 @@
         .export Pickup, Refused
 
 FC_RAW          = $02
-FI_CBM          = 1             ; the CBM type byte (its low bits: 1 SEQ)
 CBM_SEQ         = 1
 KEEP_N          = 4             ; files a drive's pass keeps (the rest:
                                 ; at the next start)

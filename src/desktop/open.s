@@ -18,7 +18,8 @@
         .import cur, count, path, Redraw, RecentAdd, Mount, Leave, SideArrows
         .export Open, Up, Drive, Into, Document, Back
         .import HistAdd, IsImage, Error, UsePrinter, PrnUlt, AppFind, AppGo, OpenHere, Fonts
-        .export appName, appClass, docDrive, docShort, RunE
+        .export appName, appClass, docDrive, docShort, RunE, shortName, InImage
+        .import RunPrg
 
 DIR_ROOT        = 15            ; DirRoot: guExtTable + 15
 ST_LD_DATA      = $80
@@ -63,7 +64,10 @@ Open:   lda count               ; (an empty folder: nothing)
         ldx #ERR_REU
 @err:   jmp Error               ; (the image's name on its first line)
 @mount: jmp Mount
-@geos:  cmp #K_GEOS
+@geos:  cmp #K_CBM              ; a plain file: a PRG is run in BASIC
+        bne :+                  ; (asked; desktop.s Ov_RunPrg)
+        jmp RunPrg
+:       cmp #K_GEOS
         bne @end
         lda entryInfo + FI_GTYPE
         cmp #APPLICATION

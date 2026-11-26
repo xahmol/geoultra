@@ -874,7 +874,8 @@ Programs on GeoUltra's drives (2026-11-26): with r5 = 0 and a command
 130 copy it block by block into REU bank 188 (the file engine's listing
 bank, free during the call). Within `$0801-$9FFF` (at `$0801` without
 `,1`, at its own address with it) the command becomes what followed
-`:` or `RUN`, r7 the program's end; after the `sei` that ends GEOS one
+`:` or `RUN` (with `,1` too when it loads at `$0801`; the desktop and
+gush always give `,1`: src/inc/prgrun.inc), r7 the program's end; after the `sei` that ends GEOS one
 `SysRAMOp` fetch puts it in place (GEOS's own memory up to `$9FFF` no
 longer needed), and `$0800` is set to 0, BASIC's byte before the
 program. A file outside that range goes to the serial bus unchanged.

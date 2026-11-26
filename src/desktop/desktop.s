@@ -1585,6 +1585,8 @@ themeItems:     .res THEMES_MAX * THEME_ITEM
 
         .segment "OV9"
         .export Ov_GeosMenu, Ov_ThemeMenu, Ov_MHibernate, Ov_MReboot, Ov_MFresh, Ov_MBasic
+        .export Ov_RunPrg
+        .import shortName, InImage, entryInfo, entryName
 
 ; Ov_GeosMenu (overlay 9: the core is full): "GeoUltra" and the desk accessories (FindFTypes; drive
 ; E's added by the kernal) into geosMenu. r0 = it.
@@ -1752,6 +1754,45 @@ Ov_MBasic:
         sta r7H
         jmp ToBasic
 
+; Ov_RunPrg (Open on a plain file of a GEOS drive): a PRG is run in
+; BASIC, asked first: its drive and folder made current (FE_SELECT, its
+; short name), then ToBASIC with LOAD "name",dev,1, which the kernal
+; loads from the drive and starts (RUN for a program at $0801;
+; prgrun.inc). Other plain files: nothing, as before. Inside a disk
+; image gone into: InImage's message (it must be mounted).
+Ov_RunPrg:
+        lda entryInfo + FI_CBM
+        and #$07
+        cmp #2                  ; (PRG)
+        bne @end
+        lda #<PrgDlg
+        ldx #>PrgDlg
+        jsr SysAsk
+        bne @end
+        lda #<entryName
+        sta r0L
+        lda #>entryName
+        sta r0H
+        lda #<shortName
+        sta r1L
+        lda #>shortName
+        sta r1H
+        lda #FE_SELECT
+        jsr FileEngine
+        txa
+        beq :+
+        jmp InImage
+:       lda #<shortName
+        sta r6L
+        lda #>shortName
+        sta r6H
+        jsr PrgCommand
+        jmp ToBasic
+@end:   rts
+
+        .include "prgrun.inc"
+prgCmd: .res 32
+
 ; SysAsk: the yes/no dialog at A/X; Z set when YES was chosen.
 SysAsk: sta r0L
         stx r0H
@@ -1782,6 +1823,14 @@ FreshDlg:       .byte DEF_DB_POS | 1
                 .byte YES, DBI_X_0, DBI_Y_2
                 .byte NO, DBI_X_2, DBI_Y_2
                 .byte 0
+PrgDlg:         .byte DEF_DB_POS | 1
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
+                .word PrgText
+                .byte DBTXTSTR, TXT_LN_X, TXT_LN_2_Y + 6
+                .word PrgText2
+                .byte YES, DBI_X_0, DBI_Y_2
+                .byte NO, DBI_X_2, DBI_Y_2
+                .byte 0
 BasicDlg:       .byte DEF_DB_POS | 1
                 .byte DBTXTSTR, TXT_LN_X, TXT_LN_1_Y + 6
                 .word BasicText
@@ -1797,5 +1846,7 @@ FailText2:      .byte "a drive could not be written.", 0
 FreshText:      .byte BOLDON, "Reboot fresh?", PLAINTEXT, 0
 FreshText2:     .byte "Other tasks and the session go.", 0
 BasicText:      .byte BOLDON, "Leave GeoUltra for BASIC?", PLAINTEXT, 0
+PrgText:        .byte BOLDON, "Run it in BASIC?", PLAINTEXT, 0
+PrgText2:       .byte "A reset brings GeoUltra back.", 0
 BasicText2:     .byte "A reset brings it back.", 0
 NoCmd:          .byte 0

@@ -605,7 +605,8 @@ Stage:  lda dirEntryBuf + OFF_DE_TR_SC
         rts
 
 ; Command: what ToBASIC types, into basicBuf (r0 = it): what followed ":"
-; in the command, else RUN after a BASIC load (without ",1").
+; in the command, else RUN after a BASIC load (without ",1", or with it
+; at $0801).
 Command:
         ldy #0
         lda bRest+1
@@ -623,7 +624,13 @@ Command:
         lda #0
         sta basicBuf,y
         beq @set
-@run:   lda bAbs
+@run:   lda bAbs            ; ",1" too when it loads at $0801 (a
+        beq @rcopy              ; BASIC program, or one with a SYS line:
+        lda basicAddr           ; the desktop and gush always give ",1")
+        cmp #<LOW
+        bne @none
+        lda basicAddr+1
+        cmp #>LOW
         bne @none
 @rcopy: lda RunWord,y
         sta basicBuf,y

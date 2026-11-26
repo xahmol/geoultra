@@ -6,7 +6,7 @@
         .include "gush.inc"
 
         .import ConPut, ConPuts, ConNewLine, ConClear, conCol
-        .import FileEngine, Status, pwdBuf, startDrive
+        .import FileEngine, Status, pwdBuf, startDrive, RunPrg
         .import Parse, argc, argLo, argHi
         .export Run, ArgR0, PutArg, Print, Say, Fail, FailPath, Decimal, num
         .import CmdCp, CmdMv, CmdRm, CmdMkdir, CmdRmdir, CmdCat, CmdMore, CmdDf
@@ -100,6 +100,9 @@ Line:   jsr Parse
         cpx #IS_MODULE          ; an external command (module.s)
         bne :+
         jmp RunModule
+:       cpx #IS_PRG             ; a PRG on a GEOS drive: in BASIC
+        bne :+                  ; (prog.s, asked first)
+        jmp RunPrg
 :       cpx #IS_SCRIPT          ; a plain file: run as a script
         bne :+
         lda prog

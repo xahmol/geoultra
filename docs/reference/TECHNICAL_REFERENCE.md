@@ -269,8 +269,10 @@ licensed copies only; it is off by default (manual, "Serial numbers").
 (with `,1` and `:rest` optional) for a GeoUltra drive that holds the
 file loads it from that drive when it fits between `$0801` and `$9FFF`
 (at `$0801` without `,1`, at its own address with it), then types what
-followed `:`, or `RUN` without `,1`. GEOS 2.0's deskTop starts large
-BASIC and machine-code programs that way. Other commands go to the
+followed `:`, or `RUN` (without `,1`, or with it at `$0801`). GEOS 2.0's deskTop starts large
+BASIC and machine-code programs that way; GeoUltra's desktop and gush
+use `LOAD "name",dev,1` for every PRG they run, and `RUN` is typed for
+a program at `$0801` with `,1` too. Other commands go to the
 serial bus unchanged. The boot files of other GEOS systems (GEOS 2.0,
 Wheels, MegaPatch3, GDOS64) are refused with a dialog, by an entry in r5
 and by a command alike. RESTORE in BASIC, or `SYS 49152`, returns to

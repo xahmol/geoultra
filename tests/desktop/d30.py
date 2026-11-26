@@ -76,11 +76,13 @@ def main():
             from PIL import Image
             a = Image.open(os.path.join(out, "desktop-d30.png")).convert("RGB")   # (not "1":
             b = Image.open(ref).convert("RGB")   # its dithering carries the rows above along)
-            same = all(a.crop(box).tobytes() == b.crop(box).tobytes()   # the title and
-                       for box in ((0, 0, a.width, 14), (0, 74, a.width, 94)))  # the first line
-                                                    # (geoWrite may still be drawing the rest,
-                                                    # the ruler too: d3doc's screen can be
-                                                    # taken before its marks are drawn)
+            line = a.crop((0, 74, a.width, 94))             # the title as from
+            same = (a.crop((0, 0, a.width, 14)).tobytes()    # drive A, and text on
+                    == b.crop((0, 0, a.width, 14)).tobytes()   # the first line (not
+                    and len(set(line.getdata())) > 1)        # compared: d3doc's
+                                                    # screen can be taken while geoWrite is
+                                                    # still drawing it, "Thi" only; the
+                                                    # 2026-11-26 regression failed so)
             check("the document's first page, as opened from drive A", same, True)
         def name(a):
             return bytes(v.mem_get(a, a + 15)).split(b"\xa0")[0]

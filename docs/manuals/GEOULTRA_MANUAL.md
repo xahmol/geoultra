@@ -38,6 +38,7 @@ subtitle: Version 0.9 (Beta 1), Ultimate 64 family
 <li><a href="#programs-and-documents">Programs and documents</a>
 <ul>
 <li><a href="#opening-documents">Opening documents</a></li>
+<li><a href="#basic-programs">BASIC programs</a></li>
 <li><a href="#tasks">Tasks</a></li>
 <li><a href="#desk-accessories">Desk accessories</a></li>
 </ul></li>
@@ -293,6 +294,9 @@ Opening an entry:
   **document** starts the application it belongs to with it (see
   "Programs and documents");
 - a **printer driver**: makes it the printer;
+- a **program file** (a plain PRG, such as a BASIC program or a game)
+  on a GEOS drive: asks first, then leaves GeoUltra and runs it in
+  BASIC (see "BASIC programs");
 - a **disk image** on the Ultimate (`.d64`, `.d71`, `.d81`, `.dnp`):
   goes into it like a folder (see "Disk images and drives");
 - any **other file on the Ultimate**: is not opened (see "Drives:
@@ -615,6 +619,24 @@ Some programs, geoWrite 2.1 among them, only find a document they are
 started with on drive A or B. For a document on C or D, the desktop
 therefore swaps drive B and the document's drive while the program
 runs and swaps them back when the program ends.
+
+## BASIC programs
+
+A program file (PRG) on a GEOS drive, such as a BASIC program, a game
+or a tool, runs in BASIC: open it on the desktop, or type its name in
+gush. GeoUltra asks first, then writes its drives back, saves the
+session, loads the program from its drive and starts it: `RUN` for a
+program that loads at $0801 (BASIC programs, and most games with a
+`SYS` line), otherwise it is loaded and you type its `SYS` yourself.
+A reset (or RESTORE) brings GeoUltra back, with its session.
+
+- Programs that load between $0801 and $9FFF are loaded from the GEOS
+  drive; others are left to the serial bus, as on GEOS 2.0.
+- The boot files of other GEOS systems (GEOS 2.0's GEOS, GEOBOOT and
+  RBOOT, Wheels, MegaPatch3, GDOS64) are refused with a message: they
+  would replace GeoUltra and could overwrite its data in the REU.
+- Programs that load more files later look for them on the serial bus
+  (drive 8), where GeoUltra's drives are not.
 
 ## Tasks
 
@@ -966,7 +988,9 @@ and `[ EXPR ]` take `-e`, `-f`, `-d path` (exists, file, folder), `-z`,
 variables.
 
 A plain text file whose name is typed runs as a script; so does `source
-file [words]`. In a script `$0` is its path, `$1`-`$9` its words, `$#`
+file [words]`. A program file (PRG) on a GEOS drive typed by its name
+runs in BASIC, after a question (see "BASIC programs"; `-f` does not
+ask). In a script `$0` is its path, `$1`-`$9` its words, `$#`
 their number; `exit N` ends it with status N.
 
 ## Commands
@@ -1067,12 +1091,8 @@ geoWrite=58B5        (an application's own serial, by its class)
   disk itself) need the bypass, which is off by default.
 - **geoPublish**: the copy tried showed a garbled screen, the same on
   genuine GEOS 2.0, so that copy is damaged; another copy is untested.
-- **BASIC and machine-code programs** (plain PRG files) start from
-  GEOS 2.0's deskTop, from GeoUltra's drives, when they load between
-  $0801 and $9FFF; others are left to the serial bus, as on GEOS 2.0.
-  GeoUltra's own desktop does not start them. Boot files of other GEOS
-  systems (GEOS 2.0, Wheels, MegaPatch3, GDOS64) are refused: they
-  would replace GeoUltra.
+- **BASIC programs** must load between $0801 and $9FFF to start from a
+  GeoUltra drive (see "BASIC programs").
 - Folders with more than 384 entries are shown in the order on disk; a
   folder holds at most 2048 entries in the list. The icon view keeps
   the first 376 entries' icons in the REU.

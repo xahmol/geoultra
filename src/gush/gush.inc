@@ -58,6 +58,7 @@ REDIR_IN        = 3
 
 IS_SCRIPT       = $F2           ; prog.s: a plain file, a script (no error)
 IS_MODULE       = $F1           ; prog.s: an external command (module.s)
+IS_PRG          = $F3           ; prog.s: a PRG on a GEOS drive (run in BASIC)
 ERR_MODULE      = $F0           ; not a gush command (or for a newer gush)
 ERR_URL         = $EF           ; wget: not an http:// URL, or too long
 ERR_HTTP        = $EE           ; wget: the answer ended in its headers

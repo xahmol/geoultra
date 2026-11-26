@@ -588,6 +588,7 @@ test-gush: all build/gush/docpeek.cvt
 	$(PYTHON) tests/gush/g20.py
 	$(PYTHON) tests/gush/g21.py
 	$(PYTHON) tests/gush/g22.py
+	$(PYTHON) tests/gush/g23.py
 
 # gush on the U64 (tests/gush/gu64.py): the Ultimate's file system, a desk
 # accessory; gush written onto drive A's test copy first.
@@ -731,6 +732,7 @@ test-desktop: all
 	$(PYTHON) tests/desktop/d35.py
 	$(PYTHON) tests/desktop/d38.py
 	$(PYTHON) tests/desktop/d39.py
+	$(PYTHON) tests/desktop/d40.py
 	$(PYTHON) tests/spool/sp1.py
 	$(PYTHON) tests/spool/sp2.py
 	$(PYTHON) tests/spool/sp3.py

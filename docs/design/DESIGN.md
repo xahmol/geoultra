@@ -278,6 +278,28 @@ after a GDOS64 session; (6) native folders without a name in their
 header take the parent entry's name (done 2026-11-26); (7) the conformance menu case
 where GEOS 2.0 shows "System error": a GEOS 2.0 bug or a test fault
 (done 2026-11-26: a test artefact).
+For a 0.9.x update (the user, 2026-11-26): `gufetch`, a fastfetch-like
+gush command (an external command in /e/bin): a small logo beside the
+version and build, the machine and firmware (FE_UCI; to check on the
+U64 that the model is reported), speed (FE_TURBO), REU use, drives A-E
+and their images (FE_MOUNTINFO, FE_DF), tasks (FE_TASK), IP address and
+date; about a day with a VICE test. Decided (the user, 2026-11-26): the
+name `gufetch`; a logo of gush's own characters (text, so `gufetch >
+file` works); all four groups of lines (system: version, build, machine,
+firmware, speed; memory and drives: REU size and use, drives A-E with
+their images and free space; session: tasks, print queue, uptime since
+the cold start, theme; network and time: IP address, date and time, NTP
+server); always the same screen, `-s` a short text-only form for scripts.
+**The web browser, GUlliver** (after 1.0, first on the roadmap; the
+user, 2026-11-26): a GEOS application, pages through FrogFind
+(frogfind.com: a search engine for old computers whose proxy turns pages
+into simple HTML over plain HTTP); a window with the page in GU fonts,
+links clicked, a scrollbar, an address line, back and forward. Pages and
+history in REU banks lent at run time from the drives' free area (the
+dynamic REU room, built first). Besides showing a page: save it as a
+geoWrite document (gwgen's layout), print it through the queue,
+bookmarks, downloads of linked files to the stick. The name GUlliver
+(the user's choice) is to be checked against existing software first.
 After 1.0: the PC tools GUI, re-keying serials (S6), the web browser
 (FrogFind), dynamic REU room for applications, `geosdisk shrink`,
 ejecting the cartridge, the network roadmap, phases 5 and 6.
@@ -964,8 +986,11 @@ Requests from the same session, to do:
   what followed ":" or RUN. The boot files of GEOS 2.0, Wheels,
   MegaPatch3 and GDOS64 (the names on their disks) are refused with a
   dialog in both ways (tobasic.s, modules 128-130; tests/drives/tobasic.py,
-  `make test-tobasic`). GeoUltra's own desktop does not start plain PRG
-  files (a later choice).
+  `make test-tobasic`). Since the same day (the user's decision) GeoUltra's desktop
+  (open on a PRG, desktop.s Ov_RunPrg; d40.py) and gush (the PRG's name,
+  prog.s RunPrg; g23.py) run a PRG of a GEOS drive this way, asked
+  first, through the shared src/inc/prgrun.inc (LOAD "name",dev,1; the
+  kernal types RUN for a program at $0801 with ",1" too).
 
 - Conformance, the menu case where GEOS 2.0 showed "System error" after a
   click on the third item of the test's sub-menu: settled 2026-11-26, a

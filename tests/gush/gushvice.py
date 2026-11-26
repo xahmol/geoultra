@@ -49,8 +49,11 @@ class Gush:
                 os.remove(disk)
             cmd = [C1541, "-format", "gush test,gt", "d81", disk,
                    "-geoswrite", os.path.join(ROOT, "build", "gush", "gush.cvt")]
-            for f in files:
-                cmd += ["-geoswrite" if f.endswith(".cvt") else "-write", f]
+            for f in files:                         # (NAME,s: a SEQ file
+                if f.endswith(",s"):                 # named NAME; else a
+                    cmd += ["-write", f[:-2], os.path.basename(f)]   # PRG)
+                else:
+                    cmd += ["-geoswrite" if f.endswith(".cvt") else "-write", f]
             subprocess.run(cmd, capture_output=True, check=True)
         self.disk = disk
         apprun.APPS_DISK = disk

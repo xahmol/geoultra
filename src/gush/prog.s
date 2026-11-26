@@ -15,7 +15,8 @@
         .include "gush.inc"
 
         .import FileEngine, Status, ConRedraw, argc, argLo, argHi
-        .export StartProgram, prog
+        .export StartProgram, prog, RunPrg
+        .import Ask
         .import VarFind, varName, HistSave
 
 GetFile         = $C208         ; GEOS jump table
@@ -142,7 +143,14 @@ Try1:   lda r0L
         ldx #IS_SCRIPT          ; a plain file: a script (script.s)
         lda info + FI_KIND
         cmp #K_CBM
-        beq @no
+        bne :+
+        lda info + FI_CBM       ; a PRG on a GEOS drive: run in BASIC
+        and #$07                ; (RunPrg; the user, 2026-11-26)
+        cmp #2
+        bne @no
+        ldx #IS_PRG
+        bne @no                 ; (always)
+:
         cmp #K_UFILE
         beq @no
         ldx #STRUCT_MISMAT
@@ -484,9 +492,49 @@ docTS:          .word 0
 
         .segment "BSS"
 
+prgShort:       .res 17             ; RunPrg: the PRG's short name
+prgCmd:         .res 32             ; and its LOAD command (prgrun.inc)
 info:           .res 16
 pathBuf:        .res PATH_BUF
 cvtBuf:         .res PATH_BUF
 short:          .res 17
 docShort:       .res 17
 path:           .res 3 + FE_NAME_MAX_LONG + 1
+
+        .segment "CODE"
+
+; RunPrg (StartProgram found a PRG on a GEOS drive, prog its path): run
+; in BASIC, asked first ("leave GeoUltra and run NAME? (y/n/a)"; -f
+; does not ask): its drive and folder current (FE_SELECT), then ToBASIC
+; with LOAD "name",dev,1, which the kernal loads from the drive and
+; starts (prgrun.inc). No: X = 0, back to the prompt; else X = error.
+RunPrg: ldx #0
+        lda #<RunQ
+        ldy #>RunQ
+        jsr Ask
+        bcs @no
+        lda prog
+        sta r0L
+        lda prog+1
+        sta r0H
+        lda #<prgShort
+        sta r1L
+        lda #>prgShort
+        sta r1H
+        lda #FE_SELECT
+        jsr FileEngine
+        txa
+        bne @end
+        lda #<prgShort
+        sta r6L
+        lda #>prgShort
+        sta r6H
+        jsr PrgCommand
+        jmp ToBasic
+@no:    ldx #0
+@end:   rts
+
+RunQ:   .byte "leave GeoUltra and run ", 0
+ToBasic         = $C241         ; GEOS jump table
+
+        .include "prgrun.inc"

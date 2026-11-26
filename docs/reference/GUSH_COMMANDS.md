@@ -20,7 +20,8 @@ external command when
 - on the Ultimate's file system: it is that file's CVT, `NAME.cvt`
   (gush tries the name with `.cvt` added when `NAME` is not there;
   `cp` of the GEOS file onto the stick makes it). A plain file found
-  under its own name is a script.
+  under its own name is a script; a PRG on a GEOS drive runs in BASIC
+  instead (asked first).
 
 `PATH` is `/e/bin:/USB0/GEOULTRA/bin` by default (`gushrc` can change
 it): the system's commands in the system drive's `bin` folder (built

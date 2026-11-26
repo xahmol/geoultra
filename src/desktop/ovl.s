@@ -83,6 +83,7 @@ OvlFail:
         Stub MReboot, 9
         Stub MFresh, 9
         Stub MBasic, 9
+        Stub RunPrg, 9          ; (a PRG run in BASIC: open.s)
         Stub MakePS, 7          ; (a geoWrite document to GU PostScript)
         Stub FontAct, 9         ; overlay 9: fontact.s (a system font in
         Stub FontImport, 9      ; or out; GEOULTRA/fonts' CVT files)

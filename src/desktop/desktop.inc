@@ -62,6 +62,7 @@ FE_UMOUNT       = 18
 FE_WRITE        = 15
 FI_GTYPE        = 3
 FI_KIND         = 0
+FI_CBM          = 1             ; the CBM type byte (PRG: 2 in its low bits)
 FO_READ         = 0
 FO_WRITE        = 1
 INFO_LEN        = 16            ; an info block (FE_STAT, FE_READDIR)

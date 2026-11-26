@@ -16,7 +16,8 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     path = os.path.join(OUT, "alpha")
     open(path, "wb").write(bytes(range(10)))
-    g = Gush("g5", 6566, [path])
+    g = Gush("g5", 6566, [path + ",s"])           # (a SEQ: a script; a PRG
+                                                    # runs in BASIC, g23)
     check = g.check
 
     def fresh():
