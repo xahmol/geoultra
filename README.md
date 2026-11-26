@@ -212,6 +212,12 @@ and judges what is on the screen. gush, the shell, has its own suites:
 `make test-gush` in VICE and `tests/gush/gu64.py` on the Ultimate 64.
 The desktop likewise: `make test-desktop` in VICE and
 `tests/desktop/du64.py` and `d6u64.py` on the Ultimate 64.
+Because an AI that has read GEOS 2.0's reassembled source could
+reproduce parts of it unasked, the code is also measured against that
+source and GEOS 2.0's memory (`tools/dev/cleanroom.py`); routines that
+came too close were written anew, and
+[`CLEAN_ROOM.md`](docs/reference/CLEAN_ROOM.md) reports the method, the
+findings and what was changed.
 Some steps are done unattended: on Xander's instruction the AI works
 through steps he decided on, testing, committing and pushing each one,
 and he reviews the result afterwards (the commits and docs/design/GUSH.md say

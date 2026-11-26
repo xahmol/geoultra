@@ -20,7 +20,8 @@
         .export gfLeft, gfTop, dbIndex, gfDrvOn                  ; (module 87,
                                                                  ; drvlist.s)
         .export gfDrvPick
-        .import OvTextPrompt
+        .import OvTextPrompt, OvInitMachine, OvInitEnv
+        .export OvInitGEOEnv
         .import OvlCall
         .import DoIcons, StartMouseMode, UseSystemFont, PutString
         .import SetPattern, Rectangle, FrameRectangle, RecoverRectangle
@@ -1071,63 +1072,12 @@ RestoreBox:
         jsr OvlCall
         .byte 11, 9
 
-; The default environment of a dialog box (HG2G2022 chapter 14, "Dialog
-; Box and Auto Exec Configuration"): plain text, both buffers, mouse
-; and icons on, full-screen window and limits, vectors empty
-; except intTopVector and RecoverVector, no processes, menus or icons.
+; InitGEOEnv: the default environment of a dialog box; its work in
+; module 100 (entry 6, OvInitGEOEnv: moved out of resident code
+; 2026-11-25 for room). Destroys A, X.
 InitGEOEnv:
-        php                     ; no IRQ while intTopVector is cleared
-        sei                     ; (geoWrite 2.0 calls this with IRQs on)
-        lda #SET_PLAINTEXT
-        sta currentMode
-        lda #ST_WR_FORE | ST_WR_BACK
-        sta dispBufferOn
-        lda #MOUSEON_BIT | ICONSON_BIT  ; menus off: measured on GEOS 2.0
-        sta mouseOn                     ; (HG2G2022's table says %11100000)
-        lda #0
-        sta windowTop
-        sta leftMargin
-        sta leftMargin+1
-        sta pressFlag
-        sta IconDescVec
-        sta IconDescVec+1
-        lda #SC_PIX_HEIGHT - 1
-        sta windowBottom
-        lda #<(SC_PIX_WIDTH - 1)
-        sta rightMargin
-        lda #>(SC_PIX_WIDTH - 1)
-        sta rightMargin+1
-        ldx #37                 ; globals: all zero, then the defaults
-        lda #0
-@gl:    sta appMain,x
-        dex
-        bpl @gl
-        ldx #0                  ; kernal state: no menus, processes, icons
-@ks:    cpx #<__KSTATE_SIZE__
-        beq @defs
-        sta __KSTATE_RUN__,x
-        inx
-        bne @ks
-@defs:  lda #<InterruptMain
-        sta intTopVector
-        lda #>InterruptMain
-        sta intTopVector+1
-        lda #<RecoverRectangle
-        sta RecoverVector
-        lda #>RecoverRectangle
-        sta RecoverVector+1
-        lda #SELECTION_DELAY
-        sta selectionFlash
-        lda #ST_FLASH
-        sta iconSelFlag
-        lda #SC_PIX_HEIGHT - 1
-        sta mouseBottom
-        lda #<(SC_PIX_WIDTH - 1)
-        sta mouseRight
-        lda #>(SC_PIX_WIDTH - 1)
-        sta mouseRight+1
-        plp
-        rts
+        jsr OvlCall
+        .byte 100, 6
 
         .segment "OVL11"                ; overlay module 11: dialog state
 
@@ -1376,6 +1326,10 @@ OvRestoreState:
         jmp OvTextPrompt        ; entry 3 (InitTextPrompt, getstring.s: its
                                 ; code follows this module's, as getstring.o
                                 ; links after dialog.o)
+        jmp OvInitGEOEnv        ; entry 6 (InitGEOEnv, below)
+        jmp OvInitMachine       ; entry 9 (InitMachine, load.s: after this
+        jmp OvInitEnv           ; entry 12  module's code, as load.o links
+                                ; after dialog.o; InitEnv, load.s)
 
 ; OvGfPress (module 100, from GfPress): a press on a row selects its file
 ; (below the last row: nothing); a second press on the same row in time
@@ -1429,3 +1383,62 @@ OvGfPress:
 @end:   lda #0
         rts
 
+
+
+; OvInitGEOEnv (module 100, entry 6: InitGEOEnv): the default environment of a dialog box (HG2G2022 chapter 14, "Dialog
+; Box and Auto Exec Configuration"): plain text, both buffers, mouse
+; and icons on, full-screen window and limits, vectors empty
+; except intTopVector and RecoverVector, no processes, menus or icons.
+OvInitGEOEnv:
+        php                     ; no IRQ while intTopVector is cleared
+        sei                     ; (geoWrite 2.0 calls this with IRQs on)
+        lda #SET_PLAINTEXT
+        sta currentMode
+        lda #ST_WR_FORE | ST_WR_BACK
+        sta dispBufferOn
+        lda #MOUSEON_BIT | ICONSON_BIT  ; menus off: measured on GEOS 2.0
+        sta mouseOn                     ; (HG2G2022's table says %11100000)
+        lda #0
+        sta windowTop
+        sta leftMargin
+        sta leftMargin+1
+        sta pressFlag
+        sta IconDescVec
+        sta IconDescVec+1
+        lda #SC_PIX_HEIGHT - 1
+        sta windowBottom
+        lda #<(SC_PIX_WIDTH - 1)
+        sta rightMargin
+        lda #>(SC_PIX_WIDTH - 1)
+        sta rightMargin+1
+        ldx #37                 ; globals: all zero, then the defaults
+        lda #0
+@gl:    sta appMain,x
+        dex
+        bpl @gl
+        ldx #0                  ; kernal state: no menus, processes, icons
+@ks:    cpx #<__KSTATE_SIZE__
+        beq @defs
+        sta __KSTATE_RUN__,x
+        inx
+        bne @ks
+@defs:  lda #<InterruptMain
+        sta intTopVector
+        lda #>InterruptMain
+        sta intTopVector+1
+        lda #<RecoverRectangle
+        sta RecoverVector
+        lda #>RecoverRectangle
+        sta RecoverVector+1
+        lda #SELECTION_DELAY
+        sta selectionFlash
+        lda #ST_FLASH
+        sta iconSelFlag
+        lda #SC_PIX_HEIGHT - 1
+        sta mouseBottom
+        lda #<(SC_PIX_WIDTH - 1)
+        sta mouseRight
+        lda #>(SC_PIX_WIDTH - 1)
+        sta mouseRight+1
+        plp
+        rts

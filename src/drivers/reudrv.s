@@ -1232,97 +1232,17 @@ Alloc:  lda r9L                 ; Ddiv destroys r9
         sta r9L
         rts
 
-; GetFreeDirBlk: r10L = directory page (1-18) to start at. Finds the
-; first empty entry from there, adding directory blocks as needed. The
-; block is in diskBlkBuf, r1 its address, Y the entry's offset, r10L its
-; page. X = 0 or FULL_DIRECTORY. Destroys A, r0, r3, r5, r7, r8.
+; GetFreeDirBlk (r10L = the directory page to start at: the first empty
+; entry, directory blocks added as needed) and AddDirBlock (a block added
+; after r1): their work in module 82 (entries 3 and 6, below: moved out
+; of the resident driver 2026-11-25 for room; OvlCall keeps the A, X, Y
+; they return).
 GetFreeDirBlk:
-        php
-        sei
-        lda r6L
-        pha
-        lda r2L
-        pha
-        lda r2H
-        pha
-        ldx r10L
-        inx
-        stx r6L
-        jsr FirstDirBlock
-@read:  jsr DrvReadBuff
-@got:   txa
-        bne @end
-        dec r6L
-        beq @page
-@link:  lda diskBlkBuf
-        bne @follow
-        jsr AddDirBlock
-        jmp @got
-@follow:
-        sta r1L
-        lda diskBlkBuf+1
-        sta r1H
-        jmp @read
-@page:  ldy #FRST_FILE_ENTRY
-@slot:  lda diskBlkBuf,y
-        beq @end
-        tya
-        clc
-        adc #32
-        tay
-        bcc @slot
-        lda #1                  ; full: the next page
-        sta r6L
-        ldx #FULL_DIRECTORY
-        ldy r10L
-        iny
-        sty r10L
-        cpy #18
-        bcc @link
-@end:   pla
-        sta r2H
-        pla
-        sta r2L
-        pla
-        sta r6L
-        plp
-        rts
-
-; AddDirBlock: r1 = the last directory block (in diskBlkBuf). Allocates
-; a block on the directory track, links it, writes both; the new, empty
-; block is then in diskBlkBuf and r1. X = 0 or FULL_DIRECTORY. The BAM
-; change stays in curDirHead (the caller writes it).
+        jsr OvlCall
+        .byte 82, 3
 AddDirBlock:
-        lda r6L
-        pha
-        lda r6H
-        pha
-        jsr DirTrackFree
-        ldx #FULL_DIRECTORY
-        and #$FF
-        beq @end
-        lda r1L
-        sta r3L
-        lda r1H
-        sta r3H
-        jsr SetNextFree
-        lda r3L
-        sta diskBlkBuf
-        lda r3H
-        sta diskBlkBuf+1
-        jsr DrvWriteBuff
-        txa
-        bne @end
-        lda r3L
-        sta r1L
-        lda r3H
-        sta r1H
-        jsr ClearAndWrite
-@end:   pla
-        sta r6H
-        pla
-        sta r6L
-        rts
+        jsr OvlCall
+        .byte 82, 6
 
 ; DirTrackFree: A = free blocks on the directory track.
 DirTrackFree:
@@ -2032,6 +1952,8 @@ D71DirFree:
         .scope Mod82
 
         jmp OvOpenDisk          ; entry 0
+        jmp OvGetFreeDirBlk     ; entry 3
+        jmp OvAddDirBlock       ; entry 6
 
 ; OpenDisk (the driver's vector; module 82 since 2026-11-06): header in,
 ; isGEOS set, disk name to DrXCurDkNm. Returns X = error, r5 = the name.
@@ -2058,6 +1980,99 @@ OvOpenDisk:
         ldx #0
 @end:   rts
 
+
+
+; OvGetFreeDirBlk (module 82, entry 3: GetFreeDirBlk): r10L = directory page (1-18) to start at. Finds the
+; first empty entry from there, adding directory blocks as needed. The
+; block is in diskBlkBuf, r1 its address, Y the entry's offset, r10L its
+; page. X = 0 or FULL_DIRECTORY. Destroys A, r0, r3, r5, r7, r8.
+OvGetFreeDirBlk:
+        php
+        sei
+        lda r6L
+        pha
+        lda r2L
+        pha
+        lda r2H
+        pha
+        ldx r10L
+        inx
+        stx r6L
+        jsr FirstDirBlock
+@read:  jsr DrvReadBuff
+@got:   txa
+        bne @end
+        dec r6L
+        beq @page
+@link:  lda diskBlkBuf
+        bne @follow
+        jsr OvAddDirBlock
+        jmp @got
+@follow:
+        sta r1L
+        lda diskBlkBuf+1
+        sta r1H
+        jmp @read
+@page:  ldy #FRST_FILE_ENTRY
+@slot:  lda diskBlkBuf,y
+        beq @end
+        tya
+        clc
+        adc #32
+        tay
+        bcc @slot
+        lda #1                  ; full: the next page
+        sta r6L
+        ldx #FULL_DIRECTORY
+        ldy r10L
+        iny
+        sty r10L
+        cpy #18
+        bcc @link
+@end:   pla
+        sta r2H
+        pla
+        sta r2L
+        pla
+        sta r6L
+        plp
+        rts
+
+; OvAddDirBlock (module 82, entry 6: AddDirBlock): r1 = the last directory block (in diskBlkBuf). Allocates
+; a block on the directory track, links it, writes both; the new, empty
+; block is then in diskBlkBuf and r1. X = 0 or FULL_DIRECTORY. The BAM
+; change stays in curDirHead (the caller writes it).
+OvAddDirBlock:
+        lda r6L
+        pha
+        lda r6H
+        pha
+        jsr DirTrackFree
+        ldx #FULL_DIRECTORY
+        and #$FF
+        beq @end
+        lda r1L
+        sta r3L
+        lda r1H
+        sta r3H
+        jsr SetNextFree
+        lda r3L
+        sta diskBlkBuf
+        lda r3H
+        sta diskBlkBuf+1
+        jsr DrvWriteBuff
+        txa
+        bne @end
+        lda r3L
+        sta r1L
+        lda r3H
+        sta r1H
+        jsr ClearAndWrite
+@end:   pla
+        sta r6H
+        pla
+        sta r6L
+        rts
 
         .endscope
 

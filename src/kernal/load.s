@@ -28,6 +28,8 @@ JT_COPY         = $1000         ; its copy in REU bank 1
         .import SysRAMOp, SaveState, RestoreState, InitGEOEnv
         .import UseSystemFont, MainLoopCall, KeyReset, DoDlgBox, SetDevice
         .import IrqEntry, NmiEntry, SetPattern, Rectangle, TodMode, OvlCall
+        .import OvInitGEOEnv
+        .export OvInitMachine, OvInitEnv
         .import taskName
         .import ScrapFind, SpoolLd
         .import WriteBackNow, AppGate, RefusedMsg, ownDesk, FileEngine
@@ -334,82 +336,17 @@ Swap:   lda r0L
 
         .segment "KCODE"
 
-; InitMachine: hardware and GEOS variables to the warm-start state (VIC,
-; CIAs, keyboard, vectors, environment; mouse off until the application
-; starts it). Destroys A, X, Y, r0-r2.
+; InitMachine: hardware and GEOS variables to the warm-start state;
+; InitEnv: only the GEOS environment part. Their work in module 100
+; (entries 9 and 12, OvInitMachine and OvInitEnv below: moved out of
+; resident code 2026-11-25 for room; never called with the ROM in or from
+; the interrupt). Destroy A, X, Y, r0-r2.
 InitMachine:
-        lda #RAM_IO
-        sta CPU_PORT
-        lda #$7F                ; no CIA interrupts
-        sta cia1Icr
-        sta cia2Icr
-        lda cia1Icr
-        lda cia2Icr
-        lda cia2DdrA            ; VIC-II bank 2
-        ora #$03
-        sta cia2DdrA
-        lda cia2PortA
-        and #$FC
-        ora #$01
-        sta cia2PortA
-        lda #$3B                ; bitmap mode, raster IRQ in the lower border
-        sta vicCtrl1
-        lda #$08
-        sta vicCtrl2
-        lda #$38
-        sta vicMemPtr
-        lda #IRQ_LINE
-        sta vicRaster
-        lda #$01
-        sta vicIrqMask
-        sta vicIrq
-        lda #0
-        sta vicSprMulti
-        sta $D017
-        sta $D01D
-        sta $D01B               ; sprite priority
-        ldx #$10                ; sprite positions and their x bit 8
-@spr:   sta $D000,x
-        dex
-        bpl @spr
-        lda #$01                ; only sprite 0 (the mouse pointer) on, as
-        sta vicSprEnable        ; GEOS 2.0's VIC table (mist64/geos
-                                ; kernal/hw1a.s, behaviour only): geoWrite
-                                ; left its sprite 6 over the deskTop
-        lda #<IrqEntry
-        sta $FFFE
-        lda #>IrqEntry
-        sta $FFFF
-        lda #<NmiEntry
-        sta $FFFA
-        lda #>NmiEntry
-        sta $FFFB
-        jsr TodMode
-        lda #RAM_ALL
-        sta CPU_PORT
-        jsr KeyReset
-        lda #0
-        sta numSleep
+        jsr OvlCall
+        .byte 100, 9
 InitEnv:
-        jsr InitGEOEnv
-        lda #0                  ; as GEOS 2.0: the application turns the
-        sta mouseOn             ; mouse on (menus, icons)
-        lda #<mousePicData
-        sta msePicPtr
-        lda #>mousePicData
-        sta msePicPtr+1
-        lda #<Panic
-        sta BRKVector
-        lda #>Panic
-        sta BRKVector+1
-        ldx #7                  ; sprite n picture at SPRITE_PICS + 64 n
-@spr:   txa
-        clc
-        adc #(SPRITE_PICS - $8000) / 64
-        sta COLOR_MATRIX + $3F8,x
-        dex
-        bpl @spr
-        rts
+        jsr OvlCall
+        .byte 100, 12
 
         .segment "CODE"
 
@@ -796,4 +733,85 @@ OvCRC:  lda #$FF
         lda r1L
         ora r1H
         bne @byte
+        rts
+
+; Module 100 is dialog.s's (its entry table first: dialog.o links before
+; load.o, the Makefile's alphabetical wildcard); this part follows it.
+        .segment "OVL100"
+; OvInitMachine (module 100, entry 9: InitMachine; OvInitEnv entry 12):
+; hardware and GEOS variables to the warm-start state (VIC,
+; CIAs, keyboard, vectors, environment; mouse off until the application
+; starts it). Destroys A, X, Y, r0-r2.
+OvInitMachine:
+        lda #RAM_IO
+        sta CPU_PORT
+        lda #$7F                ; no CIA interrupts
+        sta cia1Icr
+        sta cia2Icr
+        lda cia1Icr
+        lda cia2Icr
+        lda cia2DdrA            ; VIC-II bank 2
+        ora #$03
+        sta cia2DdrA
+        lda cia2PortA
+        and #$FC
+        ora #$01
+        sta cia2PortA
+        lda #$3B                ; bitmap mode, raster IRQ in the lower border
+        sta vicCtrl1
+        lda #$08
+        sta vicCtrl2
+        lda #$38
+        sta vicMemPtr
+        lda #IRQ_LINE
+        sta vicRaster
+        lda #$01
+        sta vicIrqMask
+        sta vicIrq
+        lda #0
+        sta vicSprMulti
+        sta $D017
+        sta $D01D
+        sta $D01B               ; sprite priority
+        ldx #$10                ; sprite positions and their x bit 8
+@spr:   sta $D000,x
+        dex
+        bpl @spr
+        lda #$01                ; only sprite 0 (the mouse pointer) on, as
+        sta vicSprEnable        ; GEOS 2.0's VIC table (mist64/geos
+                                ; kernal/hw1a.s, behaviour only): geoWrite
+                                ; left its sprite 6 over the deskTop
+        lda #<IrqEntry
+        sta $FFFE
+        lda #>IrqEntry
+        sta $FFFF
+        lda #<NmiEntry
+        sta $FFFA
+        lda #>NmiEntry
+        sta $FFFB
+        jsr TodMode
+        lda #RAM_ALL
+        sta CPU_PORT
+        jsr KeyReset
+        lda #0
+        sta numSleep
+OvInitEnv:
+        jsr OvInitGEOEnv        ; (in this module: dialog.s)
+        lda #0                  ; as GEOS 2.0: the application turns the
+        sta mouseOn             ; mouse on (menus, icons)
+        lda #<mousePicData
+        sta msePicPtr
+        lda #>mousePicData
+        sta msePicPtr+1
+        lda #<Panic
+        sta BRKVector
+        lda #>Panic
+        sta BRKVector+1
+        ldx #7                  ; sprite n picture at SPRITE_PICS + 64 n
+@spr:   txa
+        clc
+        adc #(SPRITE_PICS - $8000) / 64
+        sta COLOR_MATRIX + $3F8,x
+        dex
+        bpl @spr
         rts

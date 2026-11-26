@@ -101,7 +101,10 @@ Closed: lda #0
         rts
 
 ; UpdateRecordFile: after changes, the index block, the entry's date and
-; size, and the BAM to disk. X = error. Destroys A, Y, r1, r4, r5.
+; size, and the BAM to disk. X = error. Destroys A, Y, r1, r4, r5. (In
+; CODE since 2026-11-25, for IOCODE's room; like NextRecord it needs I/O
+; off, and CODE the KERNAL ROM off, which GEOS has whenever I/O is off.)
+        .segment "CODE"
 UpdateRecordFile:
         ldx #0
         lda fileWritten
@@ -137,6 +140,7 @@ UpdateRecordFile:
         lda #0
         sta fileWritten
 @end:   rts
+        .segment "IOCODE"
 
 ; IndexBlock: r1 = the index block, r4 = fileHeader; X = UNOPENED_VLIR
 ; when no file is open.

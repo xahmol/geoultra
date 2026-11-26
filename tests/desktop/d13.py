@@ -56,9 +56,10 @@ def main():
     def word(name):
         return int.from_bytes(bytes(v.mem_get(k[name], k[name] + 1)), "little")
 
-    def settle(s=3):
-        time.sleep(s)
-        v.ping()
+    def settle(s=3):                                # (a monitor command stops
+        v.resume()                                  # VICE until the next resume:
+        time.sleep(s)                               # run it while waiting; the
+        v.ping()                                    # "box made" check failed once)
 
     def call(routine, a, s=6):
         tick = k["ClockTick"]
