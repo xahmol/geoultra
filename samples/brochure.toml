@@ -82,7 +82,7 @@ colour = true
 text = ""
 
 [[block]]
-text = "Two panes show two folders side by side. Drag a selection from one to the other, or onto a folder or a drive in the sidebar: moved on the same drive, copied to another. Lists, large icons or a detailed view with sizes and dates; seven themes, and your own."
+text = "Two panes show two folders side by side. Drag a selection from one to the other, or onto a folder or a drive in the sidebar: moved on the same drive, copied to another. Lists, large icons or a detailed view with sizes and dates; six themes, and your own."
 align = "justify"
 after = 1
 keep = true
