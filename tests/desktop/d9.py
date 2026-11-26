@@ -48,9 +48,10 @@ def main():
     def word(name):
         return int.from_bytes(bytes(v.mem_get(k[name], k[name] + 1)), "little")
 
-    def settle(s=3):
-        time.sleep(s)
-        v.ping()
+    def settle(s=3):                                # (VICE kept running while
+        v.resume()                                  # waiting, as in d13: a
+        time.sleep(s)                               # stopped one failed the
+        v.ping()                                    # paging checks at times)
 
     def call(routine, a, s=6):
         """routine(A) once through appMain, as a menu click runs it."""

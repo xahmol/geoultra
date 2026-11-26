@@ -85,6 +85,8 @@ letter) on a D81 image, and PDFs of the brochure and the guide
 
 | File | Contents |
 | --- | --- |
+| [`TECHNICAL_REFERENCE.md`](docs/reference/TECHNICAL_REFERENCE.md) | For programmers: what GeoUltra adds to and changes from GEOS 2.0 (detection, extension jump table, file engine, drives, REU, tasks, ToBASIC) |
+| [`DEVELOPER_GUIDE.md`](docs/reference/DEVELOPER_GUIDE.md) | Writing GEOS programs that use GeoUltra's additions: detection, the file engine, building and testing, with an example in `docs/examples/` |
 | [`ARCHITECTURE.md`](docs/reference/ARCHITECTURE.md) | How it is built: cartridge, boot, kernal, overlays, REU map, drivers, tests |
 | [`GUSH_COMMANDS.md`](docs/reference/GUSH_COMMANDS.md) | Writing external gush commands |
 | [`PSW.md`](docs/reference/PSW.md) | GU PostScript inside: how it works, its tests |

@@ -1,0 +1,8 @@
+[file]
+name    = "guinfo"
+type    = "APPLICATION"
+class   = "guinfo"
+version = "V1.0"
+author  = "GeoUltra example"
+info    = "Finds GeoUltra and lists drive E"
+mode    = "40"
