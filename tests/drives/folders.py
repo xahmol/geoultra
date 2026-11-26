@@ -5,7 +5,8 @@ Drive B is a copy of GEOS_NATIVE_DISK (default the user's own
 ramapps.DNP in GEOS_DEV, only read). Through the extension jump
 table (guExtTable): MakeDir, SetCurDir (the folder's name becomes the
 disk name, root files are not seen), SaveFile and ReadFile inside it,
-DirUp (the file is not seen at the root), RemoveDir refused while the
+DirUp (the file is not seen at the root), a folder without a name in
+its header (as DirMaster makes them) named after its entry, RemoveDir refused while the
 folder holds a file, DeleteFile, RemoveDir, and the free count back where
 it started. Usage: tests/drives/folders.py
 """
@@ -52,6 +53,14 @@ def header(length):
 def main():
     os.makedirs(os.path.dirname(TEST_DISK), exist_ok=True)
     shutil.copyfile(SOURCE, TEST_DISK)
+    import geosdisk                             # a folder as DirMaster makes
+    d = geosdisk.Disk(TEST_DISK)                # it: no name in its header
+    d.mkdir("DM folder")
+    hdr, _ = d.folder("DM folder")
+    h = d.get(hdr)
+    h[4:20] = b"\xa0" * 16
+    d.put(hdr, h)
+    d.save()
     apprun.APPS_DISK = TEST_DISK
     apprun.REU_IMAGE = apprun.REU_IMAGE.replace("reu-apps", "reu-folders")
     apprun.reu_image()
@@ -146,6 +155,15 @@ def main():
         check("SaveFile and ReadFile in the folder", list(r[:3]) == [0, 0, 0] and back == data,
               "X=$%02X/$%02X/$%02X, data %s" % (r[0], r[1], r[2],
                                                 "same" if back == data else "DIFFERENT"))
+        v.mem_set(FOLDER + 16, b"DM folder\0")    # (DirMaster's: header unnamed)
+        v.mem_set(0x8430, b"\xEE" * 16)
+        r = run(xcall(DIR_UP) + stx(0) + ldw(FOLDER + 16, 0x02) + xcall(SET_CUR_DIR) + stx(1)
+                + jsr("OpenDisk") + stx(2) + xcall(DIR_UP) + stx(3))
+        name = v.mem_get(0x8430, 0x843F).split(b"\xA0")[0]
+        check("a folder without a name in its header: its entry's name", list(r[:4]) == [0] * 4
+              and name == b"DM folder", "X=$%02X/$%02X/$%02X/$%02X, disk name %r"
+              % (r[0], r[1], r[2], r[3], name))
+        r = run(ldw(FOLDER, 0x02) + xcall(SET_CUR_DIR) + stx(0))
         r = run(xcall(DIR_UP) + stx(0))
         x1, _ = find("In the folder")
         x2, _ = find("GEOWRITE")

@@ -1977,7 +1977,51 @@ OvOpenDisk:
         ldy #r5
         lda #18                 ; name and the two bytes after it
         jsr CopyFString
+        jsr EntryName
         ldx #0
+@end:   rts
+
+; EntryName: a native folder whose header has no name (DirMaster leaves
+; it empty; user's decision 2026-11-26) gets its entry's name in the
+; parent folder as the disk name: header $24/$25 the entry's block, $26
+; its offset (GeoUltra's MakeDir and geosdisk: the type byte's; masked
+; to the entry's start), the 16 name bytes fetched from the image into
+; DrXCurDkNm (diskBlkBuf untouched). Destroys A, X, Y, r5.
+EntryName:
+        ldy curDrive
+        lda driveType-8,y
+        and #$0F
+        cmp #DRV_NATIVE
+        bne @end
+        lda curDirHead+$22      ; (0: the root)
+        beq @end
+        lda curDirHead+OFF_DISK_NAME
+        beq @get
+        cmp #$A0
+        bne @end
+@get:   lda curDirHead+$24
+        beq @end                ; (no entry noted)
+        sta r1L
+        lda curDirHead+$25
+        sta r1H
+        jsr Locate
+        bcc @end
+        lda curDirHead+$26
+        and #$E0
+        ora #5                  ; the entry's name
+        sta dmaReu
+        ldx #r5
+        jsr GetPtrCurDkNm
+        lda r5L
+        sta dmaC64
+        lda r5H
+        sta dmaC64+1
+        lda #16
+        sta dmaLen
+        lda #0
+        sta dmaLen+1
+        ldy #REU_FETCH
+        jmp Dma
 @end:   rts
 
 
