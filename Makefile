@@ -49,7 +49,7 @@ REST    = http://$(ULTIP1)/v1
 CARTCFG = $(REST)/configs/C64%20and%20Cartridge%20Settings
 DEPLOYDIR ?= /SD/geoultra/
 
-.PHONY: doctoc all docs samples release test-samples checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
+.PHONY: doctoc all docs samples release test-samples checkcfg vice vice-shot deploy conformance conformance81 test-settings test-bypass test-native test-tobasic test-d71 test-folders test-filedialog test-sysfont test-fonts test-print fonts test-desktop81 test-desktop test-desktop-u64 test-part81 test-engine test-engine-u64 test-gush test-gush-u64 smoke smoke-vice smoke-u64 smoke-u64-d64 smoke-u64-restore \
         check-deploy clean
 GEOS_ORACLE ?= $(GEOS_DEV)/GEOS64-v2.0-unkeyed.d64
 
@@ -538,6 +538,12 @@ test-folders: all
 test-filedialog: all
 	$(PYTHON) tests/drives/filedialog.py
 	$(PYTHON) tests/drives/mpdialog.py
+
+# ToBASIC with programs on a GeoUltra drive (tests/drives/tobasic.py, a D64
+# made by geosdisk): LOAD "name",9 loaded from the drive, boot files of
+# other GEOS systems refused.
+test-tobasic: all
+	$(PYTHON) tests/drives/tobasic.py
 
 # 1581 partitions as folders, against a D81 made and read back by the real
 # 1581 DOS (VICE true drive emulation; no private files).

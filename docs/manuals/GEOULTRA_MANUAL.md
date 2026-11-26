@@ -1067,6 +1067,12 @@ geoWrite=58B5        (an application's own serial, by its class)
   disk itself) need the bypass, which is off by default.
 - **geoPublish**: the copy tried showed a garbled screen, the same on
   genuine GEOS 2.0, so that copy is damaged; another copy is untested.
+- **BASIC and machine-code programs** (plain PRG files) start from
+  GEOS 2.0's deskTop, from GeoUltra's drives, when they load between
+  $0801 and $9FFF; others are left to the serial bus, as on GEOS 2.0.
+  GeoUltra's own desktop does not start them. Boot files of other GEOS
+  systems (GEOS 2.0, Wheels, MegaPatch3, GDOS64) are refused: they
+  would replace GeoUltra.
 - Folders with more than 384 entries are shown in the order on disk; a
   folder holds at most 2048 entries in the list. The icon view keeps
   the first 376 entries' icons in the REU.

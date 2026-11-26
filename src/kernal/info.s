@@ -31,7 +31,8 @@ Reboot: sei
         sta mbCtrl
         jmp ($8000)                     ; the cartridge's cold start
 
-basicBuf:       .res 46                 ; ToBASIC: command, saved bytes
+basicBuf:       .res 59                 ; ToBASIC: command, saved bytes,
+                                        ; a staged program (tobasic.s)
                 .res $C0E0 - *, 0
 guSignature:    .byte "GU"              ; $C0E0: GeoUltra present
 guVersion:      .byte VERSION_MAJOR, VERSION_MINOR

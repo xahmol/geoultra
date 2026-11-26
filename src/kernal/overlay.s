@@ -1,5 +1,7 @@
 ; Overlays: rarely used kernal routines live in modules of OVL_SIZE bytes
-; in the REU (at the start of the system image, REU $020000) and run in
+; in the REU (at the start of the system image, REU $020000: modules
+; 0-127 fill bank 2, 128 and up follow in bank 3, the other system images
+; after them; NO_MODULE, $FF, is no module) and run in
 ; the slot at OVL_SLOT ($9D80-$9F6F, the end of the disk driver area);
 ; $9F70-$9FFF is scratch for the running module that loads leave alone
 ; (users: write-back and hibernation from MainLoop; the file engine's
@@ -120,10 +122,11 @@ OvlLoad:
         sta reuC64+1
         lda #<OVL_REU           ; module X at OVL_REU + X * OVL_STRIDE
         sta reuAddr             ; (the Makefile spreads the linker's
-        txa                     ; modules to that stride)
-        asl
+        txa                     ; modules to that stride; 128 and up
+        asl                     ; in the next bank: the carry)
         sta reuAddr+1
         lda #^OVL_REU
+        adc #0
         sta reuAddr+2
         lda #<OVL_SIZE
         sta reuLen

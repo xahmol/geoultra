@@ -759,7 +759,11 @@ at the stub, fetches the previous module back and returns to the stub's
 caller, so overlay routines may call each other. Overlay code must never
 install a vector into the slot (callbacks stay resident), and nothing
 the IRQ or a BASIC program after `ToBASIC` may reach goes there (`ToBASIC`
-and its NMI routine stay at `$Cxxx`). Module 0: `EnterDeskTop` with its
+and its NMI routine stay at `$Cxxx`). Modules 0-127 fill REU bank 2
+(`$020000`, a stride of `$200`); 128 and up follow in bank 3 (OvlLoad
+takes the carry of the number's shift into the bank byte; since
+2026-11-26), and the other system images after them; `$FF` means no
+module, so 254 is the last number. Module 0: `EnterDeskTop` with its
 dialog, `FirstInit`, Panic's message (Panic takes the BRK address from
 the stack resident, before the overlay call) and `CRC`.
 
@@ -799,6 +803,7 @@ the stack resident, before the overlay call) and `CRC`.
 | 119, 125 | drive E in an occupied slot; a handle's drive, also `/f` | sysenter.s |
 | 121, 122 | FONTS.DNP loaded and relocated at the cold start | mount.s |
 | 126, 127 | serial numbers per application: SETTINGS.INI's `[serials]`, `FE_SERIALS`, the lookup | serials.s |
+| 128, 129, 130 | ToBASIC: `LOAD "name",dev[,1][:rest]` read (128), boot files of other GEOS systems refused (129), the program staged in REU bank 188 and fetched into place after the switch to BASIC (130) | tobasic.s |
 
 The scratch `$9F70-$9FFF` after the slot is shared by write-back and
 hibernation (from MainLoop) and the file engine (its work area during a
@@ -854,13 +859,30 @@ BASIC and Kernal ROMs are in) loads an optional PRG, sets up the C64
 Kernal (CIAs, vectors, screen) and starts BASIC; a few CIA 2 NMIs later
 it puts the command on the screen and RETURN in the keyboard queue, and
 RESTORE then leads to `BootGEOS`. Its buffers lie in the information
-block (`$C02B`), which BASIC programs leave alone. `BootGEOS` (`$C000`)
+block (`basicBuf`, `$C028`), which BASIC programs leave alone. `BootGEOS` (`$C000`)
 reboots GeoUltra from the cartridge (Megabyter on, `jmp ($8000)`); the
 boot ROM itself starts the kernal through `ResetHandle` (`$C003`). REU
 drives survive the reboot through the mount table; `sysFlgCopy` bit 5
 tells programs that no boot disk is needed. Checked in VICE: the BASIC
 screen after `PRINT 7*6` is the same as GEOS 2.0's, `SYS49152` returns to
 GeoUltra with drive A still mounted.
+
+Programs on GeoUltra's drives (2026-11-26): with r5 = 0 and a command
+`LOAD "name",dev[,1][:rest]` for a drive 8-11 that holds the file,
+`ToBASIC` first calls module 128 (by the stub `BasicLoad`, before
+`HibSuspend`), which reads the command, finds the file and has module
+130 copy it block by block into REU bank 188 (the file engine's listing
+bank, free during the call). Within `$0801-$9FFF` (at `$0801` without
+`,1`, at its own address with it) the command becomes what followed
+`:` or `RUN`, r7 the program's end; after the `sei` that ends GEOS one
+`SysRAMOp` fetch puts it in place (GEOS's own memory up to `$9FFF` no
+longer needed), and `$0800` is set to 0, BASIC's byte before the
+program. A file outside that range goes to the serial bus unchanged.
+Module 129 refuses the boot files of other GEOS systems by name, for an
+r5 entry and for a command alike: `ToBASIC` then shows its dialog
+(built in `fileHeader`) and returns to `EnterDeskTop`. The state lives
+in `basicBuf` (+46 to +58), because the modules call each other and
+`FindFile`, whose own module calls replace theirs.
 
 ## Clock
 
