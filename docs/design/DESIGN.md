@@ -262,7 +262,22 @@ the code and the UI; the rest of phase 3 (task switching first, then
 spooler and clipboard, then GeoUltra's own fonts (moved ahead of printing by the user, 2026-11-15), then printing); the serial numbers per
 application; Beta 1; then the beta's feedback alongside the Ultimate II+
 version (phase 4, mostly the same cartridge), and later the C128
-(phase 5) as its own track; then 1.0.
+(phase 5) as its own track; then 1.0. (Superseded for phase 4 by the
+scope below.)
+
+**Scope of 1.0 (the user, 2026-11-26):** the Ultimate 64 family only;
+the Ultimate II+ (phase 4) becomes 1.1. Between Beta 1 and 1.0:
+(1) the beta's feedback, released as 0.9.x; (2) the technical reference
+and (3) the developer guide (below, "Releases and documentation");
+(4) BASIC programs on GeoUltra drives started by ToBasic itself, and
+GEOS 2.0's, Wheels', MegaPatch3's and GDOS64's boot files refused there
+("Still open"); (5) the Command Interface unlock retested on the U64
+after a GDOS64 session; (6) native folders without a name in their
+header take the parent entry's name; (7) the conformance menu case
+where GEOS 2.0 shows "System error": a GEOS 2.0 bug or a test fault.
+After 1.0: the PC tools GUI, re-keying serials (S6), the web browser
+(FrogFind), dynamic REU room for applications, `geosdisk shrink`,
+ejecting the cartridge, the network roadmap, phases 5 and 6.
 
 **Releases and documentation (the user, 2026-11-12):**
 
