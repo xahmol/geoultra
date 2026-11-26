@@ -153,10 +153,24 @@ Measured on 2026-11-25, after the rewrites:
     below the source measure's 12 instructions, and in bytes the same
     because both systems use GEOS's fixed variable addresses.
 
-**Still open:** the short code pieces in the last group are to be
-written in their own form too, as far as the kernal's room allows
-(2-4 bytes are left in its fullest segments), each checked by the
-same suites. Until then this document lists them here.
+**The short code pieces, looked at one by one (2026-11-26):** each is
+the plain implementation of a documented variable or format, at
+GEOS's fixed addresses, where a rewrite would change how it looks
+but not where it comes from, and would risk the registers GEOS 2.0
+leaves behind (which the conformance cases demand):
+
+| Piece | Why it is the same |
+| --- | --- |
+| PointRecord, RecordTS, SetRecordTS | a bounds check of the record number and a two-byte copy from or to the VLIR index; the registers left (A = r1H, Y = the index offset) are GEOS 2.0's, which programs may use |
+| ReadFile's and ReadByte's link handling | the next block is the first two bytes of the block (the disk format); track 0 marks the last, its second byte the end |
+| SetGDirEntry's copy, ClearWrite | copying a 30-byte directory entry into its block; a block cleared to zero with the link 0, $FF of an empty block |
+| Changing, WriteRecord's empty record | the BAM read once before the first change (one flag); an empty record is the index entry 0, $FF (the VLIR format) |
+| PromptTick | the documented meaning of `alphaFlag`: bit 7 active, bit 6 shown, the low bits counting `PROMPT_DELAY` down |
+| DoIcons' press | the documented `iconSelFlag` (flash or invert) and `selectionFlash` |
+| the driver's 1541 FindBAMBit, AllocateBlock | the 1541 BAM's layout: four bytes a track, a count and three bitmap bytes |
+
+These are judgements; the measurement and this list are here so that
+anyone can check them.
 
 ## Repeating it
 
@@ -165,4 +179,5 @@ same suites. Until then this document lists them here.
 
 Before a release: no shared source run longer than the desktop's
 calibration level without an entry under "forced" above, and no binary
-run outside the data kept by decision and the fixed-address tables.
+run outside the data kept by decision, the fixed-address tables and the
+short pieces listed above (a new one is looked at the same way).
