@@ -3,7 +3,7 @@
 (docs/design/FILE_ENGINE.md; the user's U64, 2026-11-18: GU PDF's script on
 drive E gave FE_NO_SLOT, "printer error" $50, the print queue paused):
 a slot is borrowed for the call (sysenter.s module 119) and put back.
-In VICE with images on A, B, C and D: FE_OPEN /e/pdfa4, FE_READ (the
+In VICE with images on A, B, C and D: FE_OPEN /e/GU PDF A4 data, FE_READ (the
 same bytes as build/printer/pdfa4data.bin), FE_CLOSE: X = 0 each;
 drive D's type and disk name the same after.
 Usage: tests/engine/e5noslot.py   (E5_D= : drive D left empty, the plain
@@ -45,7 +45,7 @@ cid = v.checkpoint(jt[1] | jt[2] << 8, temporary=False)    # as the desktop test
 v.events.clear(); v.resume()
 v.wait_event(RESP_CHECKPOINT, 30)
 v.delete_checkpoint(cid)
-v.mem_set(0x4E00, b"/e/pdfa4\0")
+v.mem_set(0x4E00, b"/e/GU PDF A4 data\0")
 before = (bytes(v.mem_get(0x848E, 0x8491)), bytes(v.mem_get(0x88EE, 0x88FF)))
 call([0x78] + r(0x02, 0x4E00) + [0xA9, 0, 0x85, 0x06, 0xA9, 13, 0x20, fe & 0xFF, fe >> 8,
      0x8E, 0xF0, 0x02, 0x8D, 0xF1, 0x02])
@@ -98,7 +98,7 @@ def main():
         print("%s %s%s" % ("pass" if good else "FAIL", title, "" if good else ": %s" % (detail,)))
     types = line.split()[2] if line else ""
     check("all four drives in use", line and all(t != "00" for t in (types[0:2], types[2:4], types[4:6], types[6:8])), types)
-    check("FE_OPEN /e/pdfa4: X = 0 (a slot borrowed)", "open X=00" in line, line[:80])
+    check("FE_OPEN /e/GU PDF A4 data: X = 0 (a slot borrowed)", "open X=00" in line, line[:80])
     data = bytes.fromhex(line.rsplit(" ", 1)[1]) if line else b""
     n = int(line.split("n=")[1].split()[0]) if "n=" in line else 0
     check("FE_READ: X = 0, the script's bytes (all %d)" % len(want),

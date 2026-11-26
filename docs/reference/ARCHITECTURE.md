@@ -482,7 +482,7 @@ extension table; overlay modules 12-14 with the shared helpers in
   user's DNP lists the new folder first, RETURN enters it, DEL goes up. The disk name in an application's dialog
   ("On disk:") is the application's own text and stays.
 - Not yet: 1581 partitions, renaming and moving folders, `MoveFile`, long
-  names, geoFolder, the setting to switch the folders in file dialogs off.
+  names, GU Folder, the setting to switch the folders in file dialogs off.
 
 ## 1581 partitions as folders
 
@@ -505,7 +505,7 @@ docs/reference/GEOS_REFERENCE.md, "1581 partitions and sub-directories".)
   = `STRUCT_MISMAT`; `DirUp` finds the parent by walking from the root
   through the partitions that contain the current one (no parent pointer
   on disk); `DirRoot` as for native drives.
-- File dialogs (`GfFolders`, `GfScan`) and geoFolder list CBM entries as
+- File dialogs (`GfFolders`, `GfScan`) and GU Folder list CBM entries as
   folders on 1581 drives too (one that is no sub-directory is refused
   when opened).
 - `make test-part81`: a D81 made by the real 1581 DOS in VICE (nested
@@ -600,7 +600,7 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
   dialog is built in the stack page above the stack pointer: neither the
   overlay slot (`DoDlgBox` calls overlays) nor EnterDeskTop's own dialog
   (it lives in overlay module 0) can hold it.
-- geoFolder (`src/tools/geofolder.s`, 133 bytes): one `DBGETFILES` dialog
+- GU Folder (`src/tools/gufolder.s`, 133 bytes): one `DBGETFILES` dialog
   for a file type no file has, so the kernal lists only `..` and the
   folders; OPEN/RETURN/DEL move through them, DISK goes to the next drive,
   OK leaves the chosen folders current.
@@ -608,16 +608,16 @@ DESIGN.md "System drive": drive E (device 12), read-only, outside A-D.
   (geos-oscar64 0.1.2's; before that by the Makefile): c1541 writes a short
   last block full, and a desk accessory's header end address must cover
   all it loads, or `LdDeskAcc` saves less of the application than
-  `ReadFile` overwrites (geoWrite crashed after geoFolder until this;
+  `ReadFile` overwrites (geoWrite crashed after GU Folder until this;
   docs/reference/GEOS_REFERENCE.md section 17).
-- Checked in VICE: geoFolder is the last entry of geoWrite 2.0's geos
+- Checked in VICE: GU Folder is the last entry of geoWrite 2.0's geos
   menu (the user's DNP as drive B), started from there and closed with
   OK, geoWrite goes on; GeoClock and Text Manager from drive B too.
   `make test-sysfont` puts a font from the user's disks on a test copy of
   E (block by block: c1541 3.10's `-geosread` writes no record data of a
   VLIR file) and patches it into a copy of the cartridge: geoWrite lists
   it in its font menu with its point sizes and types with it.
-- No fonts of GeoUltra's own yet: the cartridge's E holds geoFolder only.
+- No fonts of GeoUltra's own yet: the cartridge's E holds GU Folder only.
 
 ## Hibernation
 

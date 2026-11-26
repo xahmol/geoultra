@@ -93,7 +93,8 @@ class Machine:
             self.handles[h] = [path, 0]
             if mode == 1:
                 self.files[path] = bytearray()
-            elif path == "/e/pdf" + self.paper:
+            elif path == {"a4": "/e/GU PDF A4 data",           # (drive E's names
+                          "letter": "/e/GU PDF Ltr data"}[self.paper]:   # since 2026-11-26)
                 self.files[path] = bytearray(self.data)
             a = h
         elif f == 14:                              # FE_READ

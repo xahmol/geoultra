@@ -1,8 +1,8 @@
 [file]
 icon = "../../build/icons/folder.icon"     # tools/dev/mkappicon.py
-name    = "geoFolder"
+name    = "GU Folder"
 type    = "DESK_ACC"
-class   = "geoFolder"
+class   = "GU Folder"
 version = "V0.1"
 author  = "GeoUltra"
 info    = "The drives' current folders: open, up (DEL), next drive"

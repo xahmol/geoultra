@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """gush on the Ultimate 64 (docs/design/GUSH.md, "Tests").
 
-Before the reboot gush (and geoFolder) are copied onto drive A's test
+Before the reboot gush (and GU Folder) are copied onto drive A's test
 copy (/USB0/GEOULTRA/test/GEOS64.D81, mounted on A; never the user's own
 image) through GeoUltra (FTP into a scratch folder, then FE_COPY: never
 an edit of the mounted image behind GeoUltra's back), then GeoUltra boots from the U64's flash with the
@@ -9,7 +9,7 @@ cartridge given, gush starts from drive A (GetFile through appMain), and
 its commands run on the Ultimate's file system in
 /USB0/GEOULTRA/test/gush (made and removed by the test): ls, cd, pwd,
 mkdir, cp both ways (asked before overwriting), mv, rm, cat, wildcards,
-long names, cp -r both ways; then a desk accessory (geoFolder) started
+long names, cp -r both ways; then a desk accessory (GU Folder) started
 and closed, gush's screen back, and its gush button (a fresh gush).
 Usage: tests/gush/gu64.py [build/geoultra64.crt]
 """
@@ -42,23 +42,23 @@ class GushU64:
         # Old copies out and the new ones in through GeoUltra itself
         # (drive A's image is mounted: edited by FTP and c1541 behind its
         # back, the REU copy written back over it, which once damaged
-        # geoFolder on it): the CVTs put in a scratch folder by FTP and
+        # GU Folder on it): the CVTs put in a scratch folder by FTP and
         # copied onto /a by FE_COPY; written back, then a fresh boot.
         self.settle()
         self.u.boot(crt)
-        for name in ("/a/gush", "/a/geoFolder"):
+        for name in ("/a/gush", "/a/GU Folder"):
             while self.u.fe(7, s0=name)[0] == 0:            # FE_DELETE
                 pass
         subprocess.run(["curl", "-s", "--ftp-create-dirs", "-T",
                         os.path.join(ROOT, "build", "gush", "gush.cvt"),
                         "ftp://%s%s/" % (self.u.ip, CVTS)], check=True)
-        subprocess.run(["curl", "-s", "-T", os.path.join(ROOT, "build", "tools", "geofolder.cvt"),
+        subprocess.run(["curl", "-s", "-T", os.path.join(ROOT, "build", "tools", "gufolder.cvt"),
                         "ftp://%s%s/" % (self.u.ip, CVTS)], check=True)
-        for cvt, name in (("gush.cvt", "gush"), ("geofolder.cvt", "geoFolder")):
+        for cvt, name in (("gush.cvt", "gush"), ("gufolder.cvt", "GU Folder")):
             x = self.u.fe(5, s0="%s/%s" % (CVTS.lower(), cvt), s1="/a/" + name, timeout=300)[0]
             if x:
                 raise RuntimeError("FE_COPY %s onto /a: error %d" % (cvt, x))
-        for cvt in ("gush.cvt", "geofolder.cvt"):
+        for cvt in ("gush.cvt", "gufolder.cvt"):
             subprocess.run(["curl", "-s", "-Q", "DELE %s/%s" % (CVTS, cvt),
                             "ftp://%s/" % self.u.ip], capture_output=True)
         subprocess.run(["curl", "-s", "-Q", "RMD %s" % CVTS, "ftp://%s/" % self.u.ip], capture_output=True)
@@ -454,8 +454,8 @@ def run(crt):
     mounts(g)
     system(g)
     g.run("cd /a")
-    g.run("geoFolder", settle=4)
-    # geoFolder's dialog: OK (a click on its icon, at 224,90) closes it;
+    g.run('"GU Folder"', settle=4)                # (quoted: a space)
+    # GU Folder's dialog: OK (a click on its icon, at 224,90) closes it;
     # gush redraws its screen.
     u = g.u
     u.write(0x3A, bytes([224, 0, 90]))                # the pointer onto OK
@@ -466,16 +466,16 @@ def run(crt):
     u.write(0x8505, b"\x80")
     u.write(0x39, bytes([u.read(0x39, 1)[0] | 0x20]))
     time.sleep(3)
-    check("after geoFolder: gush's prompt again", g.lines()[-1], "$")
-    g.run("geoFolder /a/INI")                        # (in VICE no DA by name)
+    check("after GU Folder: gush's prompt again", g.lines()[-1], "$")
+    g.run('"GU Folder" /a/INI')                        # (in VICE no DA by name)
     check("a desk accessory with a document", "".join(g.lines()[-3:-1]),   # (two lines)
-          "gush: geoFolder: /a/INI: a desk accessory takes no document")
+          "gush: GU Folder: /a/INI: a desk accessory takes no document")
     import ftplib
     import io
     ftp = ftplib.FTP(u.ip)                          # gushrc for the fresh gush
     ftp.login()
     ftp.storbinary("STOR /USB0/GEOULTRA/gushrc", io.BytesIO(b"# gu64\rG='from gushrc'\r"))
-    g.run("geoFolder", settle=4)                     # its gush button
+    g.run('"GU Folder"', settle=4)                   # its gush button
     u.write(0x3A, bytes([224, 0, 78]))
     time.sleep(0.5)
     for data in (b"\x00", b"\x80"):
@@ -484,7 +484,7 @@ def run(crt):
         time.sleep(1)
     time.sleep(4)
     rows = g.lines()
-    check("geoFolder's gush button: a fresh gush", (rows[0].startswith("gush, the GeoUltra shell") if rows
+    check("GU Folder's gush button: a fresh gush", (rows[0].startswith("gush, the GeoUltra shell") if rows
                                                      else rows, rows[1:]), (True, ["$"]))
     check("gushrc run at its start", out("echo $G"), "from gushrc")
     ftp.delete("/USB0/GEOULTRA/gushrc")

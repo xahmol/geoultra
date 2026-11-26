@@ -1,5 +1,5 @@
 ; The system drive, drive E (docs/design/DESIGN.md "System drive"; ARCHITECTURE
-; "System drive"): GeoUltra's own GEOS files (geoFolder ...) on a
+; "System drive"): GeoUltra's own GEOS files (GU Folder ...) on a
 ; read-only native image with folders (src/sysdrive.toml) at REU bank
 ; SYSDRV_BANK, relocated at build time (tools/dev/sysreloc.py) so all its
 ; track/sector references use tracks SYSDRV_TRACK+1 to 255. The disk
@@ -74,7 +74,7 @@ sysShow:        .byte SYSDRV_BANK ; the bank module 81's Enter shows: E's,
 ; AppFTypes (FindFTypes through the jump table, for applications and the
 ; desktop): where the list starts and how many names fit noted for
 ; OvFTypes, which puts drive E's desk accessories first (the user,
-; 2026-11-13: geoFolder fell off full menus). The kernal's own searches
+; 2026-11-13: GU Folder fell off full menus). The kernal's own searches
 ; call FindFTypes directly and are left as they are.
 AppFTypes:
         lda r6L
@@ -175,7 +175,7 @@ OvFTypes:
         bne @room
         lda ftCount             ; an application's full list of desk
         beq @end                ; accessories: its last place for E's
-        lda r7L                 ; one (geoFolder; the user, 2026-11-13)
+        lda r7L                 ; one (GU Folder; the user, 2026-11-13)
         cmp #DESK_ACC
         bne @end
         inc r7H
@@ -407,7 +407,7 @@ LdApplic        = $C21D         ; GEOS jump table
 ST_LD_DATA      = $80
 
 ; OvRunSys (FE_RUNSYS, from the file engine's dispatcher; gush at the cold
-; start and from geoFolder): r0 = the name of an application on drive E,
+; start and from GU Folder): r0 = the name of an application on drive E,
 ; started (LdApplic from E's entry; its blocks show as E's tracks on
 ; every drive, so they load from the current one). Back only with X =
 ; FILE_NOT_FOUND, STRUCT_MISMAT (no application), DEV_NOT_FOUND (E cannot

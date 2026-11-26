@@ -4,7 +4,7 @@ drive E (FE_RUNSYS) on the gush test setup (drive A the GEOS 2.0 disk,
 drive B a D81). Checked from its state in memory (build/desktop/
 desktop.lbl): drawing on both screens, RecoverVector set, the path and
 the entries of "/" listed, and the geos menu's desk accessories with
-drive E's geoFolder among them. Then EnterDeskTop with the kernal's
+drive E's GU Folder among them. Then EnterDeskTop with the kernal's
 ownDesk flag set (SETTINGS.INI [system] desktop=geoultra; set here
 directly, VICE has no stick) starts it, not GEOS 2.0's deskTop.
 Screens: build/harness/gush/desktop-d1*.png.
@@ -51,7 +51,7 @@ def main():
         n = v.mem_get(k["daCount"], k["daCount"])[0]
         names = [bytes(v.mem_get(k["daNames"] + 17 * i, k["daNames"] + 17 * i + 16)).split(b"\0")[0].decode("latin1")
                  for i in range(n)]
-        check("the geos menu: drive E's geoFolder among the accessories", "geoFolder" in names, True)
+        check("the geos menu: drive E's GU Folder among the accessories", "GU Folder" in names, True)
         g.png("desktop-d1-geos")
     finally:
         g.stop()

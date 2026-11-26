@@ -23,7 +23,7 @@ def main():
 
     # some of drive E's files (its whole root, with fonts and printer
     # drivers, no longer fits on the screen in one ls)
-    E_FILES = ["gush", "GeoUltra Desktop", "GU Settings", "geoFolder", "splash", "GU PostScript"]
+    E_FILES = ["gush", "GeoUltra Desktop", "GU Settings", "GU Folder", "GU Splash", "GU PostScript"]
 
     def out(line, n=1, settle=4.0):
         g.run(line, settle=settle)

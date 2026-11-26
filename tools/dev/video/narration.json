@@ -7,7 +7,7 @@
   "panes": "Two panes show two folders side by side. Each pane has its own drive letters, and the U button reaches the Ultimate's USB sticks and SD card.",
   "drag": "Files are dragged from one pane to the other. A GEOS file copied to the Ultimate becomes a C V T file, and comes back as a GEOS file the other way.",
   "geowrite": "Existing applications run here too. In this example geoWrite starts from a folder on a large native drive, and its Open dialog lists the folders.",
-  "geofolder": "From any application's GEOS menu, geoFolder changes the current folder of each drive.",
+  "gufolder": "From any application's GEOS menu, GU Folder changes the current folder of each drive.",
   "gush": "Gush is GeoUltra's shell: a command line with many commands, scripts, pipes, and network tools such as wget and N T P time.",
   "settings": "GeoUltra Settings edits the desktop, the system, the time, the mouse pointer, and the themes, with a live preview and the palette in R G B.",
   "closing": "GeoUltra is in development and will be free, under the G P L, at its first release. Made with the help of Claude, an A I from Anthropic. Thanks for watching."

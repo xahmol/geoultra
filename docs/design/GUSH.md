@@ -120,7 +120,7 @@ gush and come back to it.
 On drive E (the system drive in the cartridge) as `gush` and in
 `/e/bin`'s place for now (drive E is flat); a copy on any disk runs as
 well. Reached by a boot setting (`SETTINGS.INI`: start gush instead of
-the deskTop), by a gush button in geoFolder (from any application,
+the deskTop), by a gush button in GU Folder (from any application,
 also under GEOS 2.0's deskTop), and later by a menu item and button in
 GeoUltra's own desktop.
 
@@ -168,7 +168,7 @@ GeoUltra's own desktop.
   overlays to `gush.bin.1` and `.2`), made into a VLIR CVT by
   geos-oscar64's `geosapp.py` (record 0 and the header) and
   `tools/dev/vlircvt.py` (the records), on drive E by the existing
-  system-drive build (`SYSFILES`, as geoFolder).
+  system-drive build (`SYSFILES`, as GU Folder).
 
 ## Tests
 
@@ -189,7 +189,7 @@ GeoUltra's own desktop.
 4. The file commands: `cp`, `mv`, `rm`, `mkdir`, `rmdir`, `cat`,
    `more`, `df`, with the questions and the progress line.
 5. Starting applications; `help`, `clear`; the boot setting and the
-   gush button in geoFolder.
+   gush button in GU Folder.
 6. U64 run, code sweep, docs (a gush manual: `docs/manuals/GEOULTRA_MANUAL.md`).
 
 ## State of the work
@@ -213,9 +213,9 @@ GeoUltra's own desktop.
   (`SETTINGS.INI` `[system] start=gush`: the cold start calls the
   engine's `FE_RUNSYS`, which starts an application from drive E).
   Tests: g5.py, g6.py in VICE; tests/gush/gu64.py on the U64 (the
-  Ultimate's file system through gush, geoFolder started and closed;
+  Ultimate's file system through gush, GU Folder started and closed;
   `make test-gush-u64`); the boot setting checked on the U64 by hand.
-- **1.6 (2026-11-04):** geoFolder's gush button (drawn like the system
+- **1.6 (2026-11-04):** GU Folder's gush button (drawn like the system
   icons by `tools/dev/mkicons.py --icon`; it calls `FE_RUNSYS`, gush replaces
   the application), `cp -r` (tree.s: each folder's listing read whole
   into the application's REU bank 2 before its entries are copied, so no
@@ -278,7 +278,7 @@ GeoUltra's own desktop.
 
 1. **Font:** a new 6x8 monospaced font in GeoUltra's style (clean-room).
 2. **Starting gush:** a boot setting in `SETTINGS.INI` (start gush
-   instead of the deskTop) and a gush button in geoFolder, both in step
+   instead of the deskTop) and a gush button in GU Folder, both in step
    1; GeoUltra's own desktop gets a gush menu item and button when it is
    built. A copy on a disk always works.
 3. **Status line:** yes: row 0, the current directory and the time; 24
@@ -465,7 +465,7 @@ high one to `$7C72`). **3.6 (2026-11-05)**: the history
 across sessions (hist.s): the history keeps 128 lines (32 KB of REU bank
 1); the newest 100 go to `HOME/gush_history` (the oldest first, a CR
 after each) when gush ends (`exit`, an application started, `reboot`;
-not when geoFolder's button starts a new gush), through a page buffer;
+not when GU Folder's button starts a new gush), through a page buffer;
 read back at gush's start before `gushrc`. Without `HOME` (VICE):
 nothing. Test gu64.py (a reboot, then cursor up twice). **VLIR (2026-11-06)**: gush
 became a VLIR file, the core and two overlays in a 4 KB transient area

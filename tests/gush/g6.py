@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """FE_RUNSYS in VICE (docs/design/GUSH.md, "Where gush lives"): gush started from
 drive E (the system drive in the cartridge) by the file engine, as the
-boot setting and geoFolder's button do; then a name not on E, and one
-that is no application (geoFolder, a desk accessory) come back with
+boot setting and GU Folder's button do; then a name not on E, and one
+that is no application (GU Folder, a desk accessory) come back with
 their errors.
 Usage: tests/gush/g6.py
 """
@@ -15,8 +15,8 @@ from gushvice import Gush  # noqa: E402
 
 def main():
     ok = True
-    for name, want in (("nope", 5), ("geoFolder", 10)):
-        g = Gush("g6" + name, 6568)
+    for name, want in (("nope", 5), ("GU Folder", 10)):
+        g = Gush("g6" + name.replace(" ", ""), 6568)
         try:
             g.check("FE_RUNSYS %s: back with its error" % name, g.runsys(name, wait=3), want)
         finally:

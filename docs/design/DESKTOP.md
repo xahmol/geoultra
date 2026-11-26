@@ -187,7 +187,7 @@ colour is a property of an element, by name:
 - **D1 (2026-11-06):** `src/desktop/desktop.s`, a sequential application
   (5 blocks) in drive E's root as `GeoUltra Desktop`. The menu bar (geos
   with "GeoUltra info" and the desk accessories, from `FindFTypes`, so
-  drive E's geoFolder is among them; file > gush; view > list; disk >
+  drive E's GU Folder is among them; file > gush; view > list; disk >
   refresh), the sidebar with each drive that is there and its disk name
   (`OpenDisk`, as GEOS 2.0's deskTop names its drives; the current
   drive opened again after), then E, and the list area with the path
@@ -785,20 +785,20 @@ colour is a property of an element, by name:
 
 ## Open bugs
 
-- **geoFolder garbled when opened from the desktop (2026-11-06, the
+- **GU Folder garbled when opened from the desktop (2026-11-06, the
   user's hand test on the U64). Cause found 2026-11-11, not the
   desktop:** drive A's test copy (`/USB0/GEOULTRA/test/GEOS64.D81`)
-  held its own geoFolder (put there by `tests/gush/gu64.py`), and
+  held its own GU Folder (put there by `tests/gush/gu64.py`), and
   GetFile takes the current drive's copy before drive E's. That copy
   was damaged: 2 data blocks allocated, but the first block's link
   was 0/$FF (last block), so only 254 of 508 bytes loaded; the
   dialog table loaded, the gush icon and the texts did not. The
   second block had been freed and reused. Removed from the test copy
   (directory entry and BAM; the damaged image kept outside the
-  repository); on the U64 the desktop's geoFolder from `/e` then
+  repository); on the U64 the desktop's GU Folder from `/e` then
   showed correctly. In VICE the dialog was correct from the list and
   the geos menu, with 1541 and 1581 drives A. What damaged the file is
-  not known: gush's `cp` and the desktop's paste (`/e/geoFolder` to
+  not known: gush's `cp` and the desktop's paste (`/e/GU Folder` to
   drive B, VICE) both write a correct 2-block chain; c1541's
   `-geoswrite` too. Watch for it in later write tests.
 - Fixed (036c457): after a desk accessory started from the list, the

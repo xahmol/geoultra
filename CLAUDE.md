@@ -30,7 +30,7 @@ analysis; its route and phase recommendations are superseded.
   Facebook posts and blog texts. Standing rule for every update: keep the
   README section current with what the AI does in the project.
 - Kernal, drivers and the core OS applications (desktop, gush the shell,
-  file manager, settings, mount dialogue, geoFolder) in assembler
+  file manager, settings, mount dialogue, GU Folder) in assembler
   (ca65/ld65), the shared file engine as a kernal extension (overlay
   modules, extension jump table); C (Oscar64 with the geos-oscar64
   library, see below) only for other tools and tests (user, 2026-11-04:

@@ -1,4 +1,4 @@
-; pdfa4, pdfletter: the PDF text GU PDF A4 and GU PDF Letter write
+; "GU PDF A4 data", "GU PDF Ltr data" (pdfa4, pdfletter): the PDF text GU PDF A4 and GU PDF Letter write
 ; (src/printer/pdf.s), as scripts (pdfscript.inc); data files on drive E
 ; that the driver reads into its work area for StartPrint and StopPrint
 ; (the driver's 1600 bytes did not hold them). Assembled at 0: two

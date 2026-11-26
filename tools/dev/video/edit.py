@@ -66,7 +66,7 @@ SEGMENTS = [
      'Drag and drop'),
     (sc('geowrite'), m('back'), 2.5, 'geoWrite from a folder on a native drive; its Open dialog with drive '
      'letters (2.5x speed)', 'geowrite', 'geoWrite'),
-    (sc('geos'), sc('gush'), 1, 'The geos menu: GeoUltra info, settings, gush and geoFolder first', 'geofolder',
+    (sc('geos'), sc('gush'), 1, 'The geos menu: GeoUltra info, settings, gush and GU Folder first', 'gufolder',
      'The geos menu'),
     (sc('gush'), sc('settings'), 1.5, 'gush, the GeoUltra shell: commands, scripting, ifconfig (1.5x speed)',
      'gush', 'gush'),

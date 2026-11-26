@@ -343,7 +343,7 @@ which is gone once GEOS runs.
 Built between E3 and gush step 1 (user, 2026-11-04: so that gush, CVT
 and the engine's interface are made once for long names). The design is
 the approved one of docs/design/DESIGN.md ("Directories", "Long names"); this
-section settles what it leaves open. The desktop, `DBGETFILES`, geoFolder
+section settles what it leaves open. The desktop, `DBGETFILES`, GU Folder
 and the per-drive switch keep their place in the plan: they only read
 long names through the routines below.
 

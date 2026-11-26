@@ -1,4 +1,4 @@
-; geoFolder: GeoUltra's desk accessory for folders (docs/design/DESIGN.md,
+; GU Folder: GeoUltra's desk accessory for folders (docs/design/DESIGN.md,
 ; "Directories", "System drive"). One file dialog: the kernal's DBGETFILES
 ; lists ".." and the folders of the current drive's current folder (a file
 ; type that no file has, so no files appear); OPEN, RETURN and DEL move

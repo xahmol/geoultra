@@ -79,11 +79,12 @@ def main():
                 time.sleep(3)
                 v.ping()
                 check("RETURN on e: /e", path(), "/e")
-                # /e holds 23 entries (fonts, printer drivers, GU PostScript),
-                # gush below the visible rows: the cursor to it (row 20: "..",
-                # bin, geoFolder, GeoUltra Desktop, the GU files, gush), RETURN
-                # (the same open path as a double click: FE_RUNSYS)
-                g.keys([KEY_HOME] + [KEY_DOWN] * 20, settle=0.2)
+                # /e holds 24 entries (fonts, printer drivers, GU PostScript),
+                # gush below the visible rows: the cursor to it (row 23: "..",
+                # bin, GeoUltra Desktop, the 20 GU files with GU Folder, GU
+                # Splash and GU PDF's data, then gush, sorted without case),
+                # RETURN (the same open path as a double click: FE_RUNSYS)
+                g.keys([KEY_HOME] + [KEY_DOWN] * 23, settle=0.2)
                 g.keys([CR], settle=1)
                 time.sleep(10)
                 v.ping()

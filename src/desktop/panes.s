@@ -83,7 +83,7 @@ PaneSwitch:
 
 ; DrawPanes (desktop.s, Draw): both panes read and drawn: the active
 ; one's folder taken from the file engine first (ListRead: FE_PWD; a
-; desk accessory such as geoFolder may have chosen another; the user's
+; desk accessory such as GU Folder may have chosen another; the user's
 ; test 2026-11-13), then the other one (read, sorted, drawn plainly),
 ; then the active one (read; list.s sorts and draws it from MainLoop,
 ; SortNow).

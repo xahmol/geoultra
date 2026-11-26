@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""geoFolder's gush button in VICE (docs/design/GUSH.md, "Where gush lives"):
-geoFolder (a desk accessory) started from gush, its dialog with the gush
-button (build/harness/gush/g7-geofolder.png), the button clicked: gush
+"""GU Folder's gush button in VICE (docs/design/GUSH.md, "Where gush lives"):
+GU Folder (a desk accessory) started from gush, its dialog with the gush
+button (build/harness/gush/g7-gufolder.png), the button clicked: gush
 starts from drive E in the application's place (a fresh screen).
 Usage: tests/gush/g7.py
 """
@@ -13,14 +13,14 @@ from gushvice import Gush, ROOT  # noqa: E402
 
 
 def main():
-    g = Gush("g7", 6569, [os.path.join(ROOT, "build", "tools", "geofolder.cvt")])
+    g = Gush("g7", 6569, [os.path.join(ROOT, "build", "tools", "gufolder.cvt")])
     check = g.check
     try:
         g.start()
         g.run("echo before")
-        g.run("/b/geoFolder", settle=4)
-        g.png("g7-geofolder")
-        check("geoFolder's dialog up (gush's prompt not back)", g.lines()[-1], "$ /b/geoFolder")
+        g.run('"/b/GU Folder"', settle=4)   # (quoted: a space)
+        g.png("g7-gufolder")
+        check("GU Folder's dialog up (gush's prompt not back)", g.lines()[-1], '$ "/b/GU Folder"')
         g.click(224, 78, settle=5)
         rows = g.lines()
         check("the gush button: gush again, a fresh screen",

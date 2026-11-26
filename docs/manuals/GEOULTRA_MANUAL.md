@@ -256,7 +256,7 @@ From top to bottom:
   menus too. GeoUltra info shows the version with the build's time
   stamp (v0.9.0-20261120-1310: version 0.9.0, built 20 November 2026
   at 13:10); its "splash" button shows the start picture again. Drive
-  E's desk accessories (geoFolder) come first after GeoUltra in the geos menu, in
+  E's desk accessories (GU Folder) come first after GeoUltra in the geos menu, in
   every application's too.
 - **The toolbar**: buttons for the things done most (see "The
   toolbar").
@@ -536,7 +536,7 @@ or GeoUltra ends). Before the first write after mounting, GeoUltra
 keeps a copy of the image in `GEOULTRA/BACKUP/`.
 
 Drive E is GeoUltra's system drive inside the cartridge: the desktop,
-Settings, gush, GU PostScript, geoFolder, the GU fonts and printer
+Settings, gush, GU PostScript, GU Folder, the GU fonts and printer
 drivers. It cannot be written to.
 
 ## Mounting and unmounting
@@ -668,7 +668,7 @@ set on Settings' REU page.
 
 Desk accessories (geoDex, Calculator, ...) on the current drive and on
 drive E appear in the geos menu of the desktop and of every
-application. **geoFolder**, on drive E, is GeoUltra's own: a small file
+application. **GU Folder**, on drive E, is GeoUltra's own: a small file
 box from inside any application, with a button for gush.
 
 # Settings
@@ -905,7 +905,7 @@ run as they would from the desktop.
 ## Starting and leaving
 
 - From the desktop: geos > GeoUltra > gush (C=G), or the toolbar's last button.
-- From any application: geoFolder's gush button.
+- From any application: GU Folder's gush button.
 - At the start instead of the desktop: `start=gush` in the `[system]`
   section of `SETTINGS.INI`.
 - `exit`, or a click on the "x" at the right of its status line,

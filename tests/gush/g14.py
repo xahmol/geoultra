@@ -21,7 +21,7 @@ def main():
     for name, data in (("s1", S1), ("s2", S2)):
         path = os.path.join(OUT, name)
         open(path, "wb").write(data)
-        files.append(path)
+        files.append(path + ",s")             # (SEQ: a PRG would run in BASIC)
     g = Gush("g14", 6580, files)
     check = g.check
     try:

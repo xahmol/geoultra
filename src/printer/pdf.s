@@ -3,7 +3,8 @@
 ; decisions of 2026-11-16: a folder "print" in GEOULTRA, a file per
 ; document named after the program that printed and the date and time,
 ; A4 with a Letter choice). One source: assembled with LETTER defined,
-; the driver reads the Letter scripts (pdfletter) instead of pdfa4. Loaded at PRINTBASE
+; the driver reads the Letter scripts ("GU PDF Ltr data") instead of
+; "GU PDF A4 data". Loaded at PRINTBASE
 ; ($7900, up to $7F3F) with the GEOS 2.0 printer driver interface (HG2G
 ; chapter 11). Own code, written from Adobe's PDF Reference (1.4: the
 ; file structure, image masks, incremental updates); no code taken from
@@ -22,7 +23,7 @@
 ; from 0: 3 + 3k the image, 4 + 3k the content, 5 + 3k the page.
 ;
 ; The PDF's text is written by Emit from scripts (pdfdata.s, the file
-; pdfa4 or pdfletter on drive E, read for StartPrint and StopPrint):
+; "GU PDF A4 data" or "GU PDF Ltr data" on drive E, read for StartPrint and StopPrint):
 ; text with codes (C_*) for the numbers and offsets. Files through GeoUltra's file engine
 ; (guExtTable + FE_ENTRY): opened for each call (FO_WRITE for the first
 ; page, else FO_APPEND), written through a buffer in the work area (r1),
@@ -737,9 +738,9 @@ InUse:  .byte " 00000 n ", 10, 0
 Folder: .byte "print", 0
 DataPath:
 .ifdef LETTER
-        .byte "/e/pdfletter", 0
+        .byte "/e/GU PDF Ltr data", 0
 .else
-        .byte "/e/pdfa4", 0
+        .byte "/e/GU PDF A4 data", 0
 .endif
 Stamp:  .byte "-20", 0
 Ext:    .byte ".pdf", 0

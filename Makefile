@@ -71,7 +71,7 @@ checkcfg: check-deploy
 # GeoUltra's own GEOS files, assembled at $0400 and packed as CVT by
 # tools/dev/geosapp.py (a copy of geos-oscar64 0.1.2's: it pads desk
 # accessories to whole blocks), written to a D64 with VICE's c1541.
-SYSFILES = build/tools/geofolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt \
+SYSFILES = build/tools/gufolder.cvt build/gush/gush.cvt build/cmds/wc.cvt build/desktop/desktop.cvt \
            build/settings/settings.cvt build/tools/splash.cvt build/fonts/.done \
            build/printer/epson.cvt build/printer/mps.cvt \
            build/printer/pdfa4.cvt build/printer/pdfa4data.cvt \
@@ -82,12 +82,12 @@ build/tools/%.bin: src/tools/%.s src/tools/%.cfg
 	$(CA65) -I build/gen -o build/tools/$*.o $<
 	$(LD65) -C src/tools/$*.cfg -o $@ build/tools/$*.o
 
-# geoFolder's gush button, drawn like the system icons (tools/dev/mkicons.py).
+# GU Folder's gush button, drawn like the system icons (tools/dev/mkicons.py).
 build/gen/gushicon.inc: tools/dev/mkicons.py tools/fonts/system9.py
 	@mkdir -p build/gen
 	$(PYTHON) tools/dev/mkicons.py --icon $@ GushIcon gush
 
-build/tools/geofolder.bin: build/gen/gushicon.inc
+build/tools/gufolder.bin: build/gen/gushicon.inc
 
 # The file icons of GeoUltra's own programs (tools/dev/mkappicon.py: a
 # picture of what each does with the logo's U as a badge; splash the U).
@@ -636,8 +636,8 @@ PRNLETTER_mps = C
 PRNLETTER_pdf = P
 
 # GU PDF A4 and GU PDF Letter: one source (pdf.s, LETTER for Letter), and
-# their scripts (pdfdata.s, assembled at 0) as the data files pdfa4 and
-# pdfletter.
+# their scripts (pdfdata.s, assembled at 0) as the data files "GU PDF A4 data"
+# and "GU PDF Ltr data".
 PDF_DEF_a4 =
 PDF_DEF_letter = -D LETTER
 build/printer/pdfa4.cvt build/printer/pdfletter.cvt: build/printer/pdf%.cvt: src/printer/pdf.s src/printer/pdfscript.inc src/printer/prnserial.inc src/printer/pdf%.toml src/printer/printer.cfg build/printer/pdf.icon src/inc/geos.inc

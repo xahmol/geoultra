@@ -583,7 +583,7 @@ DeskRead:
 ; The pane in use is the file engine's current folder: it comes back by
 ; itself. Keeps r2, r3 and r6: the callers set the program's name (r6)
 ; and a document's disk and name (r2, r3) before Leave (found 2026-11-13:
-; in two panes geoFolder and programs did not start, the INI code's Slot
+; in two panes GU Folder and programs did not start, the INI code's Slot
 ; had changed r6).
 PanesKeep:
         ldx #3

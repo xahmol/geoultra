@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""GU PDF A4 (src/printer/pdf.s, its scripts pdfa4 on drive E) in VICE:
+"""GU PDF A4 (src/printer/pdf.s, its scripts "GU PDF A4 data" on drive E) in VICE:
 two pages of ten bands of pseudo-random dots (the rest of each page
 blank), printed directly and through the spooler, the driver and its
-scripts from drive E (GetFile's fallback; FE_OPEN /e/pdfa4 for real).
+scripts from drive E (GetFile's fallback; FE_OPEN /e/GU PDF A4 data for real).
 VICE has no Ultimate, so the test answers the file engine for the
 Ultimate's paths (FE_HOME, FE_MKDIR, FE_OPEN, FE_WRITE, FE_CLOSE on its
 own handle) at the engine's entry and keeps what is written. Checks:

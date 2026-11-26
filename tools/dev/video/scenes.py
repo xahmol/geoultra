@@ -204,7 +204,7 @@ def scenes(t):
     p.drag(60, y, 240, ROW0_Y + 3 * ROW_H)       # 1-12 folders): to usb0 as .cvt
     time.sleep(6)
     t.mark("dragged")
-    # 3. geoWrite from the geos menu's geoFolder, and gush
+    # 3. geoWrite from the geos menu's GU Folder, and gush
     t.ev("scene", name="geowrite")
     p.double(60, ROW0_Y + 12 * ROW_H)            # C's folder Writing
     time.sleep(4)

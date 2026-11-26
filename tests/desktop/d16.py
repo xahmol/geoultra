@@ -4,7 +4,7 @@ the user's request 2026-11-13). The version line is built from the
 kernal's info block (major, minor $C0E2; patch and the build's time
 stamp $C0F5) as vMAJOR.MINOR.PATCH-YYYYMMDD-HHMM, the numbers the
 Makefile's;
-"splash" puts drive E's splash file (src/tools/splash.toml: the boot
+"splash" puts drive E's GU Splash file (src/tools/splash.toml: the boot
 splash with its own status line) on the screen, bitmap and colours as
 built; a click brings the desktop back. Screens:
 build/harness/gush/desktop-d16*.png.

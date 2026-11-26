@@ -24,7 +24,7 @@ psw = "../build/psw"
 
 [[folder]]
 path = ""
-files = ["tools:geofolder.cvt", "gush:gush.cvt", "desktop:desktop.cvt", "settings:settings.cvt",
+files = ["tools:gufolder.cvt", "gush:gush.cvt", "desktop:desktop.cvt", "settings:settings.cvt",
          "tools:splash.cvt",
          # GeoUltra's own fonts (docs/design/DESIGN.md "Fonts", make fonts)
          "fonts:guserif.cvt", "fonts:gusans.cvt", "fonts:gusymbol.cvt", "fonts:gumono.cvt",

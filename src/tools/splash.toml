@@ -1,6 +1,6 @@
 [file]
 icon = "../../build/icons/splash.icon"     # tools/dev/mkappicon.py
-name    = "splash"
+name    = "GU Splash"
 type    = "APPL_DATA"
 class   = "GU splash"
 version = "V1.0"

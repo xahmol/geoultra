@@ -812,7 +812,7 @@ SplashBtn:
         sta sysDBData
         jmp RstrFrmDialogue
 
-; ShowSplash: drive E's "splash" (8000 bytes of bitmap, 1000 of colours,
+; ShowSplash: drive E's "GU Splash" (8000 bytes of bitmap, 1000 of colours,
 ; src/tools/splash.toml) straight onto the screen until a key or a
 ; click, then the desktop drawn again. A file that cannot be read: the
 ; desktop again at once.
@@ -939,7 +939,7 @@ splashRec:
 NameText:       .byte BOLDON, "GeoUltra", PLAINTEXT, 0
 DevText:        .byte "Beta 1", 0     ; (the release: "Beta 1", none at 1.0)
 ByText:         .byte "(C) 2026 Xander Mol, idreamtin8bits", 0
-SplashPath:     .byte "/e/splash", 0
+SplashPath:     .byte "/e/GU Splash", 0
 
         .include "splashicon.inc"
 
