@@ -67,11 +67,17 @@ def action(goto):
     (GotoFirstMenu $C1BD, DoPreviousMenu $C190, ReDoMenu $C193) with
     interrupts off.
 
-    Open point: in this test set-up GEOS 2.0 shows "System error" after a
-    click on the third item ("quit", y = 50) of the sub-menu, whichever
-    routine the item calls; items 0 and 1 work. Not yet known whether
-    this is a GEOS 2.0 bug or an artefact of the set-up, so that click is
-    not among the cases."""
+    A click on the sub-menu's third item ("quit") is not among the cases:
+    in this set-up GEOS 2.0 does not call it at y 44-46 and from y 48 on
+    calls a fourth item that does not exist (the bytes after the
+    structure: "System error"). Looked into on 2026-11-26: a test
+    artefact, not a GEOS 2.0 bug. GEOS 2.0 lays out the items 14 dots
+    apart as the sub-menu's top and bottom expect, and in a vertical
+    menu of its own it calls the third item wherever it is clicked (the
+    "vertical menu, third item" cases below, which GeoUltra passes); only
+    the injected press in an open constrained sub-menu misses, as GEOS
+    2.0's own input driver keeps moving the pointer between the
+    harness's events."""
     return [0x8D, RESULT & 0xFF, RESULT >> 8, 0xEE, (RESULT + 1) & 0xFF, (RESULT + 1) >> 8,
             0x78, 0x20, goto & 0xFF, goto >> 8, 0x58, 0x60]
 
@@ -132,3 +138,10 @@ CASES += [
     ev("release only", [dict(x=36, y=7, button="release")]),
     ev("press outside the menu", click(200, 100)),
 ]
+
+VERT_ACTIONS = menu(17, 59, 30, 101, 0x83, [("open", 0x00, ROUTINE_AT), ("close", 0x00, ROUTINE_AT),
+                                              ("quit", 0x00, ROUTINE_AT)])
+for y in (47, 57):
+    case = ev("vertical menu, third item at y %d" % y, click(40, y))
+    case["mem"].update(VERT_ACTIONS)
+    CASES.append(case)

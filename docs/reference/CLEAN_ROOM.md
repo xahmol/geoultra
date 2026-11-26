@@ -7,7 +7,7 @@ GEOS 2.0 kernal is still Berkeley Softworks' work; its reassembled
 source (Michael Steil's mist64/geos) was read for questions of
 behaviour, never copied. GEOS 2.0 itself, from the user's own disk,
 serves as the test oracle: every kernal routine is run in both systems
-in VICE and the results compared (`make conformance`, 304 cases).
+in VICE and the results compared (`make conformance`, 306 cases).
 
 This document says how that claim was checked, what the check found,
 and what was done about it. The check is repeated before each release

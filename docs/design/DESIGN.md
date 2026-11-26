@@ -268,13 +268,16 @@ scope below.)
 **Scope of 1.0 (the user, 2026-11-26):** the Ultimate 64 family only;
 the Ultimate II+ (phase 4) becomes 1.1. Between Beta 1 and 1.0:
 (1) the beta's feedback, released as 0.9.x; (2) the technical reference
-and (3) the developer guide (below, "Releases and documentation");
+and (3) the developer guide (below, "Releases and documentation"; first
+versions 2026-11-26: docs/reference/TECHNICAL_REFERENCE.md and
+DEVELOPER_GUIDE.md, to grow with the beta);
 (4) BASIC programs on GeoUltra drives started by ToBasic itself, and
 GEOS 2.0's, Wheels', MegaPatch3's and GDOS64's boot files refused there
 ("Still open"; done 2026-11-26); (5) the Command Interface unlock retested on the U64
 after a GDOS64 session; (6) native folders without a name in their
 header take the parent entry's name (done 2026-11-26); (7) the conformance menu case
-where GEOS 2.0 shows "System error": a GEOS 2.0 bug or a test fault.
+where GEOS 2.0 shows "System error": a GEOS 2.0 bug or a test fault
+(done 2026-11-26: a test artefact).
 After 1.0: the PC tools GUI, re-keying serials (S6), the web browser
 (FrogFind), dynamic REU room for applications, `geosdisk shrink`,
 ejecting the cartridge, the network roadmap, phases 5 and 6.
@@ -964,10 +967,17 @@ Requests from the same session, to do:
   `make test-tobasic`). GeoUltra's own desktop does not start plain PRG
   files (a later choice).
 
-- Conformance: in the menu interaction tests GEOS 2.0 shows "System error"
-  after a click on the third item of a three-item vertical sub-menu
-  (tests/conformance/menu.py, `action`); GEOS 2.0 bug or test artefact
-  still to find out.
+- Conformance, the menu case where GEOS 2.0 showed "System error" after a
+  click on the third item of the test's sub-menu: settled 2026-11-26, a
+  test artefact. GEOS 2.0 lays the items out 14 dots apart as the
+  sub-menu expects and, in a vertical menu of its own, calls the third
+  item wherever it is clicked (two new cases, GeoUltra passes them); in
+  the open constrained sub-menu the harness's injected press misses
+  (GEOS 2.0 calls nothing at y 44-46 and a fourth, non-existent item
+  from y 48: the bytes after the structure, a jump into its disk driver
+  area, the BRK found at $F236 through its menu dispatch), as its own
+  input driver moves the pointer between the events
+  (tests/conformance/menu.py, `action`).
 
 - Extended jump table: settled, `guExtTable` (`$C0E4`) points to it
   (ARCHITECTURE, "Folders").
