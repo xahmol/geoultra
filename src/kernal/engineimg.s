@@ -64,13 +64,22 @@ Probe:  jsr KeepInfo
         beq @plain
         inx
         stx imStart
+        lda #0
+        sta imWild
 @scan:  lda fePath,x
         beq @end
         cmp #'/'
         beq @end
-        inx
+        cmp #'*'                ; a pattern ("*.d64"): never an image to
+        beq :+                  ; go into (until 2026-11-25 the Ultimate
+        cmp #'?'                ; matched it to the first image and its
+        bne :++                 ; GEOS files were listed; e3u64)
+:       sta imWild
+:       inx
         bne @scan
 @end:   stx imEnd
+        lda imWild
+        bne @next
         jsr Cut                 ; (the part's end zero meanwhile)
         jsr Type                ; an image's name? (mType, mBanks)
         jsr Uncut

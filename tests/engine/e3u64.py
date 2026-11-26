@@ -119,9 +119,6 @@ class Test:
         check("FE_STAT a file: its size", stat("/usb0/geoultra/MOUNTS.INI")[:2], (0, K_UFILE))
         check("FE_STAT a disk image is a file", stat("/usb0/geoultra/test/GEOS64.D81"), (0, K_UFILE, 819200))
         check("FE_STAT a missing file", stat("/usb0/geoultra/nope"), (FILE_NOT_FOUND,))
-        check("FE_OPENDIR a pattern", listing("/usb0/geoultra/test/*.d64"), ["geopub.d64", "neos.d64"])
-        check("names and patterns in either case", listing("/USB0/GeoUltra/TEST/*.D64"),
-              ["geopub.d64", "neos.d64"])
         if stat(HOME)[0] == 0:                  # left over from an aborted run
             for n in listing(HOME):
                 fe(FE_DELETE, s0=HOME + "/" + n)
@@ -129,6 +126,16 @@ class Test:
             fe(FE_RMDIR, s0=HOME)
         check("FE_MKDIR", (fe(FE_MKDIR, s0=HOME)[0], stat(HOME)), (0, (0, K_UDIR, 0)))
         check("FE_MKDIR again", fe(FE_MKDIR, s0=HOME)[0], FILE_EXISTS)
+        pat = os.path.join(OUT, "pat.bin")                 # the pattern cases on
+        open(pat, "wb").write(b"not an image")           # files of its own (until
+        for n in ("p1.d64", "p2.d64", "p3.txt"):         # 2026-11-25 on the test
+            self.u.ftp_put(pat, HOME.replace("/usb0", "/USB0", 1) + "/" + n)   # folder's
+        check("FE_OPENDIR a pattern: listed, not gone into as an image",  # .d64s)
+              listing(HOME + "/*.d64"), ["p1.d64", "p2.d64"])
+        check("names and patterns in either case", listing(HOME.upper().replace("/USB0", "/USB0") + "/*.D64"),
+              ["p1.d64", "p2.d64"])
+        for n in ("p1.d64", "p2.d64", "p3.txt"):
+            fe(FE_DELETE, s0=HOME + "/" + n)
         check("FE_CD and FE_PWD", (fe(FE_CD, s0=HOME)[0], self.pwd()), (0, HOME))
         check("FE_MKDIR relative", (fe(FE_MKDIR, s0="sub")[0], listing(".")), (0, ["sub"]))
         check("FE_CD into a missing folder", (fe(FE_CD, s0="nope")[0], self.pwd()), (FILE_NOT_FOUND, HOME))

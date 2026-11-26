@@ -316,6 +316,7 @@ imStart         = FE_WORK + 57  ; the image's part in fePath: its start,
 imEnd           = FE_WORK + 58  ; its end, the character there
 imCh            = FE_WORK + 59
 imOff           = FE_WORK + 60  ; module 89: a place in the paths compared
+imWild          = FE_WORK + 61  ; module 88 Probe: the part is a pattern (* ?)
 imBuf           = feInfo + 16   ; module 89: 16 bytes of a path (feInfo's
                                 ; 32 bytes are kept at IMG_SAVE meanwhile)
 
