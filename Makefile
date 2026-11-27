@@ -92,7 +92,8 @@ build/tools/gufolder.bin: build/gen/gushicon.inc
 # The file icons of GeoUltra's own programs (tools/dev/mkappicon.py: a
 # picture of what each does with the logo's U as a badge; splash the U).
 APPICONS = build/icons/desktop.icon build/icons/settings.icon build/icons/gush.icon \
-           build/icons/postscript.icon build/icons/folder.icon build/icons/splash.icon
+           build/icons/postscript.icon build/icons/folder.icon build/icons/splash.icon \
+           build/icons/pdfdata.icon
 build/icons/%.icon: tools/dev/mkappicon.py
 	@mkdir -p build/icons
 	$(PYTHON) tools/dev/mkappicon.py $* $@
@@ -645,7 +646,7 @@ build/printer/pdfa4.cvt build/printer/pdfletter.cvt: build/printer/pdf%.cvt: src
 	$(CA65) -I src/inc -I src/printer $(PDF_DEF_$*) -o build/printer/pdf$*.o $<
 	$(LD65) -C src/printer/printer.cfg -o build/printer/pdf$*.bin -m build/printer/pdf$*.map build/printer/pdf$*.o
 	$(PYTHON) $(GEOSAPP) src/printer/pdf$*.toml build/printer/pdf$*.bin $@
-build/printer/pdfa4data.cvt build/printer/pdfletterdata.cvt: build/printer/pdf%data.cvt: src/printer/pdfdata.s src/printer/pdfscript.inc src/printer/pdfdata.cfg src/printer/pdf%data.toml
+build/printer/pdfa4data.cvt build/printer/pdfletterdata.cvt: build/printer/pdf%data.cvt: src/printer/pdfdata.s src/printer/pdfscript.inc src/printer/pdfdata.cfg src/printer/pdf%data.toml build/icons/pdfdata.icon
 	@mkdir -p build/printer
 	$(CA65) -I src/inc -I src/printer $(PDF_DEF_$*) -o build/printer/pdf$*data.o $<
 	$(LD65) -C src/printer/pdfdata.cfg -o build/printer/pdf$*data.bin build/printer/pdf$*data.o

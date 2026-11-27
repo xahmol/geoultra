@@ -1,4 +1,5 @@
 [file]
+icon    = "../../build/icons/pdfdata.icon"   # tools/dev/mkappicon.py
 name    = "GU PDF Ltr data"
 type    = "APPL_DATA"
 class   = "GU PDF data"

@@ -21,6 +21,7 @@ SCREEN_SHOT = os.path.join(REPO_ROOT, 'docs', 'images', 'desktop-icons.png')
 FM_PREVIEW = os.environ.get('FM_PREVIEW', os.path.join(
     REPO_ROOT, '..', 'locifilemanager-v2', 'screenshots', 'social-preview.png'))
 OUT_PATH = os.path.join(REPO_ROOT, 'docs', 'images', 'social-preview.png')
+LOGO_C64 = os.path.join(REPO_ROOT, 'tools', 'dev', 'splash', 'idi8b-logo.png')
 FONT_PATH = '/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf'
 
 W, H = 1280, 640
@@ -48,9 +49,13 @@ def main():
     off_x = SHOT_X1 + (panel_w - new_w) // 2
     off_y = SHOT_Y1 + (panel_h - new_h) // 2
 
-    logo = Image.open(FM_PREVIEW).crop(LOGO_FM)
-    ls = min((1260 - TEXT_X) / logo.width, 200 / logo.height)
-    logo = logo.resize((int(logo.width * ls), int(logo.height * ls)), Image.LANCZOS)
+    # the idi8b logo in the C64's pastel colours (the boot splash's,
+    # tools/dev/splash/idi8b-logo.png), scaled by a whole factor: the
+    # crop of locifilemanager-v2's preview had the saturated VDC/Oric
+    # colours (the user, 2026-11-27: C64 colours in every project)
+    src = Image.open(LOGO_C64).convert('RGBA')
+    k = max(1, min((1260 - TEXT_X) // src.width, 200 // src.height))
+    logo = src.resize((src.width * k, src.height * k), Image.NEAREST)
 
     f_title = ImageFont.truetype(FONT_PATH, 46)
     f_vers = ImageFont.truetype(FONT_PATH, 40)
@@ -63,7 +68,7 @@ def main():
     draw.rectangle([off_x - b, off_y - b, off_x + new_w + b, off_y + new_h + b],
                    outline=C_GREEN, width=b)
     canvas.paste(shot, (off_x, off_y))
-    canvas.paste(logo, (TEXT_X, 80))
+    canvas.paste(logo, (TEXT_X, 80 + (200 - logo.height) // 2), logo)
     draw.text((TEXT_X, TITLE_Y), "GeoUltra", font=f_title, fill=C_CYAN)
     draw.text((TEXT_X, VERS_Y), "v0.9.0 Beta 1", font=f_vers, fill=C_YELLOW)
     for i, line in enumerate(("A GEOS-compatible system",

@@ -91,6 +91,26 @@ ART = {
 #................#
 #################
 """,
+    "pdfdata": """
+##############
+#............##
+#............#.#
+#............#..#
+#............####
+#..###.###.###...#
+#..#.#.#.#.#.....#
+#..###.#.#.###...#
+#..#...#.#.#.....#
+#..#...###.#.....#
+#................#
+#..###########...#
+#................#
+#..###########...#
+#................#
+#..#######.......#
+#................#
+#################
+""",
     "folder": """
 #######
 #.....#
@@ -170,7 +190,7 @@ def to_bytes(g):
 
 def sheet(path, scale=8):
     from PIL import Image, ImageDraw
-    names = ["desktop", "settings", "gush", "postscript", "folder", "splash"]
+    names = ["desktop", "settings", "gush", "postscript", "pdfdata", "folder", "splash"]
     im = Image.new("RGB", (len(names) * (W * scale + 16) + 16, H * scale + 32), (178, 178, 178))
     d = ImageDraw.Draw(im)
     for i, n in enumerate(names):
