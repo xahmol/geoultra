@@ -5,9 +5,9 @@
 ; for a desk accessory, font or printer driver in the root before drive
 ; E. A file in the
 ; root is on the same drive, so its track/sector pairs are valid from any
-; folder: only the search needs the root, done by pointing curDirHead's
-; directory link (FirstDirBlock reads it on native drives) at the root's
-; directory for a moment. Then drive E as before (module 15). Own code.
+; folder: only the search needs the root, done by making the root the
+; drive's current folder (folderT/folderS, which FirstDirBlock reads) for
+; a moment. Then drive E as before (module 15). Own code.
 
         .include "geos.inc"
         .include "kcalls.inc"
@@ -29,7 +29,7 @@ RootFind:                       ; FindFile failed (sysdrive.s, SysFindFile)
         .byte 17, 3
 
 ; Resident: survive the overlay calls of the searches.
-rootLink:       .word 0         ; curDirHead's directory link
+rootLink:       .word 0         ; the drive's folder (folderT/S) meanwhile
 rootR6:         .word 0         ; r6, A, Y of the failed FindFile
 rootA:          .byte 0
 rootY:          .byte 0
@@ -73,34 +73,32 @@ InFolder:
 @yes:   clc                     ; folder" and recursed without end)
         rts
 
-; ToRoot: curDirHead's directory link to the root's (from its header,
-; 1/1). C clear when done (diskBlkBuf, r1, r4 used).
-ToRoot: lda curDirHead
+; ToRoot: the drive's current folder made its root (1/1) for the search,
+; the folder kept in rootLink. Until 2026-11-27 curDirHead's directory
+; link was pointed at the root's directory, but since 2026-11-16 the
+; directory's first block comes from the drive's own folderT/folderS
+; (FirstDirBlock, module 117), so the root's fonts and desk accessories
+; were no longer found from inside a folder (the user's hand test:
+; geoWrite's font menu in /c/Writing without C's own fonts). C clear.
+; Destroys A, Y.
+ToRoot: ldy curDrive
+        lda folderT-8,y
         sta rootLink
-        lda curDirHead+1
+        lda folderS-8,y
         sta rootLink+1
         lda #1
-        sta r1L
-        sta r1H
-        lda #<diskBlkBuf
-        sta r4L
-        lda #>diskBlkBuf
-        sta r4H
-        jsr GetBlock
-        sec
-        txa
-        bne @end
-        lda diskBlkBuf
-        sta curDirHead
-        lda diskBlkBuf+1
-        sta curDirHead+1
+        sta folderT-8,y
+        sta folderS-8,y
         clc
-@end:   rts
+        rts
 
-Back:   lda rootLink
-        sta curDirHead
+; Back: the drive's folder again. Keeps X (FindFile's error). Destroys
+; A, Y.
+Back:   ldy curDrive
+        lda rootLink
+        sta folderT-8,y
         lda rootLink+1
-        sta curDirHead+1
+        sta folderS-8,y
         rts
 
 ; OvRootFTypes (after FindFTypes in the current folder; X its error,

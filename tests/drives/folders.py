@@ -4,7 +4,8 @@
 Drive B is a copy of GEOS_NATIVE_DISK (default the user's own
 ramapps.DNP in GEOS_DEV, only read). Through the extension jump
 table (guExtTable): MakeDir, SetCurDir (the folder's name becomes the
-disk name, root files are not seen), SaveFile and ReadFile inside it,
+disk name, root files are not seen; the root's fonts are found by
+FindFTypes), SaveFile and ReadFile inside it,
 DirUp (the file is not seen at the root), a folder without a name in
 its header (as DirMaster makes them) named after its entry, RemoveDir refused while the
 folder holds a file, DeleteFile, RemoveDir, and the free count back where
@@ -142,6 +143,15 @@ def main():
               and name == b"GU folder" and x == 5,
               "X=$%02X, folder %d/%d, disk name %r, a root file: FindFile X=$%02X"
               % (r[0], r[2], r[3], name, x))
+        fbuf = 0x5000                                     # inside the folder: the
+        v.mem_set(fbuf, bytes(17 * 15))                   # root's fonts (rootmerge.s;
+        r = run(ldw(fbuf, 0x0E) + [0xA9, 8, 0x85, 0x10, 0xA9, 15, 0x85, 0x11,   # lost 2026-11-16
+                                   0xA9, 0, 0x85, 0x16, 0x85, 0x17]            # to 11-27: the
+                + jsr("FindFTypes") + stx(0), wait=6)                           # user's U64)
+        raw = v.mem_get(fbuf, fbuf + 17 * 15 - 1)
+        fonts = [bytes(raw[i * 17:i * 17 + 17]).split(b"\0")[0] for i in range(15)]
+        check("FindFTypes fonts inside the folder: the root's (Cory, Roma)",
+              (r[0], b"Cory" in fonts, b"Roma" in fonts) == (0, True, True), repr(fonts[:6]))
         data = bytes((i * 7 + 3) & 0xFF for i in range(1000))
         v.mem_set(NAME, b"In the folder\0")
         v.mem_set(HDR, bytes(header(1000)))
