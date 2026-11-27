@@ -983,11 +983,10 @@ Requests from the same session, to do:
 
 ## Still open
 
-- A default icon (the user, 2026-11-27): a GEOS file whose header icon is
-  in GEOS's format but all zero showed as an empty place in the icon view
-  (GU PDF's data files, which got an icon of their own the same day);
-  iconview.s should treat 63 zero bytes as no icon and take the generic
-  one. For 0.9.1, with a test.
+- A default icon (the user, 2026-11-27): done the same day for 0.9.1. A
+  GEOS file whose header icon is in GEOS's format but all zero (63 zero
+  bytes) gets the generic icon in the icon view, not an empty place
+  (iconview.s; tests/desktop/d41.py).
 - ToBASIC's typed command (RUN) does not arrive on the user's U64 with
   JiffyDOS as the kernal ROM (VICE with the stock ROMs: it does), also
   at 1 MHz (2026-11-27). Suspected: JiffyDOS's start sets its own NMI

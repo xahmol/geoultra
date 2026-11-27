@@ -379,6 +379,13 @@ GetIcon:
         lda fileHeader + H_ICON
         cmp #ICON_PACKET        ; (an icon as GEOS writes it)
         bne @small
+        lda #0                  ; its 63 bytes all zero: no picture, the
+        ldx #ICON_LEN - 1       ; generic icon instead (an empty place
+@any:   ora fileHeader + H_ICON,x   ; before; the user, 2026-11-27)
+        dex
+        bne @any
+        tay
+        beq @small
         ldx #ICON_LEN - 1
 @copy:  lda fileHeader + H_ICON,x
         sta icon,x
