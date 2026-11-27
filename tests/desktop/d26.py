@@ -8,7 +8,8 @@ B): the menu bar shows "print paused"; geos > print queue: three lines
 waiting); cancel on the second line: it shows cancelled; resume: the
 jobs play while the window is open, which then shows "No print jobs."
 (it follows the queue); the driver saw jobs 1 and 3 only; close: the
-indicator gone. Screens: build/harness/gush/desktop-d26*.png.
+indicator gone. A job left open (no StopPrint: its program suspended
+mid-print) still shows after its rows are played. Screens: build/harness/gush/desktop-d26*.png.
 Usage: tests/desktop/d26.py
 """
 import os
@@ -166,6 +167,21 @@ def main():
         settle(2)
         g.png("desktop-d26-closed")
         check("closed: the indicator gone", v.mem_get(k["spShown"], k["spShown"])[0], 0)
+        # A job still open (InitForPrint, StartPrint, a row; no StopPrint
+        # yet, as when its program is suspended in another task mid-print;
+        # the user's hand test 2026-11-27): the queue plays its row and runs
+        # empty, yet the indicator and the window show the job.
+        open_job = (jsr(0x7900) + r(0x04, 0x0400) + jsr(0x7903)
+                    + r(0x02, 0x0400) + r(0x04, 0x0400) + r(0x06, 0) + jsr(0x7906) + [0x60])
+        v.mem_set(run, bytes(open_job))
+        call(run, 0, s=8)
+        settle(3)
+        g.png("desktop-d26-open")
+        check("a job still open, its row played: the indicator shows it",
+              v.mem_get(k["spShown"], k["spShown"])[0], 1)
+        call(k["MQueue"], 0, s=5)
+        check("and the window lists it", v.mem_get(k["qCount"], k["qCount"])[0], 1)
+        press(WIN_L + 21 * 8 + 24, WIN_TOP + BTN_Y + 8, s=5)         # close
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

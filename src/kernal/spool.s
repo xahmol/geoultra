@@ -212,7 +212,7 @@ driveLimit:     .byte FE_LAST_BANK + 2  ; a drive's banks end below this - 1
         .include "banksof.inc"
 
 ; Init: A, X = spool='s first and fourth character: the banks wanted
-; (128, 256, 512: 2, 4, 8; 1024, 2048: 16, 32; else 2); up to that - 2
+; (128, 256, 512: 2, 4, 8; 1024, 2048: 16, 32; else 16); up to that - 2
 ; at the top of the drives' area, from bank 179 (FE_LAST_BANK) down, while no REU drive
 ; uses them; spoolExtra, spoolBase, driveLimit set. The queue of an
 ; earlier session forgotten: its mark cleared (the REU keeps its contents
@@ -244,7 +244,10 @@ Init:   stx tmp
         beq @dig
         dex
         bpl @d
-@none:  lda #2                  ; (none or another value: 128 KB)
+@none:  lda #16                 ; (none or another value: 1 MB, the
+                                ; default since 2026-11-27: about 20
+                                ; pages, so a program hands a document
+                                ; over at once; DESIGN.md "REU map")
         bne @want
 @dig:   lda tmp                 ; a fourth digit: 1024, 2048
         cmp #'0'
@@ -665,12 +668,12 @@ Step:   jsr HeadLoad
         bne @work
         dex
         bpl @cmp
-        ldx hdr + Q_PJOB
-        inx
-        cpx hdr + Q_BASE
-        beq @idle
-        stx hdr + Q_BASE
-        jmp HeadSave
+        bit hdr + Q_INPAGE      ; a page still open (its program suspended
+        bmi @idle               ; mid-print in another task): its job stays
+        ldx hdr + Q_PJOB        ; counted (the user's hand test 2026-11-27;
+        inx                     ; the check whether Q_BASE changes made
+        stx hdr + Q_BASE        ; room: Step is not called again once the
+        jmp HeadSave            ; ring is empty)
 @idle:  rts
 @work:  lda #<ptype
         ldx #>ptype
@@ -1289,10 +1292,9 @@ Status: lda qh + Q_PAUSED        ; ($80 or 0 only)
         sta argR1
         lda qh + Q_PCT
         sta argR1+1
-        lda #0
-        sta argR0
         jsr Empty
-        lda #0
+        lda #0                  ; (sta keeps Empty's carry)
+        sta argR0
         bcs @out
         lda qh + Q_JOBS         ; the jobs since Q_BASE
         sec
@@ -1323,9 +1325,7 @@ Cancel: lda argR0
         lda argR0
         jsr JobOp
         jsr Again
-@end:   lda #0
-        tax
-        rts
+@end:   jmp Done
 
 ; List (Y = 4): see FeSpool.
 List:   lda #0
@@ -1397,8 +1397,16 @@ First:  lda qh + Q_PJOB
 :       lda qh + Q_PJOB
         rts
 
-; Empty: C set when the queue holds no record.
-Empty:  ldx #2
+; Empty: C set when the queue holds no record and no page is open. A
+; page still open (Q_INPAGE: StartPrint played, no StopPrint yet; its
+; program suspended in another task while it printed, the ring played
+; empty meanwhile) counts as not empty: the window and the indicator
+; show its job (the user's hand test 2026-11-27: "No print jobs." while
+; geoWrite's job printed on). Q_OPEN would not do: it stays set between
+; jobs (a job ends only when the next InitForPrint begins one).
+Empty:  bit qh + Q_INPAGE
+        bmi @no
+        ldx #2
 @c:     lda qh + Q_HEAD,x
         cmp qh + Q_TAIL,x
         bne @no
@@ -1430,12 +1438,10 @@ HeadOp: lda #<qh
 ; JobOp0 / JobOp: job A's entry <-> jb (JobOp0: fetched; JobOp: Y the
 ; command). JobAt: the same into r0.
 JobOp0: ldy #REU_FETCH
-JobOp:  pha
-        lda #<jb
-        sta r0L
-        lda #>jb
-        sta r0H
-        pla
+JobOp:  ldx #<jb
+        stx r0L
+        ldx #>jb
+        stx r0H
 JobAt:  and #JOB_MAX - 1
         asl a
         asl a
