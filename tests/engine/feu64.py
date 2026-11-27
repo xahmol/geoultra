@@ -113,7 +113,20 @@ class U64:
     def cart_back(self):
         """The user's Cartridge setting again (not saved to flash: it is
         the setting of the session)."""
+        if getattr(self, "cart_kept", None) is None:
+            return
         self._req("PUT", self.rest + self.CART + "?value=" + urllib.parse.quote(self.cart_kept))
+
+    def stop(self):
+        """GeoUltra stopped: the user's Cartridge setting back and a reboot,
+        so that no running GeoUltra writes its own files over the ones a
+        test puts back (docshots.py, 2026-11-27: the user's MOUNTS.INI and
+        SETTINGS.INI were overwritten after their restore). A later boot()
+        holds the cartridge again."""
+        self.cart_back()
+        self.cart_kept = None
+        self._req("PUT", self.rest + "/machine:reboot")
+        time.sleep(12)
 
     def text(self, addr, s):
         self.write(addr, s.encode("latin1") + b"\0")

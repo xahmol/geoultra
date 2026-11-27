@@ -279,8 +279,9 @@ def main():
         except ftplib.error_perm:
             pass
         f.quit()
-        for n, d in kept.items():
-            put(HOME + n, d)
+        u.stop()                                        # (GeoUltra off first: a
+        for n, d in kept.items():                       # running one wrote its
+            put(HOME + n, d)                            # own INIs after these)
         print("the user's files back:", all(get(HOME + n) == d for n, d in kept.items()))
         if kept.get("HIBERNAT.BIN"):
             u.boot()                                    # (resumes the user's session)
