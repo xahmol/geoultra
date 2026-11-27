@@ -28,6 +28,7 @@ SIZES = {"a": 1, "bb": 5, "ccc": 3}                 # blocks (254 bytes each)
 
 
 YES_XY = (64 + 8 + 20, 32 + 72 + 8)                # (DEF_DB_POS at 64, 32; YES at card 1)
+NO_XY = (64 + 17 * 8 + 20, 32 + 72 + 8)            # (NO at card 17)
 
 
 def main():
@@ -199,8 +200,19 @@ def main():
         check("to task 1 again: /a", (kbyte("taskCur"), here()), (1, "/a"))
         check("closed in task 0: task 1 opens it", run(open_v), 0)
         run(close_v)
+        rows = (0xA000 + 4 * 320, 0xA000 + 17 * 320 - 1)    # under the question:
+        colours = (0x8C00 + 4 * 40, 0x8C00 + 17 * 40 - 1)  # its rows (4-16)
+        before = (bytes(v.mem_get(*rows)), bytes(v.mem_get(*colours)))
         popup()
         key(KEY_DOWN)
+        key(KEY_DOWN)
+        key(CR, s=5)                                        # close task, No:
+        press(*NO_XY, s=5)
+        after = (bytes(v.mem_get(*rows)), bytes(v.mem_get(*colours)))
+        check("close task, No: still task 1, the screen under the box as before",
+              (kbyte("taskCur"), after == before), (1, True))  # (the user's hand
+        popup()                                             # test 2026-11-27: the
+        key(KEY_DOWN)                                       # box stayed in geoWrite)
         key(KEY_DOWN)
         key(CR, s=5)                                        # close task (task 1):
         g.png("desktop-d23-ask")                            # "Close this task?"

@@ -84,6 +84,36 @@ def main():
                                                     # still drawing it, "Thi" only; the
                                                     # 2026-11-26 regression failed so)
             check("the document's first page, as opened from drive A", same, True)
+        # The task list over geoWrite, close task, No (the user's hand test
+        # 2026-11-27: the question's box stayed and GeoUltra was unstable,
+        # as DoDlgBox recovered through geoWrite's RecoverVector): the screen
+        # under the box as before, geoWrite still running.
+        rows = (0xA000 + 4 * 320, 0xA000 + 17 * 320 - 1)
+        colours = (0x8C00 + 4 * 40, 0x8C00 + 17 * 40 - 1)
+        before = (bytes(v.mem_get(*rows)), bytes(v.mem_get(*colours)))
+        v.mem_set(kl["taskReq"], b"\x80")                  # as C= + RUN/STOP
+        v.resume()
+        time.sleep(2)
+        v.ping()
+        g.queue([KEY_DOWN, KEY_DOWN, CR], settle=3)         # geoWrite, new, close
+        g.png("desktop-d30-ask")
+        x, y = 64 + 17 * 8 + 20, 32 + 72 + 8                 # NO
+        v.mem_set(0x3A, bytes([x & 0xFF, x >> 8, y]))
+        for data in (0x00, 0x80):
+            v.mem_set(0x8505, bytes([data]))
+            v.mem_set(0x39, bytes([v.mem_get(0x39, 0x39)[0] | 0x20]))
+            v.resume()
+            time.sleep(0.5)
+            v.ping()
+        v.resume()
+        time.sleep(4)
+        v.ping()
+        g.png("desktop-d30-no")
+        after = (bytes(v.mem_get(*rows)), bytes(v.mem_get(*colours)))
+        check("close task over geoWrite, No: the screen under the box as before",
+              after == before, True)
+        check("and geoWrite still runs", bytes(v.mem_get(0x0400, 0x040F)), gw[:16])
+
         def name(a):
             return bytes(v.mem_get(a, a + 15)).split(b"\xa0")[0]
         check("B shows C's disk meanwhile", name(0x8430), b"DOCTEST")
