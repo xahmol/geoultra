@@ -3,9 +3,10 @@
 2026-11-14; preu.s): the 16 x 16 grid of banks (system dark grey, the
 engine orange, the legacy area yellow, the part not in use hatched:
 dark grey on yellow, free white), the steppers from the defaults (4
-slots since 2026-11-27, 512 KB, a 128 KB print queue): Legacy [+] to
-1 MB (legacy=1024) and back (legacy= out), Tasks [+] to 8 (tasks=8), the
-queue to 512 KB (spool=512) and back (spool= out).
+slots, 512 KB, a 1 MB print queue in the legacy area the slots leave,
+since 0.9.1): Legacy [+] to 1 MB (legacy=1024) and back (legacy= out),
+Tasks [+] to 8 (the legacy area full: the queue at its two banks), back
+to 4 (the queue at 242-255), the queue to 2 MB and back (spool= out).
 VICE's drives are no REU drives: none on the map. Screens:
 build/harness/gush/settings-s6*.png.
 Usage: tests/settings/s6.py
@@ -24,6 +25,7 @@ GRID_ROW, GRID_CARD = 2, 12
 STEP_Y = 156
 SIZE_DN, SIZE_UP = (140 + 7, STEP_Y - 3), (200 + 7, STEP_Y - 3)
 TASKS_UP = (286 + 7, 170 - 3)          # (the second row)
+TASKS_DN = (256 + 7, 170 - 3)          # (TASKS_MINUS_X, preu.s)
 STEP2_Y = 170
 SPOOL_DN, SPOOL_UP = (140 + 7, STEP2_Y - 3), (200 + 7, STEP2_Y - 3)
 SIDE_TOP, SIDE_ROW = 16, 16           # (settings.inc; from 16 since 2026-11-19)
@@ -139,17 +141,20 @@ def main():
             press(*TASKS_UP, t=3)
         check("Tasks [+] to 8: tasks=8, all of the legacy area in use", (settings_text(), bank(255)),
               (b"[system]\r\ntasks=8\r\n", 0x77))
-        check("the spooler's banks 27-28 (128 KB by default); 180-187 the system fonts",
-              (bank(27), bank(28), bank(179), bank(180), bank(187)), (0xEE, 0xEE, 0x11, 0xBB, 0xBB))
+        check("8 tasks fill the legacy area: the queue only 27-28 (no room left); 179 a drive's",
+              (bank(27), bank(28), bank(179), bank(255)), (0xEE, 0xEE, 0x11, 0x77))
+        for _ in range(4):                                          # back to 4 tasks
+            press(*TASKS_DN, t=3)
+        check("4 tasks: the default 1 MB queue in the legacy area they leave (242-255)",
+              (settings_text(), bank(223), bank(241), bank(242), bank(255), bank(179)),
+              (b"[system]\r\n", 0x77, 0xB7, 0xEE, 0xEE, 0x11))
         press(*SPOOL_UP, t=3)
-        press(*SPOOL_UP, t=3)
-        check("Spooler [+] twice: 512 KB (spool=512), banks 174-179 too",
-              (settings_text(), bank(173), bank(174), bank(179)),
-              (b"[system]\r\ntasks=8\r\nspool=512\r\n", 0x11, 0xEE, 0xEE))
+        check("Spooler [+]: 2 MB (spool=2048), banks 226-255, the drives' banks untouched",
+              (settings_text(), bank(225), bank(226), bank(179)),
+              (b"[system]\r\nspool=2048\r\n", 0xB7, 0xEE, 0x11))
         g.png("settings-s6-spool")
         press(*SPOOL_DN, t=3)
-        press(*SPOOL_DN, t=3)
-        check("Spooler [-] twice: 128 KB, the default (spool= out)", settings_text(), b"[system]\r\ntasks=8\r\n")
+        check("Spooler [-]: 1 MB, the default (spool= out)", settings_text(), b"[system]\r\n")
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

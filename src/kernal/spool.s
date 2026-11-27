@@ -41,7 +41,7 @@
         .include "engine.inc"
         .include "hw.inc"
 
-        .import OvlCall, drvTracks, SysRAMOp, ReadFile, taskReq, taskName
+        .import OvlCall, drvTracks, SysRAMOp, ReadFile, taskReq, taskName, taskSlots
         .export SpoolInit, spoolExtra, spoolBase, driveLimit, SpoolLd, spOn, spDrv
 
 PRINTER         = 9             ; GEOS file type
@@ -129,6 +129,7 @@ AREA_LEN        = STRB + 256 - AREA
         .assert ST_AREA + AREA_LEN <= RING0 * 256, error, "spool.s: the playback's state runs into the ring"
 
 SPOOL_FIXED     = 2             ; banks 27-28
+LEGACY_BANKS    = 64            ; the legacy area, banks 192-255 (reu.s)
 RING0           = $40           ; the ring's first page (spoolring.inc)
 ST_BUFS         = $3A00         ; GEOS's buffers during a driver call
 BUFS            = fileHeader    ; (Keep: fileHeader, curDirHead, fileTrScTab
@@ -212,9 +213,11 @@ driveLimit:     .byte FE_LAST_BANK + 2  ; a drive's banks end below this - 1
         .include "banksof.inc"
 
 ; Init: A, X = spool='s first and fourth character: the banks wanted
-; (128, 256, 512: 2, 4, 8; 1024, 2048: 16, 32; else 2); up to that - 2
-; at the top of the drives' area, from bank 179 (FE_LAST_BANK) down, while no REU drive
-; uses them; spoolExtra, spoolBase, driveLimit set. The queue of an
+; (128, 256, 512: 2, 4, 8; 1024, 2048: 16, 32; else 16); up to that - 2
+; more from bank 255 down, in the legacy area the task slots leave free
+; (taskSlots x ramExpSize of its 64 banks in use; since 0.9.1: until
+; then they came from the drives' area, which shrank with them);
+; spoolExtra, spoolBase, driveLimit set. The queue of an
 ; earlier session forgotten: its mark cleared (the REU keeps its contents
 ; across a reboot, so a cold start found that queue paused, its jobs
 ; still waiting, 2026-11-19; a resumed session, which keeps its queue,
@@ -244,10 +247,10 @@ Init:   stx tmp
         beq @dig
         dex
         bpl @d
-@none:  lda #2                  ; (none or another value: 128 KB; 1 MB
-                                ; was tried on 2026-11-27, but its banks
-                                ; come from the drives' area: DESIGN.md
-                                ; "REU map", for after Beta 1)
+@none:  lda #16                 ; (none or another value: 1 MB, the
+                                ; default since 0.9.1: about 20 pages,
+                                ; in the legacy area free task slots
+                                ; leave, so the drives keep theirs)
         bne @want
 @dig:   lda tmp                 ; a fourth digit: 1024, 2048
         cmp #'0'
@@ -267,41 +270,29 @@ Init:   stx tmp
         bcc :+
         lda #SPOOL_MAX - SPOOL_FIXED
 :       sta want
-        lda #0
-        sta got
-@bank:  lda got
-        cmp want
-        bcs @set
-        lda #FE_LAST_BANK       ; the next bank down
+        lda #0                  ; the room: the legacy area (64 banks)
+        ldx taskSlots           ; less the task slots' areas (the
+@slot:  clc                     ; user's 0.9.1 plan, 2026-11-27: the
+        adc ramExpSize          ; queue no longer takes the drives' banks)
+        bcs @none2              ; (more slots than fit: no room)
+        cmp #LEGACY_BANKS + 1
+        bcs @none2
+        dex
+        bne @slot
+        eor #$FF                ; LEGACY_BANKS - in use
         sec
-        sbc got
-        sta bank
-        ldx #3                  ; any REU drive on it?
-@drive: lda driveType,x
-        bpl @next               ; (not an REU drive)
-        and #$0F
-        beq @next
-        lda bank
-        cmp ramBase,x
-        bcc @next               ; (below its first bank)
-        jsr BanksOf             ; its end: ramBase + banks
-        clc
-        adc ramBase,x
-        cmp bank
-        beq @next
-        bcs @set                ; (on it: no further)
-@next:  dex
-        bpl @drive
-        inc got
-        bne @bank               ; (always)
-@set:   lda got
-        sta spoolExtra
-        lda #FE_LAST_BANK + 1
-        sec
-        sbc got
-        sta spoolBase
-        clc
+        adc #LEGACY_BANKS
+        cmp want                ; at most what was asked for
+        bcc :+
+        lda want
+:       .byte $2C               ; (bit abs: skips the lda)
+@none2: lda #0
+        sta spoolExtra          ; from bank 255 down: spoolBase = 256 -
+        eor #$FF                ; extra (0 when none; the ring maps its
+        clc                     ; logical banks 2 and up from there)
         adc #1
+        sta spoolBase
+        lda #FE_LAST_BANK + 2   ; the drives keep their whole area
         sta driveLimit
         rts
 
@@ -310,8 +301,6 @@ Digit:          .byte "125"         ; 128, 256, 512; a fourth digit: x + 3
 Banks:          .byte 2, 4, 8, 16, 32, 0
 tmp:            .byte 0
 want:           .byte 0
-got:            .byte 0
-bank:           .byte 0
 
         .endscope
 

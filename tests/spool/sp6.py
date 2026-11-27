@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """A paused, full print queue in VICE (docs/design/DESIGN.md "Print spooler";
 src/kernal/spool.s, modules 107 and 112): the queue paused (FE_SPOOL 1),
-then a job of 250 rows (more than the 2-bank queue holds) through
+then a job of 250 rows (more than the 2-bank queue holds: the test sets
+spool=128 itself, SpoolInit, as the default is 1 MB since 0.9.1) through
 tests/spool/logdrv.s: its StartPrint fits (room for a whole page, X = 0),
 the rows past the queue's end are dropped, its StopPrint fits; the next
 job's StartPrint finds no room for a page and returns DEV_NOT_FOUND (13),
@@ -41,7 +42,8 @@ v.mem_set(0xA000, bytes((i * 7 + 3) & 0xFF for i in range(640)))
 v.mem_set(0x02F0, b"\xee\xee\xee")
 start = harness.TRAMPOLINE
 fe = lbl["FileEngine"]
-head = ([0x78, 0xA9, 0x30, 0x85, 0x01, 0xA9, 9] + jsr("SetDevice") + jsr("OpenDisk")
+head = ([0x78, 0xA9, 0x30, 0x85, 0x01, 0xA9, 0x31, 0xA2, 0x00] + jsr(lbl["SpoolInit"])   # 128 KB
+        + [0xA9, 9] + jsr("SetDevice") + jsr("OpenDisk")
         + r(0x0E, 0x4E00) + [0xA9, 0x00, 0x85, 0x02] + jsr("GetFile")
         + [0xA0, 1, 0xA9, 33] + jsr(fe)                 # FE_SPOOL 1: paused
         + jsr(0x7900) + r(0x04, 0x4000) + jsr(0x7903) + [0x8E, 0xF0, 0x02]
