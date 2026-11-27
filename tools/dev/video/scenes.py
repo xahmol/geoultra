@@ -32,7 +32,7 @@ import pilot  # noqa: E402
 from ultimate import Ultimate  # noqa: E402
 import png  # noqa: E402
 
-IP = localcfg.get("ULTIP1", "192.168.1.64")   # the Ultimate (.env)
+IP = localcfg.get("ULTIP1", "")              # the Ultimate (.env)
 STREAM_PORT = 11002             # (11000 is OBS's on the Windows side: WSL shares
                                 # ports; the firewall rule allows 11000-11010)
 HOME = "/USB0/GEOULTRA/"

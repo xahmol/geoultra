@@ -19,7 +19,7 @@ undocumented internals may not work. The same holds for hardware:
 peripherals are supported on a best-effort basis, and the documentation
 lists what was tested.
 
-**Status: heading for Beta 1** (Ultimate 64 family). What is there:
+**Status: Beta 1 (version 0.9.0-beta1)** (Ultimate 64 family). What is there:
 
 - a clean-room kernal with all GEOS 2.0 jump table entries, booted from a
   cartridge file on the Ultimate; GEOS 2.0's deskTop, geoWrite 2.1 and

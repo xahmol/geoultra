@@ -637,6 +637,9 @@ A reset (or RESTORE) brings GeoUltra back, with its session.
   would replace GeoUltra and could overwrite its data in the REU.
 - Programs that load more files later look for them on the serial bus
   (drive 8), where GeoUltra's drives are not.
+- On an Ultimate 64 with JiffyDOS as its kernal ROM, `RUN` is not typed
+  automatically yet: the program is loaded, type `RUN` (or its `SYS`)
+  yourself.
 
 ## Tasks
 

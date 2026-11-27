@@ -983,6 +983,11 @@ Requests from the same session, to do:
 
 ## Still open
 
+- ToBASIC's typed command (RUN) does not arrive on the user's U64 with
+  JiffyDOS as the kernal ROM (VICE with the stock ROMs: it does), also
+  at 1 MHz (2026-11-27). Suspected: JiffyDOS's start sets its own NMI
+  vector or clears the keyboard queue after the NMIs. For 0.9.1, with a
+  U64 test; Beta 1 documents it (type RUN).
 - U64 tests failing before 2026-11-27's changes too (checked against
   ddb6369): s5u64 "gunew.d71 made and mounted on D" (made, but the mount
   reports DEV_NOT_FOUND) and spu64 "spool=2048: banks above 27-28 taken"
