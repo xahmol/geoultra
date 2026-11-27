@@ -14,6 +14,7 @@
         .export ToBASIC
         .import ReadFile, BootGEOS, sysFlgCopy, basicBuf, HibSuspend, hibResumed
         .import EnterDeskTop, DoDlgBox, SysRAMOp, OvlCall, SetDevice, FindFile
+        .import turboWant, progColours
 
 IOINIT          = $FDA3         ; C64 Kernal: CIAs
 RESTOR          = $FD15         ; Kernal vectors
@@ -105,6 +106,20 @@ ToBASIC:
         ora #$20                ; the REU: programs need no boot disk
         sta sysFlgCopy
         sei
+        lda basicLen            ; staged, or no BASIC program in memory
+        ora basicLen+1          ; (r7 = $0803): $0800-$0802 cleared, so
+        bne @zero               ; BASIC finds an empty program (they are
+        lda r7L                 ; kept over its start, below; GEOS's bytes
+        cmp #<$0803             ; there once gave a machine-code load a
+        bne @nofile             ; garbage BASIC line: the user's hand test
+        lda r7H                 ; 2026-11-27); a program already in memory
+        cmp #>$0803             ; (r7 its end) keeps them
+        bne @nofile
+@zero:  lda #0
+        ldy #2
+:       sta basicStart,y
+        dey
+        bpl :-
         lda basicLen            ; a program staged in the REU: into place
         ora basicLen+1          ; now (GEOS's memory up to $9FFF no
         beq @nofile             ; longer needed; interrupts off)
@@ -115,8 +130,6 @@ ToBASIC:
         bpl @par
         ldy #REU_FETCH
         jsr SysRAMOp
-        lda #0                  ; BASIC's 0 before the program ($0800 is
-        sta basicStart          ; kept over its start, below)
 @nofile:
         ldy #2
 @save:  lda basicStart,y
@@ -129,7 +142,15 @@ ToBASIC:
         sta saveVartab+1
         lda #ROM_ALL
         sta CPU_PORT
-        ldx #$FF
+        lda turboWant           ; the Ultimate 64's turbo off: BASIC and
+        cmp #$FF                ; its programs at 1 MHz, and the NMIs
+        beq :+                  ; below come after BASIC's start (at full
+        lda $D030               ; speed RUN was typed before JiffyDOS had
+        ora #$01                ; finished it: the user's U64 2026-11-27)
+        sta $D030
+        lda #0
+        sta $D031
+:       ldx #$FF
         txs
         lda #0
         sta vicCtrl2
@@ -436,7 +457,8 @@ OvGuardBoot:
         bne @next
         clc
         rts
-@hit:   ldy #DlgEnd - Dlg - 1   ; the dialog into fileHeader
+@hit:   jsr DlgColours          ; (over the desktop: its colours)
+        ldy #DlgEnd - Dlg - 1   ; the dialog into fileHeader
 @copy:  lda Dlg,y
         sta fileHeader,y
         dey
@@ -447,6 +469,8 @@ OvGuardBoot:
         sta r0H
         sec
         rts
+
+        .include "dlgcolour.inc"
 
 BootNames:
         .byte "GEOS", 0, "GEOBOOT", 0, "RBOOT", 0, "GEOS BOOT", 0

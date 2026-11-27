@@ -155,6 +155,10 @@ def main():
         s.to_basic("RUN", entry=entry, wait=4)
         good, port = s.refused()
         check("r5 = RBOOT's entry: refused with the dialog", good, "CPU port %d" % port)
+        pc = s.v.mem_get(0xC0F4, 0xC0F4)[0]
+        cells = bytes(s.v.mem_get(0x8C00 + 4 * 40 + 8, 0x8C00 + 4 * 40 + 32))
+        check("the box's colour cells: the programs' colours", set(cells) == {pc},
+              "%s, wanted %02x" % (cells.hex()[:16], pc))
 
     def geos(s):
         s.to_basic('LOAD "GEOS",9,1', wait=4)
@@ -170,6 +174,8 @@ def main():
 
     def ml(s):
         s.to_basic('LOAD "ML",9,1:SYS8192', wait=10)
+        empty = bytes(s.v.mem_get(0x0800, 0x0802))
+        check("and no garbage BASIC line: $0800-$0802 zero", empty == b"\0\0\0", empty.hex())
         marker = s.v.mem_get(0x033C, 0x033C)[0]
         code = bytes(s.v.mem_get(0x2000, 0x2004))
         check('LOAD "ML",9,1:SYS8192: at $2000, SYS typed and run',
