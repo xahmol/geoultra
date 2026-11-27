@@ -181,10 +181,13 @@ but the U64 tests showed that the kernal gives the drives a fixed range
 (banks 31-179) and the queue's extra banks come from its top, while the
 unused task slots' legacy banks (192-255) do not go to the drives (an
 earlier sum of 171 banks for the disks was wrong). So Beta 1 keeps
-spool=128 (the user, 2026-11-27); for 0.9.1 the queue's extra banks move
-into the legacy area the task slots leave free (from bank 255 down; the
-new-task check and Settings' REU map with them), so a 1 MB default
-costs the drives nothing. The drives have 149 banks: two D81s, a D64
+spool=128 (the user, 2026-11-27). **Done for 0.9.1 (the same day):** the
+queue's extra banks come from bank 255 down, in the legacy area the task
+slots leave free (spool.s Init: 64 - taskSlots x ramExpSize banks, at
+most what spool= asks; the drives keep 31-179, driveLimit fixed);
+Settings' REU page draws them there (s6); the default is 1 MB again.
+The new-task check needs no change: task slots are fixed at the start
+and the queue takes only what they leave. The drives have 149 banks: two D81s, a D64
 and a DNP of about 104 tracks, with room left for an image gone into. **Planned with GUlliver and GUru
 (after 1.0):** the legacy area (4 x 512 KB) is shared with GeoUltra's
 network programs (the user's idea): they get their own task's 512 KB
@@ -560,7 +563,14 @@ changelog-1.2.1.txt and the 1541ultimate repository): 1.0.0 is 3.14,
 1.2.0 (2026-09-10) matches 3.15a (the same 37 time zones), 1.2.1
 (2026-11-07) a later master build (SoftIEC rework, "UCI Only", 66 time
 zones; master still says "3.15a"). Gideon's printer queue work (merged
-2026-11-12/13) is newer than 1.2.1. Not tested on a C64 Ultimate yet;
+2026-11-12/13) is newer than 1.2.1. A user's report after Beta 1
+(2026-11-27, Facebook): on a C64 Ultimate with firmware 1.1.0 starting
+geoultra64.crt gives "This command is not supported on this
+architecture": the firmware's cartridge loader (c64_crt.cc) returns
+SSRET_NOT_IMPLEMENTED for a type it does not know, and the Megabyter
+(86) came with 3.15 (C64U 1.2.0). The requirement now names both
+numberings; the .cfg's Ultimate 64 turbo line is ignored silently on
+1.2.1 (the user). Not tested on a C64 Ultimate yet;
 worth a check there: the UCI drive list (1.2.1 adds the SoftIEC drive
 and the printer to it).
 

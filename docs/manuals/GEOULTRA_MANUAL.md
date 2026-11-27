@@ -118,9 +118,12 @@ fonts.
 
 ## What you need
 
-- An **Ultimate 64**, **Ultimate 64 Elite** or **Commodore 64
-  Ultimate**, firmware **3.15** or later. (The Ultimate II+ and the
-  C128 versions are planned.)
+- An **Ultimate 64** or **Ultimate 64 Elite** with firmware **3.15** or
+  later, or a **Commodore 64 Ultimate** with firmware **1.2.0** or later
+  (the C64 Ultimate numbers its firmware itself; 1.2.0 matches 3.15).
+  Older firmware does not know GeoUltra's cartridge type (Megabyter) and
+  answers "This command is not supported on this architecture". (The
+  Ultimate II+ and the C128 versions are planned.)
 - The Ultimate's **REU** set to **16 MB** and its **Command
   Interface** enabled. The configuration file that comes with
   GeoUltra sets both (below).
@@ -797,12 +800,15 @@ When a document is larger than the queue, the program waits for the
 printer, page by page, and stays busy until near the end. While a
 program is still printing, C= + RUN/STOP does not switch away from it:
 a switch only happens between a program's steps, never in the middle of
-a printer call. The default queue (128 KB) holds about 2.5 pages of
-geoWrite's print; a longer document keeps its program busy until near
-the end. A larger queue (Settings' REU page, up to 2 MB, about 40 pages)
-hands most documents over in seconds, so the program and the task
-switch are free again while the queue prints on; its room is taken from
-the disk images' (1 MB: 16 banks of 64 KB).
+a printer call. The default queue (1 MB) holds about 20 pages of
+geoWrite's print, so most documents are handed over in seconds and the
+program and the task switch are free again while the queue prints on.
+The queue's room beyond its first 128 KB comes from the REU that older
+applications see per task and that the task slots leave free (4 slots
+of 512 KB leave room for 2 MB); it never takes room from the disk
+images. With 8 task slots at 512 KB (or fewer, larger ones) that area is
+full and the queue keeps 128 KB, about 2.5 pages: a longer document then
+keeps its program busy until near the end.
 
 ## PostScript
 
@@ -1106,7 +1112,7 @@ diskfonts=hide       (programs' font lists: only the system fonts)
 autoexec=/a/CONFIGURE (one line per auto-exec program, in order)
 legacy=1024          (the REU older applications see per task, KB: 512-4096; default 512)
 tasks=4              (task slots, 1-8; default 4)
-spool=512            (the print queue, KB: 128-2048; default 128)
+spool=512            (the print queue, KB: 128-2048; default 1024)
 
 [desktop]
 theme=GeoUltra
@@ -1147,12 +1153,10 @@ geoWrite=58B5        (an application's own serial, by its class)
   the first 376 entries' icons in the REU.
 - `wget` speaks plain HTTP only (no HTTPS, no redirects).
 - The REU holds about 9.3 MB of disk images for all mounted drives
-  together (149 banks of 64 KB), less what a print queue larger than
-  128 KB takes from it.
-- The print queue holds about 2.5 pages of geoWrite by default: a
-  longer document keeps its program busy until near the end, and a
-  program that is still printing cannot be switched away from (see
-  "The print queue").
+  together (149 banks of 64 KB).
+- A program that is still printing cannot be switched away from; with
+  the task slots filling the older applications' REU, the print queue is
+  small (see "The print queue").
 
 # What was tested
 

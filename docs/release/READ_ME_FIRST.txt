@@ -2,8 +2,10 @@ GeoUltra: what is in this download
 ==================================
 
 GeoUltra is a GEOS-compatible system for the Commodore 64 with an
-Ultimate 64, Ultimate 64 Elite or Commodore 64 Ultimate (firmware 3.15
-or later).
+Ultimate 64 or Ultimate 64 Elite (firmware 3.15 or later) or Commodore
+64 Ultimate (firmware 1.2.0 or later: older firmware does not know its
+cartridge type and says "This command is not supported on this
+architecture").
 
 geoultra64.crt, geoultra64.cfg
     The system. Copy both into one folder on the Ultimate's USB stick or
