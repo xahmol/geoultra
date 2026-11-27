@@ -25,7 +25,9 @@ bank:   .byte 0
 legacyBase:                     ; the current task's legacy REU area
         .byte LEGACY_FIRST      ; (task.s sets it for a new task)
 taskSlots:                      ; the task slots: [system] tasks= (mount.s),
-        .byte 8                 ; within the legacy area (task.s)
+        .byte 4                 ; within the legacy area (task.s); the
+                                ; default 4 since 2026-11-27 (DESIGN.md
+                                ; "REU map": the user's new defaults)
 mdCount:.res 2
 
         .segment "CODE"

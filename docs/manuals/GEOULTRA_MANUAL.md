@@ -789,6 +789,15 @@ per job with its cancel button, the program, its pages and its state,
 and pause or resume. The queue survives hibernation; its size is set on
 the REU page.
 
+A program hands its pages to the queue as fast as the queue has room.
+When a document is larger than the queue, the program waits for the
+printer, page by page, and stays busy until near the end. While a
+program is still printing, C= + RUN/STOP does not switch away from it:
+a switch only happens between a program's steps, never in the middle of
+a printer call. With the default queue (1 MB, about 20 pages) most
+documents are handed over in seconds, and the program and the task
+switch are free again while the queue prints on.
+
 ## PostScript
 
 **GU PostScript** (drive E) turns a geoWrite 2.x document into a
@@ -844,7 +853,13 @@ them when a document uses them.
   program's list shows each ID once.
 - **Only the system fonts:** Settings' Printing page, "Fonts: system
   only", leaves the disks' fonts out of the lists. A document that uses
-  a font only its own disk has then shows the program's substitute.
+  a font only its own disk has then shows the program's substitute. The
+  switch counts from the next start, and a program builds its font menu
+  when it starts: a program still running in the kept session shows its
+  old menu until you start it again.
+- **Fonts in a folder's root:** on a native drive (DNP), a program in a
+  folder also gets the fonts of the drive's root folder, after the
+  folder's own.
 - **Filling it on a PC:** with geosdisk (docs/manuals/TOOLS_MANUAL.md).
 
 # Serial numbers
@@ -867,7 +882,35 @@ number, chosen on Settings' **Serials** page:
   it when your applications were installed under different boot disks.
   **add** asks the class and the number; **remove** takes the selected
   line out; **from disk** reads the serial of a GEOS boot disk on drives
-  A-D and asks which application it is for. Changes count at once.
+  A-D and asks which application it is for. A change counts as soon as
+  you click **Save**.
+
+**Which class to enter.** The class is the application's own name, as
+stored in its file, not always the name you see on the desktop. Case
+does not matter (`geowrite` works too); leave out the version. For the
+best-known applications:
+
+| File on the disk | Class |
+| --- | --- |
+| GEOWRITE | `geoWrite` |
+| GEOPAINT | `geoPaint` |
+| GEOPUBLISH | `geoPublish` |
+| GEOCALC | `geoCalc` |
+| GEOFILE | `GEOFILE` |
+| GEOCHART | `GEOCHART` |
+| GEOSPELL | `GEOSPELL` |
+| GEOMERGE | `GEOMERGE` |
+| GEOLASER | `GEOLASER` |
+| GeoFont | `GEOFONT` |
+| geoDex | `geoDex` |
+
+For any other application, the desktop's **info** on its file (C=I)
+shows its class. Example: geoWrite installed under a boot
+disk with serial 58B5: **add**, class `geoWrite`, number `58B5`,
+**Save**. The line `geoWrite 58B5` appears in the list.
+
+Copies whose serial check was removed ("unkeyed" disk images) never ask
+for a number, so this list has no effect on them.
 
 When an application refuses ("Please reboot your system using the same
 GEOS disk..."), the desktop asks after it has ended: "geoWrite refused
@@ -1055,9 +1098,9 @@ serial=12AB          (none: the boot disk's; 4755: GeoUltra's own)
 protection=bypass    (the bypass; leave out for off)
 diskfonts=hide       (programs' font lists: only the system fonts)
 autoexec=/a/CONFIGURE (one line per auto-exec program, in order)
-legacy=1024          (the REU older applications see per task, KB: 512-4096)
-tasks=4              (task slots)
-spool=512            (the print queue, KB)
+legacy=1024          (the REU older applications see per task, KB: 512-4096; default 512)
+tasks=4              (task slots, 1-8; default 4)
+spool=512            (the print queue, KB: 128-2048; default 1024)
 
 [desktop]
 theme=GeoUltra

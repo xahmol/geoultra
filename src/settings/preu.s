@@ -42,6 +42,9 @@ COL_LEGACY      = 7             ; yellow
 COL_FREE        = 1             ; white
 HATCH           = $80           ; (in a bank's use: legacy, not in use)
 TASKS_MAX       = 8
+DEF_TASKS       = 4             ; tasks= and spool= left out: 4 slots,
+DEF_SPOOL       = 3             ; 1 MB (the kernal's defaults since
+                                ; 2026-11-27: reu.s, spool.s)
 DEF_SIZE        = 0             ; 512 KB (sizes: 0-3, 8 << n banks)
 PATTERN_HALF    = 2             ; GEOS's 50% pattern
 
@@ -168,12 +171,12 @@ Used:   ldx size
         rts
 
 ; ReadVals: size (0-3) and tasks (1-8) from SETTINGS.INI [system]
-; legacy= and tasks= (missing or other: 512 KB, 8).
+; legacy= and tasks= (missing or other: 512 KB, 4; spool=: 1 MB).
 ReadVals:
         jsr UseSettings
         lda #DEF_SIZE
         sta size
-        lda #TASKS_MAX
+        lda #DEF_TASKS
         sta tasks
         jsr LegacyKey
         jsr IniFind
@@ -198,7 +201,7 @@ ReadVals:
         bcs @end
         adc #1
         sta tasks
-@end:   lda #0                  ; spool=: 128 (or none), 256, 512, 1024,
+@end:   lda #DEF_SPOOL          ; spool=: 128, 256, 512, 1024 (or none),
         sta spool               ; 2048 KB: by its first and fourth
         jsr SpoolKey            ; characters, as the kernal (spool.s)
         jsr IniFind
@@ -247,7 +250,7 @@ WriteVals:
         jsr IniDel
 @tasks: jsr TasksKey
         lda tasks
-        cmp #TASKS_MAX
+        cmp #DEF_TASKS
         beq @tasksDel
         clc
         adc #'0'
@@ -261,8 +264,9 @@ WriteVals:
         jmp @spool
 @tasksDel:
         jsr IniDel
-@spool: jsr SpoolKey            ; spool= (128 KB: the key out)
+@spool: jsr SpoolKey            ; spool= (1 MB, the default: the key out)
         ldx spool
+        cpx #DEF_SPOOL
         beq @spoolDel
         lda SpoolKbLo,x
         sta r2L
@@ -667,8 +671,9 @@ LSpool:         .byte "Spooler", 0
 KSpool:         .byte "spool", 0
 SpoolDigit:     .byte "125"                     ; (as the kernal's spool.s)
 SpoolBanks:     .byte 2, 4, 8, 16, 32
-SpoolKbLo:      .byte 0, <V256, <V512, <V1024, <V2048
-SpoolKbHi:      .byte 0, >V256, >V512, >V1024, >V2048
+SpoolKbLo:      .byte <V128, <V256, <V512, <V1024, <V2048
+SpoolKbHi:      .byte >V128, >V256, >V512, >V1024, >V2048
+V128:           .byte "128", 0
 V256:           .byte "256", 0
 V512:           .byte "512", 0
 SpoolTxtLo:     .byte <T128, <T256, <T512, <T1M, <T2M

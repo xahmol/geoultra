@@ -2,9 +2,11 @@
 """GeoUltra Settings in VICE: the REU page (S6; the user's decisions of
 2026-11-14; preu.s): the 16 x 16 grid of banks (system dark grey, the
 engine orange, the legacy area yellow, the part not in use hatched:
-dark grey on yellow, free white), the steppers: Legacy [+] to 1 MB
-(legacy=1024, the slots cut to 4: tasks=4, within the 4 MB area),
-[-] back to 512 KB (legacy= out), Tasks [+] to 8 again (tasks= out).
+dark grey on yellow, free white), the steppers from the defaults (4
+slots, 512 KB, a 1 MB print queue since 2026-11-27): Legacy [+] to 1 MB
+(legacy=1024) and back (legacy= out), Tasks [+] to 8 (tasks=8), the
+queue to 2 MB, back to 1 MB (spool= out) and down to 128 KB
+(spool=128).
 VICE's drives are no REU drives: none on the map. Screens:
 build/harness/gush/settings-s6*.png.
 Usage: tests/settings/s6.py
@@ -124,29 +126,33 @@ def main():
         def bank(n):
             return cell(GRID_ROW + n // 16, GRID_CARD + n % 16)
         check("the REU page", sbyte("page"), PAGE_REU)
-        check("banks: system, free, engine, legacy in use, legacy not in use (512 KB x 8: all in use)",
-              (bank(0), bank(100), bank(188), bank(192), bank(255)), (0xBB, 0x11, 0x88, 0x77, 0x77))
+        check("banks: system, free, engine, legacy in use, not in use (512 KB x 4: 224-255 hatched)",
+              (bank(0), bank(100), bank(188), bank(223), bank(224)), (0xBB, 0x11, 0x88, 0x77, 0xB7))
         g.png("settings-s6")
         press(*SIZE_UP, t=4)
-        check("Legacy [+]: 1 MB, the slots cut to 4 (legacy=1024, tasks=4)", settings_text(),
-              b"[system]\r\nlegacy=1024\r\ntasks=4\r\n")
+        check("Legacy [+]: 1 MB, still 4 slots (legacy=1024; tasks= the default, out)", settings_text(),
+              b"[system]\r\nlegacy=1024\r\n")
         press(*SIZE_DN, t=4)
         check("Legacy [-]: 512 KB again (legacy= out), 4 slots: banks 224-255 not in use (hatched)",
-              (settings_text(), bank(223), bank(224)), (b"[system]\r\ntasks=4\r\n", 0x77, 0xB7))
+              (settings_text(), bank(223), bank(224)), (b"[system]\r\n", 0x77, 0xB7))
         g.png("settings-s6-hatched")
         for _ in range(4):
             press(*TASKS_UP, t=3)
-        check("Tasks [+] to 8: tasks= out", settings_text(), b"[system]\r\n")
-        check("the spooler's banks 27-28 (128 KB); 180-187 the system fonts", (bank(27), bank(28), bank(179),
-              bank(180), bank(187)), (0xEE, 0xEE, 0x11, 0xBB, 0xBB))
+        check("Tasks [+] to 8: tasks=8, all of the legacy area in use", (settings_text(), bank(255)),
+              (b"[system]\r\ntasks=8\r\n", 0x77))
+        check("the spooler's banks: 1 MB by default (27-28 and 166-179); 180-187 the system fonts",
+              (bank(27), bank(28), bank(165), bank(166), bank(179), bank(180), bank(187)),
+              (0xEE, 0xEE, 0x11, 0xEE, 0xEE, 0xBB, 0xBB))
         press(*SPOOL_UP, t=3)
-        press(*SPOOL_UP, t=3)
-        check("Spooler [+] twice: 512 KB (spool=512), banks 174-179 too",
-              (settings_text(), bank(173), bank(174), bank(179)), (b"[system]\r\nspool=512\r\n", 0x11, 0xEE, 0xEE))
+        check("Spooler [+]: 2 MB (spool=2048), banks 150-179",
+              (settings_text(), bank(149), bank(150)), (b"[system]\r\ntasks=8\r\nspool=2048\r\n", 0x11, 0xEE))
         g.png("settings-s6-spool")
         press(*SPOOL_DN, t=3)
-        press(*SPOOL_DN, t=3)
-        check("Spooler [-] twice: 128 KB (spool= out)", settings_text(), b"[system]\r\n")
+        check("Spooler [-]: 1 MB, the default (spool= out)", settings_text(), b"[system]\r\ntasks=8\r\n")
+        for _ in range(3):
+            press(*SPOOL_DN, t=3)
+        check("Spooler [-] three times more: 128 KB, written (spool=128), banks 27-28 only",
+              (settings_text(), bank(179)), (b"[system]\r\ntasks=8\r\nspool=128\r\n", 0x11))
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

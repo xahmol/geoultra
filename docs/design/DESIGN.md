@@ -175,6 +175,18 @@ CPU Speed=64
 | 188-191 | File engine: one Ultimate listing per handle (docs/design/FILE_ENGINE.md; until the allocation table hands out scratch banks at run time) |
 | 192-255 | Applications' legacy REU, one area of 8 banks per task slot (task n: banks 192 + 8n to 199 + 8n; their banks 0-7 as `ramExpSize` = 8 shows them; bank 0 is also MoveData's DMA scratch). `DoRAMOp` translates bank n to the current task's area, so applications never reach system banks, drives, task slots or each other's data |
 
+**New defaults (the user, 2026-11-27; in the fix batch before Beta 1):**
+tasks=4, legacy=512 (KB per task, as a 1750), spool=1024 (KB, about 20
+pages: a program hands a document over at once and tasks can switch
+while the queue prints). The disks get the rest: 171 banks (10.7 MB),
+enough for two D81s, a D64 and a 128-track DNP with 14 banks free for an
+image gone into or a temporary mount. **Planned with GUlliver and GUru
+(after 1.0):** the legacy area (4 x 512 KB) is shared with GeoUltra's
+network programs (the user's idea): they get their own task's 512 KB
+plus the areas of free task slots (2 MB when alone), lent and given back
+through a file-engine call; "new task" refuses a lent slot (asks to
+close the program first); bank 0 of every task's area stays its own
+(MoveData's scratch). No separate network pool.
 Fixed system part: 31 banks at the bottom and 76 at the top; 149 banks
 (about 9.3 MB) remain for drives. Fewer task slots or a smaller legacy size
 per task (settings) give the rest back to the drives.
