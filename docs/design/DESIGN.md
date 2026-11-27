@@ -983,6 +983,12 @@ Requests from the same session, to do:
 
 ## Still open
 
+- U64 tests failing before 2026-11-27's changes too (checked against
+  ddb6369): s5u64 "gunew.d71 made and mounted on D" (made, but the mount
+  reports DEV_NOT_FOUND) and spu64 "spool=2048: banks above 27-28 taken"
+  (no extra banks shown). geoludou64 and themeu64 need drive C (the apps
+  DNP) mounted, s5u64 and spu64 the room without it: their setups differ
+  (to note in each test). After Beta 1.
 - The GEOS 2.0 deskTop's geos menu does not list drive E's desk
   accessories (GU Folder): the deskTop collects them while reading drive
   A's directory itself, not through `FindFTypes`, where the kernal adds
