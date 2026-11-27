@@ -794,9 +794,12 @@ When a document is larger than the queue, the program waits for the
 printer, page by page, and stays busy until near the end. While a
 program is still printing, C= + RUN/STOP does not switch away from it:
 a switch only happens between a program's steps, never in the middle of
-a printer call. With the default queue (1 MB, about 20 pages) most
-documents are handed over in seconds, and the program and the task
-switch are free again while the queue prints on.
+a printer call. The default queue (128 KB) holds about 2.5 pages of
+geoWrite's print; a longer document keeps its program busy until near
+the end. A larger queue (Settings' REU page, up to 2 MB, about 40 pages)
+hands most documents over in seconds, so the program and the task
+switch are free again while the queue prints on; its room is taken from
+the disk images' (1 MB: 16 banks of 64 KB).
 
 ## PostScript
 
@@ -1100,7 +1103,7 @@ diskfonts=hide       (programs' font lists: only the system fonts)
 autoexec=/a/CONFIGURE (one line per auto-exec program, in order)
 legacy=1024          (the REU older applications see per task, KB: 512-4096; default 512)
 tasks=4              (task slots, 1-8; default 4)
-spool=512            (the print queue, KB: 128-2048; default 1024)
+spool=512            (the print queue, KB: 128-2048; default 128)
 
 [desktop]
 theme=GeoUltra
@@ -1140,8 +1143,13 @@ geoWrite=58B5        (an application's own serial, by its class)
   folder holds at most 2048 entries in the list. The icon view keeps
   the first 376 entries' icons in the REU.
 - `wget` speaks plain HTTP only (no HTTPS, no redirects).
-- The REU holds about 10 MB of disk images for all mounted drives
-  together.
+- The REU holds about 9.3 MB of disk images for all mounted drives
+  together (149 banks of 64 KB), less what a print queue larger than
+  128 KB takes from it.
+- The print queue holds about 2.5 pages of geoWrite by default: a
+  longer document keeps its program busy until near the end, and a
+  program that is still printing cannot be switched away from (see
+  "The print queue").
 
 # What was tested
 

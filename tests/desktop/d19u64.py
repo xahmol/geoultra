@@ -29,6 +29,7 @@ PATH_STR = 0xC0B8               # a path for Into, up to $C0DF
 KEY_DOWN, KEY_HOME, CR = 17, 18, 13
 C = 0x80
 OK_XY = (90, 110)               # (DEF_DB_POS: OK where Yes is)
+NO_XY = (64 + 17 * 8 + 20, 110)  # (No at card 17)
 
 
 def main():
@@ -130,9 +131,10 @@ def main():
         into(UBASE + "/gutest.d64")
         check("GEOPUBLISH found inside", cursor("geopublish"), True)
         key(CR, 6)
-        line = int.from_bytes(bytes(u.read(k["errLine"], 2)), "little")
-        check("its application: 'Mount the disk image to open it.'", line, k["EInImg"])
-        press(OK_XY, 4)
+        line = int.from_bytes(bytes(u.read(k["askLine"], 2)), "little")
+        check("its application: 'Not mounted. Mount it?' (since 2026-11-18, side.s OpenAt)",
+              line, k["MountQ"])
+        press(NO_XY, 4)                                 # No: nothing mounted
     finally:
         f = ftp()
         for n in names(BASE):

@@ -3,10 +3,9 @@
 2026-11-14; preu.s): the 16 x 16 grid of banks (system dark grey, the
 engine orange, the legacy area yellow, the part not in use hatched:
 dark grey on yellow, free white), the steppers from the defaults (4
-slots, 512 KB, a 1 MB print queue since 2026-11-27): Legacy [+] to 1 MB
-(legacy=1024) and back (legacy= out), Tasks [+] to 8 (tasks=8), the
-queue to 2 MB, back to 1 MB (spool= out) and down to 128 KB
-(spool=128).
+slots since 2026-11-27, 512 KB, a 128 KB print queue): Legacy [+] to
+1 MB (legacy=1024) and back (legacy= out), Tasks [+] to 8 (tasks=8), the
+queue to 512 KB (spool=512) and back (spool= out).
 VICE's drives are no REU drives: none on the map. Screens:
 build/harness/gush/settings-s6*.png.
 Usage: tests/settings/s6.py
@@ -140,19 +139,17 @@ def main():
             press(*TASKS_UP, t=3)
         check("Tasks [+] to 8: tasks=8, all of the legacy area in use", (settings_text(), bank(255)),
               (b"[system]\r\ntasks=8\r\n", 0x77))
-        check("the spooler's banks: 1 MB by default (27-28 and 166-179); 180-187 the system fonts",
-              (bank(27), bank(28), bank(165), bank(166), bank(179), bank(180), bank(187)),
-              (0xEE, 0xEE, 0x11, 0xEE, 0xEE, 0xBB, 0xBB))
+        check("the spooler's banks 27-28 (128 KB by default); 180-187 the system fonts",
+              (bank(27), bank(28), bank(179), bank(180), bank(187)), (0xEE, 0xEE, 0x11, 0xBB, 0xBB))
         press(*SPOOL_UP, t=3)
-        check("Spooler [+]: 2 MB (spool=2048), banks 150-179",
-              (settings_text(), bank(149), bank(150)), (b"[system]\r\ntasks=8\r\nspool=2048\r\n", 0x11, 0xEE))
+        press(*SPOOL_UP, t=3)
+        check("Spooler [+] twice: 512 KB (spool=512), banks 174-179 too",
+              (settings_text(), bank(173), bank(174), bank(179)),
+              (b"[system]\r\ntasks=8\r\nspool=512\r\n", 0x11, 0xEE, 0xEE))
         g.png("settings-s6-spool")
         press(*SPOOL_DN, t=3)
-        check("Spooler [-]: 1 MB, the default (spool= out)", settings_text(), b"[system]\r\ntasks=8\r\n")
-        for _ in range(3):
-            press(*SPOOL_DN, t=3)
-        check("Spooler [-] three times more: 128 KB, written (spool=128), banks 27-28 only",
-              (settings_text(), bank(179)), (b"[system]\r\ntasks=8\r\nspool=128\r\n", 0x11))
+        press(*SPOOL_DN, t=3)
+        check("Spooler [-] twice: 128 KB, the default (spool= out)", settings_text(), b"[system]\r\ntasks=8\r\n")
     finally:
         g.stop()
     sys.exit(0 if g.ok else 1)

@@ -212,7 +212,7 @@ driveLimit:     .byte FE_LAST_BANK + 2  ; a drive's banks end below this - 1
         .include "banksof.inc"
 
 ; Init: A, X = spool='s first and fourth character: the banks wanted
-; (128, 256, 512: 2, 4, 8; 1024, 2048: 16, 32; else 16); up to that - 2
+; (128, 256, 512: 2, 4, 8; 1024, 2048: 16, 32; else 2); up to that - 2
 ; at the top of the drives' area, from bank 179 (FE_LAST_BANK) down, while no REU drive
 ; uses them; spoolExtra, spoolBase, driveLimit set. The queue of an
 ; earlier session forgotten: its mark cleared (the REU keeps its contents
@@ -244,10 +244,10 @@ Init:   stx tmp
         beq @dig
         dex
         bpl @d
-@none:  lda #16                 ; (none or another value: 1 MB, the
-                                ; default since 2026-11-27: about 20
-                                ; pages, so a program hands a document
-                                ; over at once; DESIGN.md "REU map")
+@none:  lda #2                  ; (none or another value: 128 KB; 1 MB
+                                ; was tried on 2026-11-27, but its banks
+                                ; come from the drives' area: DESIGN.md
+                                ; "REU map", for after Beta 1)
         bne @want
 @dig:   lda tmp                 ; a fourth digit: 1024, 2048
         cmp #'0'

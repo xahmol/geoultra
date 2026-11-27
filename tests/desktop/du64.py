@@ -9,8 +9,10 @@ Ultimate roots (D5a): usb0 listed, a click on it goes there. D5b: the
 favourites from SETTINGS.INI and the recent documents from RECENT.INI
 (made for the test, deleted again; an existing RECENT.INI stops it too)
 in the sidebar; C=F in /a adds it, SETTINGS.INI rewritten with its other
-lines kept; a click on the recent "ReadMe 1581" (drive A, the test copy)
-opens it in geoWrite and moves it to the top of RECENT.INI.
+lines kept; a click on the recent "ReadMe 1581" (in the test copy's
+image, mounted on drive A; recent entries name a document by its image's
+path since 2026-11-18, imgpath.s) opens it in geoWrite and moves it to
+the top of RECENT.INI.
 Usage: tests/desktop/du64.py [build/geoultra64.crt]
 """
 import ftplib
@@ -83,7 +85,7 @@ def main():
     def paths(at, n):
         return [bytes(u.read(at + 64 * i, 64)).split(b"\0")[0].decode("latin1") for i in range(n)]
     ftp.storbinary("STOR " + SETTINGS, io.BytesIO(INI))
-    ftp.storbinary("STOR " + RECENT, io.BytesIO(b"[recent]\r\n/usb0/none.doc\r\n/a/ReadMe 1581\r\n"))
+    ftp.storbinary("STOR " + RECENT, io.BytesIO(b"[recent]\r\n/usb0/none.doc\r\n/USB0/GEOULTRA/test/GEOS64.D81/ReadMe 1581\r\n"))
     try:
         u.boot(crt)
         u.write(0x849B, b"\x2C\xC2")                    # appMain = EnterDeskTop
@@ -104,7 +106,7 @@ def main():
         counts = u.read(k["counts"], 2)                 # D5b
         check("favourites from SETTINGS.INI", paths(k["favs"], counts[0]), ["/usb0"])
         check("recent documents from RECENT.INI", paths(k["recents"], counts[1]),
-              ["/usb0/none.doc", "/a/ReadMe 1581"])
+              ["/usb0/none.doc", "/USB0/GEOULTRA/test/GEOS64.D81/ReadMe 1581"])
         n = u.read(k["sideCount"], 1)[0]
         check("their sidebar lines", [c for c in u.read(k["sideLetters"], n) if c & 0x80], [0x80, 0x90, 0x91])
         side(ord("a"))
@@ -114,7 +116,7 @@ def main():
         check("SETTINGS.INI: its other lines kept", get(SETTINGS), INI + b"/a\r\n")
         side(0x91, s=25)                                # the recent ReadMe 1581
         check("RECENT.INI: ReadMe 1581 on top", get(RECENT),
-              b"[recent]\r\n/a/ReadMe 1581\r\n/usb0/none.doc\r\n")
+              b"[recent]\r\n/USB0/GEOULTRA/test/GEOS64.D81/ReadMe 1581\r\n/usb0/none.doc\r\n")
         check("geoWrite started in the desktop's place", bytes(u.read(0x0400, 32)) != code, True)
     finally:
         names = [n.split("/")[-1] for n in ftp.nlst("/USB0/GEOULTRA")]

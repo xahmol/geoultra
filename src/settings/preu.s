@@ -43,8 +43,8 @@ COL_FREE        = 1             ; white
 HATCH           = $80           ; (in a bank's use: legacy, not in use)
 TASKS_MAX       = 8
 DEF_TASKS       = 4             ; tasks= and spool= left out: 4 slots,
-DEF_SPOOL       = 3             ; 1 MB (the kernal's defaults since
-                                ; 2026-11-27: reu.s, spool.s)
+DEF_SPOOL       = 0             ; 128 KB (the kernal's defaults:
+                                ; reu.s, spool.s)
 DEF_SIZE        = 0             ; 512 KB (sizes: 0-3, 8 << n banks)
 PATTERN_HALF    = 2             ; GEOS's 50% pattern
 
@@ -171,7 +171,7 @@ Used:   ldx size
         rts
 
 ; ReadVals: size (0-3) and tasks (1-8) from SETTINGS.INI [system]
-; legacy= and tasks= (missing or other: 512 KB, 4; spool=: 1 MB).
+; legacy= and tasks= (missing or other: 512 KB, 4; spool=: 128 KB).
 ReadVals:
         jsr UseSettings
         lda #DEF_SIZE
@@ -201,7 +201,7 @@ ReadVals:
         bcs @end
         adc #1
         sta tasks
-@end:   lda #DEF_SPOOL          ; spool=: 128, 256, 512, 1024 (or none),
+@end:   lda #DEF_SPOOL          ; spool=: 128 (or none), 256, 512, 1024,
         sta spool               ; 2048 KB: by its first and fourth
         jsr SpoolKey            ; characters, as the kernal (spool.s)
         jsr IniFind
@@ -264,7 +264,7 @@ WriteVals:
         jmp @spool
 @tasksDel:
         jsr IniDel
-@spool: jsr SpoolKey            ; spool= (1 MB, the default: the key out)
+@spool: jsr SpoolKey            ; spool= (128 KB, the default: the key out)
         ldx spool
         cpx #DEF_SPOOL
         beq @spoolDel
