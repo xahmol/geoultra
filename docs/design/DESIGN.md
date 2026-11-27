@@ -557,6 +557,14 @@ does not show the server's status code).
 
 ## Verified on hardware
 
+**Reported by users after Beta 1 (2026-11-27, Facebook):** a stock C64
+(breadbin) with an Ultimate II+L runs GeoUltra at 1 MHz: the user's
+original GEOS applications work once the serial is set, desk accessories
+start quickly, printing the brochure to PDF takes its time (as at
+1 MHz). Phase 4 (the Ultimate II+) may therefore be mostly testing and
+documentation (1 MHz timings, the .cfg's U64 lines ignored, no turbo or
+palette). Not tested by us; documentation says "reported working" only.
+
 Firmware baseline: 3.15a (GideonZ/1541ultimate tag v3.15a, 2026-09-12).
 The C64 Ultimate numbers its firmware itself (2026-11-18, from its
 changelog-1.2.1.txt and the 1541ultimate repository): 1.0.0 is 3.14,
