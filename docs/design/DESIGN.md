@@ -310,6 +310,16 @@ firmware, speed; memory and drives: REU size and use, drives A-E with
 their images and free space; session: tasks, print queue, uptime since
 the cold start, theme; network and time: IP address, date and time, NTP
 server); always the same screen, `-s` a short text-only form for scripts.
+**A sample GeoUltra leaflet in geoPublish** (the user, 2026-11-28: only
+after all other work for 1.0 is done): generated on the PC, not laid out
+by hand. The geoPublish document format is not described publicly; plan:
+map it from small documents made in geoPublish on the U64 (record 0 page
+and fonts, page records with regions, record 53 bitmaps; the text is a
+separate geoWrite 2.1 file, `mdgw.py`), write it up in
+docs/reference/GEOPUBLISH_FORMAT.md, then a tools/dev generator from a
+TOML recipe, in GeoUltra's own fonts so the sample can ship; test by
+printing through GU PDF. Reference documents: Bruce Thomas's calendar
+(private/geopublish, not to share).
 **The web browser, GUlliver** (after 1.0, first on the roadmap; the
 user, 2026-11-26): a GEOS application, pages through FrogFind
 (frogfind.com: a search engine for old computers whose proxy turns pages

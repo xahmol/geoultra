@@ -129,3 +129,31 @@ CASES += [
     dict(name="PutDecimal right, suppressed", routine="PutDecimal", a=0x5A,
          mem=font_vars(), r={"r0": 305, "r11": 40, "r1H": 80}, compare=SCREENS + ["r11"]),
 ]
+
+
+def margins(left, right, mode=0):
+    """font_vars(mode) with leftMargin/rightMargin set (window 0-199)."""
+    m = font_vars(mode)
+    m[0x33] = [0, 199, left & 0xFF, left >> 8, right & 0xFF, right >> 8]
+    return m
+
+
+# Clipping (issue #1, geoPublish): SmallPutChar draws only the columns
+# inside leftMargin/rightMargin (HG2G; GEOS 2.0 measured). A character
+# whose top is above line 0 is not drawn at all, not even its rows below
+# line 0 (GEOS 2.0 measured, 2026-11-27).
+CASES += [
+    dict(name="SmallPutChar 'W' across leftMargin", routine="SmallPutChar", a=ord("W"),
+         mem=margins(100, 319), r={"r11": 97, "r1H": 70}, compare=SCREENS + ["r11"]),
+    dict(name="SmallPutChar 'W' across rightMargin", routine="SmallPutChar", a=ord("W"),
+         mem=margins(0, 103), r={"r11": 100, "r1H": 70}, compare=SCREENS + ["r11"]),
+    dict(name="SmallPutChar 'W' wholly right of rightMargin", routine="SmallPutChar", a=ord("W"),
+         mem=margins(0, 90), r={"r11": 100, "r1H": 70}, compare=SCREENS + ["r11"]),
+    dict(name="SmallPutChar 'W' at x -3 (leftMargin 0)", routine="SmallPutChar", a=ord("W"),
+         mem=margins(0, 319), r={"r11": 0xFFFD, "r1H": 70}, compare=SCREENS + ["r11"]),
+    dict(name="SmallPutChar 'g' top above line 0", routine="SmallPutChar", a=ord("g"),
+         mem=margins(0, 319), r={"r11": 100, "r1H": 2}, compare=SCREENS + ["r11"]),
+    dict(name="SmallPutChar 'W' bold across rightMargin", routine="SmallPutChar", a=ord("W"),
+         mem=margins(0, 104, mode=0x40), r={"r11": 100, "r1H": 70},
+         compare=SCREENS + ["r11"]),
+]

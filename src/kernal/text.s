@@ -19,6 +19,8 @@ cellWidth:      .byte 0
 rowNo:          .byte 0
 column:         .byte 0
 prevBit:        .byte 0
+clipLo:         .byte 0             ; the cell's first column inside the margins
+clipEnd:        .byte 0             ; and the column after its last (ClipCols)
 digits:         .res 5
 digitCount:     .byte 0
 decFormat:      .byte 0
@@ -192,12 +194,13 @@ SmallPutChar:
         jmp Advance
 
 ; Draw character A (32 or above) at r11/r1H in currentMode, clipped to
-; windowTop..windowBottom and the screen.
+; leftMargin..rightMargin, windowTop..windowBottom and the screen.
 DrawChar:
         pha
         jsr GetCharWidth
         sta glyphWidth
         sta cellWidth
+        jsr ClipCols            ; (destroys A, X, Y; the character is on the stack)
         lda currentMode
         and #SET_BOLD
         beq @nobold
@@ -217,9 +220,9 @@ DrawChar:
 ; Draw the cell (glyphWidth bits of the glyph at r9, cellWidth columns)
 ; row by row in currentMode.
 DrawCell:
-        lda r1H                 ; top above the screen: nothing is drawn
-        cmp baselineOffset
-        bcs @top
+        lda r1H                 ; top above the screen: nothing is drawn (as
+        cmp baselineOffset      ; GEOS 2.0, measured: not even the rows
+        bcs @top                ; below line 0; tests/conformance/text.py)
         rts
 @top:   lda cardDataPntr
         sta r4L
@@ -369,7 +372,12 @@ DrawRow:
         txa
         eor #1
         tax
-@put:   lda r5H                 ; only within the bitmap (r5 < r12: geoWrite
+@put:   lda column              ; only the columns inside the margins
+        cmp clipLo              ; (ClipCols: SmallPutChar clips, HG2G;
+        bcc @skip               ; geoPublish narrows the margins to a
+        cmp clipEnd             ; column, issue #1)
+        bcs @skip
+        lda r5H                 ; only within the bitmap (r5 < r12: geoWrite
         cmp r12H                ; prints a 640-dot line as two card rows,
         bcc @write              ; x 320-639 drawn as the next row's 0-319;
         bne @skip               ; the user's PDF lost a character a line at
@@ -424,6 +432,43 @@ DrawRow:
         beq @end
         jmp @col
 @end:   rts
+
+; ClipCols: clipLo/clipEnd = the cell's columns (from r11) inside
+; leftMargin..rightMargin, 0..255: columns clipLo to clipEnd - 1 are drawn.
+; Signed 16-bit (r11 may be a little negative). Destroys A, X, Y.
+; Own code from HG2G's description of SmallPutChar and GEOS 2.0's
+; behaviour measured in the conformance harness (tests/conformance/text.py).
+        .segment "KCODE"
+ClipCols:
+        lda leftMargin          ; leftMargin - x
+        sec
+        sbc r11L
+        tax
+        lda leftMargin+1
+        sbc r11H
+        jsr @clamp
+        stx clipLo
+        lda rightMargin         ; rightMargin - x + 1
+        sec
+        sbc r11L
+        tax
+        lda rightMargin+1
+        sbc r11H
+        inx
+        bne :+
+        clc
+        adc #1
+:       jsr @clamp
+        stx clipEnd
+        rts
+@clamp: tay                     ; A:X signed -> X 0..255
+        bpl :+
+        ldx #0
+        rts
+:       beq :+
+        ldx #$FF
+:       rts
+        .segment "CODE"
 
 ; Escape codes below 32. Multi-byte codes read their parameters through
 ; r0 (PutString keeps r0 on the current byte).
